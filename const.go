@@ -21,3 +21,5 @@ const kernelImg string = "staging/stage3"
 const mergedImg string = "tempimage"
 // final bootable image
 const finalImg string = "image"
+
+const bucketBaseUrl string = "https://storage.googleapis.com/uniboot/%v"

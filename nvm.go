@@ -2,6 +2,8 @@ package main
 
 import ("fmt"
         "os"
+        "strings"
+        "net/http"
         "os/exec"
         "io"
         "github.com/spf13/cobra"
@@ -50,13 +52,11 @@ func startHypervisor(image string){
   }
 }
 
-
 func panicOnError(err error) {
   if err != nil {
     panic(err)
   }
 }
-
 
 func  runCommandHandler(cmd *cobra.Command, args[] string) {
    //  prepare manifest file
@@ -94,13 +94,77 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
    startHypervisor(finalImg)
 }
 
-// download images + mkfs from cloud storage
-func downloadFile(name string) {
-  // download if file not exits..  
+type bytesWrittenCounter struct {
+  total uint64
+}
+
+func (bc *bytesWrittenCounter) Write(p []byte) (int, error) {
+  n := len(p)
+  bc.total += uint64(n)
+  bc.printProgress()
+  return n, nil
+}
+
+func (wc bytesWrittenCounter) printProgress() {
+  // clear the previous line
+  fmt.Printf("\r%s", strings.Repeat(" ", 35))
+  fmt.Printf("\rDownloading... %v complete", wc.total)
+}
+
+func downloadFile(filepath string, url string) error {
+  out, err := os.Create(filepath + ".tmp")
+  if err != nil {
+    return err
+  }
+  defer out.Close()
+  resp, err := http.Get(url)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+  // progress reporter.
+  counter := &bytesWrittenCounter{}
+  _, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+  if err != nil {
+    return err
+  }
+  err = os.Rename(filepath+".tmp", filepath)
+  if err != nil {
+    return err
+  }
+  return nil
+}
+
+func downloadImages() {
+  var err error
+  if _, err := os.Stat("staging"); os.IsNotExist(err) {
+    os.MkdirAll("staging", 0755)
+  }
+
+  if _, err = os.Stat("./mkfs"); os.IsNotExist(err) {
+    err = downloadFile("mkfs",fmt.Sprintf(bucketBaseUrl, "mkfs"))
+    panicOnError(err)
+  }
+
+  // make mkfs executable
+  err = os.Chmod("mkfs",0755)
+  if err != nil {
+      panicOnError(err)
+  }
+
+  if _, err = os.Stat("staging/boot"); os.IsNotExist(err) {
+    err = downloadFile("staging/boot",fmt.Sprintf(bucketBaseUrl, "boot"))
+    panicOnError(err)
+  }
+
+  if _, err = os.Stat("staging/stage3"); os.IsNotExist(err) {
+    err = downloadFile("staging/stage3",fmt.Sprintf(bucketBaseUrl, "stage3"))
+    panicOnError(err)
+  }
+
 }
 
 func main(){
- 
     var cmdPrint = &cobra.Command {
         Use:   "run [ELF file]",
         Short: "run ELF as unikernel",
@@ -109,5 +173,6 @@ func main(){
     }
   var rootCmd = &cobra.Command{Use: "nvm"}
   rootCmd.AddCommand(cmdPrint)
+  downloadImages()
   rootCmd.Execute()
 }
