@@ -104,7 +104,7 @@ func (bc *bytesWrittenCounter) Write(p []byte) (int, error) {
 func (wc bytesWrittenCounter) printProgress() {
   // clear the previous line
   fmt.Printf("\r%s", strings.Repeat(" ", 35))
-  fmt.Printf("\rDownloading... %v complete\n", wc.total)
+  fmt.Printf("\rDownloading... %v complete", wc.total)
 }
 
 func downloadFile(filepath string, url string) error {
@@ -158,7 +158,7 @@ func downloadImages() {
     err = downloadFile("staging/stage3",fmt.Sprintf(bucketBaseUrl, "stage3"))
     panicOnError(err)
   }
-
+  fmt.Println()
 }
 
 func main(){
