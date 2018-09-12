@@ -52,8 +52,8 @@ func (q *qemu) Args() []string {
     // TODO : this should come from q.drives and ifaces
     args := []string{}
 
-    boot := []string{"-boot", "c", "-drive", "file=image,format=raw,if=ide"}
-    storage := []string {"-drive", "file=image2,format=raw,if=virtio"}
+    boot := []string{"-drive", "file=image,format=raw,index=0"}
+    storage := []string {"-drive", "file=image,format=raw,if=virtio"}
     net := []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0", "-netdev", "tap,id=n0,ifname=tap0"}
 
     args = append(args, boot...)

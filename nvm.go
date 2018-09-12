@@ -39,11 +39,7 @@ func checkExists(key string) bool {
 }
 
 func startHypervisor(image string){
-
-   // TODO: https://github.com/deferpanic/uniboot/issues/31
-   err := copy(finalImg,"image2");
-   panicOnError(err)
-   for k := range hypervisors {
+  for k := range hypervisors {
     if checkExists(k) {
       hypervisor := hypervisors[k]()
       hypervisor.start(image)
@@ -60,7 +56,6 @@ func panicOnError(err error) {
 
 func  runCommandHandler(cmd *cobra.Command, args[] string) {
    //  prepare manifest file
-
    var elfname = filepath.Base(args[0])
    var extension = filepath.Ext(elfname)
    elfname = elfname[0:len(elfname)-len(extension)]
@@ -80,6 +75,7 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
      fmt.Printf("%s\n", out)
      panic(err)
    }
+
    // produce final image, boot + kernel + elf
    fd, err := os.Create(finalImg)
    defer fd.Close()
@@ -108,10 +104,11 @@ func (bc *bytesWrittenCounter) Write(p []byte) (int, error) {
 func (wc bytesWrittenCounter) printProgress() {
   // clear the previous line
   fmt.Printf("\r%s", strings.Repeat(" ", 35))
-  fmt.Printf("\rDownloading... %v complete", wc.total)
+  fmt.Printf("\rDownloading... %v complete\n", wc.total)
 }
 
 func downloadFile(filepath string, url string) error {
+  // download to a temp file and later rename it
   out, err := os.Create(filepath + ".tmp")
   if err != nil {
     return err
