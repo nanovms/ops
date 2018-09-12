@@ -57,7 +57,7 @@ func (q *qemu) Args() []string {
     net := []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0", "-netdev", "tap,id=n0,ifname=tap0"}
 
     args = append(args, boot...)
-    args = append(args, []string {"-nographic", "-m", "2G", "-device", "isa-debug-exit"}...)
+    args = append(args, []string {"-display","none","-serial", "stdio" "-m", "2G", "-device", "isa-debug-exit"}...)
     args = append(args, storage...)
     args = append(args, net...)
     args = append(args, "-enable-kvm")
