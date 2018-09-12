@@ -8,7 +8,7 @@ import ("fmt"
         "io"
         "github.com/spf13/cobra"
         "path/filepath"
-      )
+)
 
 func copy(src, dst string) error {
     in, err := os.Open(src)
@@ -56,11 +56,11 @@ func panicOnError(err error) {
 
 func  runCommandHandler(cmd *cobra.Command, args[] string) {
    //  prepare manifest file
+   fmt.Println("writing filesystem manifest...")
    var elfname = filepath.Base(args[0])
    var extension = filepath.Ext(elfname)
    elfname = elfname[0:len(elfname)-len(extension)]
    elfmanifest := fmt.Sprintf(manifest, kernelImg , args[0], elfname)
-   fmt.Println(elfmanifest)
   
    // invoke mkfs to create the filesystem ie kernel + elf image
    mkfs := exec.Command("./mkfs", mergedImg)
@@ -80,13 +80,13 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
    fd, err := os.Create(finalImg)
    defer fd.Close()
    panicOnError(err)
-   
+   fmt.Println("creating bootable image...")
    catcmd := exec.Command("cat", bootImg, mergedImg)
    catcmd.Stdout = fd
    err = catcmd.Start();
    panicOnError(err) 
    catcmd.Wait()
-
+   fmt.Printf("booting %s ...\n", finalImg)
    startHypervisor(finalImg)
 }
 
@@ -104,7 +104,7 @@ func (bc *bytesWrittenCounter) Write(p []byte) (int, error) {
 func (wc bytesWrittenCounter) printProgress() {
   // clear the previous line
   fmt.Printf("\r%s", strings.Repeat(" ", 35))
-  fmt.Printf("\rDownloading... %v complete\n", wc.total)
+  fmt.Printf("\rDownloading... %v complete", wc.total)
 }
 
 func downloadFile(filepath string, url string) error {
@@ -158,7 +158,7 @@ func downloadImages() {
     err = downloadFile("staging/stage3",fmt.Sprintf(bucketBaseUrl, "stage3"))
     panicOnError(err)
   }
-
+  fmt.Println()
 }
 
 func main(){
