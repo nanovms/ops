@@ -32,6 +32,9 @@ func (q *qemu) addNetworkDevice(n netdev) {
 }
 
 func (q *qemu) start(image string) error {
+    // TODO: https://github.com/deferpanic/uniboot/issues/31	
+    err := copy(finalImg,"image2");	
+    panicOnError(err)
     args := q.Args()
     fmt.Println(args)
     cmd := exec.Command("qemu-system-x86_64", args...)
@@ -51,7 +54,7 @@ func (q *qemu) Args() []string {
     args := []string{}
 
     boot := []string{"-drive", "file=image,format=raw,index=0"}
-    storage := []string{"-drive", "file=image,format=raw,if=virtio"}
+    storage := []string{"-drive", "file=image2,format=raw,if=virtio"}
     net := []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0",
         "-netdev", "tap,id=n0,ifname=tap0,script=no,downscript=no"}
     display := []string{"-display", "none", "-serial", "stdio"}
