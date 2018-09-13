@@ -57,7 +57,7 @@ func (q *qemu) Args() []string {
     display := []string{"-display", "none", "-serial", "stdio"}
     args = append(args, boot...)
     args = append(args, display...)
-    args = append(args, []string{"-m", "2G", "-device", "isa-debug-exit"}...)
+    args = append(args, []string{"-nodefaults", "-no-reboot", "-m", "2G", "-device", "isa-debug-exit"}...)
     args = append(args, storage...)
     args = append(args, net...)
     args = append(args, "-enable-kvm")
