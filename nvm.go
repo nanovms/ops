@@ -60,7 +60,7 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
    var elfname = filepath.Base(args[0])
    var extension = filepath.Ext(elfname)
    elfname = elfname[0:len(elfname)-len(extension)]
-   elfmanifest := fmt.Sprintf(manifest, kernelImg , args[0], elfname)
+   elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, args[0], elfname)
   
    // invoke mkfs to create the filesystem ie kernel + elf image
    mkfs := exec.Command("./mkfs", mergedImg)

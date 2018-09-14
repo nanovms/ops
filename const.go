@@ -5,7 +5,7 @@ const manifest string = `(
     #64 bit elf to boot from host
     children:(kernel:(contents:(host:%v))
               #user program
-              hws:(contents:(host:%v)))
+              %v:(contents:(host:%v)))
     # filesystem path to elf for kernel to run
     program:/%v
     fault:t
