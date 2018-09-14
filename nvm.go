@@ -8,6 +8,7 @@ import ("fmt"
         "io"
         "github.com/spf13/cobra"
         "path/filepath"
+        "strconv"
 )
 
 func copy(src, dst string) error {
@@ -161,15 +162,54 @@ func downloadImages() {
   fmt.Println()
 }
 
+func runningAsRoot() bool {
+  cmd := exec.Command("id", "-u")
+  output, _ := cmd.Output()
+  i, _ := strconv.Atoi(string(output[:len(output)-1]))
+  return i == 0
+}
+
+func  configCommandHandler(cmd *cobra.Command, args[] string) {
+   if !runningAsRoot() {
+     fmt.Println("config command needs root permission")
+     return
+   }
+   if err := setupBridgeNetwork(); err != nil {
+     panic(err)
+   }
+}
+
+func  resetCommandHandler(cmd *cobra.Command, args[] string) {
+  if !runningAsRoot() {
+    fmt.Println("reset command needs root permission")
+    return
+  }
+  if err := resetBridgeNetwork(); err != nil{
+    panic(err)
+  }
+}
+
 func main(){
-    var cmdPrint = &cobra.Command {
+  var cmdPrint = &cobra.Command {
         Use:   "run [ELF file]",
         Short: "run ELF as unikernel",
         Args: cobra.MinimumNArgs(1),
         Run: runCommandHandler,
-    }
+  }
+  var cmdConfig = &cobra.Command {
+      Use:   "config",
+      Short: "configure bridge network",
+      Run: configCommandHandler,
+  }
+  var cmdReset = &cobra.Command {
+    Use:   "reset",
+    Short: "reset bridge network",
+    Run: resetCommandHandler,
+  }
   var rootCmd = &cobra.Command{Use: "nvm"}
   rootCmd.AddCommand(cmdPrint)
+  rootCmd.AddCommand(cmdConfig)
+  rootCmd.AddCommand(cmdReset)
   downloadImages()
   rootCmd.Execute()
 }

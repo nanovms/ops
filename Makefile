@@ -20,3 +20,4 @@ run:
 	./$(BINARY_NAME)
 deps:
 	$(GOGET) github.com/spf13/cobra
+	$(GOGET) github.com/vishvananda/netlink
