@@ -21,3 +21,5 @@ run:
 deps:
 	$(GOGET) github.com/spf13/cobra
 	$(GOGET) github.com/vishvananda/netlink
+	$(GOGET) github.com/jstemmer/go-junit-report
+
