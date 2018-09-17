@@ -169,24 +169,24 @@ func runningAsRoot() bool {
   return i == 0
 }
 
-func  configCommandHandler(cmd *cobra.Command, args[] string) {
+func  netCommandHandler(cmd *cobra.Command, args[] string) {
    if !runningAsRoot() {
-     fmt.Println("config command needs root permission")
+     fmt.Println("net command needs root permission")
      return
    }
-   if err := setupBridgeNetwork(); err != nil {
-     panic(err)
-   }
-}
-
-func  resetCommandHandler(cmd *cobra.Command, args[] string) {
-  if !runningAsRoot() {
-    fmt.Println("reset command needs root permission")
+   if len(args) < 1 {
+    fmt.Println("Not enough arguments.") 
     return
-  }
-  if err := resetBridgeNetwork(); err != nil{
-    panic(err)
-  }
+   }
+   if args[0] == "setup" {
+    if err := setupBridgeNetwork(); err != nil {
+      panic(err)
+    }  
+   } else {
+    if err := resetBridgeNetwork(); err != nil {
+      panic(err)
+    }
+   }
 }
 
 func main(){
@@ -197,19 +197,15 @@ func main(){
         Run: runCommandHandler,
   }
   var cmdConfig = &cobra.Command {
-      Use:   "config",
+      Use:   "net",
+      Args : cobra.OnlyValidArgs,
+      ValidArgs : []string {"setup", "reset"},
       Short: "configure bridge network",
-      Run: configCommandHandler,
-  }
-  var cmdReset = &cobra.Command {
-    Use:   "reset",
-    Short: "reset bridge network",
-    Run: resetCommandHandler,
+      Run: netCommandHandler,
   }
   var rootCmd = &cobra.Command{Use: "nvm"}
   rootCmd.AddCommand(cmdPrint)
   rootCmd.AddCommand(cmdConfig)
-  rootCmd.AddCommand(cmdReset)
   downloadImages()
   rootCmd.Execute()
 }
