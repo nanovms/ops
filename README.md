@@ -1,5 +1,7 @@
 # Nanovms Command Line Interface
 
+[![CircleCI](https://circleci.com/gh/nanovms/nvm.svg?style=svg)](https://circleci.com/gh/nanovms/nvm)
+
 Interactive command line interface for interacting with Nanovms Unikernel. 
 
 # Building
