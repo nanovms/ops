@@ -4,6 +4,8 @@ jobs:
     docker:
       - image: circleci/golang:1.9
     working_directory: /go/src/github.com/nanovms/nvm
+    environment:
+      TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
       - run: make deps
