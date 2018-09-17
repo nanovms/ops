@@ -10,8 +10,8 @@ Interactive command line interface for interacting with Nanovms Unikernel.
     - `make build`
 
 # Setting up bridge network
-`sudo nvm config`
+`sudo nvm net setup`
 # Package and Run your app as Unikernel
 `nvm run <ELFBinary>`
 # Reset bridge network
-`sudo nvm reset`
+`sudo nvm net reset`
