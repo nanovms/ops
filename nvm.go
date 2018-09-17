@@ -8,6 +8,7 @@ import ("fmt"
         "io"
         "github.com/spf13/cobra"
         "path/filepath"
+        "strconv"
 )
 
 func copy(src, dst string) error {
@@ -60,7 +61,7 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
    var elfname = filepath.Base(args[0])
    var extension = filepath.Ext(elfname)
    elfname = elfname[0:len(elfname)-len(extension)]
-   elfmanifest := fmt.Sprintf(manifest, kernelImg , args[0], elfname)
+   elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, args[0], elfname)
   
    // invoke mkfs to create the filesystem ie kernel + elf image
    mkfs := exec.Command("./mkfs", mergedImg)
@@ -161,15 +162,50 @@ func downloadImages() {
   fmt.Println()
 }
 
+func runningAsRoot() bool {
+  cmd := exec.Command("id", "-u")
+  output, _ := cmd.Output()
+  i, _ := strconv.Atoi(string(output[:len(output)-1]))
+  return i == 0
+}
+
+func  netCommandHandler(cmd *cobra.Command, args[] string) {
+   if !runningAsRoot() {
+     fmt.Println("net command needs root permission")
+     return
+   }
+   if len(args) < 1 {
+    fmt.Println("Not enough arguments.") 
+    return
+   }
+   if args[0] == "setup" {
+    if err := setupBridgeNetwork(); err != nil {
+      panic(err)
+    }  
+   } else {
+    if err := resetBridgeNetwork(); err != nil {
+      panic(err)
+    }
+   }
+}
+
 func main(){
-    var cmdPrint = &cobra.Command {
+  var cmdPrint = &cobra.Command {
         Use:   "run [ELF file]",
         Short: "run ELF as unikernel",
         Args: cobra.MinimumNArgs(1),
         Run: runCommandHandler,
-    }
+  }
+  var cmdConfig = &cobra.Command {
+      Use:   "net",
+      Args : cobra.OnlyValidArgs,
+      ValidArgs : []string {"setup", "reset"},
+      Short: "configure bridge network",
+      Run: netCommandHandler,
+  }
   var rootCmd = &cobra.Command{Use: "nvm"}
   rootCmd.AddCommand(cmdPrint)
+  rootCmd.AddCommand(cmdConfig)
   downloadImages()
   rootCmd.Execute()
 }
