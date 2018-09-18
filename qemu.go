@@ -78,7 +78,9 @@ func (q *qemu) Args(port int) []string {
     args = append(args, []string{"-nodefaults", "-no-reboot", "-m", "2G", "-device", "isa-debug-exit"}...)
     args = append(args, storage...)
     args = append(args, net...)
-    args = append(args, "-enable-kvm")
+    if port <= 0 {
+        args = append(args, "-enable-kvm")
+    }
     return args
 }
 
