@@ -1,14 +1,18 @@
 package main
 import (
     "github.com/vishvananda/netlink"
+    "fmt"
     "net"
-    "os/exec"
     "errors"
+    "crypto/rand"
+    "github.com/d2g/dhcp4"
+    "github.com/d2g/dhcp4client"
 )
 
 // TODO: Remove hard coding
 const bridgeName string = "br0"
 const tapName string = "tap0"
+const macAddr string = "08-00-27-00-A8-E8"
 
 func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
     // create a bridge named br0
@@ -68,13 +72,18 @@ func findFirstActiveAdapter() (*net.Interface, error) {
     return eth0, nil
 }
 
-// TODO : this is not portable.
 func assignIP(bridge *netlink.Bridge) error {
-    args := []string{"-v",bridge.Name}
-    cmd := exec.Command("dhclient", args...)
-    if err := cmd.Run(); err != nil {
+    var err error
+    ip, err := dhcpAcquireIPAddress(macAddr)
+    if err != nil {
         return err
     }
+    addr, err := netlink.ParseAddr(fmt.Sprintf("%v/%v", ip, 24))
+    if err != nil {
+        panic(err)
+        return err
+    }
+    netlink.AddrAdd(bridge, addr)
     return nil
 }
 
@@ -129,4 +138,58 @@ func resetBridgeNetwork() error {
         return err
     }
     return nil
+}
+
+func randomMacAddress() net.HardwareAddr {
+	mac := make([]byte, 6)
+	rand.Read(mac)
+	// local bit
+	mac[0] |= 2
+	return net.HardwareAddr{mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]}
+}
+
+func  dhcpAcquireIPAddress(mac string) (string, error) {
+    var err error
+    // we might need to cache mac before we can
+    // use random mac.
+    //m :=  randomMacAddress()
+    m, _ := net.ParseMAC(mac)
+    //Create a connection to use
+	c, err := dhcp4client.NewPacketSock(2)
+	if err != nil {
+        return "", err
+	}
+	defer c.Close()
+
+	dhcpClient, err := dhcp4client.New(dhcp4client.HardwareAddr(m), dhcp4client.Connection(c))
+	if err != nil {
+        return "", err
+    }
+	defer dhcpClient.Close()
+
+	discoveryPacket, err := dhcpClient.SendDiscoverPacket()
+	if err != nil {
+        return "", err
+	}
+
+	offerPacket, err := dhcpClient.GetOffer(&discoveryPacket)
+	if err != nil {
+		return "", err
+	}
+
+	requestPacket, err := dhcpClient.SendRequest(&offerPacket)
+	if err != nil {
+        return "", err
+    }
+
+	acknowledgementpacket, err := dhcpClient.GetAcknowledgement(&requestPacket)
+	if err != nil {
+        return "", err
+    }
+
+	acknowledgementOptions := acknowledgementpacket.ParseOptions()
+	if dhcp4.MessageType(acknowledgementOptions[dhcp4.OptionDHCPMessageType][0]) != dhcp4.ACK {
+		return "", errors.New("ACK not received")
+	}
+    return acknowledgementpacket.YIAddr().String(), nil
 }
