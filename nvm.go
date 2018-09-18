@@ -39,11 +39,11 @@ func checkExists(key string) bool {
     return true 
 }
 
-func startHypervisor(image string){
+func startHypervisor(image string, port int){
   for k := range hypervisors {
     if checkExists(k) {
       hypervisor := hypervisors[k]()
-      hypervisor.start(image)
+      hypervisor.start(image, port)
       break
     }
   }
@@ -56,6 +56,9 @@ func panicOnError(err error) {
 }
 
 func  runCommandHandler(cmd *cobra.Command, args[] string) {
+   // download images if we haven't yet.
+   downloadImages()
+   
    //  prepare manifest file
    fmt.Println("writing filesystem manifest...")
    var elfname = filepath.Base(args[0])
@@ -88,7 +91,7 @@ func  runCommandHandler(cmd *cobra.Command, args[] string) {
    panicOnError(err) 
    catcmd.Wait()
    fmt.Printf("booting %s ...\n", finalImg)
-   startHypervisor(finalImg)
+   startHypervisor(finalImg, port)
 }
 
 type bytesWrittenCounter struct {
@@ -145,7 +148,7 @@ func downloadImages() {
   }
 
   // make mkfs executable
-  err = os.Chmod("mkfs",0755)
+  err = os.Chmod("mkfs",0775)
   if err != nil {
       panicOnError(err)
   }
@@ -189,13 +192,18 @@ func  netCommandHandler(cmd *cobra.Command, args[] string) {
    }
 }
 
+// better way?
+var port int
 func main(){
-  var cmdPrint = &cobra.Command {
+  var cmdRun = &cobra.Command {
         Use:   "run [ELF file]",
         Short: "run ELF as unikernel",
         Args: cobra.MinimumNArgs(1),
         Run: runCommandHandler,
   }
+ 
+  cmdRun.Flags().IntVarP(&port, "port", "p", -1, "user mode networking")
+  
   var cmdConfig = &cobra.Command {
       Use:   "net",
       Args : cobra.OnlyValidArgs,
@@ -204,8 +212,7 @@ func main(){
       Run: netCommandHandler,
   }
   var rootCmd = &cobra.Command{Use: "nvm"}
-  rootCmd.AddCommand(cmdPrint)
+  rootCmd.AddCommand(cmdRun)
   rootCmd.AddCommand(cmdConfig)
-  downloadImages()
   rootCmd.Execute()
 }
