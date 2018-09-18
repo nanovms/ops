@@ -8,6 +8,7 @@ jobs:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
+      - run: sudo apt-get install qemu
       - run: make deps
       - run: mkdir -p $TEST_RESULTS
       - run:
