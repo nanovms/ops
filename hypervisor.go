@@ -2,7 +2,7 @@ package main
 
 // Hypervisor interface
 type Hypervisor interface {
-    start(string) error
+    start(string, int) error
 }
 
 // available hypervisors

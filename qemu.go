@@ -31,11 +31,11 @@ func (q *qemu) addNetworkDevice(n netdev) {
 
 }
 
-func (q *qemu) start(image string) error {
+func (q *qemu) start(image string , port int) error {
     // TODO: https://github.com/deferpanic/uniboot/issues/31	
     err := copy(finalImg,"image2");	
     panicOnError(err)
-    args := q.Args()
+    args := q.Args(port)
     fmt.Println(args)
     cmd := exec.Command("qemu-system-x86_64", args...)
     cmd.Stdout = os.Stdout
@@ -49,14 +49,22 @@ func (q *qemu) start(image string) error {
     return nil
 }
 
-func (q *qemu) Args() []string {
+func (q *qemu) Args(port int) []string {
     // TODO : this should come from q.drives and ifaces
     args := []string{}
 
     boot := []string{"-drive", "file=image,format=raw,index=0"}
     storage := []string{"-drive", "file=image2,format=raw,if=virtio"}
-    net := []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0",
+    var net []string
+    if port > 0 {
+        // hostfwd=tcp::8080-:8080
+        portfw := fmt.Sprintf("hostfwd=tcp::%v-:%v", port, port)
+        net = []string{"-device", "virtio-net,netdev=n0","-netdev", "user,id=n0," + portfw}
+      
+    } else {
+        net = []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0",
         "-netdev", "tap,id=n0,ifname=tap0,script=no,downscript=no"}
+    }
     display := []string{"-display", "none", "-serial", "stdio"}
     args = append(args, boot...)
     args = append(args, display...)
