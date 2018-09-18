@@ -19,6 +19,7 @@ type netdev struct {
 }
 
 type qemu struct {
+    cmd *exec.Cmd
     drives []drive
     ifaces []netdev
 }
@@ -31,18 +32,24 @@ func (q *qemu) addNetworkDevice(n netdev) {
 
 }
 
+func (q *qemu) stop() {
+    if q.cmd != nil {
+        q.cmd.Process.Kill()
+    }
+}
+
 func (q *qemu) start(image string , port int) error {
     // TODO: https://github.com/deferpanic/uniboot/issues/31	
     err := copy(finalImg,"image2");	
     panicOnError(err)
     args := q.Args(port)
     fmt.Println(args)
-    cmd := exec.Command("qemu-system-x86_64", args...)
-    cmd.Stdout = os.Stdout
-    cmd.Stdin = os.Stdin
-    cmd.Stderr = os.Stderr
+    q.cmd = exec.Command("qemu-system-x86_64", args...)
+    q.cmd.Stdout = os.Stdout
+    q.cmd.Stdin = os.Stdin
+    q.cmd.Stderr = os.Stderr
 
-    if err := cmd.Run(); err != nil {
+    if err := q.cmd.Run(); err != nil {
         fmt.Println(err)
         return err
     }
