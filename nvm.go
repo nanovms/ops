@@ -55,41 +55,44 @@ func panicOnError(err error) {
   }
 }
 
+func buildImage(args[] string) {
+  //  prepare manifest file
+  fmt.Println("writing filesystem manifest...")
+  var elfname = filepath.Base(args[0])
+  var extension = filepath.Ext(elfname)
+  elfname = elfname[0:len(elfname)-len(extension)]
+  elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, args[0], elfname)
+
+  // invoke mkfs to create the filesystem ie kernel + elf image
+  mkfs := exec.Command("./mkfs", mergedImg)
+  stdin, err := mkfs.StdinPipe()
+  panicOnError(err)
+
+  _, err = io.WriteString(stdin, elfmanifest)
+  panicOnError(err)
+
+  out, err := mkfs.CombinedOutput()
+  if err != nil {
+    fmt.Printf("%s\n", out)
+    panic(err)
+  }
+
+  // produce final image, boot + kernel + elf
+  fd, err := os.Create(finalImg)
+  defer fd.Close()
+  panicOnError(err)
+  fmt.Println("creating bootable image...")
+  catcmd := exec.Command("cat", bootImg, mergedImg)
+  catcmd.Stdout = fd
+  err = catcmd.Start();
+  panicOnError(err) 
+  catcmd.Wait()
+}
+
 func  runCommandHandler(cmd *cobra.Command, args[] string) {
    // download images if we haven't yet.
    downloadImages()
-   
-   //  prepare manifest file
-   fmt.Println("writing filesystem manifest...")
-   var elfname = filepath.Base(args[0])
-   var extension = filepath.Ext(elfname)
-   elfname = elfname[0:len(elfname)-len(extension)]
-   elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, args[0], elfname)
-  
-   // invoke mkfs to create the filesystem ie kernel + elf image
-   mkfs := exec.Command("./mkfs", mergedImg)
-   stdin, err := mkfs.StdinPipe()
-   panicOnError(err)
-   
-   _, err = io.WriteString(stdin, elfmanifest)
-   panicOnError(err)
-
-   out, err := mkfs.CombinedOutput()
-   if err != nil {
-     fmt.Printf("%s\n", out)
-     panic(err)
-   }
-
-   // produce final image, boot + kernel + elf
-   fd, err := os.Create(finalImg)
-   defer fd.Close()
-   panicOnError(err)
-   fmt.Println("creating bootable image...")
-   catcmd := exec.Command("cat", bootImg, mergedImg)
-   catcmd.Stdout = fd
-   err = catcmd.Start();
-   panicOnError(err) 
-   catcmd.Wait()
+   buildImage(args)
    fmt.Printf("booting %s ...\n", finalImg)
    startHypervisor(finalImg, port)
 }
