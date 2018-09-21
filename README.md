@@ -21,6 +21,3 @@ Interactive command line interface for interacting with Nanovms Unikernel.
     nvm run <ELFBinary>
     OR
     nvm run -p <port> <ELFBinary>
-
-
-
