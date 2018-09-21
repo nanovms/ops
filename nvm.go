@@ -89,12 +89,15 @@ func buildImage(args[] string) {
   catcmd.Wait()
 }
 
-func  runCommandHandler(cmd *cobra.Command, args[] string) {
-   // download images if we haven't yet.
-   downloadImages()
-   buildImage(args)
+func runCommandHandler(cmd *cobra.Command, args[] string) {
+   buildCommandHandler(cmd, args)
    fmt.Printf("booting %s ...\n", finalImg)
    startHypervisor(finalImg, port)
+}
+
+func buildCommandHandler(cmd *cobra.Command, args[] string) {
+  downloadImages()
+  buildImage(args)
 }
 
 type bytesWrittenCounter struct {
@@ -207,15 +210,24 @@ func main(){
  
   cmdRun.Flags().IntVarP(&port, "port", "p", -1, "user mode networking")
   
-  var cmdConfig = &cobra.Command {
+  var cmdNet = &cobra.Command {
       Use:   "net",
       Args : cobra.OnlyValidArgs,
       ValidArgs : []string {"setup", "reset"},
       Short: "configure bridge network",
       Run: netCommandHandler,
   }
+  
+  var cmdBuild = &cobra.Command {
+    Use:   "build [ELF file]",
+    Short: "build an image from ELF",
+    Args: cobra.MinimumNArgs(1),
+    Run: buildCommandHandler,
+  }
+
   var rootCmd = &cobra.Command{Use: "nvm"}
   rootCmd.AddCommand(cmdRun)
-  rootCmd.AddCommand(cmdConfig)
+  rootCmd.AddCommand(cmdNet)
+  rootCmd.AddCommand(cmdBuild)
   rootCmd.Execute()
 }
