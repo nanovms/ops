@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/nanovms/nvm/lepton"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,7 @@ func TestDownloadImages(t *testing.T) {
 	os.Remove("mkfs")
 	os.Remove("staging/boot")
 	os.Remove("staging/stage3")
-	downloadImages()
+	api.DownloadImages(callback{})
 
 	if _, err := os.Stat("staging/boot"); os.IsNotExist(err) {
 		t.Errorf("staging/boot file not found")
@@ -54,12 +55,12 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 
 // TODO
 func TestStartHypervisor(t *testing.T) {
-	downloadImages()
-	buildImage([]string{"./data/webs"})
+	api.DownloadImages(callback{})
+	api.BuildImage("./data/webs", api.FinalImg)
 	var hypervisor Hypervisor
 	go func() {
 		hypervisor = hypervisors["qemu-system-x86_64"]()
-		hypervisor.start(finalImg, 8080)
+		hypervisor.start(api.FinalImg, 8080)
 	}()
 	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://127.0.0.1:8080")
