@@ -1,4 +1,4 @@
-package main
+package lepton
 
 // file system manifest
 const manifest string = `(
@@ -20,6 +20,6 @@ const kernelImg string = "staging/stage3"
 // kernel + ELF image
 const mergedImg string = "tempimage"
 // final bootable image
-const finalImg string = "image"
+const FinalImg string = "image"
 
 const bucketBaseUrl string = "https://storage.googleapis.com/uniboot/%v"

@@ -39,9 +39,6 @@ func (q *qemu) stop() {
 }
 
 func (q *qemu) start(image string , port int) error {
-    // TODO: https://github.com/deferpanic/uniboot/issues/31	
-    err := copy(finalImg,"image2");	
-    panicOnError(err)
     args := q.Args(port)
     fmt.Println(args)
     q.cmd = exec.Command("qemu-system-x86_64", args...)
@@ -61,7 +58,7 @@ func (q *qemu) Args(port int) []string {
     args := []string{}
 
     boot := []string{"-drive", "file=image,format=raw,index=0"}
-    storage := []string{"-drive", "file=image2,format=raw,if=virtio"}
+    storage := []string{"-drive", "file=image,format=raw,if=virtio"}
     var net []string
     if port > 0 {
         // hostfwd=tcp::8080-:8080
