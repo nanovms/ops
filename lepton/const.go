@@ -15,10 +15,13 @@ const manifest string = `(
 
 // boot loader
 const bootImg string = "staging/boot"
+
 // kernel
 const kernelImg string = "staging/stage3"
+
 // kernel + ELF image
 const mergedImg string = "tempimage"
+
 // final bootable image
 const FinalImg string = "image"
 

@@ -1,147 +1,150 @@
 package main
 
-import ("fmt"
-        "os"
-        "strings"
-        "os/exec"
-        "io"
-        "github.com/spf13/cobra"
-        "strconv"
-        api "github.com/nanovms/nvm/lepton"
+import (
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+
+	api "github.com/nanovms/nvm/lepton"
+	"github.com/spf13/cobra"
 )
 
 func copy(src, dst string) error {
-    in, err := os.Open(src)
-    if err != nil {
-        return err
-    }
-    defer in.Close()
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
 
-    out, err := os.Create(dst)
-    if err != nil {
-        return err
-    }
-    defer out.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
 
-    _, err = io.Copy(out, in)
-    if err != nil {
-        return err
-    }
-    return out.Close()
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
 
 func checkExists(key string) bool {
-    _, err := exec.LookPath(key)
-    if err != nil {
-        return false
-    }
-    return true 
+	_, err := exec.LookPath(key)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
-func startHypervisor(image string, port int){
-  for k := range hypervisors {
-    if checkExists(k) {
-      hypervisor := hypervisors[k]()
-      hypervisor.start(image, port)
-      break
-    }
-  }
+func startHypervisor(image string, port int) {
+	for k := range hypervisors {
+		if checkExists(k) {
+			hypervisor := hypervisors[k]()
+			hypervisor.start(image, port)
+			break
+		}
+	}
 }
 
 func panicOnError(err error) {
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 }
 
-func runCommandHandler(cmd *cobra.Command, args[] string) {
-   buildCommandHandler(cmd, args)
-   fmt.Printf("booting %s ...\n", api.FinalImg)
-   startHypervisor(api.FinalImg, port)
+func runCommandHandler(cmd *cobra.Command, args []string) {
+	buildCommandHandler(cmd, args)
+	fmt.Printf("booting %s ...\n", api.FinalImg)
+	startHypervisor(api.FinalImg, port)
 }
 
-func buildCommandHandler(cmd *cobra.Command, args[] string) {
-  var err error
-  err = api.DownloadImages(Callback{})
-  panicOnError(err)
-  err = api.BuildImage(args[0], api.FinalImg)
-  panicOnError(err)
+func buildCommandHandler(cmd *cobra.Command, args []string) {
+	var err error
+	err = api.DownloadImages(callback{})
+	panicOnError(err)
+	err = api.BuildImage(args[0], api.FinalImg)
+	panicOnError(err)
 }
 
-type Callback struct {
-  total uint64
+type callback struct {
+	total uint64
 }
 
-func (bc Callback) Write(p []byte) (int, error) {
-  n := len(p)
-  bc.total += uint64(n)
-  bc.printProgress()
-  return n, nil
+func (bc callback) Write(p []byte) (int, error) {
+	n := len(p)
+	bc.total += uint64(n)
+	bc.printProgress()
+	return n, nil
 }
 
-func (wc Callback) printProgress() {
-  // clear the previous line
-  fmt.Printf("\r%s", strings.Repeat(" ", 35))
-  fmt.Printf("\rDownloading... %v complete", wc.total)
+func (bc callback) printProgress() {
+	// clear the previous line
+	fmt.Printf("\r%s", strings.Repeat(" ", 35))
+	fmt.Printf("\rDownloading... %v complete", bc.total)
 }
 
 func runningAsRoot() bool {
-  cmd := exec.Command("id", "-u")
-  output, _ := cmd.Output()
-  i, _ := strconv.Atoi(string(output[:len(output)-1]))
-  return i == 0
+	cmd := exec.Command("id", "-u")
+	output, _ := cmd.Output()
+	i, _ := strconv.Atoi(string(output[:len(output)-1]))
+	return i == 0
 }
 
-func  netCommandHandler(cmd *cobra.Command, args[] string) {
-   if !runningAsRoot() {
-     fmt.Println("net command needs root permission")
-     return
-   }
-   if len(args) < 1 {
-    fmt.Println("Not enough arguments.") 
-    return
-   }
-   if args[0] == "setup" {
-    if err := setupBridgeNetwork(); err != nil {
-      panic(err)
-    }  
-   } else {
-    if err := resetBridgeNetwork(); err != nil {
-      panic(err)
-    }
-   }
+func netCommandHandler(cmd *cobra.Command, args []string) {
+	if !runningAsRoot() {
+		fmt.Println("net command needs root permission")
+		return
+	}
+	if len(args) < 1 {
+		fmt.Println("Not enough arguments.")
+		return
+	}
+	if args[0] == "setup" {
+		if err := setupBridgeNetwork(); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := resetBridgeNetwork(); err != nil {
+			panic(err)
+		}
+	}
 }
 
 // better way?
 var port int
-func main(){
-  var cmdRun = &cobra.Command {
-        Use:   "run [ELF file]",
-        Short: "run ELF as unikernel",
-        Args: cobra.MinimumNArgs(1),
-        Run: runCommandHandler,
-  }
- 
-  cmdRun.Flags().IntVarP(&port, "port", "p", -1, "user mode networking")
-  
-  var cmdNet = &cobra.Command {
-      Use:   "net",
-      Args : cobra.OnlyValidArgs,
-      ValidArgs : []string {"setup", "reset"},
-      Short: "configure bridge network",
-      Run: netCommandHandler,
-  }
-  
-  var cmdBuild = &cobra.Command {
-    Use:   "build [ELF file]",
-    Short: "build an image from ELF",
-    Args: cobra.MinimumNArgs(1),
-    Run: buildCommandHandler,
-  }
 
-  var rootCmd = &cobra.Command{Use: "nvm"}
-  rootCmd.AddCommand(cmdRun)
-  rootCmd.AddCommand(cmdNet)
-  rootCmd.AddCommand(cmdBuild)
-  rootCmd.Execute()
+func main() {
+	var cmdRun = &cobra.Command{
+		Use:   "run [ELF file]",
+		Short: "run ELF as unikernel",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   runCommandHandler,
+	}
+
+	cmdRun.Flags().IntVarP(&port, "port", "p", -1, "user mode networking")
+
+	var cmdNet = &cobra.Command{
+		Use:       "net",
+		Args:      cobra.OnlyValidArgs,
+		ValidArgs: []string{"setup", "reset"},
+		Short:     "configure bridge network",
+		Run:       netCommandHandler,
+	}
+
+	var cmdBuild = &cobra.Command{
+		Use:   "build [ELF file]",
+		Short: "build an image from ELF",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   buildCommandHandler,
+	}
+
+	var rootCmd = &cobra.Command{Use: "nvm"}
+	rootCmd.AddCommand(cmdRun)
+	rootCmd.AddCommand(cmdNet)
+	rootCmd.AddCommand(cmdBuild)
+	rootCmd.Execute()
 }
