@@ -28,7 +28,6 @@ func createFile(filepath string) (*os.File,error) {
 		os.MkdirAll(path, os.ModePerm)
 	}
 	fd, err := os.Create(filepath)
-	defer fd.Close()
 	if err != nil {
 		return nil, err
 	}
