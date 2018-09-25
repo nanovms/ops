@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"path"
 )
 
 // BuildImage builds a unikernel image for user
@@ -19,6 +20,21 @@ func BuildImage(userImage string, bootImage string) error {
 	}
 	return nil
 }
+
+func createFile(filepath string) (*os.File,error) {
+	path := path.Dir(filepath)
+	var _, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		os.MkdirAll(path, os.ModePerm)
+	}
+	fd, err := os.Create(filepath)
+	defer fd.Close()
+	if err != nil {
+		return nil, err
+	}
+	return fd, nil
+}
+
 
 func buildImage(userImage string, bootImage string) error {
 	//  prepare manifest file
@@ -44,7 +60,7 @@ func buildImage(userImage string, bootImage string) error {
 	}
 
 	// produce final image, boot + kernel + elf
-	fd, err := os.Create(FinalImg)
+	fd, err := createFile(FinalImg)
 	defer fd.Close()
 	if err != nil {
 		return err
