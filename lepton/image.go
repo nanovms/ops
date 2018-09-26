@@ -35,7 +35,7 @@ func createFile(filepath string) (*os.File,error) {
 }
 
 
-func buildImage(userImage string, bootImage string) error {
+func buildImage(userImage string, finaImage string) error {
 	//  prepare manifest file
 	var elfname = filepath.Base(userImage)
 	var extension = filepath.Ext(elfname)
@@ -59,7 +59,7 @@ func buildImage(userImage string, bootImage string) error {
 	}
 
 	// produce final image, boot + kernel + elf
-	fd, err := createFile(FinalImg)
+	fd, err := createFile(finaImage)
 	defer fd.Close()
 	if err != nil {
 		return err
@@ -72,6 +72,18 @@ func buildImage(userImage string, bootImage string) error {
 	}
 	catcmd.Wait()
 	return nil
+}
+
+type dummy struct {
+	total uint64
+}
+
+func (bc dummy) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+func DownloadBootImages() error {
+	return DownloadImages(dummy{})
 }
 
 // DownloadImages downloads latest kernel images.
