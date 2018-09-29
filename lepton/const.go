@@ -9,7 +9,7 @@ const manifest string = `(
     # filesystem path to elf for kernel to run
     program:/%v
     fault:t
-    arguments:[webg poppy]
+    arguments:[%v sec third]
     environment:(USER:bobby PWD:/)
 )`
 

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"path"
+	"path/filepath"
 )
 
 // BuildImage builds a unikernel image for user
@@ -21,7 +21,7 @@ func BuildImage(userImage string, bootImage string) error {
 	return nil
 }
 
-func createFile(filepath string) (*os.File,error) {
+func createFile(filepath string) (*os.File, error) {
 	path := path.Dir(filepath)
 	var _, err = os.Stat(path)
 	if os.IsNotExist(err) {
@@ -34,13 +34,12 @@ func createFile(filepath string) (*os.File,error) {
 	return fd, nil
 }
 
-
 func buildImage(userImage string, finaImage string) error {
 	//  prepare manifest file
 	var elfname = filepath.Base(userImage)
 	var extension = filepath.Ext(elfname)
 	elfname = elfname[0 : len(elfname)-len(extension)]
-	elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, userImage, elfname)
+	elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, userImage, elfname, elfname)
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	mkfs := exec.Command("./mkfs", mergedImg)

@@ -59,6 +59,10 @@ func panicOnError(err error) {
 func runCommandHandler(cmd *cobra.Command, args []string) {
 	buildCommandHandler(cmd, args)
 	fmt.Printf("booting %s ...\n", api.FinalImg)
+	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
+	if err != nil {
+		panic(err)
+	}
 	startHypervisor(api.FinalImg, port)
 }
 
@@ -114,9 +118,6 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-// better way?
-var port int
-
 func main() {
 	var cmdRun = &cobra.Command{
 		Use:   "run [ELF file]",
@@ -124,8 +125,8 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   runCommandHandler,
 	}
-
-	cmdRun.Flags().IntVarP(&port, "port", "p", -1, "user mode networking")
+	var port int
+	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
