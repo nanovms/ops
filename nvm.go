@@ -57,7 +57,11 @@ func panicOnError(err error) {
 }
 
 func runCommandHandler(cmd *cobra.Command, args []string) {
-	buildCommandHandler(cmd, args)
+	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
+	if err != nil {
+		panic(err)
+	}
+	buildImages(args[0], force)
 	fmt.Printf("booting %s ...\n", api.FinalImg)
 	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
 	if err != nil {
@@ -66,12 +70,20 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	startHypervisor(api.FinalImg, port)
 }
 
-func buildCommandHandler(cmd *cobra.Command, args []string) {
+func buildImages(userBin string, useLatest bool) {
 	var err error
-	err = api.DownloadImages(callback{})
+	if useLatest {
+		err =  api.DownloadImages(callback{}, api.DevBaseUrl)
+	} else {
+		err =  api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+	}
 	panicOnError(err)
-	err = api.BuildImage(args[0], api.FinalImg)
+	err = api.BuildImage(userBin, api.FinalImg)
 	panicOnError(err)
+}
+
+func buildCommandHandler(cmd *cobra.Command, args []string) {
+	buildImages(args[0], false)
 }
 
 type callback struct {
@@ -126,7 +138,9 @@ func main() {
 		Run:   runCommandHandler,
 	}
 	var port int
+	var force bool
 	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
+	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
