@@ -19,7 +19,7 @@ func TestDownloadImages(t *testing.T) {
 	os.Remove("mkfs")
 	os.Remove("staging/boot")
 	os.Remove("staging/stage3")
-	api.DownloadImages(callback{})
+	api.DownloadBootImages()
 
 	if _, err := os.Stat("staging/boot"); os.IsNotExist(err) {
 		t.Errorf("staging/boot file not found")
@@ -55,7 +55,7 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 
 // TODO
 func TestStartHypervisor(t *testing.T) {
-	api.DownloadImages(callback{})
+	api.DownloadBootImages()
 	api.BuildImage("./data/webs", api.FinalImg)
 	var hypervisor Hypervisor
 	go func() {
