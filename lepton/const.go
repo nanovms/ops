@@ -25,4 +25,5 @@ const mergedImg string = "tempimage"
 // final bootable image
 const FinalImg string = "image"
 
-const bucketBaseUrl string = "https://storage.googleapis.com/uniboot/%v"
+const ReleaseBaseUrl string = "https://storage.googleapis.com/uniboot/release/%v"
+const DevBaseUrl string = "https://storage.googleapis.com/uniboot/%v"

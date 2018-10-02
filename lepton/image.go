@@ -82,18 +82,18 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 func DownloadBootImages() error {
-	return DownloadImages(dummy{})
+	return DownloadImages(dummy{}, ReleaseBaseUrl)
 }
 
 // DownloadImages downloads latest kernel images.
-func DownloadImages(w io.Writer) error {
+func DownloadImages(w io.Writer, baseUrl string) error {
 	var err error
 	if _, err := os.Stat("staging"); os.IsNotExist(err) {
 		os.MkdirAll("staging", 0755)
 	}
 
 	if _, err = os.Stat("./mkfs"); os.IsNotExist(err) {
-		if err = downloadFile("mkfs", fmt.Sprintf(bucketBaseUrl, "mkfs"), w); err != nil {
+		if err = downloadFile("mkfs", fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
 			return err
 		}
 	}
@@ -105,13 +105,13 @@ func DownloadImages(w io.Writer) error {
 	}
 
 	if _, err = os.Stat("staging/boot"); os.IsNotExist(err) {
-		if err = downloadFile("staging/boot", fmt.Sprintf(bucketBaseUrl, "boot"), w); err != nil {
+		if err = downloadFile("staging/boot", fmt.Sprintf(baseUrl, "boot"), w); err != nil {
 			return err
 		}
 	}
 
 	if _, err = os.Stat("staging/stage3"); os.IsNotExist(err) {
-		if err = downloadFile("staging/stage3", fmt.Sprintf(bucketBaseUrl, "stage3"), w); err != nil {
+		if err = downloadFile("staging/stage3", fmt.Sprintf(baseUrl, "stage3"), w); err != nil {
 			return err
 		}
 	}
