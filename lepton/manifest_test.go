@@ -1,75 +1,63 @@
 package lepton
 
 import (
+	"strings"
 	"testing"
 )
 
 const (
-	hw  = "hw:(contents:(host:examples/hw))"
-	lib = "lib:(children:(x86_64-linux-gnu:(children:(libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))ld-2.23.so:(contents:(host:/lib/x86_64-linux-gnu/id-2.23.so))))))"
+	relpath = `hw:(contents:(host:examples/hw))`
+	kernal  = `kernel:(contents:(host:state3/stage3))`
+	lib     = `lib:(children:(x86_64-linux-gnu:(children:` +
+		`(libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))id-2.23.so:` +
+		`(contents:(host:/lib/x86_64-linux-gnu/id-2.23.so))))))`
 )
 
-func TestContentNodeSerialization(t *testing.T) {
-	root := Node{name: "hw", path: "examples/hw"}
-	s := root.String()
-	if s != hw {
-		t.Errorf("Expected:%v Actual:%v", hw, s)
-	}
-}
-
-func TestNodeSerialization(t *testing.T) {
-	root := Node{name: "lib"}
-	root.children = append(root.children, &Node{name: "x86_64-linux-gnu"})
-	root.children[0].children = append(root.children[0].children, &Node{name: "libc.so.6", path: "/lib/x86_64-linux-gnu/libc.so.6"})
-	root.children[0].children = append(root.children[0].children, &Node{name: "ld-2.23.so", path: "/lib/x86_64-linux-gnu/id-2.23.so"})
-	s := root.String()
-	if s != lib {
-		t.Errorf("Expected:%v Actual:%v", hw, s)
-	}
-}
-
-func TestManifestSerialization(t *testing.T) {
+func TestAddKernal(t *testing.T) {
 	m := NewManifest()
-	m.AddDebugFlag("fault", 't')
-	m.AddEnvironmentVariable("USER", "bobby")
-	m.AddEnvironmentVariable("PWD", "/")
-	m.SetProgramPath("/hw")
-	m.AddKernel("stage3/stage3")
-	m.AddLib("/lib/x86_64-linux-gnu/libc.so.6", true)
-	m.AddLib("examples/hw", false)
-	s := m.String()
-	if s != lib {
-		t.Errorf("Expected:%v Actual:%v", hw, s)
+	m.AddKernal("state3/stage3")
+	var sb strings.Builder
+	toString(&m.children, &sb)
+	s := sb.String()
+	if s != kernal {
+		t.Errorf("Expected:%v Actual:%v", kernal, s)
 	}
 }
 
-/*
-Keep it for testing
-(
-    #64 bit elf to boot from host
-    children:(kernel:(contents:(host:stage3/stage3))
-              #user program
-              hw:(contents:(host:examples/hw))
-              lib:(children:(x86_64-linux-gnu:(children:(
-                                                        libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))
-														)
-														(
-                                                        ld-2.23.so:(contents:(host:/lib/x86_64-linux-gnu/id-2.23.so))
-                                                        )
+func TestAddRelativePath(t *testing.T) {
+	m := NewManifest()
+	m.AddRelative("hw", "examples/hw")
+	var sb strings.Builder
+	toString(&m.children, &sb)
+	s := sb.String()
+	if s != relpath {
+		t.Errorf("Expected:%v Actual:%v", relpath, s)
+	}
+}
 
-                                                    )
-                                      )
-                            )
-              lib64:(children:(
-                                ld-linux-x86-64.so.2:(contents:(host:/lib64/ld-linux-x86-64.so.2))
-                             )
-                    )
-             )
+func TestAddLibs(t *testing.T) {
+	m := NewManifest()
+	m.AddLibrary("/lib/x86_64-linux-gnu/libc.so.6")
+	m.AddLibrary("/lib/x86_64-linux-gnu/id-2.23.so")
+	var sb strings.Builder
+	toString(&m.children, &sb)
+	s := sb.String()
+	if s != lib {
+		t.Errorf("Expected:%v Actual:%v", lib, s)
+	}
+}
 
-    # filesystem path to elf for kernel to run
-    program:/hw
-    fault:t
-    arguments:[webg poppy]
-    environment:(USER:bobby PWD:/)
-)
-*/
+func TestSerializeManifest(t *testing.T) {
+	m := NewManifest()
+	m.SetProgramPath("/hws")
+	m.AddKernal("stage3/stage3")
+	m.AddArgument("first")
+	m.AddEnvironmentVariable("var1", "value1")
+	m.AddLibrary("/usr/local/u.so")
+	m.AddLibrary("/usr/local/two.so")
+	s := m.String()
+	// this is bogus
+	if len(s) < 100 {
+		t.Errorf("Unexpected")
+	}
+}

@@ -5,43 +5,31 @@ import (
 	"strings"
 )
 
-// Node represent either a leaf node or a parent node.
-type Node struct {
-	name     string
-	path     string
-	children []*Node
-}
-
 // Manifest represent the filesystem.
 type Manifest struct {
 	sb          strings.Builder
-	root        *Node
+	children    map[string]interface{}
 	program     string
 	args        []string
 	debugFlags  map[string]rune
 	environment map[string]string
 }
 
-func (n *Node) addContentNode(key string, hostpath string) {
-	newnode := Node{name: key, path: hostpath}
-	n.children = append(n.children, &newnode)
-}
-
-// Create a new file manifest
+// NewManifest init
 func NewManifest() *Manifest {
 	return &Manifest{
-		root:        &Node{},
+		children:    make(map[string]interface{}),
 		debugFlags:  make(map[string]rune),
 		environment: make(map[string]string),
 	}
 }
 
-// User program path
+// SetProgramPath sets user program path
 func (m *Manifest) SetProgramPath(path string) {
 	m.program = path
 }
 
-// Any envirnoment variables that need to be set
+// AddEnvironmentVariable adds envirnoment variables
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 	m.environment[name] = value
 }
@@ -57,25 +45,27 @@ func (m *Manifest) AddDebugFlag(name string, value rune) {
 	m.debugFlags[name] = value
 }
 
-// AddKernel adds kernel to root node.
-func (m *Manifest) AddKernel(path string) {
-	m.root.addContentNode("kernel", path)
+// AddKernal the kernel to use
+func (m *Manifest) AddKernal(path string) {
+	m.children["kernel"] = path
 }
 
-// AddLib adds dependent lib to manifest
-func (m *Manifest) AddLib(path string, recur bool) {
-	parts := strings.Split(path, "/")
-	node := m.root
-	if recur {
-		// construct the path
-		for _, p := range parts[:len(parts)-1] {
-			newnode := &Node{name: p}
-			node.children = append(node.children, newnode)
-			node = newnode
+// AddRelative path
+func (m *Manifest) AddRelative(key string, path string) {
+	m.children[key] = path
+}
+
+// AddLibrary to add a dependent library
+func (m *Manifest) AddLibrary(path string) {
+	parts := strings.FieldsFunc(path, func(c rune) bool { return c == '/' })
+	node := m.children
+	for i := 0; i < len(parts)-1; i++ {
+		if _, ok := node[parts[i]]; !ok {
+			node[parts[i]] = make(map[string]interface{})
 		}
+		node = node[parts[i]].(map[string]interface{})
 	}
-	// add the content node as leaf
-	node.addContentNode(parts[len(parts)-1], path)
+	node[parts[len(parts)-1]] = path
 }
 
 // AddUserData adds all files in dir to
@@ -88,14 +78,11 @@ func (m *Manifest) String() string {
 	sb := m.sb
 	sb.WriteRune('(')
 	sb.WriteString("children:(")
-	// children goes here
-	for _, c := range m.root.children {
-		sb.WriteString(c.String())
-		sb.WriteRune('\n')
-	}
+	toString(&m.children, &sb)
 	sb.WriteRune(')')
 
 	//program
+	sb.WriteRune('\n')
 	sb.WriteString("program:")
 	sb.WriteString(m.program)
 	sb.WriteRune('\n')
@@ -137,31 +124,27 @@ func (m *Manifest) String() string {
 	return sb.String()
 }
 
-func nodeToString(n *Node, sb *strings.Builder) {
-	if len(n.children) == 0 {
-		sb.WriteString(n.name)
-		sb.WriteRune(':')
-		sb.WriteRune('(')
-		sb.WriteString("contents:(host:")
-		sb.WriteString(n.path)
-		sb.WriteRune(')')
-		sb.WriteRune(')')
-	} else {
-		sb.WriteString(n.name)
-		sb.WriteRune(':')
-		sb.WriteRune('(')
-		sb.WriteString("children:")
-		sb.WriteRune('(')
-		for _, c := range n.children {
-			nodeToString(c, sb)
+func toString(m *map[string]interface{}, sb *strings.Builder) {
+	for k, v := range *m {
+		value, ok := v.(string)
+		if ok {
+			sb.WriteString(k)
+			sb.WriteRune(':')
+			sb.WriteRune('(')
+			sb.WriteString("contents:(host:")
+			sb.WriteString(value)
+			sb.WriteRune(')')
+			sb.WriteRune(')')
+		} else {
+			sb.WriteString(k)
+			sb.WriteRune(':')
+			sb.WriteRune('(')
+			sb.WriteString("children:(")
+			// recur
+			ch := v.(map[string]interface{})
+			toString(&ch, sb)
+			sb.WriteRune(')')
+			sb.WriteRune(')')
 		}
-		sb.WriteRune(')')
-		sb.WriteRune(')')
 	}
-}
-
-func (n *Node) String() string {
-	var sb strings.Builder
-	nodeToString(n, &sb)
-	return sb.String()
 }
