@@ -34,6 +34,24 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
+func buildManifest(userImage string) (*Manifest, error) {
+
+	m := NewManifest()
+	m.AddUserProgram(userImage)
+	m.AddKernal(kernelImg)
+
+	// run ldd and capture dependencies
+	deps, err := getSharedLibs(userImage)
+	if err != nil {
+		return nil, err
+	}
+	for _, libpath := range deps {
+		m.AddLibrary(libpath)
+	}
+	//
+	return m, nil
+}
+
 func buildImage(userImage string, finaImage string) error {
 	//  prepare manifest file
 	var elfname = filepath.Base(userImage)

@@ -47,9 +47,17 @@ func TestAddLibs(t *testing.T) {
 	}
 }
 
+func TestManifestWithDeps(t *testing.T) {
+	_, err := buildManifest("/home/tijoytom/nanovms/nanos/examples/webg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// TODO : verification
+}
+
 func TestSerializeManifest(t *testing.T) {
 	m := NewManifest()
-	m.SetProgramPath("/hws")
+	m.AddUserProgram("/hws")
 	m.AddKernal("stage3/stage3")
 	m.AddArgument("first")
 	m.AddEnvironmentVariable("var1", "value1")
