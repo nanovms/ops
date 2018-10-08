@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -48,10 +49,11 @@ func TestAddLibs(t *testing.T) {
 }
 
 func TestManifestWithDeps(t *testing.T) {
-	_, err := buildManifest("/home/tijoytom/nanovms/nanos/examples/webg")
+	m, err := buildManifest("../data/webg")
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(m.String())
 	// TODO : verification
 }
 

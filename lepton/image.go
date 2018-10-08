@@ -15,7 +15,19 @@ import (
 // supplied ELF binary.
 func BuildImage(userImage string, bootImage string) error {
 	var err error
-	if err = buildImage(userImage, bootImage); err != nil {
+	if err = buildImage(userImage, bootImage, false); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: Merge the code path with BuildImage.
+// Detect if the binary is dyanmic or not
+// Should be straight forward as detecting if program header
+// has an interpreter.
+func BuildImageDynamic(userImage string, bootImage string) error {
+	var err error
+	if err = buildImage(userImage, bootImage, true); err != nil {
 		return err
 	}
 	return nil
@@ -52,12 +64,22 @@ func buildManifest(userImage string) (*Manifest, error) {
 	return m, nil
 }
 
-func buildImage(userImage string, finaImage string) error {
+func buildImage(userImage string, finaImage string, dynamic bool) error {
 	//  prepare manifest file
-	var elfname = filepath.Base(userImage)
-	var extension = filepath.Ext(elfname)
-	elfname = elfname[0 : len(elfname)-len(extension)]
-	elfmanifest := fmt.Sprintf(manifest, kernelImg, elfname, userImage, elfname, elfname)
+	var elfmanifest string
+	if dynamic {
+		m, err := buildManifest(userImage)
+		if err != nil {
+			return err
+		}
+		elfmanifest = m.String()
+	} else {
+
+		var elfname = filepath.Base(userImage)
+		var extension = filepath.Ext(elfname)
+		elfname = elfname[0 : len(elfname)-len(extension)]
+		elfmanifest = fmt.Sprintf(manifest, kernelImg, elfname, userImage, elfname, elfname)
+	}
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	mkfs := exec.Command("./mkfs", mergedImg)
