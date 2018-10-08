@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -24,9 +25,13 @@ func NewManifest() *Manifest {
 	}
 }
 
-// SetProgramPath sets user program path
-func (m *Manifest) SetProgramPath(path string) {
-	m.program = path
+// AddUserProgram adds user program
+func (m *Manifest) AddUserProgram(imgpath string) {
+	var elfname = filepath.Base(imgpath)
+	var extension = filepath.Ext(elfname)
+	elfname = elfname[0 : len(elfname)-len(extension)]
+	m.children[elfname] = imgpath
+	m.program = path.Join("/", elfname)
 }
 
 // AddEnvironmentVariable adds envirnoment variables

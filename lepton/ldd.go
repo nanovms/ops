@@ -22,8 +22,17 @@ func getSharedLibs(path string) ([]string, error) {
 	scanner := bufio.NewScanner(out)
 	var deps []string
 	cmd.Start()
+	// vsdo is user space mapped, there is no backing lib
+	vsdo := "linux-vdso.so"
 	for scanner.Scan() {
-		parts := strings.Split(scanner.Text(), " ")
+		text := strings.TrimSpace(scanner.Text())
+		if text == "" || strings.HasPrefix(text, vsdo) {
+			continue
+		}
+		parts := strings.Split(text, " ")
+		if strings.HasPrefix(parts[0], vsdo) {
+			continue
+		}
 		deps = append(deps, strings.TrimSpace(parts[len(parts)-2]))
 	}
 	defer out.Close()

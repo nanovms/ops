@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -47,9 +48,18 @@ func TestAddLibs(t *testing.T) {
 	}
 }
 
+func TestManifestWithDeps(t *testing.T) {
+	m, err := buildManifest("../data/webg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(m.String())
+	// TODO : verification
+}
+
 func TestSerializeManifest(t *testing.T) {
 	m := NewManifest()
-	m.SetProgramPath("/hws")
+	m.AddUserProgram("/hws")
 	m.AddKernal("stage3/stage3")
 	m.AddArgument("first")
 	m.AddEnvironmentVariable("var1", "value1")
