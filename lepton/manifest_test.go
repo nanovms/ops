@@ -49,11 +49,10 @@ func TestAddLibs(t *testing.T) {
 }
 
 func TestManifestWithDeps(t *testing.T) {
-	m, err := buildManifest("../../fserver/main")
+	m, err := buildManifest("../data/webg")
 	if err != nil {
 		t.Fatal(err)
 	}
-	m.AddDirectory("../../fserver/static")
 	fmt.Println(m.String())
 }
 
