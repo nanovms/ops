@@ -1,0 +1,1 @@
+body {color: #c0392b}

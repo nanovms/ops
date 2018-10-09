@@ -72,18 +72,20 @@ func (m *Manifest) AddRelative(key string, path string) {
 
 // AddDirectory adds all files in dir to image
 func (m *Manifest) AddDirectory(dir string) error {
-	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		relpath, err := filepath.Rel(m.baseHostPath, p)
-		if err != nil {
-			return err
+		if info.IsDir() {
+			return nil
 		}
-		fspath := path.Join(m.baseVMPath, relpath)
-		//fmt.Println(fspath)
-		//fmt.Print(p)
-		m.AddFile(fspath, p)
+		// if the path is relative then root it to image path
+		fspath := hostpath
+		relpath, err := filepath.Rel(m.baseHostPath, hostpath)
+		if err == nil {
+			fspath = path.Join(m.baseVMPath, relpath)
+		}
+		m.AddFile(fspath, hostpath)
 		return nil
 	})
 	return err

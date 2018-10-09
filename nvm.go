@@ -73,12 +73,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 func buildImages(userBin string, useLatest bool) {
 	var err error
 	if useLatest {
-		err =  api.DownloadImages(callback{}, api.DevBaseUrl)
+		err = api.DownloadImages(callback{}, api.DevBaseUrl)
 	} else {
-		err =  api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+		err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
 	}
 	panicOnError(err)
-	err = api.BuildImage(userBin, api.FinalImg)
+	err = api.BuildImage(userBin, api.FinalImg, nil, nil)
 	panicOnError(err)
 }
 
@@ -139,8 +139,12 @@ func main() {
 	}
 	var port int
 	var force bool
+	var dirs []string
+	var files []string
 	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
+	cmdRun.PersistentFlags().StringArrayVarP(&dirs, "dirs", "d", nil, "dirs to copy")
+	cmdRun.PersistentFlags().StringArrayVarP(&files, "files", "f", nil, "files to copy")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",

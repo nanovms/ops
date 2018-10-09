@@ -54,7 +54,7 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 }
 
 func runHyperVisor(userImage string, expected string, t *testing.T) {
-	err := api.BuildImage(userImage, api.FinalImg)
+	err := api.BuildImage(userImage, api.FinalImg, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,6 +79,33 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	if string(body) != expected {
 		t.Errorf("unexpected response" + string(body))
 	}
+	hypervisor.stop()
+}
+
+func TestImageWithStaticFiles(t *testing.T) {
+	api.DownloadBootImages()
+	err := api.BuildImage("data/main", api.FinalImg, []string{"data/static"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hypervisor Hypervisor
+	go func() {
+		hypervisor = hypervisors["qemu-system-x86_64"]()
+		hypervisor.start(api.FinalImg, 8080)
+	}()
+	time.Sleep(3 * time.Second)
+	resp, err := http.Get("http://localhost:8080/example.html")
+	if err != nil {
+		t.Log(err)
+		t.Errorf("failed to get :8080/example.html")
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Log(err)
+		t.Errorf("ReadAll failed")
+	}
+	fmt.Println(string(body))
 	hypervisor.stop()
 }
 
