@@ -54,7 +54,6 @@ func TestManifestWithDeps(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(m.String())
-	// TODO : verification
 }
 
 func TestSerializeManifest(t *testing.T) {

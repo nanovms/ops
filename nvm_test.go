@@ -53,9 +53,8 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 	return c, buf.String(), err
 }
 
-func TestRunningDynamicImage(t *testing.T) {
-	api.DownloadBootImages()
-	err := api.BuildImageDynamic("./data/webg", api.FinalImg)
+func runHyperVisor(userImage string, expected string, t *testing.T) {
+	err := api.BuildImage(userImage, api.FinalImg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,35 +76,18 @@ func TestRunningDynamicImage(t *testing.T) {
 		t.Errorf("ReadAll failed")
 	}
 
-	if string(body) != "unibooty 0" {
+	if string(body) != expected {
 		t.Errorf("unexpected response" + string(body))
 	}
 	hypervisor.stop()
-
 }
+
+func TestRunningDynamicImage(t *testing.T) {
+	api.DownloadBootImages()
+	runHyperVisor("./data/webg", "unibooty 0", t)
+}
+
 func TestStartHypervisor(t *testing.T) {
 	api.DownloadBootImages()
-	api.BuildImage("./data/webs", api.FinalImg)
-	var hypervisor Hypervisor
-	go func() {
-		hypervisor = hypervisors["qemu-system-x86_64"]()
-		hypervisor.start(api.FinalImg, 8080)
-	}()
-	time.Sleep(3 * time.Second)
-	resp, err := http.Get("http://127.0.0.1:8080")
-	if err != nil {
-		t.Log(err)
-		t.Errorf("failed to get 127.0.0.1:8080")
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Log(err)
-		t.Errorf("ReadAll failed")
-	}
-
-	if string(body) != "unibooty!" {
-		t.Errorf("unexpected response" + string(body))
-	}
-	hypervisor.stop()
+	runHyperVisor("./data/webs", "unibooty!", t)
 }
