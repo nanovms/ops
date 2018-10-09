@@ -15,19 +15,8 @@ import (
 // supplied ELF binary.
 func BuildImage(userImage string, bootImage string) error {
 	var err error
-	if err = buildImage(userImage, bootImage, false); err != nil {
-		return err
-	}
-	return nil
-}
-
-// TODO: Merge the code path with BuildImage.
-// Detect if the binary is dyanmic or not
-// Should be straight forward as detecting if program header
-// has an interpreter.
-func BuildImageDynamic(userImage string, bootImage string) error {
-	var err error
-	if err = buildImage(userImage, bootImage, true); err != nil {
+	isDynamic, err := isDynamicLinked(userImage)
+	if err = buildImage(userImage, bootImage, isDynamic); err != nil {
 		return err
 	}
 	return nil
@@ -73,6 +62,7 @@ func buildImage(userImage string, finaImage string, dynamic bool) error {
 			return err
 		}
 		elfmanifest = m.String()
+		fmt.Println(elfmanifest)
 	} else {
 
 		var elfname = filepath.Base(userImage)

@@ -1,6 +1,8 @@
 package lepton
 
 import (
+	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
@@ -8,12 +10,14 @@ import (
 
 // Manifest represent the filesystem.
 type Manifest struct {
-	sb          strings.Builder
-	children    map[string]interface{}
-	program     string
-	args        []string
-	debugFlags  map[string]rune
-	environment map[string]string
+	sb           strings.Builder
+	baseHostPath string
+	baseVMPath   string
+	children     map[string]interface{}
+	program      string
+	args         []string
+	debugFlags   map[string]rune
+	environment  map[string]string
 }
 
 // NewManifest init
@@ -27,11 +31,17 @@ func NewManifest() *Manifest {
 
 // AddUserProgram adds user program
 func (m *Manifest) AddUserProgram(imgpath string) {
-	var elfname = filepath.Base(imgpath)
-	var extension = filepath.Ext(elfname)
-	elfname = elfname[0 : len(elfname)-len(extension)]
-	m.children[elfname] = imgpath
-	m.program = path.Join("/", elfname)
+	// this is mount point
+	basedir := filepath.Base(filepath.Dir(imgpath))
+	// we dont want to splatter eveything on /
+	if basedir == "." {
+		u, _ := user.Current()
+		basedir = u.Username
+	}
+	m.baseVMPath = basedir
+	m.baseHostPath = filepath.Dir(imgpath)
+	m.program = path.Join("/", basedir, filepath.Base(imgpath))
+	m.AddFile(m.program, imgpath)
 }
 
 // AddEnvironmentVariable adds envirnoment variables
@@ -58,6 +68,37 @@ func (m *Manifest) AddKernal(path string) {
 // AddRelative path
 func (m *Manifest) AddRelative(key string, path string) {
 	m.children[key] = path
+}
+
+// AddDirectory adds all files in dir to image
+func (m *Manifest) AddDirectory(dir string) error {
+	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		relpath, err := filepath.Rel(m.baseHostPath, p)
+		if err != nil {
+			return err
+		}
+		fspath := path.Join(m.baseVMPath, relpath)
+		//fmt.Println(fspath)
+		//fmt.Print(p)
+		m.AddFile(fspath, p)
+		return nil
+	})
+	return err
+}
+
+func (m *Manifest) AddFile(filepath string, hostpath string) {
+	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
+	node := m.children
+	for i := 0; i < len(parts)-1; i++ {
+		if _, ok := node[parts[i]]; !ok {
+			node[parts[i]] = make(map[string]interface{})
+		}
+		node = node[parts[i]].(map[string]interface{})
+	}
+	node[parts[len(parts)-1]] = hostpath
 }
 
 // AddLibrary to add a dependent library
