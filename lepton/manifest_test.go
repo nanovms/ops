@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -36,14 +37,33 @@ func TestAddRelativePath(t *testing.T) {
 	}
 }
 
+type runeSorter []rune
+
+func (s runeSorter) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
+func (s runeSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s runeSorter) Len() int {
+	return len(s)
+}
+
+func sortString(s string) string {
+	r := []rune(s)
+	sort.Sort(runeSorter(r))
+	return string(r)
+}
+
 func TestAddLibs(t *testing.T) {
 	m := NewManifest()
 	m.AddLibrary("/lib/x86_64-linux-gnu/libc.so.6")
 	m.AddLibrary("/lib/x86_64-linux-gnu/id-2.23.so")
 	var sb strings.Builder
 	toString(&m.children, &sb)
-	s := sb.String()
-	if s != lib {
+	s := sortString(sb.String())
+	if s != sortString(lib) {
 		t.Errorf("Expected:%v Actual:%v", lib, s)
 	}
 }

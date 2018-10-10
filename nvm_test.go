@@ -22,7 +22,7 @@ func TestDownloadImages(t *testing.T) {
 	api.DownloadBootImages()
 
 	if _, err := os.Stat(".staging/boot"); os.IsNotExist(err) {
-		t.Errorf("staging/boot file not found")
+		t.Errorf(".staging/boot file not found")
 	}
 
 	if info, err := os.Stat(".staging/mkfs"); os.IsNotExist(err) {
@@ -35,7 +35,7 @@ func TestDownloadImages(t *testing.T) {
 	}
 
 	if _, err := os.Stat(".staging/stage3"); os.IsNotExist(err) {
-		t.Errorf("staging/stage3 file not found")
+		t.Errorf(".staging/stage3 file not found")
 	}
 }
 
