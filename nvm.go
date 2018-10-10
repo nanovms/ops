@@ -80,12 +80,19 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
-
+	if debugflags {
+		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	}
 	buildImages(args[0], force, c)
 	fmt.Printf("booting %s ...\n", api.FinalImg)
 	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
@@ -103,7 +110,7 @@ func buildImages(userBin string, useLatest bool, c *api.Config) {
 		err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
 	}
 	panicOnError(err)
-	err = api.BuildImage(userBin, api.FinalImg, c.Dirs, c.Files, c.Args)
+	err = api.BuildImage(userBin, api.FinalImg, *c)
 	panicOnError(err)
 }
 
@@ -167,10 +174,12 @@ func main() {
 	}
 	var port int
 	var force bool
+	var debugflags bool
 	var args []string
 	var config string
 	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
+	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
 

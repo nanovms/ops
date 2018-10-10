@@ -13,15 +13,11 @@ import (
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
-func BuildImage(userImage string,
-	bootImage string,
-	userdirs []string,
-	userfiles []string,
-	args []string) error {
+func BuildImage(userImage string, bootImage string, c Config) error {
 	var err error
 
 	isDynamic, err := isDynamicLinked(userImage)
-	if err = buildImage(userImage, bootImage, isDynamic, userdirs, userfiles, args); err != nil {
+	if err = buildImage(userImage, bootImage, isDynamic, &c); err != nil {
 		return err
 	}
 	return nil
@@ -58,11 +54,7 @@ func buildManifest(userImage string) (*Manifest, error) {
 	return m, nil
 }
 
-func buildImage(userImage string, finaImage string,
-	dynamic bool,
-	userdirs []string,
-	userfiles []string,
-	args []string) error {
+func buildImage(userImage string, finaImage string, dynamic bool, c *Config) error {
 
 	//  prepare manifest file
 	var elfmanifest string
@@ -71,11 +63,14 @@ func buildImage(userImage string, finaImage string,
 		if err != nil {
 			return err
 		}
-		for _, d := range userdirs {
+		for _, d := range c.Dirs {
 			m.AddDirectory(d)
 		}
-		for _, a := range args {
+		for _, a := range c.Args {
 			m.AddArgument(a)
+		}
+		for _, dbg := range c.Debugflags {
+			m.AddDebugFlag(dbg, 't')
 		}
 		elfmanifest = m.String()
 		fmt.Println(elfmanifest)
