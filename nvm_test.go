@@ -54,7 +54,7 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 }
 
 func runHyperVisor(userImage string, expected string, t *testing.T) {
-	err := api.BuildImage(userImage, api.FinalImg, nil, nil)
+	err := api.BuildImage(userImage, api.FinalImg, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 
 func TestImageWithStaticFiles(t *testing.T) {
 	api.DownloadBootImages()
-	err := api.BuildImage("data/main", api.FinalImg, []string{"data/static"}, nil)
+	err := api.BuildImage("data/main", api.FinalImg, []string{"data/static"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
