@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -56,15 +58,35 @@ func panicOnError(err error) {
 	}
 }
 
+func unWarpConfig(file string) *api.Config {
+	var c api.Config
+	if file != "" {
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(data, &c)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &c
+}
+
 func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
 	if err != nil {
 		panic(err)
 	}
-	cmdargs, _ := cmd.Flags().GetStringArray("args")
 
-	buildImages(args[0], force, cmdargs)
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	cmdargs, _ := cmd.Flags().GetStringArray("args")
+	c := unWarpConfig(config)
+	c.Args = append(c.Args, cmdargs...)
+
+	buildImages(args[0], force, c)
 	fmt.Printf("booting %s ...\n", api.FinalImg)
 	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
 	if err != nil {
@@ -73,7 +95,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	startHypervisor(api.FinalImg, port)
 }
 
-func buildImages(userBin string, useLatest bool, args []string) {
+func buildImages(userBin string, useLatest bool, c *api.Config) {
 	var err error
 	if useLatest {
 		err = api.DownloadImages(callback{}, api.DevBaseUrl)
@@ -81,12 +103,15 @@ func buildImages(userBin string, useLatest bool, args []string) {
 		err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
 	}
 	panicOnError(err)
-	err = api.BuildImage(userBin, api.FinalImg, nil, nil, args)
+	err = api.BuildImage(userBin, api.FinalImg, c.Dirs, c.Files, c.Args)
 	panicOnError(err)
 }
 
 func buildCommandHandler(cmd *cobra.Command, args []string) {
-	buildImages(args[0], false, nil)
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	c := unWarpConfig(config)
+	buildImages(args[0], false, c)
 }
 
 type callback struct {
@@ -143,9 +168,11 @@ func main() {
 	var port int
 	var force bool
 	var args []string
+	var config string
 	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
+	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
@@ -161,6 +188,7 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   buildCommandHandler,
 	}
+	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
 
 	var rootCmd = &cobra.Command{Use: "nvm"}
 	rootCmd.AddCommand(cmdRun)

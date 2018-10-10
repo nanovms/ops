@@ -21,3 +21,29 @@ Interactive command line interface for interacting with Nanovms Unikernel.
     nvm run <ELFBinary>
     OR
     nvm run -p <port> <ELFBinary>
+# Using a config file
+    nvm run -p <port> -c <file> <ELFBinary>
+# Example config file
+    nvm config files are plain JSON, below is an example 
+    {
+        "Args":["one","two"],
+        "Dirs":["myapp/static"]
+    }
+
+    ## File layout on local host machine 
+        -myapp
+            app
+            -static
+                -example.html
+                -stylesheet 
+                    -main.css
+    ## File layout on VM
+        /myapp
+            app
+            /static
+                -example.html
+                /stylesheet
+                    -main.css
+    
+
+
