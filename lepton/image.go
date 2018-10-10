@@ -88,7 +88,7 @@ func buildImage(userImage string, finaImage string,
 	}
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
-	mkfs := exec.Command("./mkfs", mergedImg)
+	mkfs := exec.Command(Mkfs, mergedImg)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
 		return err
@@ -134,30 +134,30 @@ func DownloadBootImages() error {
 // DownloadImages downloads latest kernel images.
 func DownloadImages(w io.Writer, baseUrl string) error {
 	var err error
-	if _, err := os.Stat("staging"); os.IsNotExist(err) {
-		os.MkdirAll("staging", 0755)
+	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
+		os.MkdirAll(".staging", 0755)
 	}
 
-	if _, err = os.Stat("./mkfs"); os.IsNotExist(err) {
-		if err = downloadFile("mkfs", fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
+	if _, err = os.Stat(".staging/mkfs"); os.IsNotExist(err) {
+		if err = downloadFile(".staging/mkfs", fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
 			return err
 		}
 	}
 
 	// make mkfs executable
-	err = os.Chmod("mkfs", 0775)
+	err = os.Chmod(".staging/mkfs", 0775)
 	if err != nil {
 		return err
 	}
 
-	if _, err = os.Stat("staging/boot"); os.IsNotExist(err) {
-		if err = downloadFile("staging/boot", fmt.Sprintf(baseUrl, "boot"), w); err != nil {
+	if _, err = os.Stat(".staging/boot"); os.IsNotExist(err) {
+		if err = downloadFile(".staging/boot", fmt.Sprintf(baseUrl, "boot"), w); err != nil {
 			return err
 		}
 	}
 
-	if _, err = os.Stat("staging/stage3"); os.IsNotExist(err) {
-		if err = downloadFile("staging/stage3", fmt.Sprintf(baseUrl, "stage3"), w); err != nil {
+	if _, err = os.Stat(".staging/stage3"); os.IsNotExist(err) {
+		if err = downloadFile(".staging/stage3", fmt.Sprintf(baseUrl, "stage3"), w); err != nil {
 			return err
 		}
 	}

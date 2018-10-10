@@ -44,6 +44,3 @@ Interactive command line interface for interacting with Nanovms Unikernel.
                 -example.html
                 /stylesheet
                     -main.css
-    
-
-

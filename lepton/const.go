@@ -14,16 +14,18 @@ const manifest string = `(
 )`
 
 // boot loader
-const bootImg string = "staging/boot"
+const bootImg string = ".staging/boot"
 
 // kernel
-const kernelImg string = "staging/stage3"
+const kernelImg string = ".staging/stage3"
 
 // kernel + ELF image
-const mergedImg string = "tempimage"
+const mergedImg string = ".staging/tempimage"
 
 // final bootable image
 const FinalImg string = "image"
+
+const Mkfs string = ".staging/mkfs"
 
 const ReleaseBaseUrl string = "https://storage.googleapis.com/uniboot/release/%v"
 const DevBaseUrl string = "https://storage.googleapis.com/uniboot/%v"
