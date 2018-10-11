@@ -61,6 +61,9 @@ func initDefaultImages(c *Config) {
 	if c.DiskImage == "" {
 		c.DiskImage = FinalImg
 	}
+	if c.Mkfs == "" {
+		c.Mkfs = Mkfs
+	}
 }
 
 func buildImage(userImage string, finaImage string, c *Config) error {
@@ -84,7 +87,8 @@ func buildImage(userImage string, finaImage string, c *Config) error {
 	fmt.Println(elfmanifest)
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
-	mkfs := exec.Command(Mkfs, mergedImg)
+	createFile(mergedImg)
+	mkfs := exec.Command(c.Mkfs, mergedImg)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
 		return err

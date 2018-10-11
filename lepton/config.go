@@ -10,6 +10,7 @@ type Config struct {
 	Boot       string
 	Kernel     string
 	DiskImage  string
+	Mkfs       string
 }
 
 func DefaultConfig() *Config {
