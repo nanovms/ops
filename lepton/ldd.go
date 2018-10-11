@@ -14,28 +14,32 @@ func getSharedLibs(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	env := os.Environ()
-	env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
-	cmd := exec.Command(bin)
-	cmd.Env = env
-	out, _ := cmd.StdoutPipe()
-	scanner := bufio.NewScanner(out)
 	var deps []string
-	cmd.Start()
-	// vsdo is user space mapped, there is no backing lib
-	vsdo := "linux-vdso.so"
-	for scanner.Scan() {
-		text := strings.TrimSpace(scanner.Text())
-		if text == "" || strings.HasPrefix(text, vsdo) {
-			continue
+	if ok, _ := isDynamicLinked(path); ok {
+
+		env := os.Environ()
+		env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
+		cmd := exec.Command(bin)
+		cmd.Env = env
+		out, _ := cmd.StdoutPipe()
+		scanner := bufio.NewScanner(out)
+
+		cmd.Start()
+		// vsdo is user space mapped, there is no backing lib
+		vsdo := "linux-vdso.so"
+		for scanner.Scan() {
+			text := strings.TrimSpace(scanner.Text())
+			if text == "" || strings.HasPrefix(text, vsdo) {
+				continue
+			}
+			parts := strings.Split(text, " ")
+			if strings.HasPrefix(parts[0], vsdo) {
+				continue
+			}
+			deps = append(deps, strings.TrimSpace(parts[len(parts)-2]))
 		}
-		parts := strings.Split(text, " ")
-		if strings.HasPrefix(parts[0], vsdo) {
-			continue
-		}
-		deps = append(deps, strings.TrimSpace(parts[len(parts)-2]))
+		defer out.Close()
+		cmd.Wait()
 	}
-	defer out.Close()
-	cmd.Wait()
 	return deps, nil
 }
