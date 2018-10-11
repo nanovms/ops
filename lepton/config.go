@@ -6,4 +6,13 @@ type Config struct {
 	Dirs       []string
 	Files      []string
 	Debugflags []string
+	Program    string
+	Boot       string
+	Kernel     string
+	DiskImage  string
+	Mkfs       string
+}
+
+func DefaultConfig() *Config {
+	return &Config{Boot: bootImg, Kernel: kernelImg, DiskImage: "image"}
 }

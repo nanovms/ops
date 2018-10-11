@@ -34,24 +34,6 @@ func copy(src, dst string) error {
 	return out.Close()
 }
 
-func checkExists(key string) bool {
-	_, err := exec.LookPath(key)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func startHypervisor(image string, port int) {
-	for k := range hypervisors {
-		if checkExists(k) {
-			hypervisor := hypervisors[k]()
-			hypervisor.start(image, port)
-			break
-		}
-	}
-}
-
 func panicOnError(err error) {
 	if err != nil {
 		panic(err)
@@ -99,7 +81,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	startHypervisor(api.FinalImg, port)
+	hypervisor := api.HypervisorInstance()
+	hypervisor.Start(api.FinalImg, port)
 }
 
 func buildImages(userBin string, useLatest bool, c *api.Config) {
