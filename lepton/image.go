@@ -8,16 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 )
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
 func BuildImage(userImage string, bootImage string, c Config) error {
 	var err error
-
-	isDynamic, err := isDynamicLinked(userImage)
-	if err = buildImage(userImage, bootImage, isDynamic, &c); err != nil {
+	if err = buildImage(userImage, bootImage, &c); err != nil {
 		return err
 	}
 	return nil
@@ -54,33 +51,24 @@ func buildManifest(userImage string) (*Manifest, error) {
 	return m, nil
 }
 
-func buildImage(userImage string, finaImage string, dynamic bool, c *Config) error {
-
+func buildImage(userImage string, finaImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
-	if dynamic {
-		m, err := buildManifest(userImage)
-		if err != nil {
-			return err
-		}
-		for _, d := range c.Dirs {
-			m.AddDirectory(d)
-		}
-		for _, a := range c.Args {
-			m.AddArgument(a)
-		}
-		for _, dbg := range c.Debugflags {
-			m.AddDebugFlag(dbg, 't')
-		}
-		elfmanifest = m.String()
-		fmt.Println(elfmanifest)
-	} else {
-
-		var elfname = filepath.Base(userImage)
-		var extension = filepath.Ext(elfname)
-		elfname = elfname[0 : len(elfname)-len(extension)]
-		elfmanifest = fmt.Sprintf(manifest, kernelImg, elfname, userImage, elfname, elfname)
+	m, err := buildManifest(userImage)
+	if err != nil {
+		return err
 	}
+	for _, d := range c.Dirs {
+		m.AddDirectory(d)
+	}
+	for _, a := range c.Args {
+		m.AddArgument(a)
+	}
+	for _, dbg := range c.Debugflags {
+		m.AddDebugFlag(dbg, 't')
+	}
+	elfmanifest = m.String()
+	fmt.Println(elfmanifest)
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	mkfs := exec.Command(Mkfs, mergedImg)
