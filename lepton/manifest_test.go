@@ -69,7 +69,9 @@ func TestAddLibs(t *testing.T) {
 }
 
 func TestManifestWithDeps(t *testing.T) {
-	m, err := buildManifest("../data/main")
+	var c Config
+	initDefaultImages(&c)
+	m, err := buildManifest("../data/main", &c)
 	if err != nil {
 		t.Fatal(err)
 	}
