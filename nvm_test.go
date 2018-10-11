@@ -59,10 +59,9 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var hypervisor Hypervisor
+	hypervisor := api.HypervisorInstance()
 	go func() {
-		hypervisor = hypervisors["qemu-system-x86_64"]()
-		hypervisor.start(api.FinalImg, 8080)
+		hypervisor.Start(api.FinalImg, 8080)
 	}()
 	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://127.0.0.1:8080")
@@ -80,7 +79,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	if string(body) != expected {
 		t.Errorf("unexpected response" + string(body))
 	}
-	hypervisor.stop()
+	hypervisor.Stop()
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
@@ -91,10 +90,9 @@ func TestImageWithStaticFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var hypervisor Hypervisor
+	hypervisor := api.HypervisorInstance()
 	go func() {
-		hypervisor = hypervisors["qemu-system-x86_64"]()
-		hypervisor.start(api.FinalImg, 8080)
+		hypervisor.Start(api.FinalImg, 8080)
 	}()
 	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://localhost:8080/example.html")
@@ -109,7 +107,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 		t.Errorf("ReadAll failed")
 	}
 	fmt.Println(string(body))
-	hypervisor.stop()
+	hypervisor.Stop()
 }
 
 func TestRunningDynamicImage(t *testing.T) {

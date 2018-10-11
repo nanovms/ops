@@ -1,4 +1,4 @@
-package main
+package lepton
 
 import (
 	"fmt"
@@ -32,13 +32,13 @@ func (q *qemu) addNetworkDevice(n netdev) {
 
 }
 
-func (q *qemu) stop() {
+func (q *qemu) Stop() {
 	if q.cmd != nil {
 		q.cmd.Process.Kill()
 	}
 }
 
-func (q *qemu) start(image string, port int) error {
+func (q *qemu) Start(image string, port int) error {
 	args := q.Args(port)
 	fmt.Println(args)
 	q.cmd = exec.Command("qemu-system-x86_64", args...)

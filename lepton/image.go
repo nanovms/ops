@@ -33,11 +33,11 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
-func buildManifest(userImage string) (*Manifest, error) {
+func buildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	m := NewManifest()
 	m.AddUserProgram(userImage)
-	m.AddKernal(kernelImg)
+	m.AddKernal(c.Kernel)
 
 	// run ldd and capture dependencies
 	deps, err := getSharedLibs(userImage)
@@ -51,10 +51,23 @@ func buildManifest(userImage string) (*Manifest, error) {
 	return m, nil
 }
 
+func initDefaultImages(c *Config) {
+	if c.Boot == "" {
+		c.Boot = bootImg
+	}
+	if c.Kernel == "" {
+		c.Kernel = kernelImg
+	}
+	if c.DiskImage == "" {
+		c.DiskImage = FinalImg
+	}
+}
+
 func buildImage(userImage string, finaImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
-	m, err := buildManifest(userImage)
+	initDefaultImages(c)
+	m, err := buildManifest(userImage, c)
 	if err != nil {
 		return err
 	}
@@ -92,7 +105,7 @@ func buildImage(userImage string, finaImage string, c *Config) error {
 	if err != nil {
 		return err
 	}
-	catcmd := exec.Command("cat", bootImg, mergedImg)
+	catcmd := exec.Command("cat", c.Boot, mergedImg)
 	catcmd.Stdout = fd
 	err = catcmd.Start()
 	if err != nil {
