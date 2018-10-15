@@ -93,7 +93,7 @@ func buildImages(userBin string, useLatest bool, c *api.Config) {
 		err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
 	}
 	panicOnError(err)
-	err = api.BuildImage(userBin, api.FinalImg, *c)
+	err = api.BuildImage(userBin, *c)
 	panicOnError(err)
 }
 

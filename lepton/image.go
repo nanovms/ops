@@ -12,9 +12,9 @@ import (
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
-func BuildImage(userImage string, bootImage string, c Config) error {
+func BuildImage(userImage string, c Config) error {
 	var err error
-	if err = buildImage(userImage, bootImage, &c); err != nil {
+	if err = buildImage(userImage, &c); err != nil {
 		return err
 	}
 	return nil
@@ -66,7 +66,7 @@ func initDefaultImages(c *Config) {
 	}
 }
 
-func buildImage(userImage string, finaImage string, c *Config) error {
+func buildImage(userImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
 	initDefaultImages(c)
@@ -104,7 +104,7 @@ func buildImage(userImage string, finaImage string, c *Config) error {
 	}
 
 	// produce final image, boot + kernel + elf
-	fd, err := createFile(finaImage)
+	fd, err := createFile(c.DiskImage)
 	defer fd.Close()
 	if err != nil {
 		return err
