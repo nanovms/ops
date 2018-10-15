@@ -13,6 +13,6 @@ type Config struct {
 	Mkfs       string
 }
 
-func DefaultConfig() *Config {
-	return &Config{Boot: bootImg, Kernel: kernelImg, DiskImage: "image"}
+func DefaultConfig() Config {
+	return Config{Boot: bootImg, Kernel: kernelImg, DiskImage: "image"}
 }
