@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"os"
-	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
@@ -10,14 +9,12 @@ import (
 
 // Manifest represent the filesystem.
 type Manifest struct {
-	sb           strings.Builder
-	baseHostPath string
-	baseVMPath   string
-	children     map[string]interface{}
-	program      string
-	args         []string
-	debugFlags   map[string]rune
-	environment  map[string]string
+	sb          strings.Builder
+	children    map[string]interface{}
+	program     string
+	args        []string
+	debugFlags  map[string]rune
+	environment map[string]string
 }
 
 // NewManifest init
@@ -31,16 +28,12 @@ func NewManifest() *Manifest {
 
 // AddUserProgram adds user program
 func (m *Manifest) AddUserProgram(imgpath string) {
-	// this is mount point
-	basedir := filepath.Base(filepath.Dir(imgpath))
-	// we dont want to splatter eveything on /
-	if basedir == "." {
-		u, _ := user.Current()
-		basedir = u.Username
+
+	parts := strings.Split(imgpath, "/")
+	if parts[0] == "." {
+		parts = parts[1:]
 	}
-	m.baseVMPath = basedir
-	m.baseHostPath = filepath.Dir(imgpath)
-	m.program = path.Join("/", basedir, filepath.Base(imgpath))
+	m.program = path.Join("/", path.Join(parts...))
 	m.AddFile(m.program, imgpath)
 }
 
@@ -80,12 +73,13 @@ func (m *Manifest) AddDirectory(dir string) error {
 			return nil
 		}
 		// if the path is relative then root it to image path
-		fspath := hostpath
-		relpath, err := filepath.Rel(m.baseHostPath, hostpath)
-		if err == nil {
-			fspath = path.Join(m.baseVMPath, relpath)
+		var vmpath string
+		if hostpath[0] != '/' {
+			vmpath = "/" + hostpath
+		} else {
+			vmpath = hostpath
 		}
-		m.AddFile(fspath, hostpath)
+		m.AddFile(vmpath, hostpath)
 		return nil
 	})
 	return err
