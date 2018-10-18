@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+
+	"github.com/go-errors/errors"
 )
 
 // BuildImage builds a unikernel image for user
@@ -15,7 +17,7 @@ import (
 func BuildImage(userImage string, c Config) error {
 	var err error
 	if err = buildImage(userImage, &c); err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	return nil
 }
@@ -28,7 +30,7 @@ func createFile(filepath string) (*os.File, error) {
 	}
 	fd, err := os.Create(filepath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 	return fd, nil
 }
@@ -42,7 +44,7 @@ func buildManifest(userImage string, c *Config) (*Manifest, error) {
 	// run ldd and capture dependencies
 	deps, err := getSharedLibs(userImage)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
@@ -72,7 +74,7 @@ func buildImage(userImage string, c *Config) error {
 	initDefaultImages(c)
 	m, err := buildManifest(userImage, c)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	for _, d := range c.Dirs {
 		m.AddDirectory(d)
@@ -91,29 +93,29 @@ func buildImage(userImage string, c *Config) error {
 	mkfs := exec.Command(c.Mkfs, mergedImg)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	_, err = io.WriteString(stdin, elfmanifest)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	out, err := mkfs.CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.DiskImage)
 	defer fd.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	catcmd := exec.Command("cat", c.Boot, mergedImg)
 	catcmd.Stdout = fd
 	err = catcmd.Start()
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	catcmd.Wait()
 	return nil
@@ -140,25 +142,25 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 
 	if _, err = os.Stat(".staging/mkfs"); os.IsNotExist(err) {
 		if err = downloadFile(".staging/mkfs", fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
-			return err
+			return errors.Wrap(err, 1)
 		}
 	}
 
 	// make mkfs executable
 	err = os.Chmod(".staging/mkfs", 0775)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	if _, err = os.Stat(".staging/boot"); os.IsNotExist(err) {
 		if err = downloadFile(".staging/boot", fmt.Sprintf(baseUrl, "boot"), w); err != nil {
-			return err
+			return errors.Wrap(err, 1)
 		}
 	}
 
 	if _, err = os.Stat(".staging/stage3"); os.IsNotExist(err) {
 		if err = downloadFile(".staging/stage3", fmt.Sprintf(baseUrl, "stage3"), w); err != nil {
-			return err
+			return errors.Wrap(err, 1)
 		}
 	}
 	return nil
@@ -168,22 +170,22 @@ func downloadFile(filepath string, url string, w io.Writer) error {
 	// download to a temp file and later rename it
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	defer out.Close()
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	defer resp.Body.Close()
 	// progress reporter.
 	_, err = io.Copy(out, io.TeeReader(resp.Body, w))
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	err = os.Rename(filepath+".tmp", filepath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 	return nil
 }
