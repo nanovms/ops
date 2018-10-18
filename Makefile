@@ -24,5 +24,5 @@ deps:
 	$(GOGET) github.com/jstemmer/go-junit-report
 	$(GOGET) github.com/d2g/dhcp4
 	$(GOGET) github.com/d2g/dhcp4client
-  
+	$(GOGET) github.com/go-errors/errors  
 
