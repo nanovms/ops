@@ -18,6 +18,7 @@ func getSharedLibs(path string) ([]string, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
 	}
+	dir, _ := os.Getwd()
 	var deps []string
 	if ok, _ := isDynamicLinked(path); ok {
 
@@ -40,7 +41,11 @@ func getSharedLibs(path string) ([]string, error) {
 			if strings.HasPrefix(parts[0], vsdo) {
 				continue
 			}
-			deps = append(deps, strings.TrimSpace(parts[len(parts)-2]))
+			libpath, _ := filepath.Abs(parts[len(parts)-2])
+			if strings.HasPrefix(libpath, dir) {
+				libpath = libpath[len(dir)+1:]
+			}
+			deps = append(deps, strings.TrimSpace(libpath))
 		}
 		defer out.Close()
 		cmd.Wait()

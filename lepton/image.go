@@ -43,6 +43,7 @@ func buildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	// run ldd and capture dependencies
 	deps, err := getSharedLibs(userImage)
+	fmt.Println(deps)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
@@ -75,6 +76,10 @@ func buildImage(userImage string, c *Config) error {
 	m, err := buildManifest(userImage, c)
 	if err != nil {
 		return errors.Wrap(err, 1)
+	}
+	for _, f := range c.Files {
+		fmt.Println(f)
+		m.AddFile(f, f)
 	}
 	for _, d := range c.Dirs {
 		m.AddDirectory(d)
