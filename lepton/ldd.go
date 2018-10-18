@@ -4,14 +4,18 @@ import (
 	"bufio"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 // works only on linux, need to
 // replace looking up in dynamic section in ELF
 func getSharedLibs(path string) ([]string, error) {
-	bin, err := exec.LookPath(path)
+	path, err := filepath.Abs(path)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
 	}
 	var deps []string
@@ -19,7 +23,7 @@ func getSharedLibs(path string) ([]string, error) {
 
 		env := os.Environ()
 		env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
-		cmd := exec.Command(bin)
+		cmd := exec.Command(path)
 		cmd.Env = env
 		out, _ := cmd.StdoutPipe()
 		scanner := bufio.NewScanner(out)

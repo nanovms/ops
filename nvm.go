@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-errors/errors"
 	api "github.com/nanovms/nvm/lepton"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,7 @@ func copy(src, dst string) error {
 
 func panicOnError(err error) {
 	if err != nil {
+		fmt.Println(err.(*errors.Error).ErrorStack())
 		panic(err)
 	}
 }
