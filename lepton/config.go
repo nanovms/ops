@@ -6,6 +6,7 @@ type Config struct {
 	Dirs       []string
 	Files      []string
 	MapDirs    map[string]string
+	Env        map[string]string
 	Debugflags []string
 	Program    string
 	Boot       string

@@ -1,4 +1,5 @@
 {
-  "MapDirs" : {"jre1.8.0_191/lib/amd64/*.so":"/usr/lib"},
-  "Args":["one","two"]
+  "Files":["pex/ex.py"],
+  "Args":["/pex/ex.py"],
+  "Env" : {"PYTHONHOME": "/usr/bin/python"}
 }
