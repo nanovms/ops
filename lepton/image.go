@@ -112,6 +112,9 @@ func buildImage(userImage string, c *Config) error {
 	for _, dbg := range c.Debugflags {
 		m.AddDebugFlag(dbg, 't')
 	}
+	for k, v := range c.Env {
+		m.AddEnvironmentVariable(k, v)
+	}
 	elfmanifest = m.String()
 	fmt.Println(elfmanifest)
 
