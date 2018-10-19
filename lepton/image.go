@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 
 	"github.com/go-errors/errors"
 )
@@ -69,6 +70,25 @@ func initDefaultImages(c *Config) {
 	}
 }
 
+func addMappedFiles(src string, dest string, m *Manifest) {
+	dir, pattern := filepath.Split(src)
+	filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		_, filename := filepath.Split(hostpath)
+		matched, _ := filepath.Match(pattern, filename)
+		if matched {
+			vmpath := filepath.Join(dest, filename)
+			m.AddFile(vmpath, hostpath)
+		}
+		return nil
+	})
+}
+
 func buildImage(userImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
@@ -78,8 +98,10 @@ func buildImage(userImage string, c *Config) error {
 		return errors.Wrap(err, 1)
 	}
 	for _, f := range c.Files {
-		fmt.Println(f)
 		m.AddFile(f, f)
+	}
+	for k, v := range c.MapDirs {
+		addMappedFiles(k, v, m)
 	}
 	for _, d := range c.Dirs {
 		m.AddDirectory(d)
