@@ -36,7 +36,8 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
-func buildManifest(userImage string, c *Config) (*Manifest, error) {
+//
+func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	m := NewManifest()
 	m.AddUserProgram(userImage)
@@ -44,14 +45,30 @@ func buildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	// run ldd and capture dependencies
 	deps, err := getSharedLibs(userImage)
-	fmt.Println(deps)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
-	//
+	for _, f := range c.Files {
+		m.AddFile(f, f)
+	}
+	for k, v := range c.MapDirs {
+		addMappedFiles(k, v, m)
+	}
+	for _, d := range c.Dirs {
+		m.AddDirectory(d)
+	}
+	for _, a := range c.Args {
+		m.AddArgument(a)
+	}
+	for _, dbg := range c.Debugflags {
+		m.AddDebugFlag(dbg, 't')
+	}
+	for k, v := range c.Env {
+		m.AddEnvironmentVariable(k, v)
+	}
 	return m, nil
 }
 
@@ -93,30 +110,11 @@ func buildImage(userImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
 	initDefaultImages(c)
-	m, err := buildManifest(userImage, c)
+	m, err := BuildManifest(userImage, c)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	for _, f := range c.Files {
-		m.AddFile(f, f)
-	}
-	for k, v := range c.MapDirs {
-		addMappedFiles(k, v, m)
-	}
-	for _, d := range c.Dirs {
-		m.AddDirectory(d)
-	}
-	for _, a := range c.Args {
-		m.AddArgument(a)
-	}
-	for _, dbg := range c.Debugflags {
-		m.AddDebugFlag(dbg, 't')
-	}
-	for k, v := range c.Env {
-		m.AddEnvironmentVariable(k, v)
-	}
 	elfmanifest = m.String()
-	fmt.Println(elfmanifest)
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
