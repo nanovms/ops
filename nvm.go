@@ -106,6 +106,17 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	buildImages(args[0], false, c)
 }
 
+func printManifestHandler(cmd *cobra.Command, args []string) {
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	c := unWarpConfig(config)
+	m, err := api.BuildManifest(args[0], c)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(m.String())
+}
+
 type callback struct {
 	total uint64
 }
@@ -153,7 +164,7 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 func main() {
 	var cmdRun = &cobra.Command{
 		Use:   "run [ELF file]",
-		Short: "run ELF as unikernel",
+		Short: "Run ELF as unikernel",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   runCommandHandler,
 	}
@@ -172,21 +183,29 @@ func main() {
 		Use:       "net",
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"setup", "reset"},
-		Short:     "configure bridge network",
+		Short:     "Configure bridge network",
 		Run:       netCommandHandler,
 	}
 
 	var cmdBuild = &cobra.Command{
 		Use:   "build [ELF file]",
-		Short: "build an image from ELF",
+		Short: "Build an image from ELF",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   buildCommandHandler,
 	}
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
+	var cmdPrintConfig = &cobra.Command{
+		Use:   "manifest [ELF file]",
+		Short: "Print the manifest to console",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   printManifestHandler,
+	}
+	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
 
 	var rootCmd = &cobra.Command{Use: "nvm"}
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.AddCommand(cmdNet)
 	rootCmd.AddCommand(cmdBuild)
+	rootCmd.AddCommand(cmdPrintConfig)
 	rootCmd.Execute()
 }
