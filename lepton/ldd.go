@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-errors/errors"
 )
 
 // works only on linux, need to
@@ -15,8 +17,15 @@ func getSharedLibs(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
+	}
+	// LD_TRACE_LOADED_OBJECTS need to fork with out executing it.
+	// TODO:move away from LD_TRACE_LOADED_OBJECTS
+	err = os.Chmod(path, 0775)
+	if err != nil {
+		return nil, errors.Wrap(err, 1)
 	}
 	dir, _ := os.Getwd()
 	var deps []string
