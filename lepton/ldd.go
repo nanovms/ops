@@ -29,7 +29,10 @@ func getSharedLibs(path string) ([]string, error) {
 		out, _ := cmd.StdoutPipe()
 		scanner := bufio.NewScanner(out)
 
-		cmd.Start()
+		err = cmd.Start()
+		if err != nil {
+			return deps, err
+		}
 		// vsdo is user space mapped, there is no backing lib
 		vsdo := "linux-vdso.so"
 		for scanner.Scan() {
