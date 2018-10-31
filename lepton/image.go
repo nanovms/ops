@@ -36,8 +36,9 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
-//
 func BuildManifest(userImage string, c *Config) (*Manifest, error) {
+
+	initDefaultImages(c)
 
 	m := NewManifest()
 	m.AddUserProgram(userImage)
@@ -109,7 +110,6 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 func buildImage(userImage string, c *Config) error {
 	//  prepare manifest file
 	var elfmanifest string
-	initDefaultImages(c)
 	m, err := BuildManifest(userImage, c)
 	if err != nil {
 		return errors.Wrap(err, 1)
