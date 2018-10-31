@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type drive struct {
@@ -40,7 +41,7 @@ func (q *qemu) Stop() {
 
 func (q *qemu) Start(image string, port int) error {
 	args := q.Args(port)
-	fmt.Println(args)
+	fmt.Println("qemu-system-x86_64 " + strings.Join(args, " "))
 	q.cmd = exec.Command("qemu-system-x86_64", args...)
 	q.cmd.Stdout = os.Stdout
 	q.cmd.Stdin = os.Stdin

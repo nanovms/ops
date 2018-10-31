@@ -16,5 +16,5 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{Boot: bootImg, Kernel: kernelImg, DiskImage: "image"}
+	return Config{Boot: BootImg, Kernel: KernelImg, DiskImage: "image"}
 }
