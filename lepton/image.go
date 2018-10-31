@@ -168,26 +168,26 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 		os.MkdirAll(".staging", 0755)
 	}
 
-	if _, err = os.Stat(".staging/mkfs"); os.IsNotExist(err) {
-		if err = downloadFile(".staging/mkfs", fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
+	if _, err = os.Stat(Mkfs); os.IsNotExist(err) {
+		if err = downloadFile(Mkfs, fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
 	// make mkfs executable
-	err = os.Chmod(".staging/mkfs", 0775)
+	err = os.Chmod(Mkfs, 0775)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
 
-	if _, err = os.Stat(".staging/boot"); os.IsNotExist(err) {
-		if err = downloadFile(".staging/boot", fmt.Sprintf(baseUrl, "boot"), w); err != nil {
+	if _, err = os.Stat(bootImg); os.IsNotExist(err) {
+		if err = downloadFile(bootImg, fmt.Sprintf(baseUrl, "boot.img"), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
-	if _, err = os.Stat(".staging/stage3"); os.IsNotExist(err) {
-		if err = downloadFile(".staging/stage3", fmt.Sprintf(baseUrl, "stage3"), w); err != nil {
+	if _, err = os.Stat(kernelImg); os.IsNotExist(err) {
+		if err = downloadFile(kernelImg, fmt.Sprintf(baseUrl, "stage3.img"), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
