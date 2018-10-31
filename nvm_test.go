@@ -16,16 +16,16 @@ import (
 func TestDownloadImages(t *testing.T) {
 	// remove the files to force a download
 	// ignore any error from remove
-	os.Remove(".staging/mkfs")
-	os.Remove(".staging/boot")
-	os.Remove(".staging/stage3")
+	os.Remove(api.Mkfs)
+	os.Remove(api.BootImg)
+	os.Remove(api.KernelImg)
 	api.DownloadBootImages()
 
-	if _, err := os.Stat(".staging/boot"); os.IsNotExist(err) {
+	if _, err := os.Stat(api.BootImg); os.IsNotExist(err) {
 		t.Errorf(".staging/boot file not found")
 	}
 
-	if info, err := os.Stat(".staging/mkfs"); os.IsNotExist(err) {
+	if info, err := os.Stat(api.Mkfs); os.IsNotExist(err) {
 		t.Errorf("mkfs not found")
 	} else {
 		mode := fmt.Sprintf("%04o", info.Mode().Perm())
@@ -34,7 +34,7 @@ func TestDownloadImages(t *testing.T) {
 		}
 	}
 
-	if _, err := os.Stat(".staging/stage3"); os.IsNotExist(err) {
+	if _, err := os.Stat(api.KernelImg); os.IsNotExist(err) {
 		t.Errorf(".staging/stage3 file not found")
 	}
 }

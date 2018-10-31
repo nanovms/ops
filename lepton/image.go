@@ -74,10 +74,10 @@ func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 
 func initDefaultImages(c *Config) {
 	if c.Boot == "" {
-		c.Boot = bootImg
+		c.Boot = BootImg
 	}
 	if c.Kernel == "" {
-		c.Kernel = kernelImg
+		c.Kernel = KernelImg
 	}
 	if c.DiskImage == "" {
 		c.DiskImage = FinalImg
@@ -180,14 +180,14 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 		return errors.Wrap(err, 1)
 	}
 
-	if _, err = os.Stat(bootImg); os.IsNotExist(err) {
-		if err = downloadFile(bootImg, fmt.Sprintf(baseUrl, "boot.img"), w); err != nil {
+	if _, err = os.Stat(BootImg); os.IsNotExist(err) {
+		if err = downloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img"), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
-	if _, err = os.Stat(kernelImg); os.IsNotExist(err) {
-		if err = downloadFile(kernelImg, fmt.Sprintf(baseUrl, "stage3.img"), w); err != nil {
+	if _, err = os.Stat(KernelImg); os.IsNotExist(err) {
+		if err = downloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img"), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}

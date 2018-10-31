@@ -14,10 +14,10 @@ const manifest string = `(
 )`
 
 // boot loader
-const bootImg string = ".staging/boot.img"
+const BootImg string = ".staging/boot.img"
 
 // kernel
-const kernelImg string = ".staging/stage3.img"
+const KernelImg string = ".staging/stage3.img"
 
 // kernel + ELF image
 const mergedImg string = ".staging/tempimage"
