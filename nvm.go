@@ -84,6 +84,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		panic(errors.New("No hypervisor found on $PATH"))
+	}
 	hypervisor.Start(api.FinalImg, port)
 }
 
