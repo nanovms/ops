@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/d2g/dhcp4"
 	"github.com/d2g/dhcp4client"
@@ -15,6 +16,46 @@ import (
 const bridgeName string = "br0"
 const tapName string = "tap0"
 const macAddr string = "08-00-27-00-A8-E8"
+
+func AddNextTapDevice() error {
+	br0, err := netlink.LinkByName(bridgeName)
+	if err != nil {
+		return err
+	}
+	var tap string
+	for i := 0; i < 10; i++ {
+		tap = "tap" + strconv.Itoa(i)
+		_, err := netlink.LinkByName(tap + strconv.Itoa(i))
+		if err != nil {
+			break
+		}
+	}
+	bridge, ok := br0.(*netlink.Bridge)
+	if ok {
+		addTapDevice(tap, bridge)
+	} else {
+		return errors.New("No network bridge found")
+	}
+	return nil
+}
+
+func addTapDevice(name string, bridge *netlink.Bridge) error {
+	tap0 := &netlink.Tuntap{
+		LinkAttrs: netlink.LinkAttrs{Name: name},
+		Mode:      netlink.TUNTAP_MODE_TAP,
+	}
+	if err := netlink.LinkAdd(tap0); err != nil {
+		return err
+	}
+	// bring up tap0
+	if err := netlink.LinkSetUp(tap0); err != nil {
+		return err
+	}
+	if err := netlink.LinkSetMaster(tap0, bridge); err != nil {
+		return err
+	}
+	return nil
+}
 
 func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
 	// create a bridge named br0
@@ -34,20 +75,7 @@ func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
 	if err = netlink.LinkSetMaster(eth0, bridge); err != nil {
 		return nil, err
 	}
-	// add tap0
-	tap0 := &netlink.Tuntap{
-		LinkAttrs: netlink.LinkAttrs{Name: tapName},
-		Mode:      netlink.TUNTAP_MODE_TAP,
-	}
-	err = netlink.LinkAdd(tap0)
-	if err != nil {
-		return nil, err
-	}
-	// bring up tap0
-	if err = netlink.LinkSetUp(tap0); err != nil {
-		return nil, err
-	}
-	if err = netlink.LinkSetMaster(tap0, bridge); err != nil {
+	if err = addTapDevice(tapName, bridge); err != nil {
 		return nil, err
 	}
 	return bridge, nil
