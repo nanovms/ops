@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -65,6 +66,7 @@ func (m *Manifest) AddRelative(key string, path string) {
 
 // AddDirectory adds all files in dir to image
 func (m *Manifest) AddDirectory(dir string) error {
+	fmt.Printf("Adding %s to image\n", dir)
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -95,6 +97,7 @@ func (m *Manifest) AddFile(filepath string, hostpath string) {
 		node = node[parts[i]].(map[string]interface{})
 	}
 	node[parts[len(parts)-1]] = hostpath
+	fmt.Printf("Adding file %s\n", hostpath)
 }
 
 // AddLibrary to add a dependent library
@@ -131,10 +134,7 @@ func (m *Manifest) String() string {
 
 	// arguments
 	sb.WriteString("arguments:[")
-	_, filename := filepath.Split(m.program)
-	sb.WriteString(filename)
 	if len(m.args) > 0 {
-		sb.WriteRune(' ')
 		sb.WriteString(strings.Join(m.args, " "))
 	}
 	sb.WriteRune(']')

@@ -45,6 +45,7 @@ func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 	m.AddKernal(c.Kernel)
 
 	// run ldd and capture dependencies
+	fmt.Println("Finding dependent shared libs")
 	deps, err := getSharedLibs(userImage)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -115,7 +116,6 @@ func buildImage(userImage string, c *Config) error {
 		return errors.Wrap(err, 1)
 	}
 	elfmanifest = m.String()
-
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
 	mkfs := exec.Command(c.Mkfs, mergedImg)
