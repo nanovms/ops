@@ -3,6 +3,7 @@ package lepton
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -36,6 +37,19 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
+// add /etc/resolv.conf
+func addDNSConfig(m *Manifest, c *Config) {
+	data := []byte("nameserver ")
+	data = append(data, []byte(c.NameServer)...)
+	temp := path.Join(os.TempDir(), "resolv")
+	err := ioutil.WriteFile(temp, data, 0644)
+	if err != nil {
+		panic(err)
+	}
+	//nameserver 127.0.1.1
+	m.AddFile("/etc/resolv.confg", temp)
+}
+
 func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	initDefaultImages(c)
@@ -53,6 +67,7 @@ func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
+	addDNSConfig(m, c)
 	for _, f := range c.Files {
 		m.AddFile(f, f)
 	}
@@ -86,6 +101,10 @@ func initDefaultImages(c *Config) {
 	}
 	if c.Mkfs == "" {
 		c.Mkfs = Mkfs
+	}
+	if c.NameServer == "" {
+		// google dns server
+		c.NameServer = "8.8.8.8"
 	}
 }
 
