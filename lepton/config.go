@@ -13,6 +13,7 @@ type Config struct {
 	Kernel     string
 	DiskImage  string
 	Mkfs       string
+	NameServer string
 }
 
 func DefaultConfig() Config {
