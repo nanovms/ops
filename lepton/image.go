@@ -47,7 +47,7 @@ func addDNSConfig(m *Manifest, c *Config) {
 		panic(err)
 	}
 	//nameserver 127.0.1.1
-	m.AddFile("/etc/resolv.confg", temp)
+	m.AddFile("/etc/resolv.conf", temp)
 }
 
 func BuildManifest(userImage string, c *Config) (*Manifest, error) {
