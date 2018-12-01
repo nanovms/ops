@@ -50,6 +50,21 @@ func addDNSConfig(m *Manifest, c *Config) {
 	m.AddFile("/etc/resolv.conf", temp)
 }
 
+///proc/sys/kernel/hostname
+func addHostName(m *Manifest, c *Config) {
+	// uniboot is hardcoded in nanos virtio
+	// may be better to handle 'proc/sys/kernel/hostname' open
+	// in nanos as a spcial file like other device files
+	data := []byte("uniboot")
+	temp := path.Join(os.TempDir(), "hostname")
+	err := ioutil.WriteFile(temp, data, 0644)
+	if err != nil {
+		panic(err)
+	}
+	//nameserver 127.0.1.1
+	m.AddFile("/proc/sys/kernel/hostname", temp)
+}
+
 func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 
 	initDefaultImages(c)
@@ -67,7 +82,10 @@ func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
+
 	addDNSConfig(m, c)
+	addHostName(m, c)
+
 	for _, f := range c.Files {
 		m.AddFile(f, f)
 	}
