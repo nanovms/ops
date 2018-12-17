@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	api "github.com/nanovms/nvm/lepton"
+	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 
@@ -180,7 +180,7 @@ func main() {
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
-	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
+	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
@@ -196,16 +196,16 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   buildCommandHandler,
 	}
-	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
+	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	var cmdPrintConfig = &cobra.Command{
 		Use:   "manifest [ELF file]",
 		Short: "Print the manifest to console",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   printManifestHandler,
 	}
-	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "nvm config file")
+	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 
-	var rootCmd = &cobra.Command{Use: "nvm"}
+	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.AddCommand(cmdNet)
 	rootCmd.AddCommand(cmdBuild)
