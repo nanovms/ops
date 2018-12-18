@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/nanovms/nvm
+    working_directory: /go/src/github.com/nanovms/ops
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
