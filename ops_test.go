@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/nanovms/nvm/lepton"
+	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 

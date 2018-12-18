@@ -1,6 +1,6 @@
 # Nanovms Command Line Interface
 
-[![CircleCI](https://circleci.com/gh/nanovms/nvm.svg?style=svg)](https://circleci.com/gh/nanovms/nvm)
+[![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
 
 Interactive command line interface for interacting with Nanovms Unikernel. 
 
@@ -12,19 +12,19 @@ Interactive command line interface for interacting with Nanovms Unikernel.
     - `make build`
 # Setup networking
 ## bridge network 
-`sudo nvm net setup` 
+`sudo ops net setup` 
 ## reset
-`sudo nvm net reset`
+`sudo ops net reset`
 # Build a bootable image
-`nvm build <ELFBinary>`
+`ops build <ELFBinary>`
 # Package and run
-    nvm run <ELFBinary>
+    ops run <ELFBinary>
     OR
-    nvm run -p <port> <ELFBinary>
+    ops run -p <port> <ELFBinary>
 # Using a config file
-    nvm run -p <port> -c <file> <ELFBinary>
+    ops run -p <port> -c <file> <ELFBinary>
 # Example config file
-    nvm config files are plain JSON, below is an example 
+    ops config files are plain JSON, below is an example 
     {
         "Args":["one","two"],
         "Dirs":["myapp/static"]
