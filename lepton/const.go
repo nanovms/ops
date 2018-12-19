@@ -27,5 +27,5 @@ const FinalImg string = "image"
 
 const Mkfs string = ".staging/mkfs"
 
-const ReleaseBaseUrl string = "https://storage.googleapis.com/uniboot/release/%v"
-const DevBaseUrl string = "https://storage.googleapis.com/uniboot/%v"
+const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/%v"
+const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"
