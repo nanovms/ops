@@ -22,7 +22,7 @@ func HypervisorInstance() Hypervisor {
 
 // Hypervisor interface
 type Hypervisor interface {
-	Start(string, int) error
+	Start(rconfig *RunConfig) error
 	Stop()
 }
 

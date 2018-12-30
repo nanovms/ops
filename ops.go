@@ -69,6 +69,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	verbose, err := strconv.ParseBool(cmd.Flag("verbose").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -87,7 +92,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	hypervisor.Start(api.FinalImg, port)
+	runconfig := api.RuntimeConfig(api.FinalImg, []int{port}, verbose)
+	hypervisor.Start(&runconfig)
 }
 
 func buildImages(userBin string, useLatest bool, c *api.Config) {
@@ -176,11 +182,14 @@ func main() {
 	var debugflags bool
 	var args []string
 	var config string
+	var verbose bool
+
 	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
