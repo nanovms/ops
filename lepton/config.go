@@ -1,6 +1,6 @@
 package lepton
 
-// Config very basic config for build
+// Build configs
 type Config struct {
 	Args       []string
 	Dirs       []string
@@ -16,6 +16,17 @@ type Config struct {
 	NameServer string
 }
 
+// Runtime configs
+type RunConfig struct {
+	imagename string
+	ports     []int
+	verbose   bool
+}
+
 func DefaultConfig() Config {
 	return Config{Boot: BootImg, Kernel: KernelImg, DiskImage: "image"}
+}
+
+func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
+	return RunConfig{imagename: image, ports: ports, verbose: verbose}
 }
