@@ -48,9 +48,7 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 	args := q.Args(rconfig)
 	logv(rconfig, "qemu-system-x86_64 "+strings.Join(args, " "))
 	q.cmd = exec.Command("qemu-system-x86_64", args...)
-	if rconfig.verbose {
-		q.cmd.Stdout = os.Stdout
-	}
+	q.cmd.Stdout = os.Stdout
 	q.cmd.Stdin = os.Stdin
 	q.cmd.Stderr = os.Stderr
 
