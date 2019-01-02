@@ -28,7 +28,7 @@ RELEASES_URL="https://storage.googleapis.com/cli"
 
 initOS() {
     OS=$(uname | tr '[:upper:]' '[:lower:]')
-    if [ -n "$WASMER_OS" ]; then
+    if [ -n "$OPS_OS" ]; then
         printf "$cyan> Using OPS_OS ($OPS_OS).$reset\n"
         OS="$OPS_OS"
     fi
@@ -60,8 +60,7 @@ download_file() {
 }
 
 ops_download() {
-  # identify platform based on uname output
-  initOS
+
 
   # determine install directory if required
   if [ -z "$INSTALL_DIRECTORY" ]; then
@@ -130,6 +129,27 @@ ops_detect_profile() {
   fi
 }
 
+ops_brew_install_qemu() {
+  if which brew >/dev/null; then
+    if ! which qemu-system-x86_64>/dev/null; then
+      brew install qemu
+    fi
+  else
+    printf "Homebrew not found.Please install from https://brew.sh/"
+  fi
+}
+
+ops_install_qemu() {
+  # install qemu on mac
+  if [ "$OS" = "darwin" ]; then
+    ops_brew_install_qemu
+  fi
+  
+  if ! which qemu-system-x86_64>/dev/null; then
+    printf "QEMU not found. Please install qemu using your package manager and re-run this script"
+  fi
+}
+
 ops_link() {
   printf "$cyan> Adding to bash profile...$reset\n"
   OPS_PROFILE="$(ops_detect_profile)"
@@ -167,12 +187,15 @@ ops_install() {
   magenta2="${reset}\033[34m"
   magenta3="${reset}\033[34;2m"
 
-  if which wasmer >/dev/null; then
+  if which ops >/dev/null; then
     printf "${reset}Updating ops$reset\n"
   else
     printf "${reset}Installing ops!$reset\n"
   fi
-
+  
+  # identify platform based on uname output
+  initOS
+  ops_install_qemu
   ops_download
   ops_link
 }
