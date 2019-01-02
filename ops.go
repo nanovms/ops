@@ -126,6 +126,10 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 	fmt.Println(m.String())
 }
 
+func printVersion(cmd *cobra.Command, args []string) {
+	fmt.Println("0.1")
+}
+
 type callback struct {
 	total uint64
 }
@@ -214,10 +218,17 @@ func main() {
 	}
 	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 
+	var cmdVersion = &cobra.Command{
+		Use:   "version",
+		Short: "Version",
+		Run:   printVersion,
+	}
+
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.AddCommand(cmdNet)
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdPrintConfig)
+	rootCmd.AddCommand(cmdVersion)
 	rootCmd.Execute()
 }
