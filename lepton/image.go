@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/go-errors/errors"
 )
@@ -206,7 +207,7 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 	}
 
 	if _, err = os.Stat(Mkfs); os.IsNotExist(err) {
-		if err = downloadFile(Mkfs, fmt.Sprintf(baseUrl, "mkfs"), w); err != nil {
+		if err = downloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), w); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
