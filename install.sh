@@ -29,15 +29,14 @@ RELEASES_URL="https://storage.googleapis.com/cli"
 initOS() {
     OS=$(uname | tr '[:upper:]' '[:lower:]')
     if [ -n "$WASMER_OS" ]; then
-        printf "$cyan> Using WASMER_OS ($WASMER_OS).$reset\n"
-        OS="$WASMER_OS"
+        printf "$cyan> Using OPS_OS ($OPS_OS).$reset\n"
+        OS="$OPS_OS"
     fi
     case "$OS" in
         darwin) OS='darwin';;
         linux) OS='linux';;
         *) printf "$red> The OS (${OS}) is not supported ops.$reset\n"; exit 1;;
     esac
-    echo "$OS"
 }
 
 download_file() {
@@ -159,7 +158,7 @@ ops_link() {
       printf "$red> ops was installed, but doesn't seem to be working :($reset\n"
       exit 1;
     )
-    printf "$green> Successfully installed Ops $version! Please open another terminal where the \`ops\` command will now be available.$reset\n"
+    printf "$green> Successfully installed ops $version! Please open another terminal where the \`ops\` command will now be available.$reset\n"
   fi
 }
 
@@ -172,25 +171,6 @@ ops_install() {
     printf "${reset}Updating ops$reset\n"
   else
     printf "${reset}Installing ops!$reset\n"
-    printf "
-  ${magenta1}      ${magenta2}        ${magenta3}###${reset}
-  ${magenta1}      ${magenta2}        ${magenta3}#####${reset}
-  ${magenta1}      ${magenta2}###     ${magenta3}######${reset}
-  ${magenta1}      ${magenta2}######  ${magenta3}#############${reset}
-  ${magenta1}#     ${magenta2}####### ${magenta3}##############${reset}
-  ${magenta1}##### ${magenta2}#############${magenta3}#########${reset}
-  ${magenta1}######${magenta2}###############${magenta3}#######${reset}
-  ${magenta1}############${magenta2}#########${magenta3}#######${reset}
-  ${magenta1}##############${magenta2}#######${magenta3}#######${reset}
-  ${magenta1}##############${magenta2}#######${magenta3}#######${reset}
-  ${magenta1}##############${magenta2}#######${magenta3}#######${reset}
-  ${magenta1}##############${magenta2}#######${magenta3}    ###${reset}
-  ${magenta1}##############${magenta2}#######
-     ${magenta1}###########${magenta2}    ###
-        ${magenta1}########${magenta2}
-            ${magenta1}####${reset}
-
-"
   fi
 
   ops_download
