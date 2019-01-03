@@ -29,3 +29,7 @@ const Mkfs string = ".staging/mkfs"
 
 const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/%v"
 const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"
+
+const PackageBaseURL string = "https://storage.googleapis.com/packagehub/%vv"
+const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
+const PackageManifest = ".staging/manifest.json"

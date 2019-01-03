@@ -174,6 +174,36 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func cmdListPackages(cmd *cobra.Command, args []string) {
+
+	var err error
+	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
+		os.MkdirAll(".staging", 0755)
+	}
+
+	if _, err = os.Stat(api.PackageManifest); os.IsNotExist(err) {
+		if err = api.DownloadFile(api.PackageManifest, api.PackageManifestURL); err != nil {
+			panic(err)
+		}
+	}
+
+	var pacakges map[string]interface{}
+	data, err := ioutil.ReadFile(api.PackageManifest)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(data, &pacakges)
+	for key := range pacakges {
+		fmt.Println(key)
+		/*
+			value, _ := value.(map[string]interface{})
+			fmt.Print(value["runtime"])
+			fmt.Print(value["version"])
+		*/
+	}
+
+}
+
 func main() {
 	var cmdRun = &cobra.Command{
 		Use:   "run [ELF file]",
@@ -224,11 +254,18 @@ func main() {
 		Run:   printVersion,
 	}
 
+	var cmdList = &cobra.Command{
+		Use:   "list",
+		Short: "list packages",
+		Run:   cmdListPackages,
+	}
+
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.AddCommand(cmdNet)
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdPrintConfig)
 	rootCmd.AddCommand(cmdVersion)
+	rootCmd.AddCommand(cmdList)
 	rootCmd.Execute()
 }
