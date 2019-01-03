@@ -232,6 +232,10 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 	return nil
 }
 
+func DownloadFile(filepath string, url string) error {
+	return downloadFile(filepath, url, dummy{})
+}
+
 func downloadFile(filepath string, url string, w io.Writer) error {
 	// download to a temp file and later rename it
 	out, err := os.Create(filepath + ".tmp")
