@@ -1,12 +1,16 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -174,6 +178,119 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func buildFromPackage(program string, packagepath string, c *api.Config) {
+	var err error
+	err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+	panicOnError(err)
+	err = api.BuildImageFromPackage(program, packagepath, *c)
+	panicOnError(err)
+}
+
+func loadCommandHandler(cmd *cobra.Command, args []string) {
+
+	localpackage := DownloadPackage(args[0])
+	ExtractPackage(localpackage, ".staging")
+	// load the package manifest
+	manifest := path.Join(".staging", args[0], "package.manifest")
+	if _, err := os.Stat(manifest); err != nil {
+		panic(err)
+	}
+	data, err := ioutil.ReadFile(manifest)
+	if err != nil {
+		panic(err)
+	}
+	var metadata map[string]string
+	json.Unmarshal(data, &metadata)
+	program := path.Join(args[0], metadata["program"])
+
+	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	cmdargs, _ := cmd.Flags().GetStringArray("args")
+	c := unWarpConfig(config)
+	c.Args = append(c.Args, cmdargs...)
+	if debugflags {
+		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	}
+
+	buildFromPackage(program, path.Join(".staging", args[0]), c)
+
+	fmt.Printf("booting %s ...\n", api.FinalImg)
+	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
+	if err != nil {
+		panic(err)
+	}
+	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		panic(errors.New("No hypervisor found on $PATH"))
+	}
+	runconfig := api.RuntimeConfig(api.FinalImg, []int{port}, true)
+	hypervisor.Start(&runconfig)
+}
+
+func DownloadPackage(name string) string {
+
+	if _, err := os.Stat(api.PackagesCache); os.IsNotExist(err) {
+		os.MkdirAll(api.PackagesCache, 0755)
+	}
+	archivename := name + ".tar.gz"
+	packagepath := path.Join(api.PackagesCache, archivename)
+	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
+		if err = api.DownloadFile(packagepath, fmt.Sprintf(api.PackageBaseURL, archivename)); err != nil {
+			panic(err)
+		}
+	}
+	return packagepath
+}
+
+func ExtractPackage(archive string, dest string) {
+	in, err := os.Open(archive)
+	if err != nil {
+		panic(err)
+	}
+	gzip, err := gzip.NewReader(in)
+	if err != nil {
+		panic(err)
+	}
+	defer gzip.Close()
+	tr := tar.NewReader(gzip)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			panic(err)
+		}
+		if header == nil {
+			continue
+		}
+		target := filepath.Join(dest, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					panic(err)
+				}
+			}
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				panic(err)
+			}
+
+			if _, err := io.Copy(f, tr); err != nil {
+				panic(err)
+			}
+			f.Close()
+		}
+	}
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	var err error
@@ -206,11 +323,12 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 func main() {
 	var cmdRun = &cobra.Command{
-		Use:   "run [ELF file]",
-		Short: "Run ELF as unikernel",
+		Use:   "run [elf]",
+		Short: "Run ELF binary as unikernel",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   runCommandHandler,
 	}
+
 	var port int
 	var force bool
 	var debugflags bool
@@ -260,6 +378,18 @@ func main() {
 		Run:   cmdListPackages,
 	}
 
+	var cmdLoadPackage = &cobra.Command{
+		Use:   "load [packagename]",
+		Short: "load and run a package from ['ops list']",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   loadCommandHandler,
+	}
+
+	cmdLoadPackage.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
+	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
+	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.AddCommand(cmdNet)
@@ -267,5 +397,6 @@ func main() {
 	rootCmd.AddCommand(cmdPrintConfig)
 	rootCmd.AddCommand(cmdVersion)
 	rootCmd.AddCommand(cmdList)
+	rootCmd.AddCommand(cmdLoadPackage)
 	rootCmd.Execute()
 }
