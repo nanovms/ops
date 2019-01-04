@@ -19,7 +19,22 @@ import (
 // supplied ELF binary.
 func BuildImage(userImage string, c Config) error {
 	var err error
-	if err = buildImage(userImage, &c); err != nil {
+	m, err := BuildManifest(userImage, &c)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	if err = buildImage(userImage, &c, m); err != nil {
+		return errors.Wrap(err, 1)
+	}
+	return nil
+}
+
+func BuildImageFromPackage(program string, packagepath string, c Config) error {
+	m, err := BuildPackageManifest(packagepath, &c, program)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	if err := buildImage(program, &c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 	return nil
@@ -66,27 +81,21 @@ func addHostName(m *Manifest, c *Config) {
 	m.AddFile("/proc/sys/kernel/hostname", temp)
 }
 
-func BuildManifest(userImage string, c *Config) (*Manifest, error) {
-
+func BuildPackageManifest(packagepath string, c *Config, userImage string) (*Manifest, error) {
 	initDefaultImages(c)
-
 	m := NewManifest()
+	addFromConfig(userImage, m, c)
+
+	// Add files from package
+
+	return m, nil
+}
+
+func addFromConfig(userImage string, m *Manifest, c *Config) {
 	m.AddUserProgram(userImage)
 	m.AddKernal(c.Kernel)
-
-	// run ldd and capture dependencies
-	fmt.Println("Finding dependent shared libs")
-	deps, err := getSharedLibs(userImage)
-	if err != nil {
-		return nil, errors.Wrap(err, 1)
-	}
-	for _, libpath := range deps {
-		m.AddLibrary(libpath)
-	}
-
 	addDNSConfig(m, c)
 	addHostName(m, c)
-
 	for _, f := range c.Files {
 		m.AddFile(f, f)
 	}
@@ -104,6 +113,21 @@ func BuildManifest(userImage string, c *Config) (*Manifest, error) {
 	}
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
+	}
+}
+
+func BuildManifest(userImage string, c *Config) (*Manifest, error) {
+	initDefaultImages(c)
+	m := NewManifest()
+	addFromConfig(userImage, m, c)
+	// run ldd and capture dependencies
+	fmt.Println("Finding dependent shared libs")
+	deps, err := getSharedLibs(userImage)
+	if err != nil {
+		return nil, errors.Wrap(err, 1)
+	}
+	for _, libpath := range deps {
+		m.AddLibrary(libpath)
 	}
 	return m, nil
 }
@@ -146,13 +170,10 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 	})
 }
 
-func buildImage(userImage string, c *Config) error {
+func buildImage(userImage string, c *Config, m *Manifest) error {
 	//  prepare manifest file
 	var elfmanifest string
-	m, err := BuildManifest(userImage, c)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
+
 	elfmanifest = m.String()
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)

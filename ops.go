@@ -178,9 +178,58 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func buildFromPackage(program string, packagepath string, c *api.Config) {
+	var err error
+	err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+	panicOnError(err)
+	err = api.BuildImageFromPackage(program, packagepath, *c)
+	panicOnError(err)
+}
+
 func loadCommandHandler(cmd *cobra.Command, args []string) {
+
 	localpackage := DownloadPackage(args[0])
 	ExtractPackage(localpackage, ".staging")
+	// load the package manifest
+	manifest := path.Join(".staging", args[0], "package.manifest")
+	if _, err := os.Stat(manifest); err != nil {
+		panic(err)
+	}
+	data, err := ioutil.ReadFile(manifest)
+	if err != nil {
+		panic(err)
+	}
+	var metadata map[string]string
+	json.Unmarshal(data, &metadata)
+	program := path.Join(args[0], metadata["program"])
+
+	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	cmdargs, _ := cmd.Flags().GetStringArray("args")
+	c := unWarpConfig(config)
+	c.Args = append(c.Args, cmdargs...)
+	if debugflags {
+		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	}
+
+	buildFromPackage(program, path.Join(".staging", args[0]), c)
+
+	fmt.Printf("booting %s ...\n", api.FinalImg)
+	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
+	if err != nil {
+		panic(err)
+	}
+	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		panic(errors.New("No hypervisor found on $PATH"))
+	}
+	runconfig := api.RuntimeConfig(api.FinalImg, []int{port}, true)
+	hypervisor.Start(&runconfig)
 }
 
 func DownloadPackage(name string) string {
