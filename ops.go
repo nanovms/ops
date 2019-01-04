@@ -88,15 +88,26 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	buildImages(args[0], force, c)
 	fmt.Printf("booting %s ...\n", api.FinalImg)
-	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
+
+	ports := []int{}
+	port, err := cmd.Flags().GetStringArray("port")
+
 	if err != nil {
 		panic(err)
 	}
+	for _, p := range port {
+		i, err := strconv.Atoi(p)
+		if err != nil {
+			panic(err)
+		}
+		ports = append(ports, i)
+	}
+
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := api.RuntimeConfig(api.FinalImg, []int{port}, verbose)
+	runconfig := api.RuntimeConfig(api.FinalImg, ports, verbose)
 	hypervisor.Start(&runconfig)
 }
 
@@ -329,14 +340,14 @@ func main() {
 		Run:   runCommandHandler,
 	}
 
-	var port int
+	var ports []string
 	var force bool
 	var debugflags bool
 	var args []string
 	var config string
 	var verbose bool
 
-	cmdRun.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
+	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
@@ -385,7 +396,7 @@ func main() {
 		Run:   loadCommandHandler,
 	}
 
-	cmdLoadPackage.PersistentFlags().IntVarP(&port, "port", "p", -1, "port to forward")
+	cmdLoadPackage.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
