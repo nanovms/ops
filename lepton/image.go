@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/go-errors/errors"
 )
@@ -81,17 +82,40 @@ func addHostName(m *Manifest, c *Config) {
 	m.AddFile("/proc/sys/kernel/hostname", temp)
 }
 
+func addFilesFromPackage(packagepath string, m *Manifest) {
+
+	rootpath := "sysroot"
+	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		parts := strings.Split(hostpath, string(os.PathSeparator))
+		// files the need to go to root(/) are under sysroot in the package
+		// rest of the files goes to /packagename folder
+		if len(parts) > 2 && parts[2] == rootpath {
+			m.AddFile(strings.Join(parts[3:], string(os.PathSeparator)), hostpath)
+		} else {
+			m.AddFile(strings.Join(parts[1:], string(os.PathSeparator)), hostpath)
+		}
+		return nil
+	})
+}
+
 func BuildPackageManifest(packagepath string, c *Config, userImage string) (*Manifest, error) {
 	initDefaultImages(c)
 	m := NewManifest()
 	addFromConfig(userImage, m, c)
 
 	// Add files from package
-
+	addFilesFromPackage(packagepath, m)
 	return m, nil
 }
 
 func addFromConfig(userImage string, m *Manifest, c *Config) {
+	fmt.Println(userImage)
 	m.AddUserProgram(userImage)
 	m.AddKernal(c.Kernel)
 	addDNSConfig(m, c)
