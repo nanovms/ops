@@ -97,7 +97,7 @@ func (m *Manifest) AddFile(filepath string, hostpath string) {
 		node = node[parts[i]].(map[string]interface{})
 	}
 	node[parts[len(parts)-1]] = hostpath
-	fmt.Printf("Adding file %s\n", hostpath)
+	fmt.Printf("%s => %s\n", hostpath, filepath)
 }
 
 // AddLibrary to add a dependent library

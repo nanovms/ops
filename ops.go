@@ -87,7 +87,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 	buildImages(args[0], force, c)
-	fmt.Printf("booting %s ...\n", api.FinalImg)
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -102,6 +101,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		}
 		ports = append(ports, i)
 	}
+
+	fmt.Printf("booting %s ...\n", api.FinalImg)
 
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
@@ -230,16 +231,26 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	buildFromPackage(program, path.Join(".staging", args[0]), c)
 
-	fmt.Printf("booting %s ...\n", api.FinalImg)
-	port, err := strconv.Atoi(cmd.Flag("port").Value.String())
+	ports := []int{}
+	port, err := cmd.Flags().GetStringArray("port")
+
 	if err != nil {
 		panic(err)
 	}
+	for _, p := range port {
+		i, err := strconv.Atoi(p)
+		if err != nil {
+			panic(err)
+		}
+		ports = append(ports, i)
+	}
+
+	fmt.Printf("booting %s ...\n", api.FinalImg)
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := api.RuntimeConfig(api.FinalImg, []int{port}, true)
+	runconfig := api.RuntimeConfig(api.FinalImg, ports, true)
 	hypervisor.Start(&runconfig)
 }
 
