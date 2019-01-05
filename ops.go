@@ -86,6 +86,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
+	c.RunConfig.Verbose = verbose
 	buildImages(args[0], force, c)
 
 	ports := []int{}
@@ -108,8 +109,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := api.RuntimeConfig(api.FinalImg, ports, verbose)
-	hypervisor.Start(&runconfig)
+	runconfig := InitRuntimeConfig(c, ports)
+	hypervisor.Start(runconfig)
 }
 
 func buildImages(userBin string, useLatest bool, c *api.Config) {
@@ -250,8 +251,20 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := api.RuntimeConfig(api.FinalImg, ports, true)
-	hypervisor.Start(&runconfig)
+	runconfig := InitRuntimeConfig(c, ports)
+	hypervisor.Start(runconfig)
+}
+
+func InitRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
+
+	if c.RunConfig.Imagename == "" {
+		c.RunConfig.Imagename = api.FinalImg
+	}
+	if c.RunConfig.Memory == "" {
+		c.RunConfig.Memory = "2G"
+	}
+	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
+	return &c.RunConfig
 }
 
 func DownloadPackage(name string) string {

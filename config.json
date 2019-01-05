@@ -1,5 +1,6 @@
 {
   "Files":["ex.js"],
   "Args":["node","ex.js"],
-  "Env" : {"NODE_DEBUG": "*", "NODE_DEBUG_NATIVE": "*" }
+  "Env" : {"NODE_DEBUG": "*", "NODE_DEBUG_NATIVE": "*" },
+  "RunConfig" : {"Memory": "2G"}
 }
