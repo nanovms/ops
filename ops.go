@@ -83,11 +83,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
+	c.Program = args[0]
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 	c.RunConfig.Verbose = verbose
-	buildImages(args[0], force, c)
+	buildImages(force, c)
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -109,19 +110,19 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := InitRuntimeConfig(c, ports)
+	runconfig := DefaultRuntimeConfig(c, ports)
 	hypervisor.Start(runconfig)
 }
 
-func buildImages(userBin string, useLatest bool, c *api.Config) {
+func buildImages(useLatest bool, c *api.Config) {
 	var err error
 	if useLatest {
-		err = api.DownloadImages(callback{}, api.DevBaseUrl)
+		err = api.DownloadImages(api.DevBaseUrl)
 	} else {
-		err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+		err = api.DownloadImages(api.ReleaseBaseUrl)
 	}
 	panicOnError(err)
-	err = api.BuildImage(userBin, *c)
+	err = api.BuildImage(*c)
 	panicOnError(err)
 }
 
@@ -129,14 +130,15 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
-	buildImages(args[0], false, c)
+	buildImages(false, c)
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
-	m, err := api.BuildManifest(args[0], c)
+	c.Program = args[0]
+	m, err := api.BuildManifest(c)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -145,23 +147,6 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 
 func printVersion(cmd *cobra.Command, args []string) {
 	fmt.Println("0.1")
-}
-
-type callback struct {
-	total uint64
-}
-
-func (bc callback) Write(p []byte) (int, error) {
-	n := len(p)
-	bc.total += uint64(n)
-	bc.printProgress()
-	return n, nil
-}
-
-func (bc callback) printProgress() {
-	// clear the previous line
-	fmt.Printf("\r%s", strings.Repeat(" ", 35))
-	fmt.Printf("\rDownloading... %v complete", bc.total)
 }
 
 func runningAsRoot() bool {
@@ -191,30 +176,48 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func buildFromPackage(program string, packagepath string, c *api.Config) {
+func buildFromPackage(packagepath string, c *api.Config) {
 	var err error
-	err = api.DownloadImages(callback{}, api.ReleaseBaseUrl)
+	err = api.DownloadImages(api.ReleaseBaseUrl)
 	panicOnError(err)
-	err = api.BuildImageFromPackage(program, packagepath, *c)
+	err = api.BuildImageFromPackage(packagepath, *c)
 	panicOnError(err)
+}
+
+// merge userconfig to package config, user config takes precedence
+func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
+
+	pkgConfig.Args = append(pkgConfig.Args, usrConfig.Args...)
+	pkgConfig.Dirs = append(pkgConfig.Dirs, usrConfig.Dirs...)
+	pkgConfig.Files = append(pkgConfig.Files, usrConfig.Files...)
+
+	for k, v := range usrConfig.Env {
+		pkgConfig.Env[k] = v
+	}
+
+	if usrConfig.RunConfig.Imagename != "" {
+		pkgConfig.RunConfig.Imagename = usrConfig.RunConfig.Imagename
+	}
+
+	if usrConfig.RunConfig.Memory != "" {
+		pkgConfig.RunConfig.Memory = usrConfig.RunConfig.Memory
+	}
+	return pkgConfig
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	localpackage := DownloadPackage(args[0])
+	fmt.Printf("Extracting %s...\n", localpackage)
 	ExtractPackage(localpackage, ".staging")
+
 	// load the package manifest
 	manifest := path.Join(".staging", args[0], "package.manifest")
 	if _, err := os.Stat(manifest); err != nil {
 		panic(err)
 	}
-	data, err := ioutil.ReadFile(manifest)
-	if err != nil {
-		panic(err)
-	}
-	var metadata map[string]string
-	json.Unmarshal(data, &metadata)
-	program := path.Join(args[0], metadata["program"])
+
+	pkgConfig := unWarpConfig(manifest)
 
 	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
 	if err != nil {
@@ -226,11 +229,14 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
+
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 
-	buildFromPackage(program, path.Join(".staging", args[0]), c)
+	c = mergeConfigs(pkgConfig, c)
+
+	buildFromPackage(path.Join(".staging", args[0]), c)
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -251,11 +257,13 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := InitRuntimeConfig(c, ports)
+
+	runconfig := DefaultRuntimeConfig(c, ports)
 	hypervisor.Start(runconfig)
+
 }
 
-func InitRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
+func DefaultRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
 
 	if c.RunConfig.Imagename == "" {
 		c.RunConfig.Imagename = api.FinalImg
@@ -275,7 +283,8 @@ func DownloadPackage(name string) string {
 	archivename := name + ".tar.gz"
 	packagepath := path.Join(api.PackagesCache, archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
-		if err = api.DownloadFile(packagepath, fmt.Sprintf(api.PackageBaseURL, archivename)); err != nil {
+		if err = api.DownloadFile(packagepath,
+			fmt.Sprintf(api.PackageBaseURL, archivename)); err != nil {
 			panic(err)
 		}
 	}

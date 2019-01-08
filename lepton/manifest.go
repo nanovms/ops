@@ -88,6 +88,7 @@ func (m *Manifest) AddDirectory(dir string) error {
 }
 
 func (m *Manifest) AddFile(filepath string, hostpath string) {
+	fmt.Printf("%s => %s\n", hostpath, filepath)
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := m.children
 	for i := 0; i < len(parts)-1; i++ {
@@ -97,7 +98,6 @@ func (m *Manifest) AddFile(filepath string, hostpath string) {
 		node = node[parts[i]].(map[string]interface{})
 	}
 	node[parts[len(parts)-1]] = hostpath
-	fmt.Printf("%s => %s\n", hostpath, filepath)
 }
 
 // AddLibrary to add a dependent library
