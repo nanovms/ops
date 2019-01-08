@@ -39,7 +39,7 @@ func (q *qemu) Stop() {
 	}
 }
 func logv(rconfig *RunConfig, msg string) {
-	if rconfig.verbose {
+	if rconfig.Verbose {
 		fmt.Println(msg)
 	}
 }
@@ -66,13 +66,13 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	boot := []string{"-drive", "file=image,format=raw,index=0"}
 	storage := []string{"-drive", "file=image,format=raw,if=virtio"}
 	var net []string
-	if len(rconfig.ports) > 0 {
+	if len(rconfig.Ports) > 0 {
 		// hostfwd=tcp::8080-:8080
 		portfw := []string{}
 		portfw = append(portfw,
-			fmt.Sprintf("hostfwd=tcp::%v-:%v", rconfig.ports[0], rconfig.ports[0]))
+			fmt.Sprintf("hostfwd=tcp::%v-:%v", rconfig.Ports[0], rconfig.Ports[0]))
 
-		for _, port := range rconfig.ports[1:] {
+		for _, port := range rconfig.Ports[1:] {
 			portfw = append(portfw,
 				fmt.Sprintf("hostfwd=tcp::%v-:%v", port, port))
 		}
@@ -86,10 +86,10 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	display := []string{"-display", "none", "-serial", "stdio"}
 	args = append(args, boot...)
 	args = append(args, display...)
-	args = append(args, []string{"-nodefaults", "-no-reboot", "-m", "2G", "-device", "isa-debug-exit"}...)
+	args = append(args, []string{"-nodefaults", "-no-reboot", "-m", rconfig.Memory, "-device", "isa-debug-exit"}...)
 	args = append(args, storage...)
 	args = append(args, net...)
-	if len(rconfig.ports) <= 0 {
+	if len(rconfig.Ports) <= 0 {
 		args = append(args, "-enable-kvm")
 	}
 	return args

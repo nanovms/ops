@@ -14,13 +14,15 @@ type Config struct {
 	DiskImage  string
 	Mkfs       string
 	NameServer string
+	RunConfig  RunConfig
 }
 
 // Runtime configs
 type RunConfig struct {
-	imagename string
-	ports     []int
-	verbose   bool
+	Imagename string
+	Ports     []int
+	Verbose   bool
+	Memory    string
 }
 
 func DefaultConfig() Config {
@@ -28,5 +30,5 @@ func DefaultConfig() Config {
 }
 
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
-	return RunConfig{imagename: image, ports: ports, verbose: verbose}
+	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G"}
 }
