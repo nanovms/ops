@@ -9,6 +9,7 @@ type Config struct {
 	Env        map[string]string
 	Debugflags []string
 	Program    string
+	Version    string
 	Boot       string
 	Kernel     string
 	DiskImage  string
