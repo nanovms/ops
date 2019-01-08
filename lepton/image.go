@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -18,24 +19,24 @@ import (
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
-func BuildImage(userImage string, c Config) error {
+func BuildImage(c Config) error {
 	var err error
-	m, err := BuildManifest(userImage, &c)
+	m, err := BuildManifest(&c)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	if err = buildImage(userImage, &c, m); err != nil {
+	if err = buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 	return nil
 }
 
-func BuildImageFromPackage(program string, packagepath string, c Config) error {
-	m, err := BuildPackageManifest(packagepath, &c, program)
+func BuildImageFromPackage(packagepath string, c Config) error {
+	m, err := BuildPackageManifest(packagepath, &c)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	if err := buildImage(program, &c, m); err != nil {
+	if err := buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 	return nil
@@ -104,19 +105,25 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 	})
 }
 
-func BuildPackageManifest(packagepath string, c *Config, userImage string) (*Manifest, error) {
+func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	initDefaultImages(c)
 	m := NewManifest()
-	addFromConfig(userImage, m, c)
+
+	m.program = c.Program
+
+	addFromConfig(m, c)
+
+	if len(c.Args) > 1 {
+		m.AddFile(c.Args[1], c.Args[1])
+	}
 
 	// Add files from package
 	addFilesFromPackage(packagepath, m)
 	return m, nil
 }
 
-func addFromConfig(userImage string, m *Manifest, c *Config) {
-	fmt.Println(userImage)
-	m.AddUserProgram(userImage)
+func addFromConfig(m *Manifest, c *Config) {
+
 	m.AddKernal(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
@@ -140,13 +147,17 @@ func addFromConfig(userImage string, m *Manifest, c *Config) {
 	}
 }
 
-func BuildManifest(userImage string, c *Config) (*Manifest, error) {
+func BuildManifest(c *Config) (*Manifest, error) {
+
 	initDefaultImages(c)
 	m := NewManifest()
-	addFromConfig(userImage, m, c)
+
+	addFromConfig(m, c)
+	m.AddUserProgram(c.Program)
+
 	// run ldd and capture dependencies
 	fmt.Println("Finding dependent shared libs")
-	deps, err := getSharedLibs(userImage)
+	deps, err := getSharedLibs(c.Program)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
@@ -194,7 +205,7 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 	})
 }
 
-func buildImage(userImage string, c *Config, m *Manifest) error {
+func buildImage(c *Config, m *Manifest) error {
 	//  prepare manifest file
 	var elfmanifest string
 
@@ -241,18 +252,18 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 func DownloadBootImages() error {
-	return DownloadImages(dummy{}, ReleaseBaseUrl)
+	return DownloadImages(ReleaseBaseUrl)
 }
 
 // DownloadImages downloads latest kernel images.
-func DownloadImages(w io.Writer, baseUrl string) error {
+func DownloadImages(baseUrl string) error {
 	var err error
 	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
 		os.MkdirAll(".staging", 0755)
 	}
 
 	if _, err = os.Stat(Mkfs); os.IsNotExist(err) {
-		if err = downloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), w); err != nil {
+		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs"))); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
@@ -264,13 +275,13 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 	}
 
 	if _, err = os.Stat(BootImg); os.IsNotExist(err) {
-		if err = downloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img"), w); err != nil {
+		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img")); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
 	if _, err = os.Stat(KernelImg); os.IsNotExist(err) {
-		if err = downloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img"), w); err != nil {
+		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img")); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
@@ -278,29 +289,38 @@ func DownloadImages(w io.Writer, baseUrl string) error {
 }
 
 func DownloadFile(filepath string, url string) error {
-	return downloadFile(filepath, url, dummy{})
-}
 
-func downloadFile(filepath string, url string, w io.Writer) error {
-	// download to a temp file and later rename it
+	// Create the file, but give it a tmp file extension, this means we won't overwrite a
+	// file until it's downloaded, but we'll remove the tmp extension once downloaded.
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 	defer out.Close()
+
+	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 	defer resp.Body.Close()
-	// progress reporter.
-	_, err = io.Copy(out, io.TeeReader(resp.Body, w))
+
+	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+
+	// Create our progress reporter and pass it to be used alongside our writer
+	counter := NewWriteCounter(fsize)
+	counter.Start()
+
+	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
+
+	counter.Finish()
+
 	err = os.Rename(filepath+".tmp", filepath)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 	return nil
 }

@@ -55,7 +55,8 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 
 func runHyperVisor(userImage string, expected string, t *testing.T) {
 	var c api.Config
-	err := api.BuildImage(userImage, c)
+	c.Program = userImage
+	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +88,9 @@ func TestImageWithStaticFiles(t *testing.T) {
 	api.DownloadBootImages()
 	var c api.Config
 	c.Dirs = []string{"data/static"}
-	err := api.BuildImage("data/main", c)
+	c.Program = "data/main"
+	c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
 	}
