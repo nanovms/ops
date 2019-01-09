@@ -66,7 +66,7 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	boot := []string{"-drive", "file=image,format=raw,index=0"}
 	storage := []string{"-drive", "file=image,format=raw,if=virtio"}
 	var net []string
-	if len(rconfig.Ports) > 0 {
+	if rconfig.UserMode {
 		// hostfwd=tcp::8080-:8080
 		portfw := []string{}
 		portfw = append(portfw,
@@ -89,7 +89,7 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	args = append(args, []string{"-nodefaults", "-no-reboot", "-m", rconfig.Memory, "-device", "isa-debug-exit"}...)
 	args = append(args, storage...)
 	args = append(args, net...)
-	if len(rconfig.Ports) <= 0 {
+	if !rconfig.UserMode {
 		args = append(args, "-enable-kvm")
 	}
 	return args
