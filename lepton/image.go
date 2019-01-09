@@ -110,7 +110,6 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	m := NewManifest()
 
 	m.program = c.Program
-
 	addFromConfig(m, c)
 
 	if len(c.Args) > 1 {
@@ -127,6 +126,7 @@ func addFromConfig(m *Manifest, c *Config) {
 	m.AddKernal(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
+
 	for _, f := range c.Files {
 		m.AddFile(f, f)
 	}
@@ -139,9 +139,11 @@ func addFromConfig(m *Manifest, c *Config) {
 	for _, a := range c.Args {
 		m.AddArgument(a)
 	}
+
 	for _, dbg := range c.Debugflags {
 		m.AddDebugFlag(dbg, 't')
 	}
+
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
@@ -290,8 +292,7 @@ func DownloadImages(baseUrl string) error {
 
 func DownloadFile(filepath string, url string) error {
 
-	// Create the file, but give it a tmp file extension, this means we won't overwrite a
-	// file until it's downloaded, but we'll remove the tmp extension once downloaded.
+	fmt.Println("Downloading..%s", filepath)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err
