@@ -292,7 +292,7 @@ func DownloadImages(baseUrl string) error {
 
 func DownloadFile(filepath string, url string) error {
 
-	fmt.Println("Downloading..%s", filepath)
+	fmt.Println("Downloading..", filepath)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err

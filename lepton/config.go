@@ -32,5 +32,5 @@ func DefaultConfig() Config {
 }
 
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
-	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G"}
+	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G", UserMode: true}
 }
