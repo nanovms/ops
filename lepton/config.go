@@ -24,6 +24,7 @@ type RunConfig struct {
 	Ports     []int
 	Verbose   bool
 	Memory    string
+	UserMode  bool
 }
 
 func DefaultConfig() Config {

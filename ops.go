@@ -78,6 +78,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	usermode, err := strconv.ParseBool(cmd.Flag("usermode").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -88,6 +93,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 	c.RunConfig.Verbose = verbose
+	c.RunConfig.UserMode = usermode
 	buildImages(force, c)
 
 	ports := []int{}
@@ -236,12 +242,18 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	usermode, err := strconv.ParseBool(cmd.Flag("usermode").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 	c.RunConfig.Verbose = verbose
+	c.RunConfig.UserMode = usermode
 
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
@@ -290,11 +302,8 @@ func DefaultRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
 
 func DownloadPackage(name string) string {
 
-	if _, err := os.Stat(api.PackagesCache); os.IsNotExist(err) {
-		os.MkdirAll(api.PackagesCache, 0755)
-	}
 	archivename := name + ".tar.gz"
-	packagepath := path.Join(api.PackagesCache, archivename)
+	packagepath := path.Join(api.GetPackageCache(), archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
 		if err = api.DownloadFile(packagepath,
 			fmt.Sprintf(api.PackageBaseURL, archivename)); err != nil {
@@ -392,6 +401,7 @@ func main() {
 	var args []string
 	var config string
 	var verbose bool
+	var usermode bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
@@ -399,6 +409,7 @@ func main() {
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
+	cmdRun.PersistentFlags().BoolVarP(&usermode, "usermode", "u", true, "usermode networking")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
@@ -447,6 +458,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&usermode, "usermode", "u", true, "usermode networking")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
