@@ -191,6 +191,13 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	pkgConfig.Dirs = append(pkgConfig.Dirs, usrConfig.Dirs...)
 	pkgConfig.Files = append(pkgConfig.Files, usrConfig.Files...)
 
+	pkgConfig.Debugflags = usrConfig.Debugflags
+	pkgConfig.RunConfig.Verbose = usrConfig.RunConfig.Verbose
+
+	for k, v := range usrConfig.MapDirs {
+		pkgConfig.MapDirs[k] = v
+	}
+
 	for k, v := range usrConfig.Env {
 		pkgConfig.Env[k] = v
 	}
@@ -224,11 +231,17 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	verbose, err := strconv.ParseBool(cmd.Flag("verbose").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
+	c.RunConfig.Verbose = verbose
 
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
@@ -433,6 +446,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)

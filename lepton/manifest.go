@@ -66,7 +66,9 @@ func (m *Manifest) AddRelative(key string, path string) {
 
 // AddDirectory adds all files in dir to image
 func (m *Manifest) AddDirectory(dir string) error {
-	fmt.Printf("Adding %s to image\n", dir)
+	if len(m.debugFlags) > 0 {
+		fmt.Printf("Adding %s to image\n", dir)
+	}
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -88,7 +90,11 @@ func (m *Manifest) AddDirectory(dir string) error {
 }
 
 func (m *Manifest) AddFile(filepath string, hostpath string) {
-	fmt.Printf("%s => %s\n", hostpath, filepath)
+
+	if len(m.debugFlags) > 0 {
+		fmt.Printf("%s=>%s", hostpath, filepath)
+	}
+
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := m.children
 	for i := 0; i < len(parts)-1; i++ {
