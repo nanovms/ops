@@ -66,22 +66,19 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	boot := []string{"-drive", "file=image,format=raw,index=0"}
 	storage := []string{"-drive", "file=image,format=raw,if=virtio"}
 	var net []string
-	if rconfig.UserMode {
+	if rconfig.Bridged {
+		net = []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0",
+			"-netdev", "tap,id=n0,ifname=tap0,script=no,downscript=no"}
+
+	} else {
 		// hostfwd=tcp::8080-:8080
 		portfw := []string{}
-		portfw = append(portfw,
-			fmt.Sprintf("hostfwd=tcp::%v-:%v", rconfig.Ports[0], rconfig.Ports[0]))
-
-		for _, port := range rconfig.Ports[1:] {
+		for _, port := range rconfig.Ports {
 			portfw = append(portfw,
 				fmt.Sprintf("hostfwd=tcp::%v-:%v", port, port))
 		}
 		net = []string{"-device", "virtio-net,netdev=n0", "-netdev",
 			"user,id=n0," + strings.Join(portfw, ",")}
-
-	} else {
-		net = []string{"-device", "virtio-net,mac=7e:b8:7e:87:4a:ea,netdev=n0",
-			"-netdev", "tap,id=n0,ifname=tap0,script=no,downscript=no"}
 	}
 	display := []string{"-display", "none", "-serial", "stdio"}
 	args = append(args, boot...)
@@ -89,7 +86,7 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	args = append(args, []string{"-nodefaults", "-no-reboot", "-m", rconfig.Memory, "-device", "isa-debug-exit"}...)
 	args = append(args, storage...)
 	args = append(args, net...)
-	if !rconfig.UserMode {
+	if rconfig.Bridged {
 		args = append(args, "-enable-kvm")
 	}
 	return args

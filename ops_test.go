@@ -89,7 +89,6 @@ func TestImageWithStaticFiles(t *testing.T) {
 	var c api.Config
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
-	c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)

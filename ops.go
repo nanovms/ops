@@ -78,7 +78,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	usermode, err := strconv.ParseBool(cmd.Flag("usermode").Value.String())
+	bridged, err := strconv.ParseBool(cmd.Flag("bridged").Value.String())
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +93,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 	c.RunConfig.Verbose = verbose
-	c.RunConfig.UserMode = usermode
+	c.RunConfig.Bridged = bridged
 	buildImages(force, c)
 
 	ports := []int{}
@@ -116,8 +116,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-	runconfig := DefaultRuntimeConfig(c, ports)
-	hypervisor.Start(runconfig)
+	InitDefaultRunConfigs(c, ports)
+	hypervisor.Start(&c.RunConfig)
 }
 
 func buildImages(useLatest bool, c *api.Config) {
@@ -242,7 +242,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	usermode, err := strconv.ParseBool(cmd.Flag("usermode").Value.String())
+	bridged, err := strconv.ParseBool(cmd.Flag("bridged").Value.String())
 	if err != nil {
 		panic(err)
 	}
@@ -253,7 +253,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 	c.RunConfig.Verbose = verbose
-	c.RunConfig.UserMode = usermode
+	c.RunConfig.Bridged = bridged
 
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
@@ -283,12 +283,12 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
 
-	runconfig := DefaultRuntimeConfig(c, ports)
-	hypervisor.Start(runconfig)
+	InitDefaultRunConfigs(c, ports)
+	hypervisor.Start(&c.RunConfig)
 
 }
 
-func DefaultRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
+func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
 	if c.RunConfig.Imagename == "" {
 		c.RunConfig.Imagename = api.FinalImg
@@ -297,7 +297,6 @@ func DefaultRuntimeConfig(c *api.Config, ports []int) *api.RunConfig {
 		c.RunConfig.Memory = "2G"
 	}
 	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
-	return &c.RunConfig
 }
 
 func DownloadPackage(name string) string {
@@ -401,7 +400,7 @@ func main() {
 	var args []string
 	var config string
 	var verbose bool
-	var usermode bool
+	var bridged bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
@@ -409,7 +408,7 @@ func main() {
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
-	cmdRun.PersistentFlags().BoolVarP(&usermode, "usermode", "u", true, "usermode networking")
+	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 
 	var cmdNet = &cobra.Command{
 		Use:       "net",
@@ -458,7 +457,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&usermode, "usermode", "u", true, "usermode networking")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
