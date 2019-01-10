@@ -200,6 +200,14 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	pkgConfig.Debugflags = usrConfig.Debugflags
 	pkgConfig.RunConfig.Verbose = usrConfig.RunConfig.Verbose
 
+	if pkgConfig.MapDirs == nil {
+		pkgConfig.MapDirs = make(map[string]string)
+	}
+
+	if pkgConfig.Env == nil {
+		pkgConfig.Env = make(map[string]string)
+	}
+
 	for k, v := range usrConfig.MapDirs {
 		pkgConfig.MapDirs[k] = v
 	}
