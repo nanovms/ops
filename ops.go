@@ -94,7 +94,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
-	buildImages(force, c)
+	c.NightlyBuild = force
+
+	buildImages(c)
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -120,12 +122,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
-func buildImages(useLatest bool, c *api.Config) {
+func buildImages(c *api.Config) {
 	var err error
-	if useLatest {
-		err = api.DownloadImages(api.DevBaseUrl)
+	if c.NightlyBuild {
+		err = api.DownloadImages(api.DevBaseUrl, c.NightlyBuild)
 	} else {
-		err = api.DownloadImages(api.ReleaseBaseUrl)
+		err = api.DownloadImages(api.ReleaseBaseUrl, c.NightlyBuild)
 	}
 	panicOnError(err)
 	err = api.BuildImage(*c)
@@ -136,7 +138,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
-	buildImages(false, c)
+	buildImages(c)
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
@@ -184,7 +186,11 @@ func netCommandHandler(cmd *cobra.Command, args []string) {
 
 func buildFromPackage(packagepath string, c *api.Config) {
 	var err error
-	err = api.DownloadImages(api.ReleaseBaseUrl)
+	if c.NightlyBuild {
+		err = api.DownloadImages(api.DevBaseUrl, c.NightlyBuild)
+	} else {
+		err = api.DownloadImages(api.ReleaseBaseUrl, c.NightlyBuild)
+	}
 	panicOnError(err)
 	err = api.BuildImageFromPackage(packagepath, *c)
 	panicOnError(err)
@@ -255,6 +261,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -262,7 +273,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	c.Args = append(c.Args, cmdargs...)
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
-
+	c.NightlyBuild = force
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
@@ -411,7 +422,7 @@ func main() {
 	var bridged bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
-	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "use latest dev images")
+	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "nightly build")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
@@ -466,6 +477,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&force, "force", "f", false, "nightly build")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)

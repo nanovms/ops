@@ -2,20 +2,21 @@ package lepton
 
 // Build configs
 type Config struct {
-	Args       []string
-	Dirs       []string
-	Files      []string
-	MapDirs    map[string]string
-	Env        map[string]string
-	Debugflags []string
-	Program    string
-	Version    string
-	Boot       string
-	Kernel     string
-	DiskImage  string
-	Mkfs       string
-	NameServer string
-	RunConfig  RunConfig
+	Args         []string
+	Dirs         []string
+	Files        []string
+	MapDirs      map[string]string
+	Env          map[string]string
+	Debugflags   []string
+	Program      string
+	Version      string
+	Boot         string
+	Kernel       string
+	DiskImage    string
+	Mkfs         string
+	NameServer   string
+	NightlyBuild bool
+	RunConfig    RunConfig
 }
 
 // Runtime configs

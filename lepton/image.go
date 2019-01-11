@@ -254,17 +254,17 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 func DownloadBootImages() error {
-	return DownloadImages(ReleaseBaseUrl)
+	return DownloadImages(ReleaseBaseUrl, false)
 }
 
 // DownloadImages downloads latest kernel images.
-func DownloadImages(baseUrl string) error {
+func DownloadImages(baseUrl string, force bool) error {
 	var err error
 	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
 		os.MkdirAll(".staging", 0755)
 	}
 
-	if _, err = os.Stat(Mkfs); os.IsNotExist(err) {
+	if _, err = os.Stat(Mkfs); os.IsNotExist(err) || force {
 		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs"))); err != nil {
 			return errors.Wrap(err, 1)
 		}
@@ -276,13 +276,13 @@ func DownloadImages(baseUrl string) error {
 		return errors.Wrap(err, 1)
 	}
 
-	if _, err = os.Stat(BootImg); os.IsNotExist(err) {
+	if _, err = os.Stat(BootImg); os.IsNotExist(err) || force {
 		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img")); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
-	if _, err = os.Stat(KernelImg); os.IsNotExist(err) {
+	if _, err = os.Stat(KernelImg); os.IsNotExist(err) || force {
 		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img")); err != nil {
 			return errors.Wrap(err, 1)
 		}
