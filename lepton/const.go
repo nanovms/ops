@@ -38,7 +38,7 @@ const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"
 
 const PackageBaseURL string = "https://storage.googleapis.com/packagehub/%v"
 const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
-const PackageManifest string = ".staging/manifest.json"
+const PackageManifestFileName string = "manifest.json"
 
 var PackagesCache string
 
@@ -54,4 +54,8 @@ func GetPackageCache() string {
 		}
 	}
 	return PackagesCache
+}
+
+func GetPackageManifestFile() string {
+	return path.Join(GetPackageCache(), PackageManifestFileName)
 }
