@@ -2,8 +2,9 @@
 
 [![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
 
-Interactive command line interface for interacting with Nanovms Unikernel. 
-
+Ops is the main interface for creating and managing [Nanovms](https://nanovms.com/) nanos unikernal. It is used to 
+package, create and run your application as a nanos unikernel instance.The basic structure of most command is 
+### `ops <command> [flags] [ARG]`
 # Building
 1. Clone the repository.
 2. Install dependencies:
@@ -37,7 +38,7 @@ Interactive command line interface for interacting with Nanovms Unikernel.
                 -example.html
                 -stylesheet 
                     -main.css
-    ## File layout on VM
+    ## File  layout on VM
         /myapp
             app
             /static
