@@ -162,23 +162,23 @@ func runningAsRoot() bool {
 	return i == 0
 }
 
-func netCommandHandler(cmd *cobra.Command, args []string) {
+func netSetupCommandHandler(cmd *cobra.Command, args []string) {
 	if !runningAsRoot() {
 		fmt.Println("net command needs root permission")
 		return
 	}
-	if len(args) < 1 {
-		fmt.Println("Not enough arguments.")
+	if err := setupBridgeNetwork(); err != nil {
+		panic(err)
+	}
+}
+
+func netResetCommandHandler(cmd *cobra.Command, args []string) {
+	if !runningAsRoot() {
+		fmt.Println("net command needs root permission")
 		return
 	}
-	if args[0] == "setup" {
-		if err := setupBridgeNetwork(); err != nil {
-			panic(err)
-		}
-	} else {
-		if err := resetBridgeNetwork(); err != nil {
-			panic(err)
-		}
+	if err := resetBridgeNetwork(); err != nil {
+		panic(err)
 	}
 }
 
@@ -410,12 +410,23 @@ func main() {
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 
+	var cmdNetSetup = &cobra.Command{
+		Use:   "setup",
+		Short: "Setup bridged network",
+		Run:   netSetupCommandHandler,
+	}
+
+	var cmdNetReset = &cobra.Command{
+		Use:   "reset",
+		Short: "Reset bridged network",
+		Run:   netResetCommandHandler,
+	}
+
 	var cmdNet = &cobra.Command{
 		Use:       "net",
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"setup", "reset"},
 		Short:     "Configure bridge network",
-		Run:       netCommandHandler,
 	}
 
 	var cmdBuild = &cobra.Command{
@@ -461,6 +472,8 @@ func main() {
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
+	cmdNet.AddCommand(cmdNetReset)
+	cmdNet.AddCommand(cmdNetSetup)
 	rootCmd.AddCommand(cmdNet)
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdPrintConfig)
