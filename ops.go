@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -378,31 +379,40 @@ func ExtractPackage(archive string, dest string) {
 func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	var err error
-	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
-		os.MkdirAll(".staging", 0755)
-	}
-
-	if _, err = os.Stat(api.PackageManifest); os.IsNotExist(err) {
-		if err = api.DownloadFile(api.PackageManifest, api.PackageManifestURL); err != nil {
+	packageManifest := api.GetPackageManifestFile()
+	if _, err = os.Stat(packageManifest); os.IsNotExist(err) {
+		if err = api.DownloadFile(packageManifest, api.PackageManifestURL); err != nil {
 			panic(err)
 		}
 	}
 
 	var pacakges map[string]interface{}
-	data, err := ioutil.ReadFile(api.PackageManifest)
+	data, err := ioutil.ReadFile(packageManifest)
 	if err != nil {
 		panic(err)
 	}
 	json.Unmarshal(data, &pacakges)
-	for key := range pacakges {
-		fmt.Println(key)
-		/*
-			value, _ := value.(map[string]interface{})
-			fmt.Print(value["runtime"])
-			fmt.Print(value["version"])
-		*/
-	}
 
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"PackageName", "Version", "Language", "Description"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor})
+
+	table.SetRowLine(true)
+
+	for key, value := range pacakges {
+		var row []string
+		crow, _ := value.(map[string]interface{})
+		row = append(row, key)
+		row = append(row, crow["version"].(string))
+		row = append(row, crow["language"].(string))
+		row = append(row, crow["runtime"].(string))
+		table.Append(row)
+	}
+	table.Render()
 }
 
 func main() {
