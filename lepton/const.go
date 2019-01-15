@@ -3,7 +3,6 @@ package lepton
 import (
 	"os"
 	"path"
-	"path/filepath"
 )
 
 // file system manifest
@@ -44,11 +43,11 @@ var PackagesCache string
 
 func GetPackageCache() string {
 	if PackagesCache == "" {
-		e, err := os.Executable()
+		home, err := HomeDir()
 		if err != nil {
 			panic(err)
 		}
-		PackagesCache = path.Join(filepath.Dir(e), ".packages")
+		PackagesCache = path.Join(home, ".packages")
 		if _, err := os.Stat(PackagesCache); os.IsNotExist(err) {
 			os.MkdirAll(PackagesCache, 0755)
 		}
