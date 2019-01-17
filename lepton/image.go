@@ -219,10 +219,10 @@ func buildImage(c *Config, m *Manifest) error {
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	_, err = io.WriteString(stdin, elfmanifest)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, elfmanifest)
+	}()
 	out, err := mkfs.CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
