@@ -1,9 +1,12 @@
-# Nanovms Command Line Interface
+# OPS
 
 [![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
 
-Ops is the main interface for creating and managing [Nanovms](https://nanovms.com/) nanos unikernal. It is used to 
-package, create and run your application as a nanos unikernel instance.The basic structure of most command is 
+Ops is the main interface for creating and running a Nanos unikernel. It is used to 
+package, create and run your application as a nanos unikernel instance.
+
+Check out the [DOCS](https://nanovms.gitbook.io/ops/)
+
 ### `ops <command> [flags] [ARG]`
 # Building
 1. Clone the repository.
@@ -11,21 +14,30 @@ package, create and run your application as a nanos unikernel instance.The basic
     - `make deps`
 3. Build 
     - `make build`
+
 # Setup networking
+
 ## bridge network 
 `sudo ops net setup` 
+
 ## reset
 `sudo ops net reset`
+
 # Build a bootable image
 `ops build <ELFBinary>`
+
 # Package and run
     ops run <ELFBinary>
     OR
     ops run -p <port> <ELFBinary>
+
 # Using a config file
     ops run -p <port> -c <file> <ELFBinary>
+
 # Example config file
-    ops config files are plain JSON, below is an example 
+
+ops config files are plain JSON, below is an example 
+
     {
         "Args":["one","two"],
         "Dirs":["myapp/static"]
