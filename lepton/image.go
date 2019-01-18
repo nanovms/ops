@@ -113,7 +113,9 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	addFromConfig(m, c)
 
 	if len(c.Args) > 1 {
-		m.AddFile(c.Args[1], c.Args[1])
+		if _, err := os.Stat(c.Args[1]); err == nil {
+			m.AddFile(c.Args[1], c.Args[1])
+		}
 	}
 
 	// Add files from package
