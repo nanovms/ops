@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -157,7 +158,18 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 }
 
 func printVersion(cmd *cobra.Command, args []string) {
-	fmt.Println("0.1")
+	fmt.Println(api.Version)
+}
+
+func updateCommandHandler(cmd *cobra.Command, args []string) {
+	fmt.Println("Checking for updates...")
+	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseUrl, runtime.GOOS))
+	if err != nil {
+		fmt.Println("Failed to update.", err)
+	} else {
+		fmt.Println("Successfully updated ops. Please restart.")
+	}
+	os.Exit(0)
 }
 
 func runningAsRoot() bool {
@@ -418,6 +430,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func main() {
+
 	var cmdRun = &cobra.Command{
 		Use:   "run [elf]",
 		Short: "Run ELF binary as unikernel",
@@ -494,6 +507,12 @@ func main() {
 		Run:   loadCommandHandler,
 	}
 
+	var cmdUpdate = &cobra.Command{
+		Use:   "update",
+		Short: "check for updates",
+		Run:   updateCommandHandler,
+	}
+
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
@@ -510,6 +529,7 @@ func main() {
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdPrintConfig)
 	rootCmd.AddCommand(cmdVersion)
+	rootCmd.AddCommand(cmdUpdate)
 	rootCmd.AddCommand(cmdList)
 	rootCmd.AddCommand(cmdLoadPackage)
 	rootCmd.Execute()

@@ -18,6 +18,9 @@ const manifest string = `(
     environment:(USER:bobby PWD:/)
 )`
 
+const Version = "0.2"
+const OpsReleaseUrl = "https://storage.googleapis.com/cli/%v/ops"
+
 // boot loader
 const BootImg string = ".staging/boot.img"
 
