@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"debug/elf"
 	"os"
+	"github.com/go-errors/errors"
 )
 
 func lookupFile(path string) (string, error) {
@@ -70,12 +71,12 @@ func findLib(libDirs []string, path string) (string, error) {
 func _getSharedLibs(path string) ([]string, error) {
 	path, err := lookupFile(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapPrefix(err, path, 0)
 	}
 
 	fd, err := elf.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapPrefix(err, path, 0)
 	}
 	defer fd.Close()
 
@@ -103,7 +104,7 @@ func _getSharedLibs(path string) ([]string, error) {
 		// append library
 		absLibpath, err := findLib(dt_runpath, libpath)
 		if err != nil {
-			return nil, err
+			return nil, errors.WrapPrefix(err, libpath, 0)
 		}
 		libs = append(libs, absLibpath)
 

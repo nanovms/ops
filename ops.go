@@ -152,6 +152,7 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 	m, err := api.BuildManifest(c)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	fmt.Println(m.String())
 }
