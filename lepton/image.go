@@ -199,10 +199,14 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 		if info.IsDir() {
 			return nil
 		}
-		_, filename := filepath.Split(hostpath)
+		hostdir, filename := filepath.Split(hostpath)
 		matched, _ := filepath.Match(pattern, filename)
 		if matched {
-			vmpath := filepath.Join(dest, filename)
+			reldir, err := filepath.Rel(dir, hostdir)
+			if err != nil {
+				return err
+			}
+			vmpath := filepath.Join(dest, reldir, filename)
 			m.AddFile(vmpath, hostpath)
 		}
 		return nil
