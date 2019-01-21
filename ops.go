@@ -139,7 +139,9 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
+	c.Program = args[0]
 	buildImages(c)
+	fmt.Printf("Bootable image file:%s\n", api.FinalImg)
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
