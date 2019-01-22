@@ -44,6 +44,12 @@ func logv(rconfig *RunConfig, msg string) {
 	}
 }
 
+func (q *qemu) Command(rconfig *RunConfig) *exec.Cmd {
+	args := q.Args(rconfig)
+	q.cmd = exec.Command("qemu-system-x86_64", args...)
+	return q.cmd
+}
+
 func (q *qemu) Start(rconfig *RunConfig) error {
 	args := q.Args(rconfig)
 	logv(rconfig, "qemu-system-x86_64 "+strings.Join(args, " "))
