@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/go-errors/errors"
 )
 
 func DownloadPackage(name string) string {
@@ -65,6 +67,17 @@ func ExtractPackage(archive string, dest string) {
 			f.Close()
 		}
 	}
+}
+
+func BuildImageFromPackage(packagepath string, c Config) error {
+	m, err := BuildPackageManifest(packagepath, &c)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	if err := buildImage(&c, m); err != nil {
+		return errors.Wrap(err, 1)
+	}
+	return nil
 }
 
 func BuildFromPackage(packagepath string, c *Config) error {
