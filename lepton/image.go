@@ -31,17 +31,6 @@ func BuildImage(c Config) error {
 	return nil
 }
 
-func BuildImageFromPackage(packagepath string, c Config) error {
-	m, err := BuildPackageManifest(packagepath, &c)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	if err := buildImage(&c, m); err != nil {
-		return errors.Wrap(err, 1)
-	}
-	return nil
-}
-
 func createFile(filepath string) (*os.File, error) {
 	path := path.Dir(filepath)
 	var _, err = os.Stat(path)
