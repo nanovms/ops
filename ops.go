@@ -1,8 +1,6 @@
 package main
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -199,18 +196,6 @@ func netResetCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func buildFromPackage(packagepath string, c *api.Config) {
-	var err error
-	if c.NightlyBuild {
-		err = api.DownloadImages(api.DevBaseUrl, c.NightlyBuild)
-	} else {
-		err = api.DownloadImages(api.ReleaseBaseUrl, c.NightlyBuild)
-	}
-	panicOnError(err)
-	err = api.BuildImageFromPackage(packagepath, *c)
-	panicOnError(err)
-}
-
 // merge userconfig to package config, user config takes precedence
 func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 
@@ -249,9 +234,9 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
 
-	localpackage := DownloadPackage(args[0])
+	localpackage := api.DownloadPackage(args[0])
 	fmt.Printf("Extracting %s...\n", localpackage)
-	ExtractPackage(localpackage, ".staging")
+	api.ExtractPackage(localpackage, ".staging")
 
 	// load the package manifest
 	manifest := path.Join(".staging", args[0], "package.manifest")
@@ -295,7 +280,9 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	c = mergeConfigs(pkgConfig, c)
 
-	buildFromPackage(path.Join(".staging", args[0]), c)
+	if err = api.BuildFromPackage(path.Join(".staging", args[0]), c); err != nil {
+		panic(err)
+	}
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -331,63 +318,6 @@ func InitDefaultRunConfigs(c *api.Config, ports []int) {
 		c.RunConfig.Memory = "2G"
 	}
 	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
-}
-
-func DownloadPackage(name string) string {
-
-	archivename := name + ".tar.gz"
-	packagepath := path.Join(api.GetPackageCache(), archivename)
-	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
-		if err = api.DownloadFile(packagepath,
-			fmt.Sprintf(api.PackageBaseURL, archivename)); err != nil {
-			panic(err)
-		}
-	}
-	return packagepath
-}
-
-func ExtractPackage(archive string, dest string) {
-	in, err := os.Open(archive)
-	if err != nil {
-		panic(err)
-	}
-	gzip, err := gzip.NewReader(in)
-	if err != nil {
-		panic(err)
-	}
-	defer gzip.Close()
-	tr := tar.NewReader(gzip)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
-			panic(err)
-		}
-		if header == nil {
-			continue
-		}
-		target := filepath.Join(dest, header.Name)
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					panic(err)
-				}
-			}
-		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				panic(err)
-			}
-
-			if _, err := io.Copy(f, tr); err != nil {
-				panic(err)
-			}
-			f.Close()
-		}
-	}
 }
 
 func cmdListPackages(cmd *cobra.Command, args []string) {
