@@ -17,6 +17,7 @@ type Config struct {
 	NameServer   string
 	NightlyBuild bool
 	RunConfig    RunConfig
+	Force        bool
 }
 
 // Runtime configs
