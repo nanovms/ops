@@ -129,22 +129,71 @@ ops_detect_profile() {
   fi
 }
 
+ops_detect_supported_linux_distribution() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DETECTED_DISTRIBUTION=$NAME
+  elif type lsb_release >/dev/null 2>&1; then
+    DETECTED_DISTRIBUTION=$(lsb_release -si)
+  elif [ -f /etc/lsb-release ]; then
+    . /etc/lsb-release
+    DETCTED_DISTRIBUTION=$DISTRIB_ID
+  elif [ -f /etc/debian_version ]; then
+    DETECTED_DISTRIBUTION=debian
+  elif [ -f /etc/fedora-release ]; then
+    DETECTED_DISTRIBUTION=fedora
+  elif [ -f /etc/centos-release ]; then
+    DETECTED_DISTRIBUTION=centos
+  fi
+
+  echo "$DETECTED_DISTRIBUTION"
+}
+
 ops_brew_install_qemu() {
   if which brew >/dev/null; then
-    if ! which qemu-system-x86_64>/dev/null; then
-      brew install qemu
-    fi
+    brew install qemu
   else
     printf "Homebrew not found.Please install from https://brew.sh/"
   fi
 }
 
+ops_apt_install_qemu(){
+  apt install qemu -y --no-upgrade
+}
+
+ops_dnf_install_qemu(){
+  dnf install qemu-kvm qemu-img -y
+}
+
+ops_yum_install_qemu(){
+  yum install qemu-kvm qemu-img -y
+}
+
 ops_install_qemu() {
-  # install qemu on mac
+  if which qemu-system-x86_64>/dev/null; then
+    return
+  fi
+  # install qemu on mac or supported linux distributions
   if [ "$OS" = "darwin" ]; then
     ops_brew_install_qemu
+  else
+    LINUX_DISTRIBUTION=`echo $(ops_detect_supported_linux_distribution) | tr '[:upper:]' '[:lower:]'`
+    case "$LINUX_DISTRIBUTION" in
+      *ubuntu*)
+        ops_apt_install_qemu
+        ;;
+      *fedora*)
+        ops_dnf_install_qemu
+        ;;
+      *centos*)
+        ops_yum_install_qemu
+        ;;
+      *debian*)
+        ops_apt_install_qemu
+        ;;
+    esac
   fi
-  
+
   if ! which qemu-system-x86_64>/dev/null; then
     printf "QEMU not found. Please install qemu using your package manager and re-run this script"
   fi
