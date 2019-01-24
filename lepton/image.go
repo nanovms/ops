@@ -49,7 +49,7 @@ func addDNSConfig(m *Manifest, c *Config) {
 	data := []byte("nameserver ")
 	data = append(data, []byte(c.NameServer)...)
 	temp := path.Join(os.TempDir(), "resolv")
-	err := ioutil.WriteFile(temp, data, 0644)
+	err := ioutil.WriteFile(temp, data, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +64,7 @@ func addHostName(m *Manifest, c *Config) {
 	// in nanos as a spcial file like other device files
 	data := []byte("uniboot")
 	temp := path.Join(os.TempDir(), "hostname")
-	err := ioutil.WriteFile(temp, data, 0644)
+	err := ioutil.WriteFile(temp, data, 0666)
 	if err != nil {
 		panic(err)
 	}
