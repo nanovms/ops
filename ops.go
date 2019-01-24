@@ -67,6 +67,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	nightly, err := strconv.ParseBool(cmd.Flag("nightly").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
 	if err != nil {
 		panic(err)
@@ -93,7 +98,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
-	c.NightlyBuild = force
+	c.NightlyBuild = nightly
+	c.Force = force
 
 	buildImages(c)
 
@@ -124,9 +130,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 func buildImages(c *api.Config) {
 	var err error
 	if c.NightlyBuild {
-		err = api.DownloadImages(api.DevBaseUrl, c.NightlyBuild)
+		err = api.DownloadImages(api.DevBaseUrl, c.Force)
 	} else {
-		err = api.DownloadImages(api.ReleaseBaseUrl, c.NightlyBuild)
+		err = api.DownloadImages(api.ReleaseBaseUrl, c.Force)
 	}
 	panicOnError(err)
 	err = api.BuildImage(*c)
@@ -267,6 +273,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	nightly, err := strconv.ParseBool(cmd.Flag("nightly").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -274,7 +285,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	c.Args = append(c.Args, cmdargs...)
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
-	c.NightlyBuild = force
+	c.NightlyBuild = nightly
+	c.Force = force
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
@@ -376,9 +388,11 @@ func main() {
 	var config string
 	var verbose bool
 	var bridged bool
+	var nightly bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
-	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "nightly build")
+	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
+	cmdRun.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
@@ -445,12 +459,13 @@ func main() {
 	}
 
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&force, "force", "f", false, "nightly build")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
