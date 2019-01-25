@@ -61,6 +61,10 @@ func unWarpConfig(file string) *api.Config {
 }
 
 func runCommandHandler(cmd *cobra.Command, args []string) {
+	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		panic(errors.New("No hypervisor found on $PATH"))
+	}
 
 	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
 	if err != nil {
@@ -119,10 +123,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("booting %s ...\n", api.FinalImg)
 
-	hypervisor := api.HypervisorInstance()
-	if hypervisor == nil {
-		panic(errors.New("No hypervisor found on $PATH"))
-	}
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
 }
@@ -240,6 +240,10 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
+	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		panic(errors.New("No hypervisor found on $PATH"))
+	}
 
 	localpackage := api.DownloadPackage(args[0])
 	fmt.Printf("Extracting %s...\n", localpackage)
@@ -312,10 +316,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("booting %s ...\n", api.FinalImg)
-	hypervisor := api.HypervisorInstance()
-	if hypervisor == nil {
-		panic(errors.New("No hypervisor found on $PATH"))
-	}
 
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
