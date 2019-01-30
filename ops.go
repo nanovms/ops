@@ -210,9 +210,6 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	pkgConfig.Dirs = append(pkgConfig.Dirs, usrConfig.Dirs...)
 	pkgConfig.Files = append(pkgConfig.Files, usrConfig.Files...)
 
-	pkgConfig.Debugflags = usrConfig.Debugflags
-	pkgConfig.RunConfig.Verbose = usrConfig.RunConfig.Verbose
-
 	if pkgConfig.MapDirs == nil {
 		pkgConfig.MapDirs = make(map[string]string)
 	}
@@ -287,15 +284,16 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
-	c.RunConfig.Verbose = verbose
-	c.RunConfig.Bridged = bridged
-	c.NightlyBuild = nightly
-	c.Force = force
+	
 	if debugflags {
-		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+		pkgConfig.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
 
 	c = mergeConfigs(pkgConfig, c)
+	pkgConfig.RunConfig.Verbose = verbose
+	pkgConfig.RunConfig.Bridged = bridged
+	pkgConfig.NightlyBuild = nightly
+	pkgConfig.Force = force
 
 	if err = api.BuildFromPackage(path.Join(".staging", args[0]), c); err != nil {
 		panic(err)
