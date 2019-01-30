@@ -11,11 +11,11 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 func copy(src, dst string) error {
@@ -331,11 +331,20 @@ func InitDefaultRunConfigs(c *api.Config, ports []int) {
 	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
 }
 
+func packageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
+	res, err := http.Head(remoteUrl)
+	if err != nil {
+		panic(err)
+	}
+	return fino.Size() != res.ContentLength
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	var err error
 	packageManifest := api.GetPackageManifestFile()
-	if _, err = os.Stat(packageManifest); os.IsNotExist(err) {
+	stat, err := os.Stat(packageManifest)
+	if os.IsNotExist(err) || packageManifestChanged(stat, api.PackageManifestURL) {
 		if err = api.DownloadFile(packageManifest, api.PackageManifestURL); err != nil {
 			panic(err)
 		}
