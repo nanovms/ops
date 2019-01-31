@@ -18,7 +18,7 @@ func DownloadPackage(name string) string {
 	packagepath := path.Join(GetPackageCache(), archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
 		if err = DownloadFile(packagepath,
-			fmt.Sprintf(PackageBaseURL, archivename)); err != nil {
+			fmt.Sprintf(PackageBaseURL, archivename), 600); err != nil {
 			panic(err)
 		}
 	}

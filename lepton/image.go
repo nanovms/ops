@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"time"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -260,7 +261,7 @@ func DownloadImages(baseUrl string, force bool) error {
 	}
 
 	if _, err = os.Stat(Mkfs); os.IsNotExist(err) || force {
-		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs"))); err != nil {
+		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
@@ -272,20 +273,20 @@ func DownloadImages(baseUrl string, force bool) error {
 	}
 
 	if _, err = os.Stat(BootImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img")); err != nil {
+		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img"), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
 	if _, err = os.Stat(KernelImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img")); err != nil {
+		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img"), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 	return nil
 }
 
-func DownloadFile(filepath string, url string) error {
+func DownloadFile(filepath string, url string ,timeout int) error {
 
 	fmt.Println("Downloading..", filepath)
 	out, err := os.Create(filepath + ".tmp")
@@ -293,9 +294,13 @@ func DownloadFile(filepath string, url string) error {
 		return err
 	}
 	defer out.Close()
-
+	
 	// Get the data
-	resp, err := http.Get(url)
+	c := &http.Client {
+		Timeout : time.Duration(timeout) * time.Second,
+	}
+
+	resp, err := c.Get(url)
 	if err != nil {
 		return err
 	}
