@@ -345,7 +345,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	packageManifest := api.GetPackageManifestFile()
 	stat, err := os.Stat(packageManifest)
 	if os.IsNotExist(err) || packageManifestChanged(stat, api.PackageManifestURL) {
-		if err = api.DownloadFile(packageManifest, api.PackageManifestURL); err != nil {
+		if err = api.DownloadFile(packageManifest, api.PackageManifestURL, 10); err != nil {
 			panic(err)
 		}
 	}
