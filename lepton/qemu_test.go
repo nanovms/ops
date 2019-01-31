@@ -64,6 +64,14 @@ func TestStringSerial(t *testing.T) {
 	checkQemuString(testSerial, expected, t)
 }
 
+func TestRandomMacGen(t *testing.T) {
+	q := qemu{}
+	q.addDevice("tap", "tap0", "", []int{})
+	if len(q.devices[0].mac) == 0 {
+		t.Errorf("No RandomMac was Assigned %s", q.devices[0].mac)
+	}
+}
+
 func checkQemuString(qr Stringer, expected string, t *testing.T) {
 	actual := qr.String()
 	if expected != actual {

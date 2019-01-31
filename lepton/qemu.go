@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,6 +52,7 @@ type qemu struct {
 	ifaces  []netdev
 	display display
 	serial  serial
+	flags   []string
 }
 
 func (d display) String() string {
@@ -143,36 +145,111 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 	return nil
 }
 
-func (q *qemu) Args(rconfig *RunConfig) []string {
-	boot := drive{path: "image", format: "raw", index: "0"}
-	storage := drive{path: "image", format: "raw", iftype: "virtio"}
-	dev := device{driver: "virtio-net", mac: "7e:b8:7e:87:4a:ea", netdevid: "n0"}
-	ndev := netdev{nettype: "tap", id: "n0", ifname: "tap0"}
-	display := display{disptype: "none"}
-	serial := serial{serialtype: "stdio"}
-	if !rconfig.Bridged {
-		hps := []portfwd{}
-		for _, p := range rconfig.Ports {
-			hps = append(hps, portfwd{port: p, proto: "tcp"})
+func (q *qemu) addDrive(image, ifaceType string) {
+	drv := drive{
+		path:   image,
+		format: "raw",
+		iftype: ifaceType,
+	}
+	q.drives = append(q.drives, drv)
+}
+
+func (q *qemu) addDisplay(dispType string) {
+	q.display = display{disptype: dispType}
+}
+
+func (q *qemu) addSerial(serialType string) {
+	q.serial = serial{serialtype: serialType}
+}
+
+// addDevice adds a device to the qemu for rendering to string arguments. If the
+// devType is "user" then the ifaceName is ignored and host forward ports are
+// added. If the mac address is empty then a random mac address is chosen.
+// Backend interface are created for each device and their ids are auto
+// incremented.
+func (q *qemu) addDevice(devType, ifaceName, mac string, hostPorts []int) {
+	id := fmt.Sprintf("n%d", len(q.ifaces))
+	dv := device{
+		driver:   "virtio-net",
+		netdevid: id,
+	}
+	ndv := netdev{
+		nettype: devType,
+		id:      id,
+	}
+	if devType != "user" {
+		if mac == "" {
+			dv.mac = generateMac()
 		}
-		dev = device{driver: "virtio-net", netdevid: "n0"}
-		ndev = netdev{nettype: "user", id: "n0", hports: hps}
+		ndv.ifname = ifaceName
+	} else {
+		for _, p := range hostPorts {
+			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
+		}
 	}
-	args := []string{
-		boot.String(),
-		display.String(),
-		serial.String(),
-		"-nodefaults",
-		"-no-reboot",
-		"-m", rconfig.Memory,
-		"-device", "isa-debug-exit",
-		storage.String(),
-		dev.String(),
-		ndev.String(),
+	q.devices = append(q.devices, dv)
+	q.ifaces = append(q.ifaces, ndv)
+}
+
+// Randomly generate Bytes for mac address
+func generateMac() string {
+	octets := make([]byte, 6)
+	_, err := rand.Read(octets)
+	if err != nil {
+		panic(err)
 	}
+	octets[0] |= 2
+	octets[0] &= 0xFE //mask most sig bit for unicast at layer 2
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x",
+		octets[0], octets[1], octets[2], octets[3], octets[4], octets[5])
+}
+
+func (q *qemu) addFlag(flag string) {
+	q.flags = append(q.flags, flag)
+}
+
+func (q *qemu) addOption(flag, value string) {
+	option := fmt.Sprintf("%s %s", flag, value)
+	q.flags = append(q.flags, option)
+}
+
+func (q *qemu) setConfig(rconfig *RunConfig) {
+	q.addDrive(rconfig.Imagename, "ide") // boot device must be ide for some reason
+	q.addDrive(rconfig.Imagename, "virtio")
+	devType := "user"
+	ifaceName := ""
 	if rconfig.Bridged {
-		args = append(args, "-enable-kvm")
+		devType = "tap"
+		ifaceName = "tap0"
+		q.addFlag("-enable-kvm")
 	}
+	q.addDevice(devType, ifaceName, "", rconfig.Ports)
+	q.addDisplay("none")
+	q.addSerial("stdio")
+	q.addFlag("-nodefaults")
+	q.addFlag("-no-reboot")
+	q.addOption("-device", "isa-debug-exit")
+	q.addOption("-m", rconfig.Memory)
+}
+
+func (q *qemu) Args(rconfig *RunConfig) []string {
+	q.setConfig(rconfig)
+	args := []string{}
+	for _, drive := range q.drives {
+		args = append(args, drive.String())
+	}
+	for _, device := range q.devices {
+		args = append(args, device.String())
+	}
+	for _, iface := range q.ifaces {
+		args = append(args, iface.String())
+	}
+	for _, flag := range q.flags {
+		args = append(args, flag)
+	}
+	args = append(args, q.display.String())
+	args = append(args, q.serial.String())
+
 	// The returned args must tokenized by whitespace
 	return strings.Fields(strings.Join(args, " "))
 }
