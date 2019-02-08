@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 func copy(src, dst string) error {
@@ -284,7 +286,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
-	
+
 	if debugflags {
 		pkgConfig.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
@@ -350,13 +352,17 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var pacakges map[string]interface{}
+	var packages map[string]interface{}
 	data, err := ioutil.ReadFile(packageManifest)
 	if err != nil {
 		panic(err)
 	}
-	json.Unmarshal(data, &pacakges)
+	json.Unmarshal(data, &packages)
 
+	searchRegex, err := cmd.Flags().GetString("search")
+	if err != nil {
+		panic(err)
+	}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"PackageName", "Version", "Language", "Description"})
 	table.SetHeaderColor(
@@ -367,15 +373,36 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	table.SetRowLine(true)
 
-	for key, value := range pacakges {
+	var r *regexp.Regexp
+	var filter bool
+	if len(searchRegex) > 0 {
+		filter = true
+		r, err = regexp.Compile(searchRegex)
+		if err != nil {
+			// If the regex cannot compile do not attempt to filter
+			filter = false
+		}
+	}
+
+	for key, value := range packages {
 		var row []string
 		crow, _ := value.(map[string]interface{})
+		// If we are told to filter and get no matches then filter out the
+		// current row. If we are not told to filter then just add the
+		// row.
+		if filter &&
+			!(r.MatchString(crow["language"].(string)) ||
+				r.MatchString(crow["runtime"].(string)) ||
+				r.MatchString(key)) {
+			continue
+		}
 		row = append(row, key)
 		row = append(row, crow["version"].(string))
 		row = append(row, crow["language"].(string))
 		row = append(row, crow["runtime"].(string))
 		table.Append(row)
 	}
+
 	table.Render()
 }
 
@@ -396,6 +423,7 @@ func main() {
 	var verbose bool
 	var bridged bool
 	var nightly bool
+	var search string
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -451,6 +479,7 @@ func main() {
 		Short: "list packages",
 		Run:   cmdListPackages,
 	}
+	cmdList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
 
 	var cmdLoadPackage = &cobra.Command{
 		Use:   "load [packagename]",
