@@ -82,42 +82,11 @@ func findFirstActiveAdapter() (*net.Interface, error) {
 	return eth0, nil
 }
 
-// return ethernet adapter IPv4 + 1
-func findNextIP() net.IP {
-	ifaces, _ := net.Interfaces()
-	for _, i := range ifaces {
-
-		// assume for now that there's only one ethernet device and
-		// it's name starts with an e ie eth0 en0 etc..This is not
-		// the most robust way, atleast on linux we can use RTNETLINK
-		var ip net.IP
-		if i.Name[0] == 'e' {
-			addrs, _ := i.Addrs()
-			for _, addr := range addrs {
-				switch v := addr.(type) {
-				case *net.IPNet:
-					{
-						if ip = v.IP.To4(); ip != nil {
-							// >254?
-							ip[3] = ip[3] + 1
-							return net.IPv4(ip[0], ip[1], ip[2], ip[3])
-						}
-					}
-				}
-
-			}
-		}
-	}
-	return nil
-}
-
 func assignIP(bridge *netlink.Bridge) error {
-
 	var err error
-	var ip net.IP
-
-	if ip = findNextIP(); ip == nil {
-		panic("Unable to find a valid IP")
+	ip, err := dhcpAcquireIPAddress(macAddr)
+	if err != nil {
+		return err
 	}
 	addr, err := netlink.ParseAddr(fmt.Sprintf("%v/%v", ip, 24))
 	if err != nil {
