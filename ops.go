@@ -93,6 +93,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	tapDeviceName, _ := cmd.Flags().GetString("tapname")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -102,6 +103,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
+
+	c.RunConfig.TapName = tapDeviceName
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
 	c.NightlyBuild = nightly
@@ -424,6 +427,7 @@ func main() {
 	var bridged bool
 	var nightly bool
 	var search string
+	var tap string
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -433,6 +437,7 @@ func main() {
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
+	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",

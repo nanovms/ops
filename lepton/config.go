@@ -27,6 +27,7 @@ type RunConfig struct {
 	Verbose   bool
 	Memory    string
 	Bridged   bool
+	TapName   string
 }
 
 func DefaultConfig() Config {

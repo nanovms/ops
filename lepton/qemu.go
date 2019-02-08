@@ -220,7 +220,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	ifaceName := ""
 	if rconfig.Bridged {
 		devType = "tap"
-		ifaceName = "tap0"
+		ifaceName = rconfig.TapName
 		q.addFlag("-enable-kvm")
 	}
 	q.addDevice(devType, ifaceName, "", rconfig.Ports)
