@@ -15,9 +15,11 @@ import (
 )
 
 func TestDownloadImages(t *testing.T) {
-	api.DownloadBootImages("", false)
 
-	home, _ := api.HomeDir()
+	home, err := api.HomeDir()
+	if err != nil {
+		t.Errorf("Failed to get HOME directory")
+	}
 	mkfsFilePath := path.Join(home, api.OpsDir, api.Mkfs)
 	bootImgFilePath := path.Join(home, api.OpsDir, api.BootImg)
 	kernelImgFilePath := path.Join(home, api.OpsDir, api.KernelImg)
@@ -27,6 +29,8 @@ func TestDownloadImages(t *testing.T) {
 	os.Remove(mkfsFilePath)
 	os.Remove(bootImgFilePath)
 	os.Remove(kernelImgFilePath)
+
+	api.DownloadBootImages("", false)
 
 	if _, err := os.Stat(bootImgFilePath); os.IsNotExist(err) {
 		t.Errorf("%s/%s/boot file not found", home, api.OpsDir)
