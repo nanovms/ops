@@ -214,7 +214,6 @@ func (q *qemu) addOption(flag, value string) {
 }
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
-	q.addDrive(rconfig.Imagename, "ide") // boot device must be ide for some reason
 	q.addDrive(rconfig.Imagename, "virtio")
 	devType := "user"
 	ifaceName := ""
