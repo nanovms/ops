@@ -135,9 +135,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 func buildImages(c *api.Config) {
 	var err error
 	if c.NightlyBuild {
-		err = api.DownloadImages(api.DevBaseUrl, c.Force)
+		err = api.DownloadBootImages(api.DevBaseUrl, c.Force)
 	} else {
-		err = api.DownloadImages(api.ReleaseBaseUrl, c.Force)
+		err = api.DownloadBootImages(api.ReleaseBaseUrl, c.Force)
 	}
 	panicOnError(err)
 	err = api.BuildImage(*c)

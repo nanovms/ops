@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -14,28 +15,34 @@ import (
 )
 
 func TestDownloadImages(t *testing.T) {
+	api.DownloadBootImages("", false)
+
+	home, _ := api.HomeDir()
+	mkfsFilePath := path.Join(home, api.OpsDir, api.Mkfs)
+	bootImgFilePath := path.Join(home, api.OpsDir, api.BootImg)
+	kernelImgFilePath := path.Join(home, api.OpsDir, api.KernelImg)
+
 	// remove the files to force a download
 	// ignore any error from remove
-	os.Remove(api.Mkfs)
-	os.Remove(api.BootImg)
-	os.Remove(api.KernelImg)
-	api.DownloadBootImages()
+	os.Remove(mkfsFilePath)
+	os.Remove(bootImgFilePath)
+	os.Remove(kernelImgFilePath)
 
-	if _, err := os.Stat(api.BootImg); os.IsNotExist(err) {
-		t.Errorf(".staging/boot file not found")
+	if _, err := os.Stat(bootImgFilePath); os.IsNotExist(err) {
+		t.Errorf("%s/%s/boot file not found", home, api.OpsDir)
 	}
 
-	if info, err := os.Stat(api.Mkfs); os.IsNotExist(err) {
-		t.Errorf("mkfs not found")
+	if info, err := os.Stat(mkfsFilePath); os.IsNotExist(err) {
+		t.Errorf("%s/%s/mkfs not found", home, api.OpsDir)
 	} else {
 		mode := fmt.Sprintf("%04o", info.Mode().Perm())
 		if mode != "0775" {
-			t.Errorf("mkfs not executable")
+			t.Errorf("%s/%s/mkfs not executable", home, api.OpsDir)
 		}
 	}
 
-	if _, err := os.Stat(api.KernelImg); os.IsNotExist(err) {
-		t.Errorf(".staging/stage3 file not found")
+	if _, err := os.Stat(kernelImgFilePath); os.IsNotExist(err) {
+		t.Errorf("%s/%s/stage3 file not found", home, api.OpsDir)
 	}
 }
 
@@ -85,7 +92,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadBootImages("", false)
 	var c api.Config
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
@@ -115,11 +122,11 @@ func TestImageWithStaticFiles(t *testing.T) {
 }
 
 func TestRunningDynamicImage(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadBootImages("", false)
 	runHyperVisor("./data/webg", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadBootImages("", false)
 	runHyperVisor("./data/webs", "unibooty!", t)
 }

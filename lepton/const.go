@@ -21,11 +21,14 @@ const manifest string = `(
 const Version = "0.2"
 const OpsReleaseUrl = "https://storage.googleapis.com/cli/%v/ops"
 
+// .ops directory
+const OpsDir string = ".ops"
+
 // boot loader
-const BootImg string = ".staging/boot.img"
+const BootImg string = "boot.img"
 
 // kernel
-const KernelImg string = ".staging/stage3.img"
+const KernelImg string = "stage3.img"
 
 // kernel + ELF image
 const mergedImg string = ".staging/tempimage"
@@ -33,7 +36,7 @@ const mergedImg string = ".staging/tempimage"
 // final bootable image
 const FinalImg string = "image"
 
-const Mkfs string = ".staging/mkfs"
+const Mkfs string = "mkfs"
 
 const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/%v"
 const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"
@@ -52,7 +55,9 @@ func GetPackageCache() string {
 		}
 		PackagesCache = path.Join(home, ".ops/packages")
 		if _, err := os.Stat(PackagesCache); os.IsNotExist(err) {
-			os.MkdirAll(PackagesCache, 0755)
+			if err := os.MkdirAll(PackagesCache, 0755); err != nil {
+				panic(err)
+			}
 		}
 	}
 	return PackagesCache

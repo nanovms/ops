@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"time"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-errors/errors"
 )
@@ -33,10 +33,12 @@ func BuildImage(c Config) error {
 }
 
 func createFile(filepath string) (*os.File, error) {
-	path := path.Dir(filepath)
-	var _, err = os.Stat(path)
+	filePath := path.Dir(filepath)
+	var _, err = os.Stat(filePath)
 	if os.IsNotExist(err) {
-		os.MkdirAll(path, os.ModePerm)
+		if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+			panic(err)
+		}
 	}
 	fd, err := os.Create(filepath)
 	if err != nil {
@@ -162,17 +164,22 @@ func BuildManifest(c *Config) (*Manifest, error) {
 }
 
 func initDefaultImages(c *Config) {
+	home, err := HomeDir()
+	if err != nil {
+		panic(err)
+	}
+	opsDirectory := path.Join(home, OpsDir)
 	if c.Boot == "" {
-		c.Boot = BootImg
+		c.Boot = path.Join(opsDirectory, BootImg)
 	}
 	if c.Kernel == "" {
-		c.Kernel = KernelImg
+		c.Kernel = path.Join(opsDirectory, KernelImg)
 	}
 	if c.DiskImage == "" {
 		c.DiskImage = FinalImg
 	}
 	if c.Mkfs == "" {
-		c.Mkfs = Mkfs
+		c.Mkfs = path.Join(opsDirectory, Mkfs)
 	}
 	if c.NameServer == "" {
 		// google dns server
@@ -249,62 +256,82 @@ func (bc dummy) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func DownloadBootImages() error {
-	return DownloadImages(ReleaseBaseUrl, false)
+func DownloadBootImages(baseUrl string, force bool) error {
+	home, err := HomeDir()
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	opsDirectory := path.Join(home, OpsDir)
+	if _, err := os.Stat(opsDirectory); os.IsNotExist(err) {
+		if err := os.MkdirAll(opsDirectory, 0755); err != nil {
+			return errors.Wrap(err, 1)
+		}
+	}
+	if baseUrl == "" {
+		return DownloadImages(ReleaseBaseUrl, false, opsDirectory)
+	}
+	return DownloadImages(baseUrl, force, opsDirectory)
 }
 
 // DownloadImages downloads latest kernel images.
-func DownloadImages(baseUrl string, force bool) error {
-	var err error
-	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
-		os.MkdirAll(".staging", 0755)
-	}
+func DownloadImages(baseUrl string, force bool, baseDir string) error {
 
-	if _, err = os.Stat(Mkfs); os.IsNotExist(err) || force {
-		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), 600); err != nil {
+	mkfsFilePath := path.Join(baseDir, Mkfs)
+	bootImgFilePath := path.Join(baseDir, BootImg)
+	kernelImgFilePath := path.Join(baseDir, KernelImg)
+
+	if _, err := os.Stat(mkfsFilePath); os.IsNotExist(err) || force {
+		if err = DownloadFile(mkfsFilePath, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
 	// make mkfs executable
-	err = os.Chmod(Mkfs, 0775)
-	if err != nil {
+	if err := os.Chmod(mkfsFilePath, 0775); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
-	if _, err = os.Stat(BootImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img"), 600); err != nil {
+	if _, err := os.Stat(bootImgFilePath); os.IsNotExist(err) || force {
+		if err = DownloadFile(bootImgFilePath, fmt.Sprintf(baseUrl, "boot.img"), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 
-	if _, err = os.Stat(KernelImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img"), 600); err != nil {
+	if _, err := os.Stat(kernelImgFilePath); os.IsNotExist(err) || force {
+		if err = DownloadFile(kernelImgFilePath, fmt.Sprintf(baseUrl, "stage3.img"), 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 	}
 	return nil
 }
 
-func DownloadFile(filepath string, url string ,timeout int) error {
+func DownloadFile(filepath string, url string, timeout int) error {
 
 	fmt.Println("Downloading..", filepath)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-	
+	defer func() {
+		if err := out.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
 	// Get the data
-	c := &http.Client {
-		Timeout : time.Duration(timeout) * time.Second,
+	c := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	resp, err := c.Get(url)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
