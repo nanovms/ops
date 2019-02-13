@@ -256,7 +256,13 @@ func (bc dummy) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func DownloadBootImages(baseUrl string, force bool) error {
+func DownloadBootImages() error {
+	return DownloadImages(ReleaseBaseUrl, false)
+}
+
+// DownloadImages downloads latest kernel images.
+func DownloadImages(baseUrl string, force bool) error {
+
 	home, err := HomeDir()
 	if err != nil {
 		return errors.Wrap(err, 1)
@@ -267,18 +273,10 @@ func DownloadBootImages(baseUrl string, force bool) error {
 			return errors.Wrap(err, 1)
 		}
 	}
-	if baseUrl == "" {
-		return DownloadImages(ReleaseBaseUrl, false, opsDirectory)
-	}
-	return DownloadImages(baseUrl, force, opsDirectory)
-}
 
-// DownloadImages downloads latest kernel images.
-func DownloadImages(baseUrl string, force bool, baseDir string) error {
-
-	mkfsFilePath := path.Join(baseDir, Mkfs)
-	bootImgFilePath := path.Join(baseDir, BootImg)
-	kernelImgFilePath := path.Join(baseDir, KernelImg)
+	mkfsFilePath := path.Join(opsDirectory, Mkfs)
+	bootImgFilePath := path.Join(opsDirectory, BootImg)
+	kernelImgFilePath := path.Join(opsDirectory, KernelImg)
 
 	if _, err := os.Stat(mkfsFilePath); os.IsNotExist(err) || force {
 		if err = DownloadFile(mkfsFilePath, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), 600); err != nil {
@@ -312,9 +310,9 @@ func DownloadFile(filepath string, url string, timeout int) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = out.Close()
-	}()
+	if err := out.Close(); err != nil {
+		return err
+	}
 
 	// Get the data
 	c := &http.Client{
@@ -322,12 +320,15 @@ func DownloadFile(filepath string, url string, timeout int) error {
 	}
 
 	resp, err := c.Get(url)
+	if resp != nil {
+		if err := resp.Body.Close(); err != nil {
+			return err
+		}
+	}
+
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 

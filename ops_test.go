@@ -30,7 +30,7 @@ func TestDownloadImages(t *testing.T) {
 	os.Remove(bootImgFilePath)
 	os.Remove(kernelImgFilePath)
 
-	api.DownloadBootImages("", false)
+	api.DownloadBootImages()
 
 	if _, err := os.Stat(bootImgFilePath); os.IsNotExist(err) {
 		t.Errorf("%s/%s/boot file not found", home, api.OpsDir)
@@ -96,7 +96,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
-	api.DownloadBootImages("", false)
+	api.DownloadBootImages()
 	var c api.Config
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
@@ -126,11 +126,11 @@ func TestImageWithStaticFiles(t *testing.T) {
 }
 
 func TestRunningDynamicImage(t *testing.T) {
-	api.DownloadBootImages("", false)
+	api.DownloadBootImages()
 	runHyperVisor("./data/webg", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
-	api.DownloadBootImages("", false)
+	api.DownloadBootImages()
 	runHyperVisor("./data/webs", "unibooty!", t)
 }

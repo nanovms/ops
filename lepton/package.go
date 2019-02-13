@@ -83,9 +83,9 @@ func BuildImageFromPackage(packagepath string, c Config) error {
 func BuildFromPackage(packagepath string, c *Config) error {
 	var err error
 	if c.NightlyBuild {
-		err = DownloadBootImages(DevBaseUrl, c.Force)
+		err = DownloadImages(DevBaseUrl, c.Force)
 	} else {
-		err = DownloadBootImages(ReleaseBaseUrl, c.Force)
+		err = DownloadImages(ReleaseBaseUrl, c.Force)
 	}
 	if err != nil {
 		return err
