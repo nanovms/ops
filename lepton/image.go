@@ -313,9 +313,7 @@ func DownloadFile(filepath string, url string, timeout int) error {
 		return err
 	}
 	defer func() {
-		if err := out.Close(); err != nil {
-			panic(err)
-		}
+		_ = out.Close()
 	}()
 
 	// Get the data
@@ -328,9 +326,7 @@ func DownloadFile(filepath string, url string, timeout int) error {
 		return err
 	}
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			panic(err)
-		}
+		_ = resp.Body.Close()
 	}()
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))

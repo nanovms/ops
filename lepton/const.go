@@ -53,7 +53,7 @@ func GetPackageCache() string {
 		if err != nil {
 			panic(err)
 		}
-		PackagesCache = path.Join(home, ".ops/packages")
+		PackagesCache = path.Join(home, OpsDir, "packages")
 		if _, err := os.Stat(PackagesCache); os.IsNotExist(err) {
 			if err := os.MkdirAll(PackagesCache, 0755); err != nil {
 				panic(err)
