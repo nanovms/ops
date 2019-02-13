@@ -249,6 +249,9 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	localpackage := api.DownloadPackage(args[0])
 	fmt.Printf("Extracting %s...\n", localpackage)
+
+	// Remove the folder first.
+	os.RemoveAll(path.Join(".staging", args[0]))
 	api.ExtractPackage(localpackage, ".staging")
 
 	// load the package manifest
