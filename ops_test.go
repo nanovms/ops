@@ -16,7 +16,7 @@ import (
 func TestDownloadImages(t *testing.T) {
 	// remove the files to force a download
 	// ignore any error from remove
-	os.Remove(api.Mkfs)
+	//os.Remove(api.Mkfs)
 	os.Remove(api.BootImg)
 	os.Remove(api.KernelImg)
 	api.DownloadBootImages()
@@ -56,6 +56,7 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 func runHyperVisor(userImage string, expected string, t *testing.T) {
 	var c api.Config
 	c.Program = userImage
+	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
@@ -89,6 +90,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 	var c api.Config
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
+	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)

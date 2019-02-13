@@ -7,16 +7,13 @@ import (
 	"github.com/go-errors/errors"
 )
 
-func lookupFile(path string) (string, error) {
+func lookupFile(targetRoot string, path string) (string, error) {
 	_, err := os.Lstat(path)
 	if err == nil || !os.IsNotExist(err) {
 		// file exists or other error
 		return path, err
 	}
 
-	// try to find in $NANOS_TARGET_ROOT
-	//targetRoot := os.Getenv("NANOS_TARGET_ROOT")
-	targetRoot := ""
 	if targetRoot == "" {
 		return path, err
 	}
@@ -47,9 +44,9 @@ func lookupFile(path string) (string, error) {
 	return targetPath, nil
 }
 
-func findLib(libDirs []string, path string) (string, error) {
+func findLib(targetRoot string, libDirs []string, path string) (string, error) {
 	if path[0] == '/' {
-		if _, err := lookupFile(path); err != nil {
+		if _, err := lookupFile(targetRoot, path); err != nil {
 			return "", err
 		}
 		return path, nil
@@ -57,7 +54,7 @@ func findLib(libDirs []string, path string) (string, error) {
 
 	for _, libDir := range(libDirs) {
 		lib := filepath.Join(libDir, path)
-		_, err := lookupFile(lib)
+		_, err := lookupFile(targetRoot, lib)
 		if err == nil {
 			return lib, nil
 		} else if !os.IsNotExist(err) {
@@ -68,8 +65,8 @@ func findLib(libDirs []string, path string) (string, error) {
 	return "", os.ErrNotExist
 }
 
-func _getSharedLibs(path string) ([]string, error) {
-	path, err := lookupFile(path)
+func _getSharedLibs(targetRoot string, path string) ([]string, error) {
+	path, err := lookupFile(targetRoot, path)
 	if err != nil {
 		return nil, errors.WrapPrefix(err, path, 0)
 	}
@@ -102,14 +99,14 @@ func _getSharedLibs(path string) ([]string, error) {
 		}
 
 		// append library
-		absLibpath, err := findLib(dt_runpath, libpath)
+		absLibpath, err := findLib(targetRoot, dt_runpath, libpath)
 		if err != nil {
 			return nil, errors.WrapPrefix(err, libpath, 0)
 		}
 		libs = append(libs, absLibpath)
 
 		// append library dependencies
-		deplibs, err := _getSharedLibs(absLibpath)
+		deplibs, err := _getSharedLibs(targetRoot, absLibpath)
 		if err != nil {
 			return nil, err
 		}
@@ -132,8 +129,8 @@ func unique(a []string) []string {
 	return result
 }
 
-func getSharedLibs(path string) ([]string, error) {
-	libs, err := _getSharedLibs(path)
+func getSharedLibs(targetRoot string, path string) ([]string, error) {
+	libs, err := _getSharedLibs(targetRoot, path)
 	if err != nil {
 		return nil, err
 	}
