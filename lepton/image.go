@@ -321,9 +321,7 @@ func DownloadFile(filepath string, url string, timeout int) error {
 
 	resp, err := c.Get(url)
 	if resp != nil {
-		if err := resp.Body.Close(); err != nil {
-			return err
-		}
+		defer resp.Body.Close()
 	}
 
 	if err != nil {
