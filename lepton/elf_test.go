@@ -1,11 +1,13 @@
 package lepton
 
 import (
+	"os"
 	"testing"
 )
 
 func TestGetSharedLibs(t *testing.T) {
-	deps, err := getSharedLibs("../data/webg")
+	targetRoot := os.Getenv("NANOS_TARGET_ROOT")
+	deps, err := getSharedLibs(targetRoot, "../data/webg")
 	if err != nil {
 		t.Fatal(err)
 	}
