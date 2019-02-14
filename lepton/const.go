@@ -21,6 +21,9 @@ const manifest string = `(
 const Version = "0.2"
 const OpsReleaseUrl = "https://storage.googleapis.com/cli/%v/ops"
 
+// .ops directory
+const OpsDir string = ".ops"
+
 // boot loader
 const BootImg string = ".staging/boot.img"
 
@@ -28,12 +31,16 @@ const BootImg string = ".staging/boot.img"
 const KernelImg string = ".staging/stage3.img"
 
 // kernel + ELF image
-const mergedImg string = ".staging/tempimage"
+const mergedImg string = "tempimage"
 
 // final bootable image
 const FinalImg string = "image"
 
 const Mkfs string = ".staging/mkfs"
+
+// file which describes contents of tmp data
+const TMPContentsFile string = "contents.json"
+const TMPStagingDirectoryPrefix string = "staging_"
 
 const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/%v"
 const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"

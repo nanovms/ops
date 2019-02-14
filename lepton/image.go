@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"time"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-errors/errors"
 )
@@ -168,9 +168,6 @@ func initDefaultImages(c *Config) {
 	if c.Kernel == "" {
 		c.Kernel = KernelImg
 	}
-	if c.DiskImage == "" {
-		c.DiskImage = FinalImg
-	}
 	if c.Mkfs == "" {
 		c.Mkfs = Mkfs
 	}
@@ -204,17 +201,33 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 }
 
 func buildImage(c *Config, m *Manifest) error {
-	//  prepare manifest file
-	var elfmanifest string
 
-	elfmanifest = m.String()
+	// Get full path to program
+	programAbsPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	// Get temp directory path
+	tempDirectoryPath, err := GetTMPPathByProgramPath(programAbsPath)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	//  prepare manifest file
+	elfmanifest := m.String()
+
 	// invoke mkfs to create the filesystem ie kernel + elf image
-	createFile(mergedImg)
-	args := []string{}
+	mergedImgPath := filepath.Join(tempDirectoryPath, mergedImg)
+	if _, err := createFile(mergedImgPath); err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	var args []string
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
 	}
-	args = append(args, mergedImg)
+	args = append(args, mergedImgPath)
 	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
@@ -230,19 +243,35 @@ func buildImage(c *Config, m *Manifest) error {
 		return errors.Wrap(err, 1)
 	}
 
+	bootImageOpen, err := os.Open(c.Boot)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	defer bootImageOpen.Close()
+
+	mergedImgPathOpen, err := os.Open(mergedImgPath)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	defer mergedImgPathOpen.Close()
+
 	// produce final image, boot + kernel + elf
+	if c.DiskImage == "" {
+		c.DiskImage = filepath.Join(tempDirectoryPath, FinalImg)
+	}
 	fd, err := createFile(c.DiskImage)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
 	defer fd.Close()
-	if err != nil {
+
+	if _, err = io.Copy(fd, bootImageOpen); err != nil {
 		return errors.Wrap(err, 1)
 	}
-	catcmd := exec.Command("cat", c.Boot, mergedImg)
-	catcmd.Stdout = fd
-	err = catcmd.Start()
-	if err != nil {
+	if _, err = io.Copy(fd, mergedImgPathOpen); err != nil {
 		return errors.Wrap(err, 1)
 	}
-	catcmd.Wait()
+
 	return nil
 }
 

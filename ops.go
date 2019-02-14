@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -257,20 +258,45 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
 
-	localpackage := api.DownloadPackage(args[0])
-	fmt.Printf("Extracting %s...\n", localpackage)
+	// Get current directory
+	currentPath, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 
-	// Remove the folder first.
-	os.RemoveAll(path.Join(".staging", args[0]))
-	api.ExtractPackage(localpackage, ".staging")
+	// Create temp directory to extract page
+	tempPath, err := ioutil.TempDir(os.TempDir(), "")
+	if err != nil {
+		panic(err)
+	}
+
+	localpackage := api.DownloadPackage(args[0])
+
+	fmt.Printf("Extracting %s...\n", localpackage)
+	api.ExtractPackage(localpackage, tempPath)
 
 	// load the package manifest
-	manifest := path.Join(".staging", args[0], "package.manifest")
+	manifest := filepath.Join(tempPath, args[0], "package.manifest")
 	if _, err := os.Stat(manifest); err != nil {
 		panic(err)
 	}
 
 	pkgConfig := unWarpConfig(manifest)
+
+	// Get temp directory path
+	tempDirectoryPath, err := api.GetTMPPathByProgramPath(filepath.Join(currentPath, pkgConfig.Program))
+	if err != nil {
+		panic(err)
+	}
+
+	// Remove the folder first.
+	_ = os.RemoveAll(path.Join(tempDirectoryPath, args[0]))
+
+	// Move package from tempPath to tempDirectoryPath and remove tempPath
+	if err := os.Rename(filepath.Join(tempPath, args[0]), filepath.Join(tempDirectoryPath, args[0])); err != nil {
+		panic(err)
+	}
+	_ = os.RemoveAll(tempPath)
 
 	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
 	if err != nil {
@@ -313,7 +339,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 
-	if err = api.BuildFromPackage(path.Join(".staging", args[0]), c); err != nil {
+	if err = api.BuildFromPackage(path.Join(tempDirectoryPath, args[0]), c); err != nil {
 		panic(err)
 	}
 
@@ -340,8 +366,20 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
+	// Get full path to program
+	programAbsPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get temp directory path
+	tempDirectoryPath, err := api.GetTMPPathByProgramPath(programAbsPath)
+	if err != nil {
+		panic(err)
+	}
+
 	if c.RunConfig.Imagename == "" {
-		c.RunConfig.Imagename = api.FinalImg
+		c.RunConfig.Imagename = filepath.Join(tempDirectoryPath, api.FinalImg)
 	}
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
