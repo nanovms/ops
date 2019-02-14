@@ -8,7 +8,13 @@ package, create and run your application as a nanos unikernel instance.
 Check out the [DOCS](https://nanovms.gitbook.io/ops/)
 
 ### `ops <command> [flags] [ARG]`
-# Building
+
+# Minimal Version
+ 
+This program requires GO Version 1.10.x or greater.
+
+# Build
+
 1. Clone the repository.
 2. Install dependencies:
     - `make deps`
