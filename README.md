@@ -20,6 +20,15 @@ This program requires GO Version 1.10.x or greater.
     - `make deps`
 3. Build 
     - `make build`
+    
+# Basic usage examples
+
+Before learning more about `ops` it is a good idea to see some basic usage
+examples. Below are links to simple examples using various programming platforms:
+
+* [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)
+* [PHP](https://nanovms.gitbook.io/ops/basic_usage#running-php-hello-world)
+* [NodeJS](https://nanovms.gitbook.io/ops/basic_usage#running-a-nodejs-script)
 
 # Setup networking
 
