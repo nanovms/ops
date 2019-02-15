@@ -93,6 +93,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	targetRoot, err := cmd.Flags().GetString("target-root")
+	if err != nil {
+		panic(err)
+	}
+
 	tapDeviceName, _ := cmd.Flags().GetString("tapname")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
@@ -103,6 +108,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
+	c.TargetRoot = targetRoot
 
 	c.RunConfig.TapName = tapDeviceName
 	c.RunConfig.Verbose = verbose
@@ -145,19 +151,23 @@ func buildImages(c *api.Config) {
 }
 
 func buildCommandHandler(cmd *cobra.Command, args []string) {
+	targetRoot, _ := cmd.Flags().GetString("target-root")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
 	c.Program = args[0]
+	c.TargetRoot = targetRoot
 	buildImages(c)
 	fmt.Printf("Bootable image file:%s\n", api.FinalImg)
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
+	targetRoot, _ := cmd.Flags().GetString("target-root")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
 	c.Program = args[0]
+	c.TargetRoot = targetRoot
 	m, err := api.BuildManifest(c)
 	if err != nil {
 		fmt.Println(err)
@@ -249,6 +259,9 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	localpackage := api.DownloadPackage(args[0])
 	fmt.Printf("Extracting %s...\n", localpackage)
+
+	// Remove the folder first.
+	os.RemoveAll(path.Join(".staging", args[0]))
 	api.ExtractPackage(localpackage, ".staging")
 
 	// load the package manifest
@@ -428,16 +441,18 @@ func main() {
 	var nightly bool
 	var search string
 	var tap string
+	var targetRoot string
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
 	cmdRun.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
-	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
+	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
+	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",
@@ -465,6 +480,8 @@ func main() {
 		Run:   buildCommandHandler,
 	}
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdBuild.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+
 	var cmdPrintConfig = &cobra.Command{
 		Use:   "manifest [ELF file]",
 		Short: "Print the manifest to console",
@@ -472,6 +489,7 @@ func main() {
 		Run:   printManifestHandler,
 	}
 	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdPrintConfig.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 
 	var cmdVersion = &cobra.Command{
 		Use:   "version",
@@ -492,21 +510,20 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   loadCommandHandler,
 	}
+	cmdLoadPackage.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
+	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
+	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 
 	var cmdUpdate = &cobra.Command{
 		Use:   "update",
 		Short: "check for updates",
 		Run:   updateCommandHandler,
 	}
-
-	cmdLoadPackage.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
-	cmdLoadPackage.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "commanline arguments")
-	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)

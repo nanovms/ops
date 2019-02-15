@@ -153,7 +153,7 @@ func BuildManifest(c *Config) (*Manifest, error) {
 
 	// run ldd and capture dependencies
 	fmt.Println("Finding dependent shared libs")
-	deps, err := getSharedLibs(c.Program)
+	deps, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
@@ -217,7 +217,12 @@ func buildImage(c *Config, m *Manifest) error {
 	elfmanifest = m.String()
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
-	mkfs := exec.Command(c.Mkfs, mergedImg)
+	args := []string{}
+	if c.TargetRoot != "" {
+		args = append(args, "-r", c.TargetRoot)
+	}
+	args = append(args, mergedImg)
+	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
 		return errors.Wrap(err, 1)

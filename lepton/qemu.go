@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 const qemuBaseCommand = "qemu-system-x86_64"
@@ -114,7 +116,9 @@ func (pf portfwd) String() string {
 
 func (q *qemu) Stop() {
 	if q.cmd != nil {
-		q.cmd.Process.Kill()
+		if err := q.cmd.Process.Kill(); err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -133,9 +137,20 @@ func (q *qemu) Command(rconfig *RunConfig) *exec.Cmd {
 func (q *qemu) Start(rconfig *RunConfig) error {
 	args := q.Args(rconfig)
 	logv(rconfig, qemuBaseCommand+" "+strings.Join(args, " "))
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func(chan os.Signal) {
+		<-c
+		q.Stop()
+	}(c)
+
 	q.cmd = exec.Command(qemuBaseCommand, args...)
 	q.cmd.Stdout = os.Stdout
-	q.cmd.Stdin = os.Stdin
 	q.cmd.Stderr = os.Stderr
 
 	if err := q.cmd.Run(); err != nil {
@@ -214,7 +229,7 @@ func (q *qemu) addOption(flag, value string) {
 }
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
-	q.addDrive(rconfig.Imagename, "ide") // boot device must be ide for some reason
+	// add virtio drive
 	q.addDrive(rconfig.Imagename, "virtio")
 	devType := "user"
 	ifaceName := ""

@@ -18,6 +18,7 @@ type Config struct {
 	NightlyBuild bool
 	RunConfig    RunConfig
 	Force        bool
+	TargetRoot   string
 }
 
 // Runtime configs
