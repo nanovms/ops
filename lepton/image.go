@@ -74,23 +74,36 @@ func addHostName(m *Manifest, c *Config) {
 }
 
 func addFilesFromPackage(packagepath string, m *Manifest) {
-
-	rootpath := "sysroot"
-	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
+	rootPath := filepath.Join(packagepath, PackageRootPath)
+	packageName := filepath.Base(packagepath)
+	// Add files that should go to root(/) in image
+	// These files are located inside package in directory const PackageRootPath
+	filepath.Walk(rootPath, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			return nil
 		}
-		parts := strings.Split(hostpath, string(os.PathSeparator))
-		// files the need to go to root(/) are under sysroot in the package
-		// rest of the files goes to /packagename folder
-		if len(parts) > 2 && parts[2] == rootpath {
-			m.AddFile(strings.Join(parts[3:], string(os.PathSeparator)), hostpath)
-		} else {
-			m.AddFile(strings.Join(parts[1:], string(os.PathSeparator)), hostpath)
+
+		filePath := strings.Split(hostpath, rootPath)
+		m.AddFile(filePath[1], hostpath)
+		return nil
+	})
+
+	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
+		if info.IsDir() && info.Name() == PackageRootPath {
+			return filepath.SkipDir
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		filePath := strings.Split(hostpath, packagepath)
+		m.AddFile(filepath.Join(string(os.PathSeparator), packageName, filePath[1]), hostpath)
 		return nil
 	})
 }
@@ -219,8 +232,12 @@ func buildImage(c *Config, m *Manifest) error {
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	mergedImgPath := filepath.Join(tempDirectoryPath, mergedImg)
-	if _, err := createFile(mergedImgPath); err != nil {
+	if mergedImg, err := createFile(mergedImgPath); err != nil {
 		return errors.Wrap(err, 1)
+	} else {
+		if err := mergedImg.Close(); err != nil {
+			return errors.Wrap(err, 1)
+		}
 	}
 
 	var args []string
@@ -228,6 +245,7 @@ func buildImage(c *Config, m *Manifest) error {
 		args = append(args, "-r", c.TargetRoot)
 	}
 	args = append(args, mergedImgPath)
+
 	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
@@ -328,7 +346,7 @@ func DownloadFile(filepath string, url string ,timeout int) error {
 		return err
 	}
 	defer out.Close()
-	
+
 	// Get the data
 	c := &http.Client {
 		Timeout : time.Duration(timeout) * time.Second,

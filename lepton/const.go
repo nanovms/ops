@@ -48,6 +48,7 @@ const DevBaseUrl string = "https://storage.googleapis.com/nanos/%v"
 const PackageBaseURL string = "https://storage.googleapis.com/packagehub/%v"
 const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
 const PackageManifestFileName string = "manifest.json"
+const PackageRootPath string = "sysroot"
 
 var PackagesCache string
 
