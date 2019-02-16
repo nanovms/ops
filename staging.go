@@ -1,10 +1,12 @@
-package lepton
+package main
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	api "github.com/nanovms/ops/lepton"
 )
 
 type TMPFilePath struct {
@@ -15,8 +17,8 @@ type TMPFilePath struct {
 func GetTMPPathByProgramPath(path string) (tempPath string, err error) {
 	var tmpFilePaths []TMPFilePath
 	tempDir := os.TempDir()
-	tempOpsDir := filepath.Join(tempDir, OpsDir)
-	tempOpsFile := filepath.Join(tempOpsDir, TMPContentsFile)
+	tempOpsDir := filepath.Join(tempDir, api.OpsDir)
+	tempOpsFile := filepath.Join(tempOpsDir, api.TMPContentsFile)
 
 	// Check if temp Ops directory exists
 	if _, err = os.Stat(tempOpsDir); os.IsNotExist(err) {
@@ -57,7 +59,7 @@ func GetTMPPathByProgramPath(path string) (tempPath string, err error) {
 
 	// Section where we didn't find temp path
 	// First we create new directory
-	tempPath, err = ioutil.TempDir(tempOpsDir, TMPStagingDirectoryPrefix)
+	tempPath, err = ioutil.TempDir(tempOpsDir, api.TMPStagingDirectoryPrefix)
 	if err != nil {
 		return "", err
 	}

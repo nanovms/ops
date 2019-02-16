@@ -215,23 +215,11 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 
 func buildImage(c *Config, m *Manifest) error {
 
-	// Get full path to program
-	programAbsPath, err := filepath.Abs(c.Program)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
-	// Get temp directory path
-	tempDirectoryPath, err := GetTMPPathByProgramPath(programAbsPath)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
 	//  prepare manifest file
 	elfmanifest := m.String()
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
-	mergedImgPath := filepath.Join(tempDirectoryPath, mergedImg)
+	mergedImgPath := filepath.Join(c.LocalTMPDir, mergedImg)
 	if mergedImg, err := createFile(mergedImgPath); err != nil {
 		return errors.Wrap(err, 1)
 	} else {
@@ -275,7 +263,7 @@ func buildImage(c *Config, m *Manifest) error {
 
 	// produce final image, boot + kernel + elf
 	if c.DiskImage == "" {
-		c.DiskImage = filepath.Join(tempDirectoryPath, FinalImg)
+		c.DiskImage = filepath.Join(c.LocalTMPDir, FinalImg)
 	}
 	fd, err := createFile(c.DiskImage)
 	if err != nil {
@@ -338,7 +326,7 @@ func DownloadImages(baseUrl string, force bool) error {
 	return nil
 }
 
-func DownloadFile(filepath string, url string ,timeout int) error {
+func DownloadFile(filepath string, url string, timeout int) error {
 
 	fmt.Println("Downloading..", filepath)
 	out, err := os.Create(filepath + ".tmp")
@@ -348,8 +336,8 @@ func DownloadFile(filepath string, url string ,timeout int) error {
 	defer out.Close()
 
 	// Get the data
-	c := &http.Client {
-		Timeout : time.Duration(timeout) * time.Second,
+	c := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	resp, err := c.Get(url)

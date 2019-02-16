@@ -283,17 +283,24 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	pkgConfig := unWarpConfig(manifest)
 
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	c := unWarpConfig(config)
+
 	// Get temp directory path
-	tempDirectoryPath, err := api.GetTMPPathByProgramPath(filepath.Join(currentPath, pkgConfig.Program))
-	if err != nil {
-		panic(err)
+	if c.LocalTMPDir == "" {
+		tempDirectoryPath, err := GetTMPPathByProgramPath(filepath.Join(currentPath, pkgConfig.Program))
+		if err != nil {
+			panic(err)
+		}
+		c.LocalTMPDir = tempDirectoryPath
 	}
 
 	// Remove the folder first.
-	_ = os.RemoveAll(path.Join(tempDirectoryPath, args[0]))
+	_ = os.RemoveAll(path.Join(c.LocalTMPDir, args[0]))
 
 	// Move package from tempPath to tempDirectoryPath and remove tempPath
-	if err := os.Rename(filepath.Join(tempPath, args[0]), filepath.Join(tempDirectoryPath, args[0])); err != nil {
+	if err := os.Rename(filepath.Join(tempPath, args[0]), filepath.Join(c.LocalTMPDir, args[0])); err != nil {
 		panic(err)
 	}
 	_ = os.RemoveAll(tempPath)
@@ -323,10 +330,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	config, _ := cmd.Flags().GetString("config")
-	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
-	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 
 	if debugflags {
@@ -339,7 +343,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 
-	if err = api.BuildFromPackage(path.Join(tempDirectoryPath, args[0]), c); err != nil {
+	if err = api.BuildFromPackage(path.Join(c.LocalTMPDir, args[0]), c); err != nil {
 		panic(err)
 	}
 
@@ -373,13 +377,16 @@ func InitDefaultRunConfigs(c *api.Config, ports []int) {
 	}
 
 	// Get temp directory path
-	tempDirectoryPath, err := api.GetTMPPathByProgramPath(programAbsPath)
-	if err != nil {
-		panic(err)
+	if c.LocalTMPDir == "" {
+		tempDirectoryPath, err := GetTMPPathByProgramPath(programAbsPath)
+		if err != nil {
+			panic(err)
+		}
+		c.LocalTMPDir = tempDirectoryPath
 	}
 
 	if c.RunConfig.Imagename == "" {
-		c.RunConfig.Imagename = filepath.Join(tempDirectoryPath, api.FinalImg)
+		c.RunConfig.Imagename = filepath.Join(c.LocalTMPDir, api.FinalImg)
 	}
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
