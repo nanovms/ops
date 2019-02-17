@@ -74,22 +74,39 @@ func addHostName(m *Manifest, c *Config) {
 
 func addFilesFromPackage(packagepath string, m *Manifest) {
 
-	rootpath := "sysroot"
+	rootPath := filepath.Join(packagepath, "sysroot")
+	packageName := filepath.Base(packagepath)
+
+	filepath.Walk(rootPath, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		filePath := strings.Split(hostpath, rootPath)
+		m.AddFile(filePath[1], hostpath)
+		return nil
+	})
+
 	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
+		if info.IsDir() && info.Name() == "sysroot" {
+			return filepath.SkipDir
+		}
+
 		if info.IsDir() {
 			return nil
 		}
-		parts := strings.Split(hostpath, string(os.PathSeparator))
-		// files the need to go to root(/) are under sysroot in the package
-		// rest of the files goes to /packagename folder
-		if len(parts) > 2 && parts[2] == rootpath {
-			m.AddFile(strings.Join(parts[3:], string(os.PathSeparator)), hostpath)
-		} else {
-			m.AddFile(strings.Join(parts[1:], string(os.PathSeparator)), hostpath)
-		}
+
+		filePath := strings.Split(hostpath, packagepath)
+		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
+		m.AddFile(vmpath, hostpath)
 		return nil
 	})
 }
