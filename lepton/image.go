@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"time"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,9 +10,9 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-errors/errors"
 )
@@ -96,7 +95,6 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 }
 
 func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
-	initDefaultImages(c)
 	m := NewManifest()
 
 	m.program = c.Program
@@ -143,7 +141,6 @@ func addFromConfig(m *Manifest, c *Config) {
 
 func BuildManifest(c *Config) (*Manifest, error) {
 
-	initDefaultImages(c)
 	m := NewManifest()
 
 	addFromConfig(m, c)
@@ -159,25 +156,6 @@ func BuildManifest(c *Config) (*Manifest, error) {
 		m.AddLibrary(libpath)
 	}
 	return m, nil
-}
-
-func initDefaultImages(c *Config) {
-	if c.Boot == "" {
-		c.Boot = BootImg
-	}
-	if c.Kernel == "" {
-		c.Kernel = KernelImg
-	}
-	if c.DiskImage == "" {
-		c.DiskImage = FinalImg
-	}
-	if c.Mkfs == "" {
-		c.Mkfs = Mkfs
-	}
-	if c.NameServer == "" {
-		// google dns server
-		c.NameServer = "8.8.8.8"
-	}
 }
 
 func addMappedFiles(src string, dest string, m *Manifest) {
@@ -254,44 +232,64 @@ func (bc dummy) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func DownloadBootImages() error {
-	return DownloadImages(ReleaseBaseUrl, false)
-}
-
-// DownloadImages downloads latest kernel images.
-func DownloadImages(baseUrl string, force bool) error {
-	var err error
-	if _, err := os.Stat(".staging"); os.IsNotExist(err) {
-		os.MkdirAll(".staging", 0755)
+func DownloadNightlyImages(c *Config) error {
+	local, err := LocalTimeStamp()
+	if err != nil {
+		return err
+	}
+	remote, err := RemoteTimeStamp()
+	if err != nil {
+		return err
 	}
 
-	if _, err = os.Stat(Mkfs); os.IsNotExist(err) || force {
-		if err = DownloadFile(Mkfs, fmt.Sprintf(baseUrl, path.Join(runtime.GOOS, "mkfs")), 600); err != nil {
+	if _, err := os.Stat(NightlyLocalFolder); os.IsNotExist(err) {
+		os.MkdirAll(NightlyLocalFolder, 0755)
+	}
+	localtar := path.Join(NightlyLocalFolder, nightlyFileName())
+	// we have an update, let's download since it's nightly
+	if remote != local || c.Force {
+		if err = DownloadFile(localtar, NightlyReleaseUrl, 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
+		// update local timestamp
+		updateLocalTimestamp(remote)
 	}
+
+	ExtractPackage(localtar, NightlyLocalFolder)
 
 	// make mkfs executable
-	err = os.Chmod(Mkfs, 0775)
+	err = os.Chmod(path.Join(NightlyLocalFolder, "mkfs"), 0775)
 	if err != nil {
 		return errors.Wrap(err, 1)
-	}
-
-	if _, err = os.Stat(BootImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(BootImg, fmt.Sprintf(baseUrl, "boot.img"), 600); err != nil {
-			return errors.Wrap(err, 1)
-		}
-	}
-
-	if _, err = os.Stat(KernelImg); os.IsNotExist(err) || force {
-		if err = DownloadFile(KernelImg, fmt.Sprintf(baseUrl, "stage3.img"), 600); err != nil {
-			return errors.Wrap(err, 1)
-		}
 	}
 	return nil
 }
 
-func DownloadFile(filepath string, url string ,timeout int) error {
+func DownloadReleaseImages(version string) error {
+	url := getReleaseUrl(version)
+	localFolder := getReleaseLocalFolder(version)
+	if _, err := os.Stat(localFolder); os.IsNotExist(err) {
+		os.MkdirAll(localFolder, 0755)
+	}
+
+	localtar := path.Join(localFolder, releaseFileName(version))
+
+	if err := DownloadFile(localtar, url, 600); err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	ExtractPackage(localtar, localFolder)
+
+	// make mkfs executable
+	err := os.Chmod(path.Join(localFolder, "mkfs"), 0775)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	updateLocalRelease(version)
+	return nil
+}
+
+func DownloadFile(filepath string, url string, timeout int) error {
 
 	fmt.Println("Downloading..", filepath)
 	out, err := os.Create(filepath + ".tmp")
@@ -299,10 +297,10 @@ func DownloadFile(filepath string, url string ,timeout int) error {
 		return err
 	}
 	defer out.Close()
-	
+
 	// Get the data
-	c := &http.Client {
-		Timeout : time.Duration(timeout) * time.Second,
+	c := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	resp, err := c.Get(url)
