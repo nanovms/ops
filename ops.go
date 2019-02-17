@@ -93,6 +93,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	skipbuild, err := strconv.ParseBool(cmd.Flag("skipbuild").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	targetRoot, err := cmd.Flags().GetString("target-root")
 	if err != nil {
 		panic(err)
@@ -116,7 +121,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.NightlyBuild = nightly
 	c.Force = force
 
-	buildImages(c)
+	if !skipbuild {
+		buildImages(c)
+	}
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -524,6 +531,7 @@ func main() {
 	var search string
 	var tap string
 	var targetRoot string
+	var skipbuild bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -535,6 +543,7 @@ func main() {
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",
