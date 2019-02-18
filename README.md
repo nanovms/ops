@@ -9,17 +9,27 @@ Check out the [DOCS](https://nanovms.gitbook.io/ops/)
 
 ### `ops <command> [flags] [ARG]`
 
-# Minimal Version
- 
+# Installation
+
+## Binary install
+
+```sh
+curl https://ops.city/get.sh -sSfL | sh
+```
+
+## Install from source
+
 This program requires GO Version 1.10.x or greater.
 
-# Build
+Installing from source follows three general steps:
 
 1. Clone the repository.
 2. Install dependencies:
     - `make deps`
 3. Build 
     - `make build`
+    
+For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites) please consult the documentation.
     
 # Basic usage examples
 
