@@ -363,10 +363,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	pkgConfig := unWarpConfig(manifest)
 
-	config, _ := cmd.Flags().GetString("config")
-	config = strings.TrimSpace(config)
-	c := unWarpConfig(config)
-
 	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
 	if err != nil {
 		panic(err)
@@ -392,7 +388,10 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
+	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 
 	if debugflags {
