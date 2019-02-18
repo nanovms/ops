@@ -471,7 +471,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var packages PackageList // map[string]interface{}
+	var packages PackageList
 	data, err := ioutil.ReadFile(packageManifest)
 	if err != nil {
 		panic(err)
