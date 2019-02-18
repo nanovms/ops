@@ -446,6 +446,20 @@ func packageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
 	return fino.Size() != res.ContentLength
 }
 
+// PackageList contains a list of known packages.
+type PackageList struct {
+	list map[string]Package
+}
+
+// Package is the definition of an OPS package.
+type Package struct {
+	Runtime     string `json:"runtime"`
+	Version     string `json:"version"`
+	Language    string `json:"language"`
+	Description string `json:"description,omitempty"`
+	MD5         string `json:"md5,omitempty"`
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	var err error
@@ -457,20 +471,25 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var packages map[string]interface{}
+	var packages PackageList
 	data, err := ioutil.ReadFile(packageManifest)
 	if err != nil {
 		panic(err)
 	}
-	json.Unmarshal(data, &packages)
+
+	err = json.Unmarshal(data, &packages.list)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
 		panic(err)
 	}
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"PackageName", "Version", "Language", "Description"})
+	table.SetHeader([]string{"PackageName", "Version", "Language", "Runtime", "Description"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
@@ -489,22 +508,23 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	for key, value := range packages {
+	for key, val := range packages.list {
 		var row []string
-		crow, _ := value.(map[string]interface{})
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
 		// row.
 		if filter &&
-			!(r.MatchString(crow["language"].(string)) ||
-				r.MatchString(crow["runtime"].(string)) ||
+			!(r.MatchString(val.Language) ||
+				r.MatchString(val.Runtime) ||
 				r.MatchString(key)) {
 			continue
 		}
+
 		row = append(row, key)
-		row = append(row, crow["version"].(string))
-		row = append(row, crow["language"].(string))
-		row = append(row, crow["runtime"].(string))
+		row = append(row, val.Version)
+		row = append(row, val.Language)
+		row = append(row, val.Runtime)
+		row = append(row, val.Description)
 		table.Append(row)
 	}
 
