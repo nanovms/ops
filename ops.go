@@ -94,6 +94,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	skipbuild, err := strconv.ParseBool(cmd.Flag("skipbuild").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	targetRoot, err := cmd.Flags().GetString("target-root")
 	if err != nil {
 		panic(err)
@@ -117,7 +122,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.NightlyBuild = nightly
 	c.Force = force
 
-	buildImages(c)
+	if !skipbuild {
+		buildImages(c)
+	}
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
@@ -139,14 +146,80 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
+func parseVersion(s string, width int) int64 {
+	strList := strings.Split(s, ".")
+	format := fmt.Sprintf("%%s%%0%ds", width)
+	v := ""
+	for _, value := range strList {
+		v = fmt.Sprintf(format, v, value)
+	}
+	var result int64
+	var err error
+	if result, err = strconv.ParseInt(v, 10, 64); err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func downloadReleaseImages(c *api.Config) (string, error) {
+	var err error
+	// if it's first run or we have an update
+	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
+	u := os.Getenv("NANOS_UPDATE")
+	if local == "0.0" || (u == "1" && parseVersion(local, 4) < parseVersion(remote, 4)) {
+		err = api.DownloadReleaseImages(remote)
+		if err != nil {
+			return "", err
+		}
+	}
+	return remote, nil
+}
+
+func downloadNightlyImages(c *api.Config) (string, error) {
+	var err error
+	err = api.DownloadNightlyImages(c)
+	return "nightly", err
+}
+
+func fixupConfigImages(c *api.Config, version string) {
+
+	if c.NightlyBuild {
+		version = "nightly"
+	}
+
+	if c.Boot == "" {
+		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
+	}
+
+	if c.Kernel == "" {
+		c.Kernel = path.Join(api.GetOpsHome(), version, "stage3.img")
+	}
+
+	if c.DiskImage == "" {
+		c.DiskImage = api.FinalImg
+	}
+
+	if c.Mkfs == "" {
+		c.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
+	}
+
+	if c.NameServer == "" {
+		// google dns server
+		c.NameServer = "8.8.8.8"
+	}
+}
+
 func buildImages(c *api.Config) {
 	var err error
+	var currversion string
+
 	if c.NightlyBuild {
-		err = api.DownloadImages(api.DevBaseUrl, c.Force)
+		currversion, err = downloadNightlyImages(c)
 	} else {
-		err = api.DownloadImages(api.ReleaseBaseUrl, c.Force)
+		currversion, err = downloadReleaseImages(c)
 	}
 	panicOnError(err)
+	fixupConfigImages(c, currversion)
 	err = api.BuildImage(*c)
 	panicOnError(err)
 }
@@ -252,31 +325,39 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	return pkgConfig
 }
 
+func buildFromPackage(packagepath string, c *api.Config) error {
+	var err error
+	var currversion string
+
+	if c.NightlyBuild {
+		currversion, err = downloadNightlyImages(c)
+	} else {
+		currversion, err = downloadReleaseImages(c)
+	}
+	panicOnError(err)
+	fixupConfigImages(c, currversion)
+	return api.BuildImageFromPackage(packagepath, *c)
+}
+
 func loadCommandHandler(cmd *cobra.Command, args []string) {
+
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-
-	// Get current directory
-	currentPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	// Create temp directory to extract page
-	tempPath, err := ioutil.TempDir(os.TempDir(), "")
-	if err != nil {
-		panic(err)
-	}
-
+  
+	localstaging := path.Join(api.GetOpsHome(), ".staging")
+	expackage := path.Join(localstaging, args[0])
 	localpackage := api.DownloadPackage(args[0])
 
-	fmt.Printf("Extracting %s...\n", localpackage)
-	api.ExtractPackage(localpackage, tempPath)
+	fmt.Printf("Extracting %s to %s\n", localpackage, expackage)
+
+	// Remove the folder first.
+	os.RemoveAll(expackage)
+	api.ExtractPackage(localpackage, localstaging)
 
 	// load the package manifest
-	manifest := filepath.Join(tempPath, args[0], "package.manifest")
+	manifest := path.Join(expackage, "package.manifest")
 	if _, err := os.Stat(manifest); err != nil {
 		panic(err)
 	}
@@ -343,7 +424,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 
-	if err = api.BuildFromPackage(path.Join(c.LocalTMPDir, args[0]), c); err != nil {
+	if err = buildFromPackage(expackage, c); err != nil {
 		panic(err)
 	}
 
@@ -362,10 +443,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("booting %s ...\n", api.FinalImg)
-
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
-
 }
 
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
@@ -487,6 +566,7 @@ func main() {
 	var search string
 	var tap string
 	var targetRoot string
+	var skipbuild bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -498,6 +578,7 @@ func main() {
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",

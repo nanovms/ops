@@ -15,7 +15,7 @@ import (
 func DownloadPackage(name string) string {
 
 	archivename := name + ".tar.gz"
-	packagepath := path.Join(GetPackageCache(), archivename)
+	packagepath := path.Join(PackagesCache, archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
 		if err = DownloadFile(packagepath,
 			fmt.Sprintf(PackageBaseURL, archivename), 600); err != nil {
@@ -78,17 +78,4 @@ func BuildImageFromPackage(packagepath string, c Config) error {
 		return errors.Wrap(err, 1)
 	}
 	return nil
-}
-
-func BuildFromPackage(packagepath string, c *Config) error {
-	var err error
-	if c.NightlyBuild {
-		err = DownloadImages(DevBaseUrl, c.Force)
-	} else {
-		err = DownloadImages(ReleaseBaseUrl, c.Force)
-	}
-	if err != nil {
-		return err
-	}
-	return BuildImageFromPackage(packagepath, *c)
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -16,17 +17,20 @@ import (
 func TestDownloadImages(t *testing.T) {
 	// remove the files to force a download
 	// ignore any error from remove
-	//os.Remove(api.Mkfs)
-	os.Remove(api.BootImg)
-	os.Remove(api.KernelImg)
-	api.DownloadBootImages()
+	boot := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "boot.img")
+	kernel := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "stage3.img")
+	mkfs := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "mkfs")
+	os.Remove(mkfs)
+	os.Remove(boot)
+	os.Remove(kernel)
+	api.DownloadReleaseImages(api.LatestReleaseVersion)
 
-	if _, err := os.Stat(api.BootImg); os.IsNotExist(err) {
-		t.Errorf(".staging/boot file not found")
+	if _, err := os.Stat(boot); os.IsNotExist(err) {
+		t.Errorf("%v file not found", boot)
 	}
 
-	if info, err := os.Stat(api.Mkfs); os.IsNotExist(err) {
-		t.Errorf("mkfs not found")
+	if info, err := os.Stat(mkfs); os.IsNotExist(err) {
+		t.Errorf("%v not found", mkfs)
 	} else {
 		mode := fmt.Sprintf("%04o", info.Mode().Perm())
 		if mode != "0775" {
@@ -34,8 +38,8 @@ func TestDownloadImages(t *testing.T) {
 		}
 	}
 
-	if _, err := os.Stat(api.KernelImg); os.IsNotExist(err) {
-		t.Errorf(".staging/stage3 file not found")
+	if _, err := os.Stat(kernel); os.IsNotExist(err) {
+		t.Errorf("%v not found", kernel)
 	}
 }
 
@@ -57,6 +61,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	var c api.Config
 	c.Program = userImage
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
+	fixupConfigImages(&c, api.LocalReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
@@ -86,11 +91,12 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	var c api.Config
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
+	fixupConfigImages(&c, api.LatestReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
@@ -117,11 +123,12 @@ func TestImageWithStaticFiles(t *testing.T) {
 }
 
 func TestRunningDynamicImage(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	runHyperVisor("./data/webg", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
-	api.DownloadBootImages()
+	api.DownloadReleaseImages(api.LatestReleaseVersion)
+
 	runHyperVisor("./data/webs", "unibooty!", t)
 }
