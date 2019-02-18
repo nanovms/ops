@@ -18,6 +18,7 @@ type Config struct {
 	NightlyBuild bool
 	RunConfig    RunConfig
 	Force        bool
+	TargetRoot   string
 }
 
 // Runtime configs
@@ -28,10 +29,6 @@ type RunConfig struct {
 	Memory    string
 	Bridged   bool
 	TapName   string
-}
-
-func DefaultConfig() Config {
-	return Config{Boot: BootImg, Kernel: KernelImg, DiskImage: "image"}
 }
 
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {

@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -70,8 +71,8 @@ func TestAddLibs(t *testing.T) {
 
 func TestManifestWithDeps(t *testing.T) {
 	var c Config
-	initDefaultImages(&c)
 	c.Program = "../data/main"
+	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
 	m, err := BuildManifest(&c)
 	if err != nil {
 		t.Fatal(err)
