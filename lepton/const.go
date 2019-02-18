@@ -34,7 +34,7 @@ const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 const packageRootPath string = "sysroot"
 
-var FinalImg string = getFinalImageName()
+var FinalImg = getFinalImageName()
 
 func getFinalImageName() string {
 	images := path.Join(GetOpsHome(), "images")
@@ -44,7 +44,7 @@ func getFinalImageName() string {
 	return path.Join(images, "image")
 }
 
-var PackagesCache string = getPackageCache()
+var PackagesCache = getPackageCache()
 
 func GetOpsHome() string {
 	home, err := HomeDir()
@@ -71,7 +71,7 @@ func GetPackageManifestFile() string {
 	return path.Join(getPackageCache(), PackageManifestFileName)
 }
 
-var NightlyReleaseUrl string = nightlyReleaseUrl()
+var NightlyReleaseUrl = nightlyReleaseUrl()
 
 func nightlyFileName() string {
 	return fmt.Sprintf("nanos-nightly-%v.tar.gz", runtime.GOOS)
@@ -88,7 +88,7 @@ func nightlyLocalFolder() string {
 	return path.Join(GetOpsHome(), "nightly")
 }
 
-var NightlyLocalFolder string = nightlyLocalFolder()
+var NightlyLocalFolder = nightlyLocalFolder()
 
 func LocalTimeStamp() (string, error) {
 
@@ -130,7 +130,7 @@ func updateLocalRelease(version string) error {
 	return ioutil.WriteFile(local, []byte(version), 0755)
 }
 
-var LatestReleaseVersion string = getLatestRelVersion()
+var LatestReleaseVersion = getLatestRelVersion()
 
 func getLatestRelVersion() string {
 	resp, _ := http.Get(ReleaseBaseUrl + "latest.txt")
@@ -139,7 +139,7 @@ func getLatestRelVersion() string {
 	return strings.TrimSuffix(string(data), "\n")
 }
 
-var LocalReleaseVersion string = getLocalRelVersion()
+var LocalReleaseVersion = getLocalRelVersion()
 
 func getLocalRelVersion() string {
 	data, err := ioutil.ReadFile(path.Join(GetOpsHome(), "latest.txt"))

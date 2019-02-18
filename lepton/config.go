@@ -19,7 +19,6 @@ type Config struct {
 	RunConfig    RunConfig
 	Force        bool
 	TargetRoot   string
-	LocalTMPDir  string
 }
 
 // Runtime configs

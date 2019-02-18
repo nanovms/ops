@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -345,7 +344,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
-  
+
 	localstaging := path.Join(api.GetOpsHome(), ".staging")
 	expackage := path.Join(localstaging, args[0])
 	localpackage := api.DownloadPackage(args[0])
@@ -367,24 +366,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
-
-	// Get temp directory path
-	if c.LocalTMPDir == "" {
-		tempDirectoryPath, err := GetTMPPathByProgramPath(filepath.Join(currentPath, pkgConfig.Program))
-		if err != nil {
-			panic(err)
-		}
-		c.LocalTMPDir = tempDirectoryPath
-	}
-
-	// Remove the folder first.
-	_ = os.RemoveAll(path.Join(c.LocalTMPDir, args[0]))
-
-	// Move package from tempPath to tempDirectoryPath and remove tempPath
-	if err := os.Rename(filepath.Join(tempPath, args[0]), filepath.Join(c.LocalTMPDir, args[0])); err != nil {
-		panic(err)
-	}
-	_ = os.RemoveAll(tempPath)
 
 	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
 	if err != nil {
@@ -449,23 +430,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
-	// Get full path to program
-	programAbsPath, err := filepath.Abs(c.Program)
-	if err != nil {
-		panic(err)
-	}
-
-	// Get temp directory path
-	if c.LocalTMPDir == "" {
-		tempDirectoryPath, err := GetTMPPathByProgramPath(programAbsPath)
-		if err != nil {
-			panic(err)
-		}
-		c.LocalTMPDir = tempDirectoryPath
-	}
-
 	if c.RunConfig.Imagename == "" {
-		c.RunConfig.Imagename = filepath.Join(c.LocalTMPDir, api.FinalImg)
+		c.RunConfig.Imagename = api.FinalImg
 	}
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"

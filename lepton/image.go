@@ -107,7 +107,7 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
 		m.AddFile(vmpath, hostpath)
 		return nil
-  })
+	})
 }
 
 func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
@@ -199,18 +199,27 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 
 func buildImage(c *Config, m *Manifest) error {
 
+	programAbsPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	// Get temp directory path
+	tempDirectoryPath, err := GetTMPPathByProgramPath(programAbsPath)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
 	//  prepare manifest file
 	elfmanifest := m.String()
 
 	// invoke mkfs to create the filesystem ie kernel + elf image
-	mergedImgPath := filepath.Join(c.LocalTMPDir, mergedImg)
-	if mergedImg, err := createFile(mergedImgPath); err != nil {
+	mergedImgPath := filepath.Join(tempDirectoryPath, mergedImg)
+	mergedImg, err := createFile(mergedImgPath)
+	if err != nil {
 		return errors.Wrap(err, 1)
-	} else {
-		if err := mergedImg.Close(); err != nil {
-			return errors.Wrap(err, 1)
-		}
 	}
+	defer mergedImg.Close()
 
 	var args []string
 	if c.TargetRoot != "" {
@@ -239,15 +248,9 @@ func buildImage(c *Config, m *Manifest) error {
 	}
 	defer bootImageOpen.Close()
 
-	mergedImgPathOpen, err := os.Open(mergedImgPath)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	defer mergedImgPathOpen.Close()
-
 	// produce final image, boot + kernel + elf
 	if c.DiskImage == "" {
-		c.DiskImage = filepath.Join(c.LocalTMPDir, FinalImg)
+		c.DiskImage = FinalImg
 	}
 	fd, err := createFile(c.DiskImage)
 	if err != nil {
@@ -258,7 +261,7 @@ func buildImage(c *Config, m *Manifest) error {
 	if _, err = io.Copy(fd, bootImageOpen); err != nil {
 		return errors.Wrap(err, 1)
 	}
-	if _, err = io.Copy(fd, mergedImgPathOpen); err != nil {
+	if _, err = io.Copy(fd, mergedImg); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
