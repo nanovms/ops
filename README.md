@@ -2,6 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
 
+[![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops)
+
 Ops is the main interface for creating and running a Nanos unikernel. It is used to 
 package, create and run your application as a nanos unikernel instance.
 
