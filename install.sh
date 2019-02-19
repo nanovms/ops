@@ -208,10 +208,28 @@ ops_install_haxm() {
     # installed or if the haxm kext was otherwise loaded. 
     existing_install=`pkgutil --pkgs | grep haxm`
     loaded_module=`kextstat | grep intelhaxm`
-    if [ ! -z $existing_install ] || [ ! -z $loaded_module ]; then
+    if [ ! -z "$existing_install" ] || [ ! -z $loaded_module ]; then
         return
     fi
 
+    while true; do
+	prompt="Would you like to install Intel HAXM for hypervisor hardware acceleration support [yes/NO]? "
+	read -p "$prompt"
+	reply=`echo $REPLY | tr '[:upper:]' '[:lower:]'`
+
+	if [ -z "$reply" ]; then
+	    reply="no"
+	fi
+
+	case "$reply" in
+	    no) return
+		;;
+	    yes) break
+		;;
+	    *) echo "Valid responses are either \"yes\" or \"no\"".
+	esac
+     done
+    
     # get the binary package. No need to check the md5 since the we are going
     # for the included .dmg which is signed.
     curl -LJO https://github.com/intel/haxm/releases/download/v7.4.1/haxm-macosx_v7_4_1.zip
