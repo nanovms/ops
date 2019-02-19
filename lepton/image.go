@@ -272,10 +272,8 @@ func buildImage(c *Config, m *Manifest) error {
 		return errors.Wrap(err, 1)
 	}
 
-	if len(c.Debugflags) == 0 {
-		if err := RemoveTMPPathByProgramPath(programAbsPath); err != nil {
-			return errors.Wrap(err, 1)
-		}
+	if err := os.Remove(mergedImgPath); err != nil {
+		return errors.Wrap(err, 1)
 	}
 
 	return nil
