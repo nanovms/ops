@@ -219,7 +219,6 @@ func buildImage(c *Config, m *Manifest) error {
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	defer mergedImg.Close()
 
 	var args []string
 	if c.TargetRoot != "" {
@@ -250,7 +249,11 @@ func buildImage(c *Config, m *Manifest) error {
 
 	// produce final image, boot + kernel + elf
 	if c.DiskImage == "" {
-		c.DiskImage = FinalImg
+		finalImagePath, err := GetImagePathByProgramPath(programAbsPath)
+		if err != nil {
+			return errors.Wrap(err, 1)
+		}
+		c.DiskImage = filepath.Join(finalImagePath, "image")
 	}
 	fd, err := createFile(c.DiskImage)
 	if err != nil {
@@ -263,6 +266,16 @@ func buildImage(c *Config, m *Manifest) error {
 	}
 	if _, err = io.Copy(fd, mergedImg); err != nil {
 		return errors.Wrap(err, 1)
+	}
+
+	if err := mergedImg.Close(); err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	if len(c.Debugflags) == 0 {
+		if err := RemoveTMPPathByProgramPath(programAbsPath); err != nil {
+			return errors.Wrap(err, 1)
+		}
 	}
 
 	return nil

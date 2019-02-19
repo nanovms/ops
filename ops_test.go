@@ -67,7 +67,7 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 		t.Fatal(err)
 	}
 	hypervisor := api.HypervisorInstance()
-	rconfig := api.RuntimeConfig(api.FinalImg, []int{8080}, true)
+	rconfig := api.RuntimeConfig(api.FinalDefaultImg, []int{8080}, true)
 	go func() {
 		hypervisor.Start(&rconfig)
 	}()
@@ -102,7 +102,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	hypervisor := api.HypervisorInstance()
-	rconfig := api.RuntimeConfig(api.FinalImg, []int{8080}, true)
+	rconfig := api.RuntimeConfig(api.FinalDefaultImg, []int{8080}, true)
 	go func() {
 		hypervisor.Start(&rconfig)
 	}()

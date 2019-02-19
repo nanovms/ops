@@ -34,9 +34,9 @@ const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 const packageRootPath string = "sysroot"
 
-var FinalImg = getFinalImageName()
+var FinalDefaultImg = getDefaultFinalImageName()
 
-func getFinalImageName() string {
+func getDefaultFinalImageName() string {
 	images := path.Join(GetOpsHome(), "images")
 	if _, err := os.Stat(images); os.IsNotExist(err) {
 		os.MkdirAll(images, 0755)

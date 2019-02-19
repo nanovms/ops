@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -139,7 +140,17 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		ports = append(ports, i)
 	}
 
-	fmt.Printf("booting %s ...\n", api.FinalImg)
+	// Get full path to program
+	absProgramPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		panic(err)
+	}
+	imageFilePath, err := api.GetImagePathByProgramPath(absProgramPath)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("booting %s ...\n", filepath.Join(imageFilePath, "image"))
 
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
@@ -195,7 +206,16 @@ func fixupConfigImages(c *api.Config, version string) {
 	}
 
 	if c.DiskImage == "" {
-		c.DiskImage = api.FinalImg
+		// Get full path to program
+		absProgramPath, err := filepath.Abs(c.Program)
+		if err != nil {
+			panic(err)
+		}
+		imageFilePath, err := api.GetImagePathByProgramPath(absProgramPath)
+		if err != nil {
+			panic(err)
+		}
+		c.DiskImage = filepath.Join(imageFilePath, "image")
 	}
 
 	if c.Mkfs == "" {
@@ -231,7 +251,17 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	c.Program = args[0]
 	c.TargetRoot = targetRoot
 	buildImages(c)
-	fmt.Printf("Bootable image file:%s\n", api.FinalImg)
+
+	// Get full path to program
+	absProgramPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		panic(err)
+	}
+	imageFilePath, err := api.GetImagePathByProgramPath(absProgramPath)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Bootable image file:%s\n", filepath.Join(imageFilePath, "image"))
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
@@ -422,7 +452,17 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		ports = append(ports, i)
 	}
 
-	fmt.Printf("booting %s ...\n", api.FinalImg)
+	// Get full path to program
+	absProgramPath, err := filepath.Abs(c.Program)
+	if err != nil {
+		panic(err)
+	}
+	imageFilePath, err := api.GetImagePathByProgramPath(absProgramPath)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("booting %s ...\n", filepath.Join(imageFilePath, "image"))
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
 }
@@ -430,7 +470,16 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
 	if c.RunConfig.Imagename == "" {
-		c.RunConfig.Imagename = api.FinalImg
+		// Get full path to program
+		absProgramPath, err := filepath.Abs(c.Program)
+		if err != nil {
+			panic(err)
+		}
+		imageFilePath, err := api.GetImagePathByProgramPath(absProgramPath)
+		if err != nil {
+			panic(err)
+		}
+		c.RunConfig.Imagename = filepath.Join(imageFilePath, "image")
 	}
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
