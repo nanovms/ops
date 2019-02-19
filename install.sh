@@ -206,14 +206,14 @@ ops_install_haxm() {
 
     # check to see if a version of the package was previously
     # installed or if the haxm kext was otherwise loaded. 
-    existing_install=`pkgutil --pkgs | grep haxm`
-    loaded_module=`kextstat | grep intelhaxm`
+    readonly existing_install=`pkgutil --pkgs | grep haxm`
+    readonly loaded_module=`kextstat | grep intelhaxm`
     if [ ! -z "$existing_install" ] || [ ! -z $loaded_module ]; then
         return
     fi
 
     while true; do
-	prompt="Would you like to install Intel HAXM for hypervisor hardware acceleration support [yes/NO]? "
+	readonly prompt="Would you like to install Intel HAXM for hypervisor hardware acceleration support [yes/NO]? "
 	read -p "$prompt"
 	reply=`echo $REPLY | tr '[:upper:]' '[:lower:]'`
 
@@ -235,8 +235,9 @@ ops_install_haxm() {
     curl -LJO https://github.com/intel/haxm/releases/download/v7.4.1/haxm-macosx_v7_4_1.zip
     tar -xvf haxm-macosx_v7_4_1.zip -C /tmp
     hdiutil attach /tmp/IntelHAXM_7.4.1.dmg
-    installer -package /Volumes/IntelHAXM_7.4.1/IntelHAXM_7.4.1.mpkg -target /
+    sudo installer -package /Volumes/IntelHAXM_7.4.1/IntelHAXM_7.4.1.mpkg -target /
     hdiutil detach /Volumes/IntelHAXM_7.4.1/
+    rm -f haxm-macosx_v7_4_1.zip
 }
 
 ops_link() {
