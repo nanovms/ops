@@ -199,6 +199,28 @@ ops_install_qemu() {
   fi
 }
 
+ops_install_haxm() {
+    if [ "$OS" != "darwin" ]; then
+        return
+    fi
+
+    # check to see if a version of the package was previously
+    # installed or if the haxm kext was otherwise loaded. 
+    existing_install=`pkgutil --pkgs | grep haxm`
+    loaded_module=`kextstat | grep intelhaxm`
+    if [ ! -z $existing_install ] || [ ! -z $loaded_module ]; then
+        return
+    fi
+
+    # get the binary package. No need to check the md5 since the we are going
+    # for the included .dmg which is signed.
+    curl -LJO https://github.com/intel/haxm/releases/download/v7.4.1/haxm-macosx_v7_4_1.zip
+    tar -xvf haxm-macosx_v7_4_1.zip -C /tmp
+    hdiutil attach /tmp/IntelHAXM_7.4.1.dmg
+    installer -package /Volumes/IntelHAXM_7.4.1/IntelHAXM_7.4.1.mpkg -target /
+    hdiutil detach /Volumes/IntelHAXM_7.4.1/
+}
+
 ops_link() {
   printf "$cyan> Adding to bash profile...$reset\n"
   OPS_PROFILE="$(ops_detect_profile)"
@@ -241,10 +263,11 @@ ops_install() {
   else
     printf "${reset}Installing ops!$reset\n"
   fi
-  
+
   # identify platform based on uname output
   initOS
   ops_install_qemu
+  ops_install_haxm
   ops_download
   ops_link
 }
