@@ -1,9 +1,10 @@
 package lepton
 
 import (
-	"path/filepath"
 	"debug/elf"
 	"os"
+	"path/filepath"
+
 	"github.com/go-errors/errors"
 )
 
@@ -26,8 +27,8 @@ func lookupFile(targetRoot string, path string) (string, error) {
 		if err != nil {
 			return path, err
 		}
-		if fi.Mode() & os.ModeSymlink == 0 {
-			break;
+		if fi.Mode()&os.ModeSymlink == 0 {
+			break
 		}
 
 		currentPath, err = os.Readlink(targetPath)
@@ -36,7 +37,7 @@ func lookupFile(targetRoot string, path string) (string, error) {
 		}
 		if currentPath[0] != '/' {
 			// relative symlinks are ok
-			break;
+			break
 		}
 	}
 
@@ -52,7 +53,7 @@ func findLib(targetRoot string, libDirs []string, path string) (string, error) {
 		return path, nil
 	}
 
-	for _, libDir := range(libDirs) {
+	for _, libDir := range libDirs {
 		lib := filepath.Join(libDir, path)
 		_, err := lookupFile(targetRoot, lib)
 		if err == nil {
@@ -86,7 +87,7 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 			return nil, err
 		}
 	}
-	dt_runpath = append(dt_runpath, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
+	dt_runpath = append(dt_runpath, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
 	dt_needed, err := fd.DynString(elf.DT_NEEDED)
 	if err != nil {
 		return nil, err
