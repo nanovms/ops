@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 )
@@ -236,7 +237,11 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	if rconfig.Bridged {
 		devType = "tap"
 		ifaceName = rconfig.TapName
-		q.addFlag("-enable-kvm")
+		if runtime.GOOS == "darwin" {
+			q.addFlag("-enable-hax")
+		} else {
+			q.addFlag("-enable-kvm")
+		}
 	}
 	q.addDevice(devType, ifaceName, "", rconfig.Ports)
 	q.addDisplay("none")

@@ -2,6 +2,7 @@ package lepton
 
 import (
 	. "fmt"
+	"runtime"
 	"testing"
 )
 
@@ -70,6 +71,22 @@ func TestRandomMacGen(t *testing.T) {
 	if len(q.devices[0].mac) == 0 {
 		t.Errorf("No RandomMac was Assigned %s", q.devices[0].mac)
 	}
+}
+
+func TestAcceleration(t *testing.T) {
+	expected := "-enable-kvm"
+	if runtime.GOOS == "darwin" {
+		expected = "-enable-hax"
+	}
+	hv := &qemu{}
+	rc := RunConfig{Bridged: true}
+	for _, arg := range hv.Args(&rc) {
+		if expected == arg {
+			return
+		}
+	}
+
+	t.Errorf("qemu flags should have included %q but did not.", expected)
 }
 
 func checkQemuString(qr Stringer, expected string, t *testing.T) {
