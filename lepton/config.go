@@ -12,7 +12,6 @@ type Config struct {
 	Version      string
 	Boot         string
 	Kernel       string
-	DiskImage    string
 	Mkfs         string
 	NameServer   string
 	NightlyBuild bool

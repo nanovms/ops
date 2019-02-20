@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,14 +34,14 @@ const PackageManifestURL string = "https://storage.googleapis.com/packagehub/man
 const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 
-var FinalImg string = getFinalImageName()
-
-func getFinalImageName() string {
+func GenerateImageName(program string) string {
 	images := path.Join(GetOpsHome(), "images")
-	if _, err := os.Stat(images); os.IsNotExist(err) {
-		os.MkdirAll(images, 0755)
-	}
-	return path.Join(images, "image")
+	var buffer bytes.Buffer
+	buffer.WriteString(images)
+	buffer.WriteRune('/')
+	buffer.WriteString(program)
+	buffer.WriteString(".img")
+	return buffer.String()
 }
 
 var PackagesCache string = getPackageCache()
@@ -52,8 +53,9 @@ func GetOpsHome() string {
 	}
 
 	opshome := path.Join(home, ".ops")
-	if _, err := os.Stat(opshome); os.IsNotExist(err) {
-		os.MkdirAll(opshome, 0755)
+	images := path.Join(opshome, ".ops", "images")
+	if _, err := os.Stat(images); os.IsNotExist(err) {
+		os.MkdirAll(images, 0755)
 	}
 	return opshome
 }
