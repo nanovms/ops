@@ -76,7 +76,7 @@ func TestRandomMacGen(t *testing.T) {
 func TestAcceleration(t *testing.T) {
 	expected := "-enable-kvm"
 	if runtime.GOOS == "darwin" {
-		expected = "-enable-hax"
+		expected = "-accel hax"
 	}
 	hv := &qemu{}
 	rc := RunConfig{Bridged: true}
