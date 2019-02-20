@@ -91,3 +91,34 @@ ops config files are plain JSON, below is an example
                 -example.html
                 /stylesheet
                     -main.css
+
+## Reporting Bugs
+
+Feel free to open up a pull request. It's helpful to have your OPS
+version and the release channel you are using.
+
+```
+ops version
+```
+
+get the release channel (or nightly)
+```
+ls .ops/
+```
+
+if using a package
+get the package hash:
+```
+cat .ops/packages/manifest.json| jq '."gnatsd_1.4.1"'
+```
+
+## Pull Requests
+
+If you have an idea for a new feature and it might take longer than a
+few hours or days to do it's worth opening a feature request tkt to
+ideate it first before jumping into code. There might be someone already
+working on the feature or plans to do something entirely different.
+
+## Security
+
+Feel free to email security at.
