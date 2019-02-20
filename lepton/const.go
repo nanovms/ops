@@ -9,7 +9,6 @@ import (
 	"path"
 	"runtime"
 	"strings"
-	"time"
 )
 
 // file system manifest
@@ -41,9 +40,6 @@ func GenerateImageName(program string) string {
 	buffer.WriteString(images)
 	buffer.WriteRune('/')
 	buffer.WriteString(program)
-	buffer.WriteRune('_')
-	// time.Now -> mmddhhmmss
-	buffer.WriteString(time.Now().Format("0102150405"))
 	buffer.WriteString(".img")
 	return buffer.String()
 }
