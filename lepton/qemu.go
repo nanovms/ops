@@ -238,7 +238,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		devType = "tap"
 		ifaceName = rconfig.TapName
 		if runtime.GOOS == "darwin" {
-			q.addFlag("-accel hax")
+			q.addOption("-accel", "hax")
 		} else {
 			q.addFlag("-enable-kvm")
 		}
