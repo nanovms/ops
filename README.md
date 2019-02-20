@@ -41,6 +41,13 @@ examples. Below are links to simple examples using various programming platforms
 * [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)
 * [PHP](https://nanovms.gitbook.io/ops/basic_usage#running-php-hello-world)
 * [NodeJS](https://nanovms.gitbook.io/ops/basic_usage#running-a-nodejs-script)
+* [Lua](https://github.com/nanovms/ops-examples/tree/master/lua/01-hello-world)
+* [Perl](https://github.com/nanovms/ops-examples/tree/master/perl/01-hello-world)
+* [Python2.7](https://github.com/nanovms/ops-examples/tree/master/python2.7)
+* [Python3.6](https://github.com/nanovms/ops-examples/tree/master/python3.6/01-hello-world)
+* [Ruby2.3](https://github.com/nanovms/ops-examples/tree/master/ruby/01-hello-world)
+* [Rust](https://github.com/nanovms/ops-examples/tree/master/rust/01-hello-world)
+* [Scheme](https://github.com/nanovms/ops-examples/tree/master/scheme/01-hello-world)
 
 # Setup networking
 
