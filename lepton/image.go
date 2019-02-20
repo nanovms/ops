@@ -227,7 +227,11 @@ func buildImage(c *Config, m *Manifest) error {
 
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.RunConfig.Imagename)
-	defer fd.Close()
+	defer func() {
+		os.Remove(mergedImg)
+		fd.Close()
+	}()
+  
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
