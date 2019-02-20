@@ -327,13 +327,15 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 		pkgConfig.Env[k] = v
 	}
 
-	if usrConfig.RunConfig.Imagename != "" {
-		pkgConfig.RunConfig.Imagename = usrConfig.RunConfig.Imagename
-	}
+	pkgConfig.RunConfig = usrConfig.RunConfig
+	pkgConfig.Kernel = usrConfig.Kernel
+	pkgConfig.Boot = usrConfig.Boot
+	pkgConfig.Mkfs = usrConfig.Mkfs
+	pkgConfig.TargetRoot = usrConfig.TargetRoot
+	pkgConfig.Force = usrConfig.Force
+	pkgConfig.NightlyBuild = usrConfig.NightlyBuild
+	pkgConfig.NameServer = usrConfig.NameServer
 
-	if usrConfig.RunConfig.Memory != "" {
-		pkgConfig.RunConfig.Memory = usrConfig.RunConfig.Memory
-	}
 	return pkgConfig
 }
 
