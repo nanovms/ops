@@ -61,15 +61,16 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	var c api.Config
 	c.Program = userImage
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
+	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []int{8080}, true)
 	fixupConfigImages(&c, api.LocalReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
 	}
 	hypervisor := api.HypervisorInstance()
-	rconfig := api.RuntimeConfig(api.FinalImg, []int{8080}, true)
+
 	go func() {
-		hypervisor.Start(&rconfig)
+		hypervisor.Start(&c.RunConfig)
 	}()
 	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://127.0.0.1:8080")
@@ -96,15 +97,16 @@ func TestImageWithStaticFiles(t *testing.T) {
 	c.Dirs = []string{"data/static"}
 	c.Program = "data/main"
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
+	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []int{8080}, true)
 	fixupConfigImages(&c, api.LatestReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
 		t.Fatal(err)
 	}
 	hypervisor := api.HypervisorInstance()
-	rconfig := api.RuntimeConfig(api.FinalImg, []int{8080}, true)
+
 	go func() {
-		hypervisor.Start(&rconfig)
+		hypervisor.Start(&c.RunConfig)
 	}()
 	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://localhost:8080/example.html")

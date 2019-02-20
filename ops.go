@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -120,6 +121,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.RunConfig.Bridged = bridged
 	c.NightlyBuild = nightly
 	c.Force = force
+	setDefaultImageName(cmd, c)
 
 	if !skipbuild {
 		buildImages(c)
@@ -139,7 +141,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		ports = append(ports, i)
 	}
 
-	fmt.Printf("booting %s ...\n", api.FinalImg)
+	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
 
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
@@ -194,10 +196,6 @@ func fixupConfigImages(c *api.Config, version string) {
 		c.Kernel = path.Join(api.GetOpsHome(), version, "stage3.img")
 	}
 
-	if c.DiskImage == "" {
-		c.DiskImage = api.FinalImg
-	}
-
 	if c.Mkfs == "" {
 		c.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
 	}
@@ -223,15 +221,30 @@ func buildImages(c *api.Config) {
 	panicOnError(err)
 }
 
+func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
+	// if user have not supplied an imagename, use the default as program_image
+	// all images goes to $HOME/.ops/images
+	imageName, _ := cmd.Flags().GetString("imagename")
+	if imageName == "" {
+		imageName = api.GenerateImageName(c.Program)
+	} else {
+		images := path.Join(api.GetOpsHome(), "images")
+		imageName = path.Join(images, filepath.Base(imageName))
+	}
+	c.RunConfig.Imagename = imageName
+}
+
 func buildCommandHandler(cmd *cobra.Command, args []string) {
 	targetRoot, _ := cmd.Flags().GetString("target-root")
 	config, _ := cmd.Flags().GetString("config")
+
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
 	c.Program = args[0]
 	c.TargetRoot = targetRoot
+	setDefaultImageName(cmd, c)
 	buildImages(c)
-	fmt.Printf("Bootable image file:%s\n", api.FinalImg)
+	fmt.Printf("Bootable image file:%s\n", c.RunConfig.Imagename)
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
@@ -403,6 +416,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.RunConfig.Bridged = bridged
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
+	setDefaultImageName(cmd, c)
 
 	if err = buildFromPackage(expackage, c); err != nil {
 		panic(err)
@@ -422,16 +436,13 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		ports = append(ports, i)
 	}
 
-	fmt.Printf("booting %s ...\n", api.FinalImg)
+	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
 	InitDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
 }
 
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
-	if c.RunConfig.Imagename == "" {
-		c.RunConfig.Imagename = api.FinalImg
-	}
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
 	}
@@ -552,6 +563,7 @@ func main() {
 	var tap string
 	var targetRoot string
 	var skipbuild bool
+	var imageName string
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -564,6 +576,7 @@ func main() {
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
+	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",
@@ -592,6 +605,7 @@ func main() {
 	}
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdBuild.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+	cmdBuild.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdPrintConfig = &cobra.Command{
 		Use:   "manifest [ELF file]",
@@ -629,6 +643,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
+	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdUpdate = &cobra.Command{
 		Use:   "update",
