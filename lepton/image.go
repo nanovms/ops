@@ -231,7 +231,7 @@ func buildImage(c *Config, m *Manifest) error {
 		os.Remove(mergedImg)
 		fd.Close()
 	}()
-  
+
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
@@ -274,9 +274,8 @@ func DownloadNightlyImages(c *Config) error {
 		}
 		// update local timestamp
 		updateLocalTimestamp(remote)
+		ExtractPackage(localtar, NightlyLocalFolder)
 	}
-
-	ExtractPackage(localtar, NightlyLocalFolder)
 
 	// make mkfs executable
 	err = os.Chmod(path.Join(NightlyLocalFolder, "mkfs"), 0775)
