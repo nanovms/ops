@@ -67,13 +67,13 @@ ops_download() {
       INSTALL_DIRECTORY="$HOME/.ops"
   fi
   OPS=INSTALL_DIRECTORY
-  
+
   # TODO: Track release TAGS and update.
   # use github release tags
 
   # assemble expected release URL
   BINARY_URL="$RELEASES_URL/${OS}/ops"
-  
+
   DOWNLOAD_FILE=$(mktemp -t ops.XXXXXXXXXX)
 
   download_file "$BINARY_URL" "$DOWNLOAD_FILE"
@@ -199,6 +199,62 @@ ops_install_qemu() {
   fi
 }
 
+ops_user_permissions() {
+    local group="kvm"
+    local username=`whoami`
+    local prompt="Ops uses kvm acceleration. Would you like to add ${username} to the kvm group [yes/No]? "
+    local notification="Adding ${username} to ${group} using sudo."
+    local failure="Unable to add ${username} to ${group}. Please add the $username to ${group} manually."
+    local success="${username} has been added to kvm ${group}. The change will take affect on the next login."
+    local add_user
+
+    if groups $username | grep -q "\b${group}\b"; then
+        return
+    fi
+
+    while true
+    do
+        printf "$prompt"
+        read REPLY
+        local reply=`echo $REPLY | tr '[:upper:]' '[:lower:]'`
+
+        if [ -z "$reply" ]; then
+            reply="no"
+        fi
+
+        case "$reply" in
+            no) add_user=false
+                break
+                ;;
+            yes) add_user=true
+                 break
+                 ;;
+            *) echo "Valid responses are either \"yes\" or \"no\"".
+        esac
+    done
+
+
+    if ! $add_user; then
+        return
+    fi
+
+    printf "$notification\n"
+    sudo usermod -aG $group $username
+
+    if [ $? -eq 0 ]; then
+        printf "$success\n"
+    else
+        printf "$failure\n"
+    fi
+}
+
+
+ops_set_user_permissions(){
+    if [ "$OS" = "linux" ]; then
+        ops_user_permissions
+    fi
+}
+
 ops_link() {
   printf "$cyan> Adding to bash profile...$reset\n"
   OPS_PROFILE="$(ops_detect_profile)"
@@ -241,10 +297,11 @@ ops_install() {
   else
     printf "${reset}Installing ops!$reset\n"
   fi
-  
+
   # identify platform based on uname output
   initOS
   ops_install_qemu
+  ops_set_user_permissions
   ops_download
   ops_link
 }

@@ -2,6 +2,7 @@ package lepton
 
 import (
 	. "fmt"
+	"os/user"
 	"testing"
 )
 
@@ -68,7 +69,82 @@ func TestRandomMacGen(t *testing.T) {
 	q := qemu{}
 	q.addDevice("tap", "tap0", "", []int{})
 	if len(q.devices[0].mac) == 0 {
-		t.Errorf("No RandomMac was Assigned %s", q.devices[0].mac)
+		t.Errorf("No RandomMac was assigned %s", q.devices[0].mac)
+	}
+}
+
+func TestQemuVersion(t *testing.T) {
+	testData := `
+QEMU emulator version 2.8.1(Debian 1:2.8+dfsg-6+deb9u5)
+Copyright (c) 2003-2016 Fabrice Bellard and the QEMU Project developers
+`
+	actual := parseQemuVersion([]byte(testData))
+	expected := "2.8"
+	if actual != expected {
+		t.Errorf("Parsed Qemu version %q not %q", actual, expected)
+	}
+}
+
+func TestGroupPermissions(t *testing.T) {
+	currentUser, err := user.Current()
+	userName := currentUser.Username
+	p, err := groupPermissions(userName)
+	if err != nil {
+		t.Error(err)
+	}
+	// groupPermissions should find users in their own group if functioning
+	// correctly.
+	if !p {
+		t.Errorf("User was not found in own group.")
+	}
+}
+
+func TestVersionCompareGreater(t *testing.T) {
+	q := qemu{}
+	v1 := "2.19"
+	v2 := "2.7"
+	res, err := q.versionCompare(v1, v2)
+	if err != nil {
+		t.Error(err)
+	}
+	if !res {
+		t.Errorf("%q should be a greater version than %q", v1, v2)
+	}
+}
+
+func TestVersionCompareEqual(t *testing.T) {
+	q := qemu{}
+	v1 := "2.19"
+	v2 := "2.19"
+	res, err := q.versionCompare(v1, v2)
+	if err != nil {
+		t.Error(err)
+	}
+	if !res {
+		t.Errorf("%q should be a greater version than %q", v1, v2)
+	}
+}
+
+func TestVersionCompareLess(t *testing.T) {
+	q := qemu{}
+	v1 := "2.7"
+	v2 := "2.8"
+	res, err := q.versionCompare(v1, v2)
+	if err != nil {
+		t.Error(err)
+	}
+	if res {
+		t.Errorf("%q should be a prior version to %q", v1, v2)
+	}
+}
+
+func TestVersionCompareMalformat(t *testing.T) {
+	q := qemu{}
+	v1 := "2dd.7x"
+	v2 := "2.8"
+	_, err := q.versionCompare(v1, v2)
+	if err.Error() != `improperly formated qemu version "2dd.7x"` {
+		t.Errorf("Did not detect improperly formated error %q", v1)
 	}
 }
 

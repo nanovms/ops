@@ -6,6 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
+	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -219,6 +223,84 @@ func generateMac() string {
 		octets[0], octets[1], octets[2], octets[3], octets[4], octets[5])
 }
 
+func qemuVersion() (string, error) {
+	versionData, err := exec.Command(qemuBaseCommand, "--version").Output()
+	if err != nil {
+		return "", err
+	}
+	return parseQemuVersion(versionData), nil
+}
+
+func parseQemuVersion(data []byte) string {
+	rgx := regexp.MustCompile("\\b[0-9]\\.[0-9]\\.[0-9]\\b")
+	return string(rgx.Find(data)[:3])
+}
+
+// kvmGroupPermission returns true if the current user is part of the kvm qroup,
+// false if she is not, or an error. or an error.
+func kvmGroupPermissions() (bool, error) {
+	return groupPermissions("kvm")
+}
+
+// groupPermissions returns true if the user is in the group specified by the
+// argument string, false if she is not, or an error.
+func groupPermissions(groupName string) (bool, error) {
+	currentUser, err := user.Current()
+	if err != nil {
+		return false, err
+	}
+	gids, err := currentUser.GroupIds()
+	if err != nil {
+		return false, err
+	}
+	g, err := user.LookupGroup(groupName)
+	if err != nil {
+		return false, err
+	}
+	for _, gid := range gids {
+		if g.Gid == gid {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// versionCompare compares Qemu version numbers. If the the first argument is
+// greater then true is returned, if the second argument is greater
+// then versionCompare returns false, otherwise it returns true.
+func (q *qemu) versionCompare(v1, v2 string) (bool, error) {
+	ver1 := strings.Split(v1, ".")
+	ver2 := strings.Split(v2, ".")
+	const formatError = "improperly formated qemu version %q"
+	errV1 := fmt.Errorf(formatError, v1)
+	errV2 := fmt.Errorf(formatError, v2)
+
+	if len(ver1) < 2 {
+		return false, errV1
+	}
+	if len(ver2) < 2 {
+		return false, errV2
+	}
+	majorV1, err := strconv.Atoi(ver1[0])
+	minorV1, err := strconv.Atoi(ver1[1])
+	if err != nil {
+		return false, errV1
+	}
+	majorV2, err := strconv.Atoi(ver2[0])
+	minorV2, err := strconv.Atoi(ver2[1])
+	if err != nil {
+		return false, errV2
+	}
+	if majorV1 < majorV2 {
+		return false, nil
+	}
+	if majorV1 == majorV2 && minorV1 < minorV2 {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (q *qemu) addFlag(flag string) {
 	q.flags = append(q.flags, flag)
 }
@@ -226,6 +308,39 @@ func (q *qemu) addFlag(flag string) {
 func (q *qemu) addOption(flag, value string) {
 	option := fmt.Sprintf("%s %s", flag, value)
 	q.flags = append(q.flags, option)
+}
+
+func (q *qemu) addAccel() {
+	// hv_support should not throw errors. When error/log handling is
+	// implemented, then errors in detecting hardware acceleration support
+	// should be reported. Here we treat any error in detecting hardware
+	// acceleration the same as detecting no hardware acceleration - we don't
+	// add the flag.
+
+	const hvfSupportedVersion = "2.12" // https://wiki.qemu.org/ChangeLog/2.12#Host_support
+	qemuVersion, err := qemuVersion()
+	if err != nil {
+		return
+	}
+	ok, err := hv_support()
+	if !(ok && err == nil) {
+		return
+	}
+	if runtime.GOOS == "darwin" {
+		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
+			q.addOption("-accel", "hvf")
+			q.addOption("-cpu", "host")
+			return
+		}
+	}
+	if runtime.GOOS == "linux" {
+		ok, err := kvmGroupPermissions()
+		if !(ok && err == nil) {
+			return
+		}
+		q.addFlag("-enable-kvm")
+		return
+	}
 }
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
@@ -237,9 +352,8 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		devType = "tap"
 		ifaceName = rconfig.TapName
 	}
-
 	if rconfig.UseKvm || rconfig.Bridged {
-		q.addFlag("-enable-kvm")
+		q.addAccel()
 	}
 
 	q.addDevice(devType, ifaceName, "", rconfig.Ports)
