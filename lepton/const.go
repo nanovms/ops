@@ -167,3 +167,9 @@ func getReleaseUrl(version string) string {
 func getReleaseLocalFolder(version string) string {
 	return path.Join(GetOpsHome(), version)
 }
+
+const (
+	commonArchive = "https://storage.googleapis.com/nanos/common/common.tar.gz"
+	libDNS        = "/lib/x86_64-linux-gnu/libnss_dns.so.2"
+	sslCERT       = "/etc/ssl/certs/ca-certificates.crt"
+)

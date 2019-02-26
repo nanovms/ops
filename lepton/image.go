@@ -72,6 +72,36 @@ func addHostName(m *Manifest, c *Config) {
 	m.AddFile("/proc/sys/kernel/hostname", temp)
 }
 
+// bunch of default files that's required.
+func addDefaultFiles(m *Manifest, c *Config) error {
+
+	commonPath := path.Join(GetOpsHome(), "common")
+	if _, err := os.Stat(commonPath); os.IsNotExist(err) {
+		os.MkdirAll(commonPath, 0755)
+	} else {
+		return nil
+	}
+	err := DownloadFile(commonPath, commonArchive, 10)
+	if err != nil {
+		return err
+	}
+
+	localtar := path.Join(commonPath, "common.tar.gz")
+	ExtractPackage(localtar, commonPath)
+
+	localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
+	localSslCert := path.Join(commonPath, "ca-certificates.crt")
+
+	if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
+		m.AddFile(libDNS, localLibDNS)
+	}
+
+	if _, err := os.Stat(localSslCert); !os.IsNotExist(err) {
+		m.AddFile(sslCERT, localSslCert)
+	}
+	return nil
+}
+
 func addFilesFromPackage(packagepath string, m *Manifest) {
 
 	rootPath := filepath.Join(packagepath, "sysroot")
@@ -172,6 +202,7 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
+	addDefaultFiles(m, c)
 	return m, nil
 }
 
