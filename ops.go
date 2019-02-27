@@ -206,6 +206,25 @@ func fixupConfigImages(c *api.Config, version string) {
 	}
 }
 
+func validateRequired(c *api.Config) {
+	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if _, err := os.Stat(c.Mkfs); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if _, err := os.Stat(c.Program); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func buildImages(c *api.Config) {
 	var err error
 	var currversion string
@@ -215,8 +234,11 @@ func buildImages(c *api.Config) {
 	} else {
 		currversion, err = downloadReleaseImages(c)
 	}
+
 	panicOnError(err)
 	fixupConfigImages(c, currversion)
+	validateRequired(c)
+
 	err = api.BuildImage(*c)
 	panicOnError(err)
 }
