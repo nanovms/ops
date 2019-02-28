@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-errors/errors"
 )
@@ -88,6 +89,12 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 		}
 	}
 	dt_runpath = append(dt_runpath, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
+
+	val := os.Getenv("LD_LIBRARY_PATH")
+	if len(strings.TrimSpace(val)) > 0 {
+		dt_runpath = append(dt_runpath, val)
+	}
+
 	dt_needed, err := fd.DynString(elf.DT_NEEDED)
 	if err != nil {
 		return nil, err
