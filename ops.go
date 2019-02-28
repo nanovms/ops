@@ -566,12 +566,27 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	table.Render()
 }
 
+func validateRunCmd(cmd *cobra.Command, args []string) error {
+	const MIN_ARGS = 1
+	if len(args) < MIN_ARGS {
+		return cobra.MinimumNArgs(MIN_ARGS)(cmd, args)
+	}
+	_, err := os.Lstat(args[0])
+	if os.IsNotExist(err) {
+		return fmt.Errorf("the specified binary file, %q, was not found", args[0])
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 
 	var cmdRun = &cobra.Command{
 		Use:   "run [elf]",
 		Short: "Run ELF binary as unikernel",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  validateRunCmd,
 		Run:   runCommandHandler,
 	}
 
