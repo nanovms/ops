@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -35,6 +36,7 @@ const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 
 func GenerateImageName(program string) string {
+	program = filepath.Base(program)
 	images := path.Join(GetOpsHome(), "images")
 	var buffer bytes.Buffer
 	buffer.WriteString(images)
