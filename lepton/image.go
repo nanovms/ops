@@ -46,30 +46,47 @@ func createFile(filepath string) (*os.File, error) {
 
 // add /etc/resolv.conf
 func addDNSConfig(m *Manifest, c *Config) {
-	data := []byte("nameserver ")
-	data = append(data, []byte(c.NameServer)...)
-	temp := path.Join(os.TempDir(), "resolv")
-	err := ioutil.WriteFile(temp, data, 0666)
-	if err != nil {
-		panic(err)
+	common := GetOpsCommon()
+	resolv := path.Join(common, "resolv.conf")
+	if _, err := os.Stat(resolv); os.IsNotExist(err) {
+		data := []byte("nameserver ")
+		data = append(data, []byte(c.NameServer)...)
+		err := ioutil.WriteFile(resolv, data, 0666)
+		if err != nil {
+			panic(err)
+		}
 	}
-	//nameserver 127.0.1.1
-	m.AddFile("/etc/resolv.conf", temp)
+	m.AddFile("/etc/resolv.conf", resolv)
 }
 
-///proc/sys/kernel/hostname
+// /proc/sys/kernel/hostname
 func addHostName(m *Manifest, c *Config) {
 	// uniboot is hardcoded in nanos virtio
 	// may be better to handle 'proc/sys/kernel/hostname' open
-	// in nanos as a spcial file like other device files
-	data := []byte("uniboot")
-	temp := path.Join(os.TempDir(), "hostname")
-	err := ioutil.WriteFile(temp, data, 0666)
-	if err != nil {
-		panic(err)
+	// in nanos as a special file like other device files
+	common := GetOpsCommon()
+	hostname := path.Join(common, "hostname")
+	if _, err := os.Stat(hostname); os.IsNotExist(err) {
+		data := []byte("uniboot")
+		err := ioutil.WriteFile(hostname, data, 0666)
+		if err != nil {
+			panic(err)
+		}
 	}
-	//nameserver 127.0.1.1
-	m.AddFile("/proc/sys/kernel/hostname", temp)
+	m.AddFile("/proc/sys/kernel/hostname", hostname)
+}
+
+func addPasswd(m *Manifest, c *Config) {
+	common := GetOpsCommon()
+	passwd := path.Join(common, "passwd")
+	if _, err := os.Stat(passwd); os.IsNotExist(err) {
+		data := []byte("root:x:0:0:root:/root:/bin/nobash")
+		err := ioutil.WriteFile(passwd, data, 0666)
+		if err != nil {
+			panic(err)
+		}
+	}
+	m.AddFile("/etc/passwd", passwd)
 }
 
 // bunch of default files that's required.
@@ -163,6 +180,7 @@ func addFromConfig(m *Manifest, c *Config) {
 	m.AddKernal(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
+	addPasswd(m, c)
 
 	for _, f := range c.Files {
 		m.AddFile(f, f)

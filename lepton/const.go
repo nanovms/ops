@@ -62,6 +62,14 @@ func GetOpsHome() string {
 	return opshome
 }
 
+func GetOpsCommon() string {
+	common := path.Join(GetOpsHome(), "common")
+	if _, err := os.Stat(common); os.IsNotExist(err) {
+		os.MkdirAll(common, 0755)
+	}
+	return common
+}
+
 func getPackageCache() string {
 	packagefolder := path.Join(GetOpsHome(), "packages")
 	if _, err := os.Stat(packagefolder); os.IsNotExist(err) {
