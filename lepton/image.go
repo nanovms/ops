@@ -46,30 +46,38 @@ func createFile(filepath string) (*os.File, error) {
 
 // add /etc/resolv.conf
 func addDNSConfig(m *Manifest, c *Config) {
+	temp := getImageTempDir(c.Program)
+	resolv := path.Join(temp, "resolv.conf")
 	data := []byte("nameserver ")
 	data = append(data, []byte(c.NameServer)...)
-	temp := path.Join(os.TempDir(), "resolv")
-	err := ioutil.WriteFile(temp, data, 0666)
+	err := ioutil.WriteFile(resolv, data, 0644)
 	if err != nil {
 		panic(err)
 	}
-	//nameserver 127.0.1.1
-	m.AddFile("/etc/resolv.conf", temp)
+	m.AddFile("/etc/resolv.conf", resolv)
 }
 
-///proc/sys/kernel/hostname
+// /proc/sys/kernel/hostname
 func addHostName(m *Manifest, c *Config) {
-	// uniboot is hardcoded in nanos virtio
-	// may be better to handle 'proc/sys/kernel/hostname' open
-	// in nanos as a spcial file like other device files
+	temp := getImageTempDir(c.Program)
+	hostname := path.Join(temp, "hostname")
 	data := []byte("uniboot")
-	temp := path.Join(os.TempDir(), "hostname")
-	err := ioutil.WriteFile(temp, data, 0666)
+	err := ioutil.WriteFile(hostname, data, 0644)
 	if err != nil {
 		panic(err)
 	}
-	//nameserver 127.0.1.1
-	m.AddFile("/proc/sys/kernel/hostname", temp)
+	m.AddFile("/proc/sys/kernel/hostname", hostname)
+}
+
+func addPasswd(m *Manifest, c *Config) {
+	temp := getImageTempDir(c.Program)
+	passwd := path.Join(temp, "passwd")
+	data := []byte("root:x:0:0:root:/root:/bin/nobash")
+	err := ioutil.WriteFile(passwd, data, 0644)
+	if err != nil {
+		panic(err)
+	}
+	m.AddFile("/etc/passwd", passwd)
 }
 
 // bunch of default files that's required.
@@ -163,6 +171,7 @@ func addFromConfig(m *Manifest, c *Config) {
 	m.AddKernal(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
+	addPasswd(m, c)
 
 	for _, f := range c.Files {
 		m.AddFile(f, f)
@@ -236,6 +245,9 @@ func buildImage(c *Config, m *Manifest) error {
 	elfmanifest = m.String()
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
+
+	defer cleanup(c)
+
 	args := []string{}
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
@@ -274,6 +286,12 @@ func buildImage(c *Config, m *Manifest) error {
 	}
 	catcmd.Wait()
 	return nil
+}
+
+func cleanup(c *Config) {
+	temp := filepath.Base(c.Program) + "_temp"
+	path := path.Join(GetOpsHome(), temp)
+	os.RemoveAll(path)
 }
 
 type dummy struct {
