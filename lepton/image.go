@@ -46,45 +46,36 @@ func createFile(filepath string) (*os.File, error) {
 
 // add /etc/resolv.conf
 func addDNSConfig(m *Manifest, c *Config) {
-	common := GetOpsCommon()
-	resolv := path.Join(common, "resolv.conf")
-	if _, err := os.Stat(resolv); os.IsNotExist(err) {
-		data := []byte("nameserver ")
-		data = append(data, []byte(c.NameServer)...)
-		err := ioutil.WriteFile(resolv, data, 0666)
-		if err != nil {
-			panic(err)
-		}
+	temp := getImageTempDir(c.Program)
+	resolv := path.Join(temp, "resolv.conf")
+	data := []byte("nameserver ")
+	data = append(data, []byte(c.NameServer)...)
+	err := ioutil.WriteFile(resolv, data, 0644)
+	if err != nil {
+		panic(err)
 	}
 	m.AddFile("/etc/resolv.conf", resolv)
 }
 
 // /proc/sys/kernel/hostname
 func addHostName(m *Manifest, c *Config) {
-	// uniboot is hardcoded in nanos virtio
-	// may be better to handle 'proc/sys/kernel/hostname' open
-	// in nanos as a special file like other device files
-	common := GetOpsCommon()
-	hostname := path.Join(common, "hostname")
-	if _, err := os.Stat(hostname); os.IsNotExist(err) {
-		data := []byte("uniboot")
-		err := ioutil.WriteFile(hostname, data, 0666)
-		if err != nil {
-			panic(err)
-		}
+	temp := getImageTempDir(c.Program)
+	hostname := path.Join(temp, "hostname")
+	data := []byte("uniboot")
+	err := ioutil.WriteFile(hostname, data, 0644)
+	if err != nil {
+		panic(err)
 	}
 	m.AddFile("/proc/sys/kernel/hostname", hostname)
 }
 
 func addPasswd(m *Manifest, c *Config) {
-	common := GetOpsCommon()
-	passwd := path.Join(common, "passwd")
-	if _, err := os.Stat(passwd); os.IsNotExist(err) {
-		data := []byte("root:x:0:0:root:/root:/bin/nobash")
-		err := ioutil.WriteFile(passwd, data, 0666)
-		if err != nil {
-			panic(err)
-		}
+	temp := getImageTempDir(c.Program)
+	passwd := path.Join(temp, "passwd")
+	data := []byte("root:x:0:0:root:/root:/bin/nobash")
+	err := ioutil.WriteFile(passwd, data, 0644)
+	if err != nil {
+		panic(err)
 	}
 	m.AddFile("/etc/passwd", passwd)
 }
@@ -254,6 +245,9 @@ func buildImage(c *Config, m *Manifest) error {
 	elfmanifest = m.String()
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
+
+	defer cleanup(c)
+
 	args := []string{}
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
@@ -292,6 +286,12 @@ func buildImage(c *Config, m *Manifest) error {
 	}
 	catcmd.Wait()
 	return nil
+}
+
+func cleanup(c *Config) {
+	temp := filepath.Base(c.Program) + "_temp"
+	path := path.Join(GetOpsHome(), temp)
+	os.RemoveAll(path)
 }
 
 type dummy struct {

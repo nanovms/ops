@@ -62,12 +62,13 @@ func GetOpsHome() string {
 	return opshome
 }
 
-func GetOpsCommon() string {
-	common := path.Join(GetOpsHome(), "common")
-	if _, err := os.Stat(common); os.IsNotExist(err) {
-		os.MkdirAll(common, 0755)
+func getImageTempDir(program string) string {
+	temp := filepath.Base(program) + "_temp"
+	path := path.Join(GetOpsHome(), temp)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.MkdirAll(path, 0755)
 	}
-	return common
+	return path
 }
 
 func getPackageCache() string {
