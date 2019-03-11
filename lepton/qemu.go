@@ -236,8 +236,12 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	if rconfig.Bridged {
 		devType = "tap"
 		ifaceName = rconfig.TapName
+	}
+
+	if rconfig.UseKvm || rconfig.Bridged {
 		q.addFlag("-enable-kvm")
 	}
+
 	q.addDevice(devType, ifaceName, "", rconfig.Ports)
 	q.addDisplay("none")
 	q.addSerial("stdio")
