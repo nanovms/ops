@@ -28,6 +28,7 @@ type RunConfig struct {
 	Memory    string
 	Bridged   bool
 	TapName   string
+	UseKvm    bool
 }
 
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
