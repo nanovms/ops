@@ -142,13 +142,16 @@ func updateLocalRelease(version string) error {
 	return ioutil.WriteFile(local, []byte(version), 0755)
 }
 
-var LatestReleaseVersion string = getLatestRelVersion()
+var LatestReleaseVersion string
 
 func getLatestRelVersion() string {
-	resp, _ := http.Get(ReleaseBaseUrl + "latest.txt")
-	defer resp.Body.Close()
-	data, _ := ioutil.ReadAll(resp.Body)
-	return strings.TrimSuffix(string(data), "\n")
+	if len(LatestReleaseVersion) == 0 {
+		resp, _ := http.Get(ReleaseBaseUrl + "latest.txt")
+		data, _ := ioutil.ReadAll(resp.Body)
+		LatestReleaseVersion = strings.TrimSuffix(string(data), "\n")
+		resp.Body.Close()
+	}
+	return LatestReleaseVersion
 }
 
 var LocalReleaseVersion string = getLocalRelVersion()
