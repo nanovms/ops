@@ -167,7 +167,7 @@ func downloadReleaseImages(c *api.Config) (string, error) {
 	// if it's first run or we have an update
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
 	u := os.Getenv("NANOS_UPDATE")
-	if local == "0.0" || (u == "1" && parseVersion(local, 4) < parseVersion(remote, 4)) {
+	if local == "0.0" || (u == "1" && parseVersion(local, 4) != parseVersion(remote, 4)) {
 		err = api.DownloadReleaseImages(remote)
 		if err != nil {
 			return "", err
