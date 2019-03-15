@@ -144,10 +144,23 @@ func updateLocalRelease(version string) error {
 
 var LatestReleaseVersion string = getLatestRelVersion()
 
+const (
+	WarningColor = "\033[1;33m%s\033[0m"
+	ErrorColor   = "\033[1;31m%s\033[0m"
+)
+
 func getLatestRelVersion() string {
-	resp, _ := http.Get(ReleaseBaseUrl + "latest.txt")
-	defer resp.Body.Close()
+	resp, err := http.Get(ReleaseBaseUrl + "latest.txt")
+	if err != nil {
+		fmt.Printf(WarningColor, "version lookup failed, using local.\n")
+		if LocalReleaseVersion == "0.0" {
+			fmt.Printf(ErrorColor, "No local build found.")
+			os.Exit(1)
+		}
+		return LocalReleaseVersion
+	}
 	data, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	return strings.TrimSuffix(string(data), "\n")
 }
 
