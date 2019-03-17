@@ -17,12 +17,14 @@ type drive struct {
 	format string
 	iftype string
 	index  string
+	Id     string
 }
 
 type device struct {
-	driver   string
-	mac      string
-	netdevid string
+	driver  string
+	devtype string
+	mac     string
+	devid   string
 }
 
 type netdev struct {
@@ -74,12 +76,15 @@ func (d drive) String() string {
 	if len(d.iftype) > 0 {
 		sb.WriteString(fmt.Sprintf(",if=%s", d.iftype))
 	}
+	if len(d.Id) > 0 {
+		sb.WriteString(fmt.Sprintf(",id=%s", d.Id))
+	}
 	return sb.String()
 }
 
 func (dv device) String() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("-device %s,netdev=%s", dv.driver, dv.netdevid))
+	sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 	if len(dv.mac) > 0 {
 		sb.WriteString(fmt.Sprintf(",mac=%s", dv.mac))
 	}
@@ -160,11 +165,12 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 	return nil
 }
 
-func (q *qemu) addDrive(image, ifaceType string) {
+func (q *qemu) addDrive(id, image, ifaceType string) {
 	drv := drive{
 		path:   image,
 		format: "raw",
 		iftype: ifaceType,
+		Id:     id,
 	}
 	q.drives = append(q.drives, drv)
 }
@@ -182,11 +188,12 @@ func (q *qemu) addSerial(serialType string) {
 // added. If the mac address is empty then a random mac address is chosen.
 // Backend interface are created for each device and their ids are auto
 // incremented.
-func (q *qemu) addDevice(devType, ifaceName, mac string, hostPorts []int) {
+func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []int) {
 	id := fmt.Sprintf("n%d", len(q.ifaces))
 	dv := device{
-		driver:   "virtio-net",
-		netdevid: id,
+		driver:  "virtio-net",
+		devtype: "netdev",
+		devid:   id,
 	}
 	ndv := netdev{
 		nettype: devType,
@@ -204,6 +211,15 @@ func (q *qemu) addDevice(devType, ifaceName, mac string, hostPorts []int) {
 	}
 	q.devices = append(q.devices, dv)
 	q.ifaces = append(q.ifaces, ndv)
+}
+
+func (q *qemu) addDiskDevice(id, driver string) {
+	dv := device{
+		driver:  driver,
+		devtype: "drive",
+		devid:   id,
+	}
+	q.devices = append(q.devices, dv)
 }
 
 // Randomly generate Bytes for mac address
@@ -230,11 +246,13 @@ func (q *qemu) addOption(flag, value string) {
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
 	// add virtio drive
-	q.addDrive(rconfig.Imagename, "virtio")
-	devType := "user"
+	q.addDrive("hd0", rconfig.Imagename, "none")
+	q.addDiskDevice("hd0", "virtio-blk")
+
+	netDevType := "user"
 	ifaceName := ""
 	if rconfig.Bridged {
-		devType = "tap"
+		netDevType = "tap"
 		ifaceName = rconfig.TapName
 	}
 
@@ -242,7 +260,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		q.addFlag("-enable-kvm")
 	}
 
-	q.addDevice(devType, ifaceName, "", rconfig.Ports)
+	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports)
 	q.addDisplay("none")
 	q.addSerial("stdio")
 	q.addFlag("-nodefaults")

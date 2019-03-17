@@ -18,7 +18,11 @@ func TestStringDriveWithIfType(t *testing.T) {
 }
 
 func TestStringDevice(t *testing.T) {
-	testDevice := &device{driver: "virtio-net", mac: "7e:b8:7e:87:4a:ea", netdevid: "n0"}
+	testDevice := &device{driver: "virtio-net",
+		mac:     "7e:b8:7e:87:4a:ea",
+		devtype: "netdev",
+		devid:   "n0"}
+
 	expected := "-device virtio-net,netdev=n0,mac=7e:b8:7e:87:4a:ea"
 	checkQemuString(testDevice, expected, t)
 }
@@ -66,7 +70,7 @@ func TestStringSerial(t *testing.T) {
 
 func TestRandomMacGen(t *testing.T) {
 	q := qemu{}
-	q.addDevice("tap", "tap0", "", []int{})
+	q.addNetDevice("tap", "tap0", "", []int{})
 	if len(q.devices[0].mac) == 0 {
 		t.Errorf("No RandomMac was Assigned %s", q.devices[0].mac)
 	}
