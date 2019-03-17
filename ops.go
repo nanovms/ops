@@ -53,11 +53,13 @@ func unWarpConfig(file string) *api.Config {
 	if file != "" {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
+			os.Exit(1)
 		}
 		err = json.Unmarshal(data, &c)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "error config: %v\n", err)
+			os.Exit(1)
 		}
 	}
 	return &c
