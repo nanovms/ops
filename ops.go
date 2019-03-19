@@ -227,7 +227,7 @@ func validateRequired(c *api.Config) {
 	}
 }
 
-func buildImages(c *api.Config) {
+func prepareImages(c *api.Config) {
 	var err error
 	var currversion string
 
@@ -236,12 +236,14 @@ func buildImages(c *api.Config) {
 	} else {
 		currversion, err = downloadReleaseImages(c)
 	}
-
 	panicOnError(err)
 	fixupConfigImages(c, currversion)
 	validateRequired(c)
+}
 
-	err = api.BuildImage(*c)
+func buildImages(c *api.Config) {
+	prepareImages(c)
+	err := api.BuildImage(*c)
 	panicOnError(err)
 }
 
@@ -258,16 +260,39 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 	c.RunConfig.Imagename = imageName
 }
 
+// TODO : use factory or DI
+func getCloudProvider(c *api.Config, providerName string) api.Provider {
+	var provider api.Provider
+	if providerName == "gcp" {
+		provider = &api.GCloud{}
+	} else if providerName == "onprem" {
+		provider = &api.OnPrem{}
+	} else {
+		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
+		os.Exit(1)
+	}
+	return provider
+}
+
 func buildCommandHandler(cmd *cobra.Command, args []string) {
 	targetRoot, _ := cmd.Flags().GetString("target-root")
-	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("target-cloud")
 
+	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
 	c.Program = args[0]
 	c.TargetRoot = targetRoot
 	setDefaultImageName(cmd, c)
-	buildImages(c)
+
+	p := getCloudProvider(c, provider)
+
+	ctx := api.NewContext(c, &p)
+	prepareImages(c)
+	if err := p.BuildImage(ctx); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	fmt.Printf("Bootable image file:%s\n", c.RunConfig.Imagename)
 }
 
@@ -588,6 +613,7 @@ func main() {
 	var search string
 	var tap string
 	var targetRoot string
+	var targetCloud string
 	var skipbuild bool
 	var imageName string
 
@@ -629,8 +655,10 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   buildCommandHandler,
 	}
+
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdBuild.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+	cmdBuild.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform[onprem, gcp]")
 	cmdBuild.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdPrintConfig = &cobra.Command{
