@@ -2,14 +2,20 @@ package lepton
 
 type OnPrem struct{}
 
-func (p *OnPrem) BuildImage(ctx *Context) error {
+func (p *OnPrem) BuildImage(ctx *Context) (string, error) {
 	c := ctx.config
-	return BuildImage(*c)
+	err := BuildImage(*c)
+	return "", err
 }
 
 func (p *OnPrem) DeployImage(ctx *Context) error {
 	return nil
 }
+
 func (p *OnPrem) CreateInstance(ctx *Context) error {
+	return nil
+}
+
+func (p *OnPrem) Initialize() error {
 	return nil
 }

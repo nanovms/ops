@@ -27,4 +27,5 @@ deps:
 	$(GOGET) github.com/go-errors/errors  
 	$(GOGET) github.com/cheggaaa/pb
 	$(GOGET) github.com/olekukonko/tablewriter
+	$(GOGET) cloud.google.com/go/storage
 

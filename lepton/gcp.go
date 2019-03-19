@@ -9,13 +9,15 @@ import (
 	"path/filepath"
 )
 
-type GCloud struct{}
+type GCloud struct {
+	Storage *GCPStorage
+}
 
-func (p *GCloud) BuildImage(ctx *Context) error {
+func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 	c := ctx.config
 	err := BuildImage(*c)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	imagePath := c.RunConfig.Imagename
@@ -23,15 +25,15 @@ func (p *GCloud) BuildImage(ctx *Context) error {
 
 	if _, err := os.Lstat(symlink); err == nil {
 		if err := os.Remove(symlink); err != nil {
-			return fmt.Errorf("failed to unlink: %+v", err)
+			return "", fmt.Errorf("failed to unlink: %+v", err)
 		}
 	} else if os.IsNotExist(err) {
-		return fmt.Errorf("failed to check symlink: %+v", err)
+		return "", fmt.Errorf("failed to check symlink: %+v", err)
 	}
 
 	err = os.Symlink(imagePath, symlink)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// name the gcp archive
 	name := fmt.Sprintf("nanos-%v-image.tar.gz", filepath.Base(c.Program))
@@ -40,8 +42,13 @@ func (p *GCloud) BuildImage(ctx *Context) error {
 
 	err = createArchive(archPath, files)
 	if err != nil {
-		return err
+		return "", err
 	}
+	return archPath, nil
+}
+
+func (p *GCloud) Initialize() error {
+	p.Storage = &GCPStorage{}
 	return nil
 }
 

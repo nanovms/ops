@@ -16,8 +16,15 @@ type Config struct {
 	NameServer   string
 	NightlyBuild bool
 	RunConfig    RunConfig
+	CloudConfig  ProviderConfig
 	Force        bool
 	TargetRoot   string
+}
+
+type ProviderConfig struct {
+	Platform   string `cloud:"platfom"`
+	ProjectID  string `cloud:"projectid"`
+	BucketName string `cloud:"bucketname"`
 }
 
 // Runtime configs
