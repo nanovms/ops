@@ -271,6 +271,7 @@ func getCloudProvider(c *api.Config, providerName string) api.Provider {
 		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
 		os.Exit(1)
 	}
+	provider.Initialize()
 	return provider
 }
 
@@ -289,7 +290,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	ctx := api.NewContext(c, &p)
 	prepareImages(c)
-	if err := p.BuildImage(ctx); err != nil {
+	if _, err := p.BuildImage(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -324,6 +325,61 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Println("Successfully updated ops. Please restart.")
 	}
 	os.Exit(0)
+}
+
+func deployCommandHandler(cmd *cobra.Command, args []string) {
+	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
+		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
+		fmt.Printf(api.ErrorColor, "Follow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+		os.Exit(1)
+	}
+
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+
+	c := unWarpConfig(config)
+	c.Program = args[0]
+
+	// override config from command line
+	if len(provider) > 0 {
+		c.CloudConfig.Platform = provider
+	}
+
+	if len(c.CloudConfig.Platform) == 0 {
+		fmt.Printf(api.ErrorColor, "error: Please select on of the cloud platform in config. [onprem, gcp]")
+		os.Exit(1)
+	}
+
+	if len(c.CloudConfig.ProjectID) == 0 {
+		fmt.Printf(api.ErrorColor, "error: Please specifiy a cloud projectid in config.\n")
+		os.Exit(1)
+	}
+
+	if len(c.CloudConfig.BucketName) == 0 {
+		fmt.Printf(api.ErrorColor, "error: Please specifiy a cloud bucket in config.\n")
+		os.Exit(1)
+	}
+
+	setDefaultImageName(cmd, c)
+
+	p := getCloudProvider(c, provider)
+	ctx := api.NewContext(c, &p)
+	prepareImages(c)
+
+	archpath, err := p.BuildImage(ctx)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	gcloud := p.(*api.GCloud)
+	err = gcloud.Storage.CopyToBucket(c, archpath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("image uploaded to bucket:%s\n", c.CloudConfig.BucketName)
 }
 
 func runningAsRoot() bool {
@@ -658,7 +714,7 @@ func main() {
 
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdBuild.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
-	cmdBuild.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform[onprem, gcp]")
+	cmdBuild.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform[gcp, onprem]")
 	cmdBuild.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdPrintConfig = &cobra.Command{
@@ -705,6 +761,16 @@ func main() {
 		Run:   updateCommandHandler,
 	}
 
+	var cmdDeploy = &cobra.Command{
+		Use:   "deploy [elf]",
+		Short: "deploy to a cloud provider",
+		Run:   deployCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+
+	cmdDeploy.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdDeploy.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	cmdNet.AddCommand(cmdNetReset)
@@ -716,5 +782,6 @@ func main() {
 	rootCmd.AddCommand(cmdUpdate)
 	rootCmd.AddCommand(cmdList)
 	rootCmd.AddCommand(cmdLoadPackage)
+	rootCmd.AddCommand(cmdDeploy)
 	rootCmd.Execute()
 }
