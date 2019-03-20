@@ -8,7 +8,7 @@ func (p *OnPrem) BuildImage(ctx *Context) (string, error) {
 	return "", err
 }
 
-func (p *OnPrem) DeployImage(ctx *Context) error {
+func (p *OnPrem) CreateImage(ctx *Context) error {
 	return nil
 }
 

@@ -3,10 +3,15 @@ package lepton
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"golang.org/x/oauth2/google"
+	compute "google.golang.org/api/compute/v1"
 )
 
 type GCloud struct {
@@ -35,9 +40,8 @@ func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// name the gcp archive
-	name := fmt.Sprintf("nanos-%v-image.tar.gz", filepath.Base(c.Program))
-	archPath := filepath.Join(filepath.Dir(imagePath), name)
+
+	archPath := filepath.Join(filepath.Dir(imagePath), c.CloudConfig.ArchiveName)
 	files := []string{symlink}
 
 	err = createArchive(archPath, files)
@@ -52,10 +56,86 @@ func (p *GCloud) Initialize() error {
 	return nil
 }
 
-func (p *GCloud) DeployImage(ctx *Context) error {
+// TODO : re-use and cache DefaultClient and instances.
+func (p *GCloud) CreateImage(ctx *Context) error {
+
+	c := ctx.config
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+
+	sourceURL := fmt.Sprintf(GCPStorageURL,
+		c.CloudConfig.BucketName, c.CloudConfig.ArchiveName)
+
+	rb := &compute.Image{
+		Name: strings.Split(c.CloudConfig.ArchiveName, ".")[0],
+		RawDisk: &compute.ImageRawDisk{
+			Source: sourceURL,
+		},
+	}
+
+	// TODO : This always succeed, need to use the selflink in response to
+	// check for status.
+	op, err := computeService.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()
+	if err != nil {
+		return fmt.Errorf("error:%+v", err)
+	}
+	fmt.Printf("Image creation started. check %s for status\n", op.SelfLink)
 	return nil
 }
+
 func (p *GCloud) CreateInstance(ctx *Context) error {
+
+	c := ctx.config
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+
+	// TODO: get from config
+	machineType := "zones/us-west1-b/machineTypes/custom-1-2048"
+	instanceName := filepath.Base(c.Program) + "_1"
+
+	imageName := fmt.Sprintf("projects/%v/global/images/%v",
+		c.CloudConfig.ProjectID,
+		strings.Split(c.CloudConfig.ArchiveName, ".")[0])
+
+	rb := &compute.Instance{
+		Name:        instanceName,
+		MachineType: machineType,
+		Disks: []*compute.AttachedDisk{
+			&compute.AttachedDisk{
+				AutoDelete: true,
+				Boot:       true,
+				Type:       "PERSISTENT",
+				InitializeParams: &compute.AttachedDiskInitializeParams{
+					SourceImage: imageName,
+				},
+			},
+		},
+		NetworkInterfaces: []*compute.NetworkInterface{
+			&compute.NetworkInterface{Name: "eth0"},
+		},
+	}
+	// TODO : this always succeed, need to use self link for status.
+	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, "us-west1-b", rb).Context(context).Do()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Instance creation started. check %s for status\n", op.SelfLink)
 	return nil
 }
 
@@ -83,6 +163,7 @@ func createArchive(archive string, files []string) error {
 		}
 		// update the name to correctly
 		header.Name = filepath.Base(file)
+		header.Format = tar.FormatGNU
 
 		// write the header
 		if err := tw.WriteHeader(header); err != nil {
