@@ -258,6 +258,7 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 		imageName = path.Join(images, filepath.Base(imageName))
 	}
 	c.RunConfig.Imagename = imageName
+	c.CloudConfig.ArchiveName = fmt.Sprintf("nanos-%v-image.tar.gz", filepath.Base(c.Program))
 }
 
 // TODO : use factory or DI
@@ -327,7 +328,7 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
-func deployCommandHandler(cmd *cobra.Command, args []string) {
+func imageCommandHandler(cmd *cobra.Command, args []string) {
 	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
 		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
 		fmt.Printf(api.ErrorColor, "Follow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
@@ -379,7 +380,13 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Printf("image uploaded to bucket:%s\n", c.CloudConfig.BucketName)
+	err = gcloud.CreateImage(ctx)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		imageName := fmt.Sprintf("nanos-%v-image", filepath.Base(c.Program))
+		fmt.Printf("gcp image '%s' created...\n", imageName)
+	}
 }
 
 func runningAsRoot() bool {
@@ -761,15 +768,22 @@ func main() {
 		Run:   updateCommandHandler,
 	}
 
-	var cmdDeploy = &cobra.Command{
-		Use:   "deploy [elf]",
-		Short: "deploy to a cloud provider",
-		Run:   deployCommandHandler,
+	var cmdImageCreate = &cobra.Command{
+		Use:   "create",
+		Short: "create nanos image from ELF",
 		Args:  cobra.MinimumNArgs(1),
+		Run:   imageCommandHandler,
 	}
 
-	cmdDeploy.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
-	cmdDeploy.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdImageCreate.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+
+	var cmdImage = &cobra.Command{
+		Use:       "image",
+		Short:     "manage nanos images",
+		ValidArgs: []string{"create"},
+		Args:      cobra.OnlyValidArgs,
+	}
 
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
@@ -782,6 +796,9 @@ func main() {
 	rootCmd.AddCommand(cmdUpdate)
 	rootCmd.AddCommand(cmdList)
 	rootCmd.AddCommand(cmdLoadPackage)
-	rootCmd.AddCommand(cmdDeploy)
+
+	cmdImage.AddCommand(cmdImageCreate)
+
+	rootCmd.AddCommand(cmdImage)
 	rootCmd.Execute()
 }

@@ -35,6 +35,8 @@ const PackageManifestURL string = "https://storage.googleapis.com/packagehub/man
 const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 
+const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
+
 func GenerateImageName(program string) string {
 	program = filepath.Base(program)
 	images := path.Join(GetOpsHome(), "images")
