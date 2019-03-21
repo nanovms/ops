@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"strings"
+	"strconv"
+	"time"
 
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -32,19 +34,20 @@ func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 		if err := os.Remove(symlink); err != nil {
 			return "", fmt.Errorf("failed to unlink: %+v", err)
 		}
-	} else if os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check symlink: %+v", err)
 	}
 
-	err = os.Symlink(imagePath, symlink)
+	err = os.Link(imagePath, symlink)
 	if err != nil {
 		return "", err
 	}
 
-	archPath := filepath.Join(filepath.Dir(imagePath), c.CloudConfig.ArchiveName)
+	archPath := filepath.Join(filepath.Dir(imagePath), c.CloudConfig.ImageName+".tar.gz")
 	files := []string{symlink}
 
-	err = createArchive(archPath, files)
+	// TODO : createArchiveExternal calls tar and won't work
+	// on Mac. Need to use createArchive, but GCP do not like
+	// the archive created.
+	err = createArchiveExternal(archPath, files)
 	if err != nil {
 		return "", err
 	}
@@ -72,10 +75,10 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 	}
 
 	sourceURL := fmt.Sprintf(GCPStorageURL,
-		c.CloudConfig.BucketName, c.CloudConfig.ArchiveName)
+		c.CloudConfig.BucketName, c.CloudConfig.ImageName+".tar.gz")
 
 	rb := &compute.Image{
-		Name: strings.Split(c.CloudConfig.ArchiveName, ".")[0],
+		Name: c.CloudConfig.ImageName,
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,
 		},
@@ -107,11 +110,18 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 	// TODO: get from config
 	machineType := "zones/us-west1-b/machineTypes/custom-1-2048"
-	instanceName := filepath.Base(c.Program) + "_1"
+	instanceName := fmt.Sprintf("%v-%v",
+		filepath.Base(c.CloudConfig.ImageName),
+		strconv.FormatInt(time.Now().Unix(), 10),
+	)
 
 	imageName := fmt.Sprintf("projects/%v/global/images/%v",
 		c.CloudConfig.ProjectID,
-		strings.Split(c.CloudConfig.ArchiveName, ".")[0])
+		c.CloudConfig.ImageName)
+
+	fmt.Println(machineType)
+	fmt.Println(imageName)
+	fmt.Println(instanceName)
 
 	rb := &compute.Instance{
 		Name:        instanceName,
@@ -137,6 +147,12 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 	fmt.Printf("Instance creation started. check %s for status\n", op.SelfLink)
 	return nil
+}
+
+func createArchiveExternal(archive string, files []string) error {
+	cmd := exec.Command("tar", "-czvf", archive, filepath.Base(files[0]))
+	cmd.Dir = filepath.Dir(files[0])
+	return cmd.Run()
 }
 
 func createArchive(archive string, files []string) error {

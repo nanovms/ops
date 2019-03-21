@@ -263,11 +263,11 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 		imageName = path.Join(images, filepath.Base(imageName))
 	}
 	c.RunConfig.Imagename = imageName
-	c.CloudConfig.ArchiveName = fmt.Sprintf("nanos-%v-image.tar.gz", filepath.Base(c.Program))
+	c.CloudConfig.ImageName = fmt.Sprintf("nanos-%v-image", filepath.Base(c.Program))
 }
 
 // TODO : use factory or DI
-func getCloudProvider(c *api.Config, providerName string) api.Provider {
+func getCloudProvider(providerName string) api.Provider {
 	var provider api.Provider
 	if providerName == "gcp" {
 		provider = &api.GCloud{}
@@ -292,7 +292,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	c.TargetRoot = targetRoot
 	setDefaultImageName(cmd, c)
 
-	p := getCloudProvider(c, provider)
+	p := getCloudProvider(provider)
 
 	ctx := api.NewContext(c, &p)
 	prepareImages(c)
@@ -333,6 +333,35 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
+func instanceCommandHandler(cmd *cobra.Command, args []string) {
+	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
+		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
+		fmt.Printf(api.ErrorColor, "Follow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+		os.Exit(1)
+	}
+	provider, _ := cmd.Flags().GetString("target-cloud")
+
+	projectID, err := cmd.Flags().GetString("projectid")
+	if err != nil || len(projectID) == 0 {
+		fmt.Printf(api.ErrorColor, "error: Not a valid ProjectID.\n")
+		os.Exit(1)
+	}
+
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
+	c := unWarpConfig(config)
+	c.CloudConfig.ImageName = strings.Trim(args[0], " ")
+	c.CloudConfig.ProjectID = projectID
+
+	p := getCloudProvider(provider)
+	ctx := api.NewContext(c, &p)
+	gcloud := p.(*api.GCloud)
+	err = gcloud.CreateInstance(ctx)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 func imageCommandHandler(cmd *cobra.Command, args []string) {
 	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
 		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
@@ -369,7 +398,7 @@ func imageCommandHandler(cmd *cobra.Command, args []string) {
 
 	setDefaultImageName(cmd, c)
 
-	p := getCloudProvider(c, provider)
+	p := getCloudProvider(provider)
 	ctx := api.NewContext(c, &p)
 	prepareImages(c)
 
@@ -784,6 +813,26 @@ func main() {
 		Args:      cobra.OnlyValidArgs,
 	}
 
+	var cmdInstance = &cobra.Command{
+		Use:       "instance",
+		Short:     "manage nanos instances",
+		ValidArgs: []string{"new"},
+		Args:      cobra.OnlyValidArgs,
+	}
+
+	var cmdInstanceNew = &cobra.Command{
+		Use:   "new [imagename]",
+		Short: "new nanos instance",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   instanceCommandHandler,
+	}
+
+	var projectID string
+	cmdInstanceNew.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdInstanceNew.PersistentFlags().StringVarP(&projectID, "projectid", "n", "", "ProjectID")
+
+	cmdInstance.AddCommand(cmdInstanceNew)
+
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(cmdRun)
 	cmdNet.AddCommand(cmdNetReset)
@@ -796,9 +845,8 @@ func main() {
 	rootCmd.AddCommand(cmdList)
 	rootCmd.AddCommand(cmdLoadPackage)
 	rootCmd.AddCommand(cmdGetPackage)
-
+	rootCmd.AddCommand(cmdInstance)
 	cmdImage.AddCommand(cmdImageCreate)
-
 	rootCmd.AddCommand(cmdImage)
 	rootCmd.Execute()
 }

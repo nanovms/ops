@@ -22,10 +22,10 @@ type Config struct {
 }
 
 type ProviderConfig struct {
-	Platform    string `cloud:"platfom"`
-	ProjectID   string `cloud:"projectid"`
-	BucketName  string `cloud:"bucketname"`
-	ArchiveName string `cloud:"arcname"`
+	Platform   string `cloud:"platfom"`
+	ProjectID  string `cloud:"projectid"`
+	BucketName string `cloud:"bucketname"`
+	ImageName  string `cloud:"imageame"`
 }
 
 // Runtime configs
