@@ -70,9 +70,7 @@ func (m *Manifest) AddDirectory(dir string) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			return nil
-		}
+
 		// if the path is relative then root it to image path
 		var vmpath string
 		if hostpath[0] != '/' {
@@ -80,12 +78,25 @@ func (m *Manifest) AddDirectory(dir string) error {
 		} else {
 			vmpath = hostpath
 		}
-		m.AddFile(vmpath, hostpath)
+
+		if info.IsDir() {
+			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
+			node := m.children
+			for i := 0; i < len(parts); i++ {
+				if _, ok := node[parts[i]]; !ok {
+					node[parts[i]] = make(map[string]interface{})
+				}
+				node = node[parts[i]].(map[string]interface{})
+			}
+		} else {
+			m.AddFile(vmpath, hostpath)
+		}
 		return nil
 	})
 	return err
 }
 
+// AddFile to add a file to manifest
 func (m *Manifest) AddFile(filepath string, hostpath string) {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := m.children
