@@ -473,6 +473,12 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	localstaging := path.Join(api.GetOpsHome(), ".staging")
+	err := os.MkdirAll(localstaging, 755)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	expackage := path.Join(localstaging, args[0])
 	localpackage := api.DownloadPackage(args[0])
 
