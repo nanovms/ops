@@ -370,7 +370,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		netDevType = "tap"
 		ifaceName = rconfig.TapName
 	}
-	if rconfig.UseKvm || rconfig.Bridged {
+	if rconfig.Accel || rconfig.Bridged {
 		q.addAccel()
 	}
 
