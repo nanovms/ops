@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -480,7 +479,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	expackage := path.Join(localstaging, args[0])
-	localpackage := api.DownloadPackage(args[0])
+	localpackage, err := api.DownloadPackage(args[0])
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	fmt.Printf("Extracting %s to %s\n", localpackage, expackage)
 
@@ -561,6 +564,14 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
+func getCommandHandler(cmd *cobra.Command, args []string) {
+	_, err := api.DownloadPackage(args[0])
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 func InitDefaultRunConfigs(c *api.Config, ports []int) {
 
 	if c.RunConfig.Memory == "" {
@@ -569,54 +580,14 @@ func InitDefaultRunConfigs(c *api.Config, ports []int) {
 	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
 }
 
-func packageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
-	res, err := http.Head(remoteUrl)
-	if err != nil {
-		panic(err)
-	}
-	return fino.Size() != res.ContentLength
-}
-
-// PackageList contains a list of known packages.
-type PackageList struct {
-	list map[string]Package
-}
-
-// Package is the definition of an OPS package.
-type Package struct {
-	Runtime     string `json:"runtime"`
-	Version     string `json:"version"`
-	Language    string `json:"language"`
-	Description string `json:"description,omitempty"`
-	MD5         string `json:"md5,omitempty"`
-}
-
 func cmdListPackages(cmd *cobra.Command, args []string) {
-
-	var err error
-	packageManifest := api.GetPackageManifestFile()
-	stat, err := os.Stat(packageManifest)
-	if os.IsNotExist(err) || packageManifestChanged(stat, api.PackageManifestURL) {
-		if err = api.DownloadFile(packageManifest, api.PackageManifestURL, 10); err != nil {
-			panic(err)
-		}
-	}
-
-	var packages PackageList
-	data, err := ioutil.ReadFile(packageManifest)
-	if err != nil {
-		panic(err)
-	}
-
-	err = json.Unmarshal(data, &packages.list)
-	if err != nil {
-		fmt.Println(err)
-	}
+	packages := api.GetPackageList()
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
 		panic(err)
 	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"PackageName", "Version", "Language", "Runtime", "Description"})
 	table.SetHeaderColor(
@@ -639,7 +610,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	for key, val := range packages.list {
+	for key, val := range *packages {
 		var row []string
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
@@ -768,6 +739,13 @@ func main() {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
+	var cmdGetPackage = &cobra.Command{
+		Use:   "get [packagename]",
+		Short: "download a package from ['ops list'] to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   getCommandHandler,
+	}
+
 	var cmdUpdate = &cobra.Command{
 		Use:   "update",
 		Short: "check for updates",
@@ -802,6 +780,7 @@ func main() {
 	rootCmd.AddCommand(cmdUpdate)
 	rootCmd.AddCommand(cmdList)
 	rootCmd.AddCommand(cmdLoadPackage)
+	rootCmd.AddCommand(cmdGetPackage)
 
 	cmdImage.AddCommand(cmdImageCreate)
 
