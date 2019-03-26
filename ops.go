@@ -106,6 +106,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	accel, err := cmd.Flags().GetBool("accel")
+	if err != nil {
+		panic(err)
+	}
+
 	tapDeviceName, _ := cmd.Flags().GetString("tapname")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
@@ -121,6 +126,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.RunConfig.TapName = tapDeviceName
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
+	c.RunConfig.UseKvm = accel
 	c.NightlyBuild = nightly
 	c.Force = force
 	setDefaultImageName(cmd, c)
@@ -521,6 +527,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	accel, err := cmd.Flags().GetBool("accel")
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -536,6 +547,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.RunConfig.Bridged = bridged
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
+	pkgConfig.RunConfig.UseKvm = accel
 	setDefaultImageName(cmd, c)
 
 	if err = buildFromPackage(expackage, c); err != nil {
@@ -685,6 +697,7 @@ func main() {
 	var targetCloud string
 	var skipbuild bool
 	var imageName string
+	var accel bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
@@ -698,6 +711,7 @@ func main() {
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
 
 	var cmdNetSetup = &cobra.Command{
 		Use:   "setup",
@@ -767,6 +781,7 @@ func main() {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
 
 	var cmdUpdate = &cobra.Command{
 		Use:   "update",
