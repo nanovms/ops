@@ -123,6 +123,8 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	fmt.Println(imageName)
 	fmt.Println(instanceName)
 
+	serialTrue := "true"
+
 	rb := &compute.Instance{
 		Name:        instanceName,
 		MachineType: machineType,
@@ -137,7 +139,27 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			},
 		},
 		NetworkInterfaces: []*compute.NetworkInterface{
-			&compute.NetworkInterface{Name: "eth0"},
+			&compute.NetworkInterface{
+				Name: "eth0",
+				AccessConfigs: []*compute.AccessConfig{
+					&compute.AccessConfig{
+						NetworkTier: "PREMIUM",
+						Type:        "ONE_TO_ONE_NAT",
+						Name:        "External NAT",
+					},
+				},
+			},
+		},
+		Metadata: &compute.Metadata{
+			Items: []*compute.MetadataItems{
+				&compute.MetadataItems{
+					Key:   "serial-port-enable",
+					Value: &serialTrue,
+				},
+			},
+		},
+		Tags: &compute.Tags{
+			Items: []string{"http-server", "https-server"},
 		},
 	}
 	// TODO : this always succeed, need to use self link for status.

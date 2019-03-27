@@ -25,7 +25,7 @@ type ProviderConfig struct {
 	Platform   string `cloud:"platfom"`
 	ProjectID  string `cloud:"projectid"`
 	BucketName string `cloud:"bucketname"`
-	ImageName  string `cloud:"imageame"`
+	ImageName  string `cloud:"imagename"`
 }
 
 // Runtime configs
