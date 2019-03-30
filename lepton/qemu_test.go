@@ -2,7 +2,6 @@ package lepton
 
 import (
 	. "fmt"
-	"os/user"
 	"testing"
 )
 
@@ -86,20 +85,6 @@ Copyright (c) 2003-2016 Fabrice Bellard and the QEMU Project developers
 	expected := "2.8"
 	if actual != expected {
 		t.Errorf("Parsed Qemu version %q not %q", actual, expected)
-	}
-}
-
-func TestGroupPermissions(t *testing.T) {
-	currentUser, err := user.Current()
-	userName := currentUser.Username
-	p, err := groupPermissions(userName)
-	if err != nil {
-		t.Error(err)
-	}
-	// groupPermissions should find users in their own group if functioning
-	// correctly.
-	if !p {
-		t.Errorf("User was not found in own group.")
 	}
 }
 
