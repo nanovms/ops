@@ -7,17 +7,22 @@ GOTEST=$(GOCMD) test ./...
 GOGET=$(GOCMD) get
 BINARY_NAME=ops
 
-all: test build
+all: deps test build
+
 build: 
 	$(GOBUILD) -o $(BINARY_NAME) -v
-test: 
+
+test:
 	$(GOTEST) -v
+
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
+
 run:
 	$(GOBUILD) -o $(BINARY_NAME) -v ./...
 	./$(BINARY_NAME)
+
 deps:
 	$(GOGET) github.com/spf13/cobra
 	$(GOGET) github.com/vishvananda/netlink
@@ -29,3 +34,4 @@ deps:
 	$(GOGET) github.com/olekukonko/tablewriter
 	$(GOGET) cloud.google.com/go/storage
 
+.PHONY: all build test clean run deps
