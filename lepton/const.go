@@ -73,18 +73,6 @@ func getImageTempDir(program string) string {
 	return path
 }
 
-func getPackageCache() string {
-	packagefolder := path.Join(GetOpsHome(), "packages")
-	if _, err := os.Stat(packagefolder); os.IsNotExist(err) {
-		os.MkdirAll(packagefolder, 0755)
-	}
-	return packagefolder
-}
-
-func GetPackageManifestFile() string {
-	return path.Join(getPackageCache(), PackageManifestFileName)
-}
-
 var NightlyReleaseUrl string = nightlyReleaseUrl()
 
 func nightlyFileName() string {

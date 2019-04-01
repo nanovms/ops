@@ -3,8 +3,11 @@ package lepton
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,17 +15,78 @@ import (
 	"github.com/go-errors/errors"
 )
 
-func DownloadPackage(name string) string {
+// PackageList contains a list of known packages.
+type PackageList struct {
+	list map[string]Package
+}
+
+// Package is the definition of an OPS package.
+type Package struct {
+	Runtime     string `json:"runtime"`
+	Version     string `json:"version"`
+	Language    string `json:"language"`
+	Description string `json:"description,omitempty"`
+	MD5         string `json:"md5,omitempty"`
+}
+
+func DownloadPackage(name string) (string, error) {
+	if _, ok := (*GetPackageList())[name]; !ok {
+		return "", fmt.Errorf("package %q does not exist\n", name)
+	}
 
 	archivename := name + ".tar.gz"
 	packagepath := path.Join(PackagesCache, archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
 		if err = DownloadFile(packagepath,
 			fmt.Sprintf(PackageBaseURL, archivename), 600); err != nil {
+			return "", err
+		}
+	}
+	return packagepath, nil
+}
+
+func GetPackageList() *map[string]Package {
+	var err error
+	packageManifest := GetPackageManifestFile()
+	stat, err := os.Stat(packageManifest)
+	if os.IsNotExist(err) || PackageManifestChanged(stat, PackageManifestURL) {
+		if err = DownloadFile(packageManifest, PackageManifestURL, 10); err != nil {
 			panic(err)
 		}
 	}
-	return packagepath
+
+	var packages PackageList
+	data, err := ioutil.ReadFile(packageManifest)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &packages.list)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return &packages.list
+}
+
+func getPackageCache() string {
+	packagefolder := path.Join(GetOpsHome(), "packages")
+	if _, err := os.Stat(packagefolder); os.IsNotExist(err) {
+		os.MkdirAll(packagefolder, 0755)
+	}
+	return packagefolder
+}
+
+func GetPackageManifestFile() string {
+	return path.Join(getPackageCache(), PackageManifestFileName)
+}
+
+func PackageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
+	res, err := http.Head(remoteUrl)
+	if err != nil {
+		panic(err)
+	}
+	return fino.Size() != res.ContentLength
 }
 
 func ExtractPackage(archive string, dest string) {

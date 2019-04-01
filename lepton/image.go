@@ -359,8 +359,7 @@ func DownloadReleaseImages(version string) error {
 }
 
 func DownloadFile(filepath string, url string, timeout int) error {
-
-	fmt.Println("Downloading..", filepath)
+	fmt.Println("Downloading..", url)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err
