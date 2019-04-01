@@ -126,7 +126,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.RunConfig.TapName = tapDeviceName
 	c.RunConfig.Verbose = verbose
 	c.RunConfig.Bridged = bridged
-	c.RunConfig.UseKvm = accel
+	c.RunConfig.Accel = accel
 	c.NightlyBuild = nightly
 	c.Force = force
 	setDefaultImageName(cmd, c)
@@ -547,7 +547,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.RunConfig.Bridged = bridged
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
-	pkgConfig.RunConfig.UseKvm = accel
+	pkgConfig.RunConfig.Accel = accel
 	setDefaultImageName(cmd, c)
 
 	if err = buildFromPackage(expackage, c); err != nil {
