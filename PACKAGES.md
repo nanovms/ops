@@ -28,7 +28,7 @@ mkdir $PKGNAME_$PKGVERSION
 
 ### Populate it
 
-For exammple:
+For example:
 
 ```
 eyberg@s1:~/plz/lua_5.2.4$ tree
@@ -93,7 +93,11 @@ tar czf $PKGNAME_PKGVERSION.tar.gz $PKGNAME_$PKGVERSION
 
 ### Update the manifest.json
 
-Create a manifest.
+Update the manifest.
+
+```
+gsutil cp gs://packagehub/manifest.json .
+```
 
 ```
 md5 "$PKG_NAME"_"$PKGVERSION"
@@ -112,4 +116,26 @@ md5 "$PKG_NAME"_"$PKGVERSION"
 ### Upload
 
 We'll add a small service for this in the near future depending on
-demand but for now you can just email support.
+demand but for now you can just email support with your pkg.
+
+```
+gsutil cp ~/$lang_$version.tar.gz gs://packagehub/$lang_version.tar.gz
+gsutil -D setacl public-read gs://packagehub/$lang_$version.tar.gz
+gsutil -D setacl public-read gs://packagehub/manifest.json
+```
+
+### NOTE
+
+For some crazy reason google doesn't update the last-modified header and
+it gets cached for a while.
+
+I've tried looking at this but that doesn't seem to work either.
+https://cloud.google.com/storage/docs/gsutil/commands/setmeta
+
+The default value seems to be one hour cache.
+
+### Backup/Restore:
+
+```
+gsutil rsync -r gs://packagehub .
+```
