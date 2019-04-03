@@ -128,6 +128,9 @@ func (q *qemu) Stop() {
 		if err := q.cmd.Process.Kill(); err != nil {
 			fmt.Println(err)
 		}
+
+		// do not print errors as the command could be started with Run()
+		q.cmd.Wait()
 	}
 }
 
@@ -139,13 +142,8 @@ func logv(rconfig *RunConfig, msg string) {
 
 func (q *qemu) Command(rconfig *RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
-	q.cmd = exec.Command(qemuBaseCommand, args...)
-	return q.cmd
-}
-
-func (q *qemu) Start(rconfig *RunConfig) error {
-	args := q.Args(rconfig)
 	logv(rconfig, qemuBaseCommand+" "+strings.Join(args, " "))
+	q.cmd = exec.Command(qemuBaseCommand, args...)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
@@ -158,9 +156,15 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 		q.Stop()
 	}(c)
 
-	q.cmd = exec.Command(qemuBaseCommand, args...)
-	q.cmd.Stdout = os.Stdout
-	q.cmd.Stderr = os.Stderr
+	return q.cmd
+}
+
+func (q *qemu) Start(rconfig *RunConfig) error {
+	if q.cmd == nil {
+		q.Command(rconfig)
+		q.cmd.Stdout = os.Stdout
+		q.cmd.Stderr = os.Stderr
+	}
 
 	if err := q.cmd.Run(); err != nil {
 		fmt.Println(err)
