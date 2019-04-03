@@ -86,27 +86,29 @@ func addDefaultFiles(m *Manifest, c *Config) error {
 	commonPath := path.Join(GetOpsHome(), "common")
 	if _, err := os.Stat(commonPath); os.IsNotExist(err) {
 		os.MkdirAll(commonPath, 0755)
-	} else {
-		return nil
-	}
-	err := DownloadFile(commonPath, commonArchive, 10)
-	if err != nil {
+	} else if err != nil {
 		return err
 	}
 
-	localtar := path.Join(commonPath, "common.tar.gz")
+	localtar := path.Join(GetOpsHome(), "common.tar.gz")
+	if _, err := os.Stat(localtar); os.IsNotExist(err) {
+		err := DownloadFile(localtar, commonArchive, 10)
+		if err != nil {
+			return err
+		}
+	}
 	ExtractPackage(localtar, commonPath)
 
 	localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
-	localSslCert := path.Join(commonPath, "ca-certificates.crt")
-
 	if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
 		m.AddFile(libDNS, localLibDNS)
 	}
 
+	localSslCert := path.Join(commonPath, "ca-certificates.crt")
 	if _, err := os.Stat(localSslCert); !os.IsNotExist(err) {
 		m.AddFile(sslCERT, localSslCert)
 	}
+
 	return nil
 }
 
