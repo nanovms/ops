@@ -259,17 +259,20 @@ func parseQemuVersion(data []byte) string {
 // kvmGroupPermission returns true if the current user is part of the kvm qroup,
 // false if she is not, or an error. or an error.
 func kvmGroupPermissions() (bool, error) {
-	return groupPermissions("kvm")
-}
-
-// groupPermissions returns true if the user is in the group specified by the
-// argument string, false if she is not, or an error.
-func groupPermissions(groupName string) (bool, error) {
 	currentUser, err := user.Current()
 	if err != nil {
 		return false, err
 	}
-	gids, err := currentUser.GroupIds()
+	if currentUser.Uid == "0" {
+		return true, nil
+	}
+	return groupPermissions(currentUser, "kvm")
+}
+
+// groupPermissions returns true if the user is in the group specified by the
+// argument string, false if she is not, or an error.
+func groupPermissions(u *user.User, groupName string) (bool, error) {
+	gids, err := u.GroupIds()
 	if err != nil {
 		return false, err
 	}
