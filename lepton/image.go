@@ -192,6 +192,7 @@ func addFromConfig(m *Manifest, c *Config) {
 		m.AddDebugFlag(dbg, 't')
 	}
 
+	m.AddEnvironmentVariable("USER", "root")
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
