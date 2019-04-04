@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +18,50 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const START_WAIT_TIMEOUT = time.Second * 30
+
+func runAndWaitForString(rconfig *api.RunConfig, timeout time.Duration, text string, t *testing.T) api.Hypervisor {
+	hypervisor := api.HypervisorInstance()
+	if hypervisor == nil {
+		t.Fatal("No hypervisor found on $PATH")
+	}
+	cmd := hypervisor.Command(rconfig)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader := io.TeeReader(stdoutPipe, os.Stdout)
+	cmd.Stderr = os.Stderr
+	cmd.Start()
+
+	done := make(chan struct{})
+	errch := make(chan error, 1)
+
+	go func() {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			if strings.Contains(scanner.Text(), text) {
+				done <- struct{}{}
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			errch <- err
+		}
+		errch <- errors.New("Expected text not found")
+	}()
+
+	select {
+	case <-time.After(timeout):
+		hypervisor.Stop()
+		t.Fatal("Timed out")
+	case err := <-errch:
+		hypervisor.Stop()
+		t.Fatal(err)
+	case <-done:
+		break
+	}
+	return hypervisor
+}
 func TestDownloadImages(t *testing.T) {
 	// remove the files to force a download
 	// ignore any error from remove
@@ -57,7 +105,7 @@ func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, out
 	return c, buf.String(), err
 }
 
-func runHyperVisor(userImage string, expected string, t *testing.T) {
+func runHyperVisor(userImage string, started string, expected string, t *testing.T) {
 	var c api.Config
 	c.Program = userImage
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
@@ -67,28 +115,25 @@ func runHyperVisor(userImage string, expected string, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hypervisor := api.HypervisorInstance()
+	hypervisor := runAndWaitForString(&c.RunConfig, START_WAIT_TIMEOUT, started, t)
+	defer hypervisor.Stop()
 
-	go func() {
-		hypervisor.Start(&c.RunConfig)
-	}()
-	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://127.0.0.1:8080")
 	if err != nil {
 		t.Log(err)
-		t.Errorf("failed to get 127.0.0.1:8080")
+		t.Fatalf("failed to get 127.0.0.1:8080")
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Log(err)
-		t.Errorf("ReadAll failed")
+		t.Fatalf("ReadAll failed")
 	}
 
 	if string(body) != expected {
 		t.Errorf("unexpected response" + string(body))
 	}
-	hypervisor.Stop()
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
@@ -103,34 +148,31 @@ func TestImageWithStaticFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hypervisor := api.HypervisorInstance()
+	hypervisor := runAndWaitForString(&c.RunConfig, START_WAIT_TIMEOUT, "Listening...", t)
+	defer hypervisor.Stop()
 
-	go func() {
-		hypervisor.Start(&c.RunConfig)
-	}()
-	time.Sleep(3 * time.Second)
 	resp, err := http.Get("http://localhost:8080/example.html")
 	if err != nil {
 		t.Log(err)
-		t.Errorf("failed to get :8080/example.html")
+		t.Fatalf("failed to get :8080/example.html")
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Log(err)
-		t.Errorf("ReadAll failed")
+		t.Fatalf("ReadAll failed")
 	}
+
 	fmt.Println(string(body))
-	hypervisor.Stop()
 }
 
 func TestRunningDynamicImage(t *testing.T) {
 	api.DownloadReleaseImages(api.LatestReleaseVersion)
-	runHyperVisor("./data/webg", "unibooty 0", t)
+	runHyperVisor("./data/webg", "Server started", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
 	api.DownloadReleaseImages(api.LatestReleaseVersion)
-
-	runHyperVisor("./data/webs", "unibooty!", t)
+	runHyperVisor("./data/webs", "Server started", "unibooty!", t)
 }
