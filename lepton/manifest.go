@@ -54,8 +54,8 @@ func (m *Manifest) AddDebugFlag(name string, value rune) {
 	m.debugFlags[name] = value
 }
 
-// AddKernal the kernel to use
-func (m *Manifest) AddKernal(path string) {
+// AddKernel the kernel to use
+func (m *Manifest) AddKernel(path string) {
 	m.children["kernel"] = path
 }
 

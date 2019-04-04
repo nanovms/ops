@@ -16,9 +16,9 @@ const (
 		`(contents:(host:/lib/x86_64-linux-gnu/id-2.23.so))))))`
 )
 
-func TestAddKernal(t *testing.T) {
+func TestAddKernel(t *testing.T) {
 	m := NewManifest()
-	m.AddKernal("state3/stage3")
+	m.AddKernel("state3/stage3")
 	var sb strings.Builder
 	toString(&m.children, &sb)
 	s := sb.String()
@@ -84,7 +84,7 @@ func TestManifestWithDeps(t *testing.T) {
 func TestSerializeManifest(t *testing.T) {
 	m := NewManifest()
 	m.AddUserProgram("/hws")
-	m.AddKernal("stage3/stage3")
+	m.AddKernel("stage3/stage3")
 	m.AddArgument("first")
 	m.AddEnvironmentVariable("var1", "value1")
 	m.AddLibrary("/usr/local/u.so")

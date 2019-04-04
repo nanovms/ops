@@ -170,7 +170,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 
 func addFromConfig(m *Manifest, c *Config) {
 
-	m.AddKernal(c.Kernel)
+	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
 	addPasswd(m, c)
@@ -245,6 +245,13 @@ func buildImage(c *Config, m *Manifest) error {
 	var elfmanifest string
 
 	elfmanifest = m.String()
+	if c.ManifestName != "" {
+		err := ioutil.WriteFile(c.ManifestName, []byte(elfmanifest), 0644)
+		if err != nil {
+			return errors.Wrap(err, 1)
+		}
+	}
+
 	// invoke mkfs to create the filesystem ie kernel + elf image
 	createFile(mergedImg)
 
