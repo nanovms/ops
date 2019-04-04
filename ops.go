@@ -110,10 +110,27 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	tapDeviceName, _ := cmd.Flags().GetString("tapname")
+	manifestName, err := cmd.Flags().GetString("manifest-name")
+	if err != nil {
+		panic(err)
+	}
+
+	tapDeviceName, err := cmd.Flags().GetString("tapname")
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
+	if err != nil {
+		panic(err)
+	}
 	config = strings.TrimSpace(config)
-	cmdargs, _ := cmd.Flags().GetStringArray("args")
+
+	cmdargs, err := cmd.Flags().GetStringArray("args")
+	if err != nil {
+		panic(err)
+	}
+
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 	c.Program = args[0]
@@ -128,6 +145,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.RunConfig.Accel = accel
 	c.NightlyBuild = nightly
 	c.Force = force
+	c.ManifestName = manifestName
 	setDefaultImageName(cmd, c)
 
 	if !skipbuild {
@@ -215,19 +233,19 @@ func fixupConfigImages(c *api.Config, version string) {
 
 func validateRequired(c *api.Config) {
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Kernel, err)
 		os.Exit(1)
 	}
 	if _, err := os.Stat(c.Mkfs); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Mkfs, err)
 		os.Exit(1)
 	}
 	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Boot, err)
 		os.Exit(1)
 	}
 	if _, err := os.Stat(c.Program); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Program, err)
 		os.Exit(1)
 	}
 }
@@ -304,11 +322,26 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func printManifestHandler(cmd *cobra.Command, args []string) {
-	targetRoot, _ := cmd.Flags().GetString("target-root")
+	nightly, err := strconv.ParseBool(cmd.Flag("nightly").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
+	targetRoot, err := cmd.Flags().GetString("target-root")
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
+	if err != nil {
+		panic(err)
+	}
 	config = strings.TrimSpace(config)
+
 	c := unWarpConfig(config)
 	c.Program = args[0]
+	c.NightlyBuild = nightly
+	prepareImages(c)
 	c.TargetRoot = targetRoot
 	m, err := api.BuildManifest(c)
 	if err != nil {
@@ -668,6 +701,7 @@ func main() {
 	var targetCloud string
 	var skipbuild bool
 	var imageName string
+	var manifestName string
 	var accel bool
 
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
@@ -676,12 +710,13 @@ func main() {
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
+	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
-	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to")
 	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
 
 	var cmdNetSetup = &cobra.Command{
@@ -723,6 +758,7 @@ func main() {
 	}
 	cmdPrintConfig.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdPrintConfig.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
+	cmdPrintConfig.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 
 	var cmdVersion = &cobra.Command{
 		Use:   "version",

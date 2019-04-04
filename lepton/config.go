@@ -19,6 +19,7 @@ type Config struct {
 	CloudConfig  ProviderConfig
 	Force        bool
 	TargetRoot   string
+	ManifestName string // save manifest to
 }
 
 type ProviderConfig struct {
