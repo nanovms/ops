@@ -540,7 +540,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	localstaging := path.Join(api.GetOpsHome(), ".staging")
-	err := os.MkdirAll(localstaging, 755)
+	err := os.MkdirAll(localstaging, 0755)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
