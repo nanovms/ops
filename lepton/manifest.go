@@ -186,11 +186,14 @@ func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 			sb.WriteString("))\n")
 		} else {
 			sb.WriteString(k)
-			sb.WriteString(":(children:(\n")
+			sb.WriteString(":(children:(")
 			// recur
 			ch := v.(map[string]interface{})
-			toString(&ch, sb, indent + 4)
-			sb.WriteString(strings.Repeat(" ", indent))
+			if (len(ch) > 0) {
+				sb.WriteRune('\n')
+				toString(&ch, sb, indent + 4)
+				sb.WriteString(strings.Repeat(" ", indent))
+			}
 			sb.WriteString("))\n")
 		}
 	}
