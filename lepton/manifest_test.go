@@ -3,27 +3,31 @@ package lepton
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"testing"
 )
 
 const (
-	relpath = `hw:(contents:(host:examples/hw))`
-	kernal  = `kernel:(contents:(host:state3/stage3))`
-	lib     = `lib:(children:(x86_64-linux-gnu:(children:` +
-		`(libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))id-2.23.so:` +
-		`(contents:(host:/lib/x86_64-linux-gnu/id-2.23.so))))))`
+	relpath = `hw:(contents:(host:examples/hw))
+`
+	kernel  = `kernel:(contents:(host:stage3/stage3))
+`
+	lib     = `lib:(children:(
+    x86_64-linux-gnu:(children:(
+        libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))
+    ))
+))
+`
 )
 
 func TestAddKernel(t *testing.T) {
 	m := NewManifest()
-	m.AddKernel("state3/stage3")
+	m.AddKernel("stage3/stage3")
 	var sb strings.Builder
-	toString(&m.children, &sb)
+	toString(&m.children, &sb, 0)
 	s := sb.String()
-	if s != kernal {
-		t.Errorf("Expected:%v Actual:%v", kernal, s)
+	if s != kernel {
+		t.Errorf("Expected:%v Actual:%v", kernel, s)
 	}
 }
 
@@ -31,40 +35,20 @@ func TestAddRelativePath(t *testing.T) {
 	m := NewManifest()
 	m.AddRelative("hw", "examples/hw")
 	var sb strings.Builder
-	toString(&m.children, &sb)
+	toString(&m.children, &sb, 0)
 	s := sb.String()
 	if s != relpath {
 		t.Errorf("Expected:%v Actual:%v", relpath, s)
 	}
 }
 
-type runeSorter []rune
-
-func (s runeSorter) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-func (s runeSorter) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-func (s runeSorter) Len() int {
-	return len(s)
-}
-
-func sortString(s string) string {
-	r := []rune(s)
-	sort.Sort(runeSorter(r))
-	return string(r)
-}
-
 func TestAddLibs(t *testing.T) {
 	m := NewManifest()
 	m.AddLibrary("/lib/x86_64-linux-gnu/libc.so.6")
-	m.AddLibrary("/lib/x86_64-linux-gnu/id-2.23.so")
 	var sb strings.Builder
-	toString(&m.children, &sb)
-	s := sortString(sb.String())
-	if s != sortString(lib) {
+	toString(&m.children, &sb, 0)
+	s := sb.String()
+	if s != lib {
 		t.Errorf("Expected:%v Actual:%v", lib, s)
 	}
 }
