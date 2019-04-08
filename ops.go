@@ -745,7 +745,7 @@ func main() {
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
-	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to")
+	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
 
 	var cmdNetSetup = &cobra.Command{

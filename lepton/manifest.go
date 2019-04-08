@@ -130,13 +130,12 @@ func (m *Manifest) AddUserData(dir string) {
 
 func (m *Manifest) String() string {
 	sb := m.sb
-	sb.WriteRune('(')
-	sb.WriteString("children:(")
-	toString(&m.children, &sb)
-	sb.WriteRune(')')
+	sb.WriteString("(\n")
+	sb.WriteString("children:(\n")
+	toString(&m.children, &sb, 4)
+	sb.WriteString(")\n")
 
 	//program
-	sb.WriteRune('\n')
 	sb.WriteString("program:")
 	sb.WriteString(m.program)
 	sb.WriteRune('\n')
@@ -147,8 +146,7 @@ func (m *Manifest) String() string {
 		fmt.Println(m.args)
 		sb.WriteString(strings.Join(m.args, " "))
 	}
-	sb.WriteRune(']')
-	sb.WriteRune('\n')
+	sb.WriteString("]\n")
 
 	// debug
 	for k, v := range m.debugFlags {
@@ -158,7 +156,7 @@ func (m *Manifest) String() string {
 		sb.WriteRune('\n')
 	}
 
-	// envirnoment
+	// environment
 	n := len(m.environment)
 	sb.WriteString("environment:(")
 	for k, v := range m.environment {
@@ -170,33 +168,30 @@ func (m *Manifest) String() string {
 			sb.WriteRune(' ')
 		}
 	}
+	sb.WriteString(")\n")
+
 	//
-	sb.WriteRune(')')
-	sb.WriteRune(')')
+	sb.WriteString(")\n")
 	return sb.String()
 }
 
-func toString(m *map[string]interface{}, sb *strings.Builder) {
+func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 	for k, v := range *m {
 		value, ok := v.(string)
+		sb.WriteString(strings.Repeat(" ", indent))
 		if ok {
 			sb.WriteString(k)
-			sb.WriteRune(':')
-			sb.WriteRune('(')
-			sb.WriteString("contents:(host:")
+			sb.WriteString(":(contents:(host:")
 			sb.WriteString(value)
-			sb.WriteRune(')')
-			sb.WriteRune(')')
+			sb.WriteString("))\n")
 		} else {
 			sb.WriteString(k)
-			sb.WriteRune(':')
-			sb.WriteRune('(')
-			sb.WriteString("children:(")
+			sb.WriteString(":(children:(\n")
 			// recur
 			ch := v.(map[string]interface{})
-			toString(&ch, sb)
-			sb.WriteRune(')')
-			sb.WriteRune(')')
+			toString(&ch, sb, indent + 4)
+			sb.WriteString(strings.Repeat(" ", indent))
+			sb.WriteString("))\n")
 		}
 	}
 }
