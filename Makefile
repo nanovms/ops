@@ -9,11 +9,23 @@ BINARY_NAME=ops
 
 all: deps test build
 
-build: 
+pre-build:
+
+do-build: pre-build
 	$(GOBUILD) -o $(BINARY_NAME) -v
 
-test:
+post-build: do-build
+
+build: post-build
+
+pre-test:
+
+do-test: pre-test
 	$(GOTEST) -v
+
+post-test: do-test
+
+test: post-test
 
 clean:
 	$(GOCLEAN)
@@ -35,3 +47,7 @@ deps:
 	$(GOGET) cloud.google.com/go/storage
 
 .PHONY: all build test clean run deps
+.PHONY: pre-build do-build post-build
+.PHONY: pre-test do-test post-test
+
+-include Makefile.local
