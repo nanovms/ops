@@ -79,6 +79,12 @@ func (m *Manifest) AddDirectory(dir string) error {
 			vmpath = hostpath
 		}
 
+		if (info.Mode() & os.ModeSymlink) != 0 {
+			info, err = os.Stat(hostpath)
+			if err != nil {
+				return err
+			}
+		}
 		if info.IsDir() {
 			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
 			node := m.children
