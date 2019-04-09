@@ -63,8 +63,8 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	table.Render()
 }
 
-// PackageCommand gives package related commands
-func PackageCommand() *cobra.Command {
+// PackageCommands gives package related commands
+func PackageCommands() *cobra.Command {
 	var search string
 	var cmdPkgList = &cobra.Command{
 		Use:   "list",
