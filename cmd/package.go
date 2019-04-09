@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 
@@ -63,6 +64,14 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	table.Render()
 }
 
+func cmdGetPackage(cmd *cobra.Command, args []string) {
+	_, err := api.DownloadPackage(args[0])
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 // PackageCommands gives package related commands
 func PackageCommands() *cobra.Command {
 	var search string
@@ -72,14 +81,22 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdListPackages,
 	}
 
+	var cmdGetPackage = &cobra.Command{
+		Use:   "get [packagename]",
+		Short: "download a package from ['ops package list'] to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdGetPackage,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "package",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list"},
+		ValidArgs: []string{"list", "get"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
 	cmdPkg.AddCommand(cmdPkgList)
+	cmdPkg.AddCommand(cmdGetPackage)
 	return cmdPkg
 }
