@@ -1,10 +1,10 @@
-package main
+package cmd
 
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -139,8 +139,8 @@ func runHyperVisor(userImage string, started string, expected string, t *testing
 func TestImageWithStaticFiles(t *testing.T) {
 	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	var c api.Config
-	c.Dirs = []string{"data/static"}
-	c.Program = "data/main"
+	c.Dirs = []string{"../data/static"}
+	c.Program = "../data/main"
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
 	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []int{8080}, true)
 	fixupConfigImages(&c, api.LatestReleaseVersion)
@@ -169,10 +169,10 @@ func TestImageWithStaticFiles(t *testing.T) {
 
 func TestRunningDynamicImage(t *testing.T) {
 	api.DownloadReleaseImages(api.LatestReleaseVersion)
-	runHyperVisor("./data/webg", "Server started", "unibooty 0", t)
+	runHyperVisor("../data/webg", "Server started", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
 	api.DownloadReleaseImages(api.LatestReleaseVersion)
-	runHyperVisor("./data/webs", "Server started", "unibooty!", t)
+	runHyperVisor("../data/webs", "Server started", "unibooty!", t)
 }
