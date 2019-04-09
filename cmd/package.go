@@ -89,7 +89,7 @@ func PackageCommands() *cobra.Command {
 	}
 
 	var cmdPkg = &cobra.Command{
-		Use:       "package",
+		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"list", "get"},
