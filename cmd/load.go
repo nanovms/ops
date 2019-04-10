@@ -103,25 +103,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
 
-	localstaging := path.Join(api.GetOpsHome(), ".staging")
-	err := os.MkdirAll(localstaging, 0755)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	expackage := path.Join(localstaging, args[0])
-	localpackage, err := api.DownloadPackage(args[0])
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Extracting %s to %s\n", localpackage, expackage)
-
-	// Remove the folder first.
-	os.RemoveAll(expackage)
-	api.ExtractPackage(localpackage, localstaging)
+	expackage := downloadAndExtractPackage(args[0])
 
 	// load the package manifest
 	manifest := path.Join(expackage, "package.manifest")

@@ -132,3 +132,24 @@ func panicOnError(err error) {
 		panic(err)
 	}
 }
+
+func downloadAndExtractPackage(pkg string) string {
+	localstaging := path.Join(api.GetOpsHome(), ".staging")
+	err := os.MkdirAll(localstaging, 0755)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	expackage := path.Join(localstaging, pkg)
+	localpackage, err := api.DownloadPackage(pkg)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Remove the folder first.
+	os.RemoveAll(expackage)
+	api.ExtractPackage(localpackage, localstaging)
+	return expackage
+}
