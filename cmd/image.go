@@ -90,5 +90,6 @@ func ImageCommands() *cobra.Command {
 		ValidArgs: []string{"create"},
 		Args:      cobra.OnlyValidArgs,
 	}
+	cmdImage.AddCommand(cmdImageCreate)
 	return cmdImage
 }
