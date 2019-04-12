@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-errors/errors"
+	// "github.com/go-errors/errors"
 )
 
 func isDynamicLinked(path string) (bool, error) {
@@ -42,10 +42,13 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	}
 	// LD_TRACE_LOADED_OBJECTS need to fork with out executing it.
 	// TODO:move away from LD_TRACE_LOADED_OBJECTS
-	err = os.Chmod(path, 0775)
-	if err != nil {
-		return nil, errors.Wrap(err, 1)
-	}
+
+	// Why this chmod exists? It's failing when program is from something like /bin folder
+	// err = os.Chmod(path, 0775)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, 1)
+	// }
+
 	dir, _ := os.Getwd()
 	var deps []string
 	if ok, _ := isDynamicLinked(path); ok {

@@ -82,6 +82,11 @@ func GetPackageManifestFile() string {
 }
 
 func PackageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
+	u := os.Getenv("SKIP_PACKAGE_MANIFEST_UPDATE")
+	if u == "1" {
+		return false
+	}
+
 	res, err := http.Head(remoteUrl)
 	if err != nil {
 		panic(err)

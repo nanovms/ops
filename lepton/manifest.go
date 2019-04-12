@@ -204,3 +204,15 @@ func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 		}
 	}
 }
+
+func (m *Manifest) Children() map[string]interface{} {
+	return m.children
+}
+
+func (m *Manifest) Args() []string {
+	return m.args
+}
+
+func (m *Manifest) Environment() map[string]string {
+	return m.environment
+}

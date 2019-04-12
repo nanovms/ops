@@ -13,6 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func UnWrapConfig(file string) *api.Config {
+	return unWarpConfig(file)
+}
+
 // UnWarpConfig parses lepton config file from file
 func unWarpConfig(file string) *api.Config {
 	var c api.Config
