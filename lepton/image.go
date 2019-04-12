@@ -168,7 +168,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	return m, nil
 }
 
-func addFromConfig(m *Manifest, c *Config) {
+func addFromConfig(m *Manifest, c *Config) error {
 
 	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
@@ -179,10 +179,16 @@ func addFromConfig(m *Manifest, c *Config) {
 		m.AddFile(f, f)
 	}
 	for k, v := range c.MapDirs {
-		addMappedFiles(k, v, m)
+		err := addMappedFiles(k, v, m)
+		if err != nil {
+			return err;
+		}
 	}
 	for _, d := range c.Dirs {
-		m.AddDirectory(d)
+		err := m.AddDirectory(d)
+		if err != nil {
+			return err;
+		}
 	}
 	for _, a := range c.Args {
 		m.AddArgument(a)
@@ -196,13 +202,18 @@ func addFromConfig(m *Manifest, c *Config) {
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
+
+	return nil
 }
 
 func BuildManifest(c *Config) (*Manifest, error) {
 
 	m := NewManifest()
 
-	addFromConfig(m, c)
+	err := addFromConfig(m, c)
+	if err != nil {
+		return nil, errors.Wrap(err, 1)
+	}
 	m.AddUserProgram(c.Program)
 
 	// run ldd and capture dependencies
@@ -218,9 +229,9 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	return m, nil
 }
 
-func addMappedFiles(src string, dest string, m *Manifest) {
+func addMappedFiles(src string, dest string, m *Manifest) error {
 	dir, pattern := filepath.Split(src)
-	filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -239,6 +250,7 @@ func addMappedFiles(src string, dest string, m *Manifest) {
 		}
 		return nil
 	})
+	return err
 }
 
 func buildImage(c *Config, m *Manifest) error {

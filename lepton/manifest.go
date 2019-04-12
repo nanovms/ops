@@ -82,7 +82,9 @@ func (m *Manifest) AddDirectory(dir string) error {
 		if (info.Mode() & os.ModeSymlink) != 0 {
 			info, err = os.Stat(hostpath)
 			if err != nil {
-				return err
+				fmt.Printf("warning: %v\n", err)
+				// ignore invalid symlinks
+				return nil
 			}
 		}
 		if info.IsDir() {
