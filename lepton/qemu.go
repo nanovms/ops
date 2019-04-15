@@ -252,8 +252,8 @@ func qemuVersion() (string, error) {
 }
 
 func parseQemuVersion(data []byte) string {
-	rgx := regexp.MustCompile("\\b[0-9]\\.[0-9]\\.[0-9]\\b")
-	return string(rgx.Find(data)[:3])
+	rgx := regexp.MustCompile("[0-9]+\\.[0-9]+")
+	return rgx.FindString(string(data))
 }
 
 // kvmGroupPermission returns true if the current user is part of the kvm qroup,
