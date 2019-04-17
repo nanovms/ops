@@ -70,7 +70,6 @@ func initDefaultRunConfigs(c *api.Config, ports []int) {
 }
 
 func fixupConfigImages(c *api.Config, version string) {
-
 	if c.NightlyBuild {
 		version = "nightly"
 	}
@@ -106,7 +105,10 @@ func validateRequired(c *api.Config) {
 		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Boot, err)
 		os.Exit(1)
 	}
-	if _, err := os.Stat(c.Program); os.IsNotExist(err) {
+	_, err := os.Stat(path.Join(api.GetOpsHome(), c.Program))
+	_, err1 := os.Stat(c.Program)
+
+	if os.IsNotExist(err) && os.IsNotExist(err1) {
 		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Program, err)
 		os.Exit(1)
 	}

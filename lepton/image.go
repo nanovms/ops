@@ -181,13 +181,13 @@ func addFromConfig(m *Manifest, c *Config) error {
 	for k, v := range c.MapDirs {
 		err := addMappedFiles(k, v, m)
 		if err != nil {
-			return err;
+			return err
 		}
 	}
 	for _, d := range c.Dirs {
 		err := m.AddDirectory(d)
 		if err != nil {
-			return err;
+			return err
 		}
 	}
 	for _, a := range c.Args {
@@ -256,7 +256,6 @@ func addMappedFiles(src string, dest string, m *Manifest) error {
 func buildImage(c *Config, m *Manifest) error {
 	//  prepare manifest file
 	var elfmanifest string
-
 	elfmanifest = m.String()
 	if c.ManifestName != "" {
 		err := ioutil.WriteFile(c.ManifestName, []byte(elfmanifest), 0644)
@@ -286,7 +285,7 @@ func buildImage(c *Config, m *Manifest) error {
 	}()
 	out, err := mkfs.CombinedOutput()
 	if err != nil {
-		log.Println(string(out))
+		log.Println("mkfs:" + string(out))
 		return errors.Wrap(err, 1)
 	}
 

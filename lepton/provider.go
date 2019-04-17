@@ -3,6 +3,7 @@ package lepton
 type Provider interface {
 	Initialize() error
 	BuildImage(ctx *Context) (string, error)
+	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
 	CreateImage(ctx *Context) error
 	CreateInstance(ctx *Context) error
 }
