@@ -110,15 +110,8 @@ func (p *GCloud) pollOperation(ctx context.Context, context Context, service *co
 	return nil
 }
 
-// BuildImage to be upload on GCP
-func (p *GCloud) BuildImage(ctx *Context) (string, error) {
-	c := ctx.config
-	err := BuildImage(*c)
-	if err != nil {
-		return "", err
-	}
-
-	imagePath := c.RunConfig.Imagename
+func (p *GCloud) customizeImage(ctx *Context) (string, error) {
+	imagePath := ctx.config.RunConfig.Imagename
 	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
 
 	if _, err := os.Lstat(symlink); err == nil {
@@ -127,7 +120,7 @@ func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 		}
 	}
 
-	err = os.Link(imagePath, symlink)
+	err := os.Link(imagePath, symlink)
 	if err != nil {
 		return "", err
 	}
@@ -140,6 +133,27 @@ func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 	return archPath, nil
+}
+
+// BuildImage to be upload on GCP
+func (p *GCloud) BuildImage(ctx *Context) (string, error) {
+	c := ctx.config
+	err := BuildImage(*c)
+	if err != nil {
+		return "", err
+	}
+
+	return p.customizeImage(ctx)
+}
+
+// BuildImageWithPackage to upload on GCP
+func (p *GCloud) BuildImageWithPackage(ctx *Context, pkgpath string) (string, error) {
+	c := ctx.config
+	err := BuildImageFromPackage(pkgpath, *c)
+	if err != nil {
+		return "", err
+	}
+	return p.customizeImage(ctx)
 }
 
 // Initialize GCP related things
