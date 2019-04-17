@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -94,6 +95,11 @@ func (m *Manifest) AddDirectory(dir string) error {
 				if _, ok := node[parts[i]]; !ok {
 					node[parts[i]] = make(map[string]interface{})
 				}
+				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
+					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
+					fmt.Println(err)
+					return err
+				}
 				node = node[parts[i]].(map[string]interface{})
 			}
 		} else {
@@ -105,7 +111,7 @@ func (m *Manifest) AddDirectory(dir string) error {
 }
 
 // AddFile to add a file to manifest
-func (m *Manifest) AddFile(filepath string, hostpath string) {
+func (m *Manifest) AddFile(filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := m.children
 	for i := 0; i < len(parts)-1; i++ {
@@ -114,7 +120,14 @@ func (m *Manifest) AddFile(filepath string, hostpath string) {
 		}
 		node = node[parts[i]].(map[string]interface{})
 	}
+	pathtest := node[parts[len(parts)-1]]
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
+		err := fmt.Errorf("file %s overriding an existing directory", filepath)
+		fmt.Println(err)
+		return err
+	}
 	node[parts[len(parts)-1]] = hostpath
+	return nil
 }
 
 // AddLibrary to add a dependent library
@@ -197,9 +210,9 @@ func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 			sb.WriteString(":(children:(")
 			// recur
 			ch := v.(map[string]interface{})
-			if (len(ch) > 0) {
+			if len(ch) > 0 {
 				sb.WriteRune('\n')
-				toString(&ch, sb, indent + 4)
+				toString(&ch, sb, indent+4)
 				sb.WriteString(strings.Repeat(" ", indent))
 			}
 			sb.WriteString("))\n")

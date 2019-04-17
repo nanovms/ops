@@ -79,6 +79,7 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	pkgConfig.Force = usrConfig.Force
 	pkgConfig.NightlyBuild = usrConfig.NightlyBuild
 	pkgConfig.NameServer = usrConfig.NameServer
+	pkgConfig.ManifestName = usrConfig.ManifestName
 
 	return pkgConfig
 }
