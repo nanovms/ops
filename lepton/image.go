@@ -70,6 +70,10 @@ func addHostName(m *Manifest, c *Config) {
 }
 
 func addPasswd(m *Manifest, c *Config) {
+	// Skip adding password file if present in package
+	if m.FileExists("/etc/passwd") {
+		return
+	}
 	temp := getImageTempDir(c.Program)
 	passwd := path.Join(temp, "passwd")
 	data := []byte("root:x:0:0:root:/root:/bin/nobash")
@@ -154,29 +158,34 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	m := NewManifest()
 
-	m.program = c.Program
-	addFromConfig(m, c)
+	// Add files from package
+	addFilesFromPackage(packagepath, m)
 
+	m.program = c.Program
+	err := addFromConfig(m, c)
+	if err != nil {
+		return nil, errors.Wrap(err, 1)
+	}
 	if len(c.Args) > 1 {
 		if _, err := os.Stat(c.Args[1]); err == nil {
 			m.AddFile(c.Args[1], c.Args[1])
 		}
 	}
 
-	// Add files from package
-	addFilesFromPackage(packagepath, m)
 	return m, nil
 }
 
 func addFromConfig(m *Manifest, c *Config) error {
-
 	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
 	addPasswd(m, c)
 
 	for _, f := range c.Files {
-		m.AddFile(f, f)
+		err := m.AddFile(f, f)
+		if err != nil {
+			return err
+		}
 	}
 	for k, v := range c.MapDirs {
 		err := addMappedFiles(k, v, m)
