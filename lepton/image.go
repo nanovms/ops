@@ -70,6 +70,10 @@ func addHostName(m *Manifest, c *Config) {
 }
 
 func addPasswd(m *Manifest, c *Config) {
+	// Skip adding password file if present in package
+	if m.FileExists("/etc/passwd") {
+		return
+	}
 	temp := getImageTempDir(c.Program)
 	passwd := path.Join(temp, "passwd")
 	data := []byte("root:x:0:0:root:/root:/bin/nobash")

@@ -110,6 +110,23 @@ func (m *Manifest) AddDirectory(dir string) error {
 	return err
 }
 
+// FileExists checks if file is present at path in manifest
+func (m *Manifest) FileExists(filepath string) bool {
+	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
+	node := m.children
+	for i := 0; i < len(parts)-1; i++ {
+		if _, ok := node[parts[i]]; !ok {
+			return false
+		}
+		node = node[parts[i]].(map[string]interface{})
+	}
+	pathtest := node[parts[len(parts)-1]]
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String {
+		return true
+	}
+	return false
+}
+
 // AddFile to add a file to manifest
 func (m *Manifest) AddFile(filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
@@ -125,6 +142,9 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 		err := fmt.Errorf("file %s overriding an existing directory", filepath)
 		fmt.Println(err)
 		return err
+	}
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String {
+		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
 	node[parts[len(parts)-1]] = hostpath
 	return nil
