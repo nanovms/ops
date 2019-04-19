@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
@@ -100,16 +99,15 @@ func imageCommandHandler(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			imageName := fmt.Sprintf("nanos-%v-image", filepath.Base(c.Program))
-			fmt.Printf("gcp image '%s' created...\n", imageName)
+			fmt.Printf("gcp image '%s' created...\n", c.CloudConfig.ImageName)
 		}
 	}
 }
 
 func ImageCommands() *cobra.Command {
 	var (
-		targetCloud, config, pkg string
-		args                     []string
+		targetCloud, config, pkg, imageName string
+		args                                []string
 	)
 	var cmdImageCreate = &cobra.Command{
 		Use:   "create",
@@ -121,6 +119,7 @@ func ImageCommands() *cobra.Command {
 	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImageCreate.PersistentFlags().StringVarP(&pkg, "package", "p", "", "ops package name")
 	cmdImageCreate.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
+	cmdImageCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 
 	var cmdImage = &cobra.Command{
 		Use:       "image",

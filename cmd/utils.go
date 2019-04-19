@@ -38,12 +38,13 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 	imageName, _ := cmd.Flags().GetString("imagename")
 	if imageName == "" {
 		imageName = api.GenerateImageName(c.Program)
+		c.CloudConfig.ImageName = fmt.Sprintf("nanos-%v-image", filepath.Base(c.Program))
 	} else {
+		c.CloudConfig.ImageName = imageName
 		images := path.Join(api.GetOpsHome(), "images")
 		imageName = path.Join(images, filepath.Base(imageName))
 	}
 	c.RunConfig.Imagename = imageName
-	c.CloudConfig.ImageName = fmt.Sprintf("nanos-%v-image", filepath.Base(c.Program))
 }
 
 // TODO : use factory or DI
