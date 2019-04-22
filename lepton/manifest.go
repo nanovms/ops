@@ -143,7 +143,7 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 		fmt.Println(err)
 		return err
 	}
-	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String {
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
 	node[parts[len(parts)-1]] = hostpath
