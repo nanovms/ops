@@ -2,34 +2,34 @@
 
 For the curious - this is all on by default:
 
-ASLR:
+__ASLR__:
 
-[X] Stack Randomization
+* Stack Randomization
 
-[X] Heap Randomization
+* Heap Randomization
 
-[X] Library Randomization
+* Library Randomization
 
-[X] Binary Randomization
+* Binary Randomization
 
-Page Protections:
+__Page Protections__:
 
-[X] Stack Execution off by Default
+* Stack Execution off by Default
 
-[X] Heap Execution off by Default
+* Heap Execution off by Default
 
-[X] Null Page is Not Mapped
+* Null Page is Not Mapped
 
-[X] Stack Cookies/Canaries
+* Stack Cookies/Canaries
 
-[X] Rodata no execute
+* Rodata no execute
 
-[X] Text no write
+* Text no write
 
 ## Other Considerations
 
-[X] Single Process
+* Single Process
 
-[X] No Users
+* No Users
 
-[X] No Shell
+* No Shell
