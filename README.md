@@ -121,4 +121,6 @@ working on the feature or plans to do something entirely different.
 
 ## Security
 
+[Security](https://github.com/nanovms/ops/blob/master/SECURITY.md)
+
 Feel free to email security at.
