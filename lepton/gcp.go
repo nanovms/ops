@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
+
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 )
@@ -64,7 +66,7 @@ func (p *GCloud) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }
 
-func (p *GCloud) pollOperation(ctx context.Context, context Context, service *compute.Service, op compute.Operation) error {
+func (p *GCloud) pollOperation(ctx context.Context, projectID string, service *compute.Service, op compute.Operation) error {
 	var area, operationType string
 
 	if strings.Contains(op.SelfLink, "zone") {
@@ -81,7 +83,7 @@ func (p *GCloud) pollOperation(ctx context.Context, context Context, service *co
 
 	gOp := &GCloudOperation{
 		service:       service,
-		projectID:     context.config.CloudConfig.ProjectID,
+		projectID:     projectID,
 		name:          op.Name,
 		area:          area,
 		operationType: operationType,
@@ -193,11 +195,80 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		return fmt.Errorf("error:%+v", err)
 	}
 	fmt.Printf("Image creation started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, *ctx, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Image creation succeeded %s.\n", c.CloudConfig.ImageName)
+	return nil
+}
+
+// ListImages lists images on Google Cloud
+func (p *GCloud) ListImages() error {
+	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+
+	req := computeService.Images.List(creds.ProjectID)
+	if err := req.Pages(context, func(page *compute.ImageList) error {
+		for _, image := range page.Items {
+			var row []string
+			row = append(row, image.Name)
+			row = append(row, fmt.Sprintf("%v", image.Status))
+			row = append(row, image.CreationTimestamp)
+			table.Append(row)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if err != nil {
+		return fmt.Errorf("error:%+v", err)
+	}
+	table.Render()
+	return nil
+}
+
+func (p *GCloud) DeleteImage(imagename string) error {
+	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	op, err := computeService.Images.Delete(creds.ProjectID, imagename).Context(context).Do()
+	if err != nil {
+		return fmt.Errorf("error:%+v", err)
+	}
+	err = p.pollOperation(context, creds.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Image deletion succeeded %s.\n", imagename)
 	return nil
 }
 
@@ -272,7 +343,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 	fmt.Printf("Instance creation started using image %s. Monitoring operation %s.\n", imageName, op.Name)
-	err = p.pollOperation(context, *ctx, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
 	if err != nil {
 		return err
 	}

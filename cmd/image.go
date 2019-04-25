@@ -10,12 +10,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func imageCommandHandler(cmd *cobra.Command, args []string) {
+func checkCredentenaisProvided() {
 	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
 		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
 		fmt.Printf(api.ErrorColor, "Follow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
 		os.Exit(1)
 	}
+}
+
+func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
+	checkCredentenaisProvided()
 
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	config, _ := cmd.Flags().GetString("config")
@@ -104,7 +108,7 @@ func imageCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func ImageCommands() *cobra.Command {
+func imageCreateCommand() *cobra.Command {
 	var (
 		targetCloud, config, pkg, imageName string
 		args                                []string
@@ -112,21 +116,80 @@ func ImageCommands() *cobra.Command {
 	var cmdImageCreate = &cobra.Command{
 		Use:   "create",
 		Short: "create nanos image from ELF",
-		Run:   imageCommandHandler,
+		Run:   imageCreateCommandHandler,
 	}
-
 	cmdImageCreate.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImageCreate.PersistentFlags().StringVarP(&pkg, "package", "p", "", "ops package name")
 	cmdImageCreate.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
 	cmdImageCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	return cmdImageCreate
+}
 
+func imageListCommandHandler(cmd *cobra.Command, args []string) {
+	checkCredentenaisProvided()
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p := getCloudProvider(provider)
+	err := p.ListImages()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func imageListCommand() *cobra.Command {
+	var (
+		targetCloud string
+	)
+	var cmdImageList = &cobra.Command{
+		Use:   "list",
+		Short: "list images from provider",
+		Run:   imageListCommandHandler,
+	}
+	cmdImageList.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	return cmdImageList
+}
+
+func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
+	checkCredentenaisProvided()
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	imageName, _ := cmd.Flags().GetString("imagename")
+	if imageName == "" {
+		fmt.Println("Please provide image name with -i option.")
+		os.Exit(1)
+	}
+	p := getCloudProvider(provider)
+	err := p.DeleteImage(imageName)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func imageDeleteCommand() *cobra.Command {
+	var (
+		targetCloud, imageName string
+	)
+	var cmdImageDelete = &cobra.Command{
+		Use:   "delete",
+		Short: "Delete images from provider",
+		Run:   imageDeleteCommandHandler,
+	}
+	cmdImageDelete.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdImageDelete.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	return cmdImageDelete
+}
+
+// ImageCommands provides image related command on GCP
+func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
 		ValidArgs: []string{"create"},
 		Args:      cobra.OnlyValidArgs,
 	}
-	cmdImage.AddCommand(cmdImageCreate)
+	cmdImage.AddCommand(imageCreateCommand())
+	cmdImage.AddCommand(imageListCommand())
+	cmdImage.AddCommand(imageDeleteCommand())
 	return cmdImage
 }
