@@ -27,6 +27,13 @@ type GCloudOperation struct {
 	operationType string
 }
 
+func checkCredentialsProvided() error {
+	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
+		return fmt.Errorf(ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+	}
+	return nil
+}
+
 func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 	var (
 		op  *compute.Operation
@@ -167,7 +174,9 @@ func (p *GCloud) Initialize() error {
 // CreateImage - Creates image on GCP using nanos images
 // TODO : re-use and cache DefaultClient and instances.
 func (p *GCloud) CreateImage(ctx *Context) error {
-
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	c := ctx.config
 	context := context.TODO()
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
@@ -205,6 +214,9 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 
 // ListImages lists images on Google Cloud
 func (p *GCloud) ListImages() error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
@@ -247,6 +259,9 @@ func (p *GCloud) ListImages() error {
 }
 
 func (p *GCloud) DeleteImage(imagename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
@@ -274,6 +289,9 @@ func (p *GCloud) DeleteImage(imagename string) error {
 
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
@@ -357,6 +375,70 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
+	return nil
+}
+
+func (p *GCloud) ListInstances(ctx *Context) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+	req := computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+	if err := req.Pages(context, func(page *compute.InstanceList) error {
+		for _, instance := range page.Items {
+			var rows []string
+			rows = append(rows, instance.Name)
+			rows = append(rows, instance.Status)
+			rows = append(rows, instance.CreationTimestamp)
+			table.Append(rows)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	table.Render()
+	return nil
+}
+
+func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	cloudConfig := ctx.config.CloudConfig
+	op, err := computeService.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Instance deletion started. Monitoring operation %s.\n", op.Name)
+	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Instance deletion succeeded %s.\n", instancename)
 	return nil
 }
 

@@ -8,6 +8,8 @@ type Provider interface {
 	ListImages() error
 	DeleteImage(imagename string) error
 	CreateInstance(ctx *Context) error
+	ListInstances(ctx *Context) error
+	DeleteInstance(ctx *Context, instancename string) error
 }
 
 type Context struct {

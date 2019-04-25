@@ -30,7 +30,7 @@ func (p *OnPrem) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 }
 
 func (p *OnPrem) CreateImage(ctx *Context) error {
-	return nil
+	return fmt.Errorf("Operation not supported")
 }
 
 // ListImages on premise
@@ -85,9 +85,16 @@ func (p *OnPrem) DeleteImage(imagename string) error {
 
 // CreateInstance on premise
 func (p *OnPrem) CreateInstance(ctx *Context) error {
-	return nil
+	return fmt.Errorf("Operation not supported")
 }
 
+func (p *OnPrem) ListInstances(ctx *Context) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
+	return fmt.Errorf("Operation not supported")
+}
 func (p *OnPrem) Initialize() error {
 	return nil
 }
