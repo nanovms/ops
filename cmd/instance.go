@@ -9,54 +9,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func instanceCommandHandler(cmd *cobra.Command, args []string) {
-	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
-		fmt.Printf(api.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\n")
-		fmt.Printf(api.ErrorColor, "Follow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
-		os.Exit(1)
-	}
+func exitWithError(errs string) {
+	fmt.Printf(api.ErrorColor, errs)
+	os.Exit(1)
+}
+
+func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
+	checkCredentenaisProvided()
 	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	projectID, err := cmd.Flags().GetString("projectid")
-	if err != nil || len(projectID) == 0 {
-		fmt.Printf(api.ErrorColor, "error: Not a valid ProjectID.\n")
-		os.Exit(1)
+	config, _ := cmd.Flags().GetString("config")
+	imagename, _ := cmd.Flags().GetString("imagename")
+	if imagename == "" {
+		exitWithError("imagename argument missing")
 	}
 
-	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	c := unWarpConfig(config)
-	c.CloudConfig.ImageName = strings.Trim(args[0], " ")
-	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.ImageName = imagename
 
 	p := getCloudProvider(provider)
 	ctx := api.NewContext(c, &p)
-	gcloud := p.(*api.GCloud)
-	err = gcloud.CreateInstance(ctx)
+	err := p.CreateInstance(ctx)
 	if err != nil {
-		fmt.Println(err)
+		exitWithError(err.Error())
 	}
+}
+
+func instanceCreateCommand() *cobra.Command {
+	var targetCloud, imageName string
+	var cmdInstanceCreate = &cobra.Command{
+		Use:   "create [imagename]",
+		Short: "create nanos instance",
+		Run:   instanceCreateCommandHandler,
+	}
+	cmdInstanceCreate.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	return cmdInstanceCreate
 }
 
 // InstanceCommands provided instance related commands
 func InstanceCommands() *cobra.Command {
-	var projectID string
-	var targetCloud string
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
-		ValidArgs: []string{"new"},
+		ValidArgs: []string{"create"},
 		Args:      cobra.OnlyValidArgs,
 	}
-
-	var cmdInstanceNew = &cobra.Command{
-		Use:   "new [imagename]",
-		Short: "new nanos instance",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   instanceCommandHandler,
-	}
-	cmdInstanceNew.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
-	cmdInstanceNew.PersistentFlags().StringVarP(&projectID, "projectid", "n", "", "ProjectID")
-	cmdInstance.AddCommand(cmdInstanceNew)
+	cmdInstance.AddCommand(instanceCreateCommand())
 	return cmdInstance
 }

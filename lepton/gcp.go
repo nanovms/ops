@@ -274,9 +274,20 @@ func (p *GCloud) DeleteImage(imagename string) error {
 
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
-
-	c := ctx.config
 	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	c := ctx.config
+	if c.CloudConfig.Zone == "" {
+		return fmt.Errorf("Zone not provided in config.CloudConfig")
+	}
+	if c.CloudConfig.ProjectID == "" {
+		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.", creds.ProjectID)
+		c.CloudConfig.ProjectID = creds.ProjectID
+	}
+
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
 	if err != nil {
 		return err
@@ -287,8 +298,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	// TODO: get from config
-	machineType := "zones/us-west1-b/machineTypes/custom-1-2048"
+	machineType := fmt.Sprintf("zones/%s/machineTypes/custom-1-2048", c.CloudConfig.Zone)
 	instanceName := fmt.Sprintf("%v-%v",
 		filepath.Base(c.CloudConfig.ImageName),
 		strconv.FormatInt(time.Now().Unix(), 10),
@@ -337,8 +347,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			Items: []string{"http-server", "https-server"},
 		},
 	}
-	// TODO : this always succeed, need to use self link for status.
-	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, "us-west1-b", rb).Context(context).Do()
+	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
 	if err != nil {
 		return err
 	}
