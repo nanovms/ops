@@ -93,15 +93,14 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 func imageCreateCommand() *cobra.Command {
 	var (
-		targetCloud, config, pkg, imageName string
-		args                                []string
+		config, pkg, imageName string
+		args                   []string
 	)
 	var cmdImageCreate = &cobra.Command{
 		Use:   "create",
 		Short: "create nanos image from ELF",
 		Run:   imageCreateCommandHandler,
 	}
-	cmdImageCreate.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImageCreate.PersistentFlags().StringVarP(&pkg, "package", "p", "", "ops package name")
 	cmdImageCreate.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
@@ -119,15 +118,11 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func imageListCommand() *cobra.Command {
-	var (
-		targetCloud string
-	)
 	var cmdImageList = &cobra.Command{
 		Use:   "list",
 		Short: "list images from provider",
 		Run:   imageListCommandHandler,
 	}
-	cmdImageList.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	return cmdImageList
 }
 
@@ -146,26 +141,27 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 func imageDeleteCommand() *cobra.Command {
 	var (
-		targetCloud, imageName string
+		imageName string
 	)
 	var cmdImageDelete = &cobra.Command{
 		Use:   "delete",
 		Short: "Delete images from provider",
 		Run:   imageDeleteCommandHandler,
 	}
-	cmdImageDelete.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	cmdImageDelete.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	return cmdImageDelete
 }
 
 // ImageCommands provides image related command on GCP
 func ImageCommands() *cobra.Command {
+	var targetCloud string
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
 		ValidArgs: []string{"create"},
 		Args:      cobra.OnlyValidArgs,
 	}
+	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
 	cmdImage.AddCommand(imageDeleteCommand())

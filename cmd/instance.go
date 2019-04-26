@@ -16,11 +16,6 @@ func exitWithError(errs string) {
 
 func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	imagename, _ := cmd.Flags().GetString("imagename")
-	if imagename == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "imagename argument missing"))
-	}
-
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	var c *api.Config
@@ -37,7 +32,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if zone != "" {
 		c.CloudConfig.Zone = zone
 	}
-
+	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
 	p := getCloudProvider(provider)
@@ -49,17 +44,15 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceCreateCommand() *cobra.Command {
-	var targetCloud, imageName, projectID, zone, config string
+	var imageName, config string
 	var cmdInstanceCreate = &cobra.Command{
-		Use:   "create [imagename]",
+		Use:   "create",
 		Short: "create nanos instance",
 		Run:   instanceCreateCommandHandler,
 	}
-	cmdInstanceCreate.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&projectID, "projectid", "p", "", "project-id for GCP")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&zone, "zone", "z", "", "zone name for GCP")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
+	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
 	return cmdInstanceCreate
 }
 
@@ -85,15 +78,11 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceListCommand() *cobra.Command {
-	var targetCloud, zone, projectID string
 	var cmdInstanceList = &cobra.Command{
 		Use:   "list",
 		Short: "list instance on provider",
 		Run:   instanceListCommandHandler,
 	}
-	cmdInstanceList.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
-	cmdInstanceList.PersistentFlags().StringVarP(&projectID, "projectid", "p", "", "project-id for GCP")
-	cmdInstanceList.PersistentFlags().StringVarP(&zone, "zone", "z", "", "zone name for GCP")
 	return cmdInstanceList
 }
 
@@ -119,27 +108,27 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceDeleteCommand() *cobra.Command {
-	var targetCloud, zone, projectID string
 	var cmdInstanceDelete = &cobra.Command{
 		Use:   "delete",
 		Short: "delete instance on provider",
 		Run:   instanceDeleteCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-	cmdInstanceDelete.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
-	cmdInstanceDelete.PersistentFlags().StringVarP(&projectID, "projectid", "p", "", "project-id for GCP")
-	cmdInstanceDelete.PersistentFlags().StringVarP(&zone, "zone", "z", "", "zone name for GCP")
 	return cmdInstanceDelete
 }
 
 // InstanceCommands provided instance related commands
 func InstanceCommands() *cobra.Command {
+	var targetCloud, projectID, zone string
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
 		ValidArgs: []string{"create", "list", "delete"},
 		Args:      cobra.OnlyValidArgs,
 	}
+	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "p", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
+	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
 	cmdInstance.AddCommand(instanceDeleteCommand())
