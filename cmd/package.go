@@ -26,11 +26,11 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"PackageName", "Version", "Language", "Runtime", "Description"})
 	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor})
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 
 	table.SetRowLine(true)
 

@@ -25,6 +25,7 @@ type Config struct {
 type ProviderConfig struct {
 	Platform   string `cloud:"platfom"`
 	ProjectID  string `cloud:"projectid"`
+	Zone       string `cloud:"zone"`
 	BucketName string `cloud:"bucketname"`
 	ImageName  string `cloud:"imagename"`
 }

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
+
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 )
@@ -23,6 +25,13 @@ type GCloudOperation struct {
 	name          string
 	area          string
 	operationType string
+}
+
+func checkCredentialsProvided() error {
+	if _, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !ok {
+		return fmt.Errorf(ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+	}
+	return nil
 }
 
 func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
@@ -64,7 +73,7 @@ func (p *GCloud) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }
 
-func (p *GCloud) pollOperation(ctx context.Context, context Context, service *compute.Service, op compute.Operation) error {
+func (p *GCloud) pollOperation(ctx context.Context, projectID string, service *compute.Service, op compute.Operation) error {
 	var area, operationType string
 
 	if strings.Contains(op.SelfLink, "zone") {
@@ -81,7 +90,7 @@ func (p *GCloud) pollOperation(ctx context.Context, context Context, service *co
 
 	gOp := &GCloudOperation{
 		service:       service,
-		projectID:     context.config.CloudConfig.ProjectID,
+		projectID:     projectID,
 		name:          op.Name,
 		area:          area,
 		operationType: operationType,
@@ -165,7 +174,9 @@ func (p *GCloud) Initialize() error {
 // CreateImage - Creates image on GCP using nanos images
 // TODO : re-use and cache DefaultClient and instances.
 func (p *GCloud) CreateImage(ctx *Context) error {
-
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	c := ctx.config
 	context := context.TODO()
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
@@ -193,7 +204,7 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		return fmt.Errorf("error:%+v", err)
 	}
 	fmt.Printf("Image creation started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, *ctx, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
 	if err != nil {
 		return err
 	}
@@ -201,11 +212,100 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 	return nil
 }
 
+// ListImages lists images on Google Cloud
+func (p *GCloud) ListImages() error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+
+	req := computeService.Images.List(creds.ProjectID)
+	if err := req.Pages(context, func(page *compute.ImageList) error {
+		for _, image := range page.Items {
+			var row []string
+			row = append(row, image.Name)
+			row = append(row, fmt.Sprintf("%v", image.Status))
+			row = append(row, image.CreationTimestamp)
+			table.Append(row)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if err != nil {
+		return fmt.Errorf("error:%+v", err)
+	}
+	table.Render()
+	return nil
+}
+
+func (p *GCloud) DeleteImage(imagename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	op, err := computeService.Images.Delete(creds.ProjectID, imagename).Context(context).Do()
+	if err != nil {
+		return fmt.Errorf("error:%+v", err)
+	}
+	err = p.pollOperation(context, creds.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Image deletion succeeded %s.\n", imagename)
+	return nil
+}
+
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
-
-	c := ctx.config
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
 	context := context.TODO()
+	creds, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return err
+	}
+	c := ctx.config
+	if c.CloudConfig.Zone == "" {
+		return fmt.Errorf("Zone not provided in config.CloudConfig")
+	}
+	if c.CloudConfig.ProjectID == "" {
+		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.", creds.ProjectID)
+		c.CloudConfig.ProjectID = creds.ProjectID
+	}
+
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
 	if err != nil {
 		return err
@@ -216,8 +316,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	// TODO: get from config
-	machineType := "zones/us-west1-b/machineTypes/custom-1-2048"
+	machineType := fmt.Sprintf("zones/%s/machineTypes/custom-1-2048", c.CloudConfig.Zone)
 	instanceName := fmt.Sprintf("%v-%v",
 		filepath.Base(c.CloudConfig.ImageName),
 		strconv.FormatInt(time.Now().Unix(), 10),
@@ -266,17 +365,80 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			Items: []string{"http-server", "https-server"},
 		},
 	}
-	// TODO : this always succeed, need to use self link for status.
-	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, "us-west1-b", rb).Context(context).Do()
+	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Instance creation started using image %s. Monitoring operation %s.\n", imageName, op.Name)
-	err = p.pollOperation(context, *ctx, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
+	return nil
+}
+
+func (p *GCloud) ListInstances(ctx *Context) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+	req := computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+	if err := req.Pages(context, func(page *compute.InstanceList) error {
+		for _, instance := range page.Items {
+			var rows []string
+			rows = append(rows, instance.Name)
+			rows = append(rows, instance.Status)
+			rows = append(rows, instance.CreationTimestamp)
+			table.Append(rows)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	table.Render()
+	return nil
+}
+
+func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	cloudConfig := ctx.config.CloudConfig
+	op, err := computeService.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Instance deletion started. Monitoring operation %s.\n", op.Name)
+	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Instance deletion succeeded %s.\n", instancename)
 	return nil
 }
 
