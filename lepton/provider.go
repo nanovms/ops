@@ -10,6 +10,7 @@ type Provider interface {
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	DeleteInstance(ctx *Context, instancename string) error
+	GetInstanceLogs(ctx *Context, instancename string) error
 }
 
 type Context struct {

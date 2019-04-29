@@ -14,6 +14,12 @@ func exitWithError(errs string) {
 	os.Exit(1)
 }
 
+func exitForCmd(cmd *cobra.Command, errs string) {
+	fmt.Println(errs)
+	cmd.Help()
+	os.Exit(1)
+}
+
 func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	config, _ := cmd.Flags().GetString("config")
@@ -39,7 +45,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(c, &p)
 	err := p.CreateInstance(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
 	}
 }
 
@@ -62,18 +68,18 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	c := api.Config{}
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
 	}
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
 	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
 	err := p.ListInstances(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
 	}
 }
 
@@ -92,11 +98,11 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	c := api.Config{}
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
 	}
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
 	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
@@ -109,12 +115,43 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 func instanceDeleteCommand() *cobra.Command {
 	var cmdInstanceDelete = &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <instance_name>",
 		Short: "delete instance on provider",
 		Run:   instanceDeleteCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
 	return cmdInstanceDelete
+}
+
+func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p := getCloudProvider(provider)
+	c := api.Config{}
+	projectID, _ := cmd.Flags().GetString("projectid")
+	if projectID == "" {
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+	}
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone == "" {
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+	}
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
+	ctx := api.NewContext(&c, &p)
+	err := p.GetInstanceLogs(ctx, args[0])
+	if err != nil {
+		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+	}
+}
+
+func instanceLogsCommand() *cobra.Command {
+	var cmdLogsCommand = &cobra.Command{
+		Use:   "logs <instance_name>",
+		Short: "Show logs from console for an instance",
+		Run:   instanceLogsCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdLogsCommand
 }
 
 // InstanceCommands provided instance related commands
@@ -123,7 +160,7 @@ func InstanceCommands() *cobra.Command {
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
-		ValidArgs: []string{"create", "list", "delete"},
+		ValidArgs: []string{"create", "list", "delete", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
@@ -132,5 +169,6 @@ func InstanceCommands() *cobra.Command {
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
 	cmdInstance.AddCommand(instanceDeleteCommand())
+	cmdInstance.AddCommand(instanceLogsCommand())
 	return cmdInstance
 }
