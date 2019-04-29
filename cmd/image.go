@@ -130,7 +130,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	imageName, _ := cmd.Flags().GetString("imagename")
 	if imageName == "" {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "Please provide image name with -i option"))
+		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "Please provide image name with -i option"))
 	}
 	p := getCloudProvider(provider)
 	err := p.DeleteImage(imageName)

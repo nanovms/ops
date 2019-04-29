@@ -95,6 +95,11 @@ func (p *OnPrem) ListInstances(ctx *Context) error {
 func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 	return fmt.Errorf("Operation not supported")
 }
+
+func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
 func (p *OnPrem) Initialize() error {
 	return nil
 }

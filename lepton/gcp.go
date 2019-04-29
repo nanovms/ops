@@ -442,6 +442,38 @@ func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+	cloudConfig := ctx.config.CloudConfig
+	lastPos := int64(0)
+	for {
+		resp, err := computeService.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
+		if err != nil {
+			return err
+		}
+		if resp.Contents != "" {
+			fmt.Printf("%s", resp.Contents)
+		}
+		if lastPos == resp.Next {
+			break
+		}
+		lastPos = resp.Next
+		time.Sleep(time.Second)
+	}
+	return nil
+}
+
 func createArchive(archive string, files []string) error {
 	fd, err := os.Create(archive)
 	if err != nil {
