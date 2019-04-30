@@ -8,6 +8,7 @@ type Config struct {
 	MapDirs      map[string]string
 	Env          map[string]string
 	Debugflags   []string
+	NoTrace      []string
 	Program      string
 	Version      string
 	Boot         string

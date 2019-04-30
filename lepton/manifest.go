@@ -16,6 +16,7 @@ type Manifest struct {
 	program     string
 	args        []string
 	debugFlags  map[string]rune
+	noTrace     []string
 	environment map[string]string
 }
 
@@ -53,6 +54,11 @@ func (m *Manifest) AddArgument(arg string) {
 // AddDebugFlag enables debug flags
 func (m *Manifest) AddDebugFlag(name string, value rune) {
 	m.debugFlags[name] = value
+}
+
+// AddDebugFlag enables debug flags
+func (m *Manifest) AddNoTrace(name string) {
+	m.noTrace = append(m.noTrace, name)
 }
 
 // AddKernel the kernel to use
@@ -195,6 +201,13 @@ func (m *Manifest) String() string {
 		sb.WriteRune(':')
 		sb.WriteRune(v)
 		sb.WriteRune('\n')
+	}
+
+	// notrace
+	if len(m.noTrace) > 0 {
+		sb.WriteString("notrace:[")
+		sb.WriteString(strings.Join(m.noTrace, " "))
+		sb.WriteString("]\n")
 	}
 
 	// environment
