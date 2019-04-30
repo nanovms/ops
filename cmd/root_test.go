@@ -80,8 +80,7 @@ func TestDownloadImages(t *testing.T) {
 	if info, err := os.Stat(mkfs); os.IsNotExist(err) {
 		t.Errorf("%v not found", mkfs)
 	} else {
-		mode := fmt.Sprintf("%04o", info.Mode().Perm())
-		if mode != "0775" {
+		if (info.Mode().Perm() & 0111) == 0 {
 			t.Errorf("mkfs not executable")
 		}
 	}
