@@ -37,6 +37,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	noTrace, err := cmd.Flags().GetStringArray("no-trace")
+	if err != nil {
+		panic(err)
+	}
+
 	verbose, err := strconv.ParseBool(cmd.Flag("verbose").Value.String())
 	if err != nil {
 		panic(err)
@@ -98,6 +103,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.NightlyBuild = nightly
 	c.Force = force
 	c.ManifestName = manifestName
+	if len(noTrace) > 0 {
+		c.NoTrace = noTrace
+	}
 	setDefaultImageName(cmd, c)
 
 	if !skipbuild {
@@ -128,6 +136,7 @@ func RunCommand() *cobra.Command {
 	var ports []string
 	var force bool
 	var debugflags bool
+	var noTrace []string
 	var args []string
 	var verbose bool
 	var bridged bool
@@ -151,6 +160,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
 	cmdRun.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
+	cmdRun.PersistentFlags().StringArrayVarP(&noTrace, "no-trace", "", nil, "do not trace syscall")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")

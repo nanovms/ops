@@ -207,6 +207,10 @@ func addFromConfig(m *Manifest, c *Config) error {
 		m.AddDebugFlag(dbg, 't')
 	}
 
+	for _, syscallName := range c.NoTrace {
+		m.AddNoTrace(syscallName)
+	}
+
 	m.AddEnvironmentVariable("USER", "root")
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
