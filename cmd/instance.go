@@ -10,12 +10,12 @@ import (
 )
 
 func exitWithError(errs string) {
-	fmt.Println(errs)
+	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
 	os.Exit(1)
 }
 
 func exitForCmd(cmd *cobra.Command, errs string) {
-	fmt.Println(errs)
+	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
 	cmd.Help()
 	os.Exit(1)
 }
@@ -45,7 +45,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(c, &p)
 	err := p.CreateInstance(ctx)
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 
@@ -68,18 +68,18 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	c := api.Config{}
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+		exitForCmd(cmd, "projectid argument missing")
 	}
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+		exitForCmd(cmd, "zone argument missing")
 	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
 	err := p.ListInstances(ctx)
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 
@@ -98,18 +98,18 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	c := api.Config{}
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+		exitForCmd(cmd, "projectid argument missing")
 	}
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+		exitForCmd(cmd, "zone argument missing")
 	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
 	err := p.DeleteInstance(ctx, args[0])
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 
@@ -129,18 +129,18 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	c := api.Config{}
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "projectid argument missing"))
+		exitForCmd(cmd, "projectid argument missing")
 	}
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "zone argument missing"))
+		exitForCmd(cmd, "zone argument missing")
 	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
 	err := p.GetInstanceLogs(ctx, args[0])
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 

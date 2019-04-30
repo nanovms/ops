@@ -25,15 +25,15 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "Please select on of the cloud platform in config. [onprem, gcp]"))
+		exitWithError("Please select on of the cloud platform in config. [onprem, gcp]")
 	}
 
 	if len(c.CloudConfig.ProjectID) == 0 {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "Please specifiy a cloud projectid in config"))
+		exitWithError("Please specifiy a cloud projectid in config")
 	}
 
 	if len(c.CloudConfig.BucketName) == 0 {
-		exitWithError(fmt.Sprintf(api.ErrorColor, "Please specifiy a cloud bucket in config"))
+		exitWithError("Please specifiy a cloud bucket in config")
 	}
 
 	if len(pkg) > 0 {
@@ -44,7 +44,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		} else if len(c.Args) != 0 {
 			c.Program = c.Args[0]
 		} else {
-			exitWithError(fmt.Sprintf(api.ErrorColor, "Please mention program to run"))
+			exitWithError("Please mention program to run")
 		}
 	}
 
@@ -59,7 +59,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		// load the package manifest
 		manifest := path.Join(expackage, "package.manifest")
 		if _, err := os.Stat(manifest); err != nil {
-			exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+			exitWithError(err.Error())
 		}
 		pkgConfig := unWarpConfig(manifest)
 		c = mergeConfigs(pkgConfig, c)
@@ -73,18 +73,18 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 
 	if c.CloudConfig.Platform == "gcp" {
 		gcloud := p.(*api.GCloud)
 		err = gcloud.Storage.CopyToBucket(c, archpath)
 		if err != nil {
-			exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+			exitWithError(err.Error())
 		}
 		err = gcloud.CreateImage(ctx)
 		if err != nil {
-			exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+			exitWithError(err.Error())
 		} else {
 			fmt.Printf("gcp image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -113,7 +113,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	p := getCloudProvider(provider)
 	err := p.ListImages()
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 
@@ -130,12 +130,12 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	imageName, _ := cmd.Flags().GetString("imagename")
 	if imageName == "" {
-		exitForCmd(cmd, fmt.Sprintf(api.ErrorColor, "Please provide image name with -i option"))
+		exitForCmd(cmd, "Please provide image name with -i option")
 	}
 	p := getCloudProvider(provider)
 	err := p.DeleteImage(imageName)
 	if err != nil {
-		exitWithError(fmt.Sprintf(api.ErrorColor, err.Error()))
+		exitWithError(err.Error())
 	}
 }
 
