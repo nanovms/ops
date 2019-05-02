@@ -362,6 +362,7 @@ func (q *qemu) addAccel() {
 			return
 		}
 		q.addFlag("-enable-kvm")
+		q.addOption("-cpu", "host")
 		return
 	}
 }
