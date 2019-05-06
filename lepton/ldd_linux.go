@@ -37,19 +37,14 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		return nil, err
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, err
+	if _, err := os.Stat(path); err != nil {
+		return nil, errors.Wrap(err, 1)
 	}
 	// LD_TRACE_LOADED_OBJECTS need to fork with out executing it.
 	// TODO:move away from LD_TRACE_LOADED_OBJECTS
-	err = os.Chmod(path, 0775)
-	if err != nil {
-		return nil, errors.Wrap(err, 1)
-	}
 	dir, _ := os.Getwd()
 	var deps []string
 	if ok, _ := isDynamicLinked(path); ok {
-
 		env := os.Environ()
 		env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
 		cmd := exec.Command(path)
@@ -79,7 +74,9 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 			deps = append(deps, strings.TrimSpace(libpath))
 		}
 		defer out.Close()
-		cmd.Wait()
+		if err := cmd.Wait(); err != nil {
+			return nil, err
+		}
 	}
 	return deps, nil
 }
