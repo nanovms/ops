@@ -54,7 +54,10 @@ func addDNSConfig(m *Manifest, c *Config) {
 	if err != nil {
 		panic(err)
 	}
-	m.AddFile("/etc/resolv.conf", resolv)
+	err = m.AddFile("/etc/resolv.conf", resolv)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // /proc/sys/kernel/hostname
@@ -66,7 +69,10 @@ func addHostName(m *Manifest, c *Config) {
 	if err != nil {
 		panic(err)
 	}
-	m.AddFile("/proc/sys/kernel/hostname", hostname)
+	err = m.AddFile("/proc/sys/kernel/hostname", hostname)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func addPasswd(m *Manifest, c *Config) {
@@ -81,7 +87,10 @@ func addPasswd(m *Manifest, c *Config) {
 	if err != nil {
 		panic(err)
 	}
-	m.AddFile("/etc/passwd", passwd)
+	err = m.AddFile("/etc/passwd", passwd)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // bunch of default files that's required.
@@ -105,12 +114,18 @@ func addDefaultFiles(m *Manifest, c *Config) error {
 
 	localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
 	if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
-		m.AddFile(libDNS, localLibDNS)
+		err = m.AddFile(libDNS, localLibDNS)
+		if err != nil {
+			return err
+		}
 	}
 
 	localSslCert := path.Join(commonPath, "ca-certificates.crt")
 	if _, err := os.Stat(localSslCert); !os.IsNotExist(err) {
-		m.AddFile(sslCERT, localSslCert)
+		err = m.AddFile(sslCERT, localSslCert)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -131,7 +146,10 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 		}
 
 		filePath := strings.Split(hostpath, rootPath)
-		m.AddFile(filePath[1], hostpath)
+		err = m.AddFile(filePath[1], hostpath)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 
@@ -150,7 +168,10 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 
 		filePath := strings.Split(hostpath, packagepath)
 		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
-		m.AddFile(vmpath, hostpath)
+		err = m.AddFile(vmpath, hostpath)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 }
@@ -168,7 +189,10 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	}
 	if len(c.Args) > 1 {
 		if _, err := os.Stat(c.Args[1]); err == nil {
-			m.AddFile(c.Args[1], c.Args[1])
+			err = m.AddFile(c.Args[1], c.Args[1])
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -259,7 +283,10 @@ func addMappedFiles(src string, dest string, m *Manifest) error {
 				return err
 			}
 			vmpath := filepath.Join(dest, reldir, filename)
-			m.AddFile(vmpath, hostpath)
+			err = m.AddFile(vmpath, hostpath)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

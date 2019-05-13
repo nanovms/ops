@@ -37,7 +37,10 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 		parts = parts[1:]
 	}
 	m.program = path.Join("/", path.Join(parts...))
-	m.AddFile(m.program, imgpath)
+	err := m.AddFile(m.program, imgpath)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // AddEnvironmentVariable adds envirnoment variables
@@ -109,7 +112,10 @@ func (m *Manifest) AddDirectory(dir string) error {
 				node = node[parts[i]].(map[string]interface{})
 			}
 		} else {
-			m.AddFile(vmpath, hostpath)
+			err = m.AddFile(vmpath, hostpath)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -151,6 +157,10 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 	}
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
+	}
+	_, err := os.Stat(hostpath)
+	if err != nil {
+		return err
 	}
 	node[parts[len(parts)-1]] = hostpath
 	return nil

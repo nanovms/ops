@@ -10,9 +10,9 @@ import (
 const (
 	relpath = `hw:(contents:(host:examples/hw))
 `
-	kernel  = `kernel:(contents:(host:stage3/stage3))
+	kernel = `kernel:(contents:(host:stage3/stage3))
 `
-	lib     = `lib:(children:(
+	lib = `lib:(children:(
     x86_64-linux-gnu:(children:(
         libc.so.6:(contents:(host:/lib/x86_64-linux-gnu/libc.so.6))
     ))
@@ -67,7 +67,7 @@ func TestManifestWithDeps(t *testing.T) {
 
 func TestSerializeManifest(t *testing.T) {
 	m := NewManifest()
-	m.AddUserProgram("/hws")
+	m.AddUserProgram("/bin/ls")
 	m.AddKernel("stage3/stage3")
 	m.AddArgument("first")
 	m.AddEnvironmentVariable("var1", "value1")
