@@ -19,7 +19,7 @@ Check out the [DOCS](https://nanovms.gitbook.io/ops/)
 curl https://ops.city/get.sh -sSfL | sh
 ```
 
-## Install from source
+## Build and Install from source
 
 This program requires GO Version 1.10.x or greater.
 
@@ -38,6 +38,8 @@ For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisit
 Before learning more about `ops` it is a good idea to see some basic usage
 examples. Below are links to simple examples using various programming platforms:
 
+Languages:
+
 * [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)
 * [PHP](https://nanovms.gitbook.io/ops/basic_usage#running-php-hello-world)
 * [NodeJS](https://nanovms.gitbook.io/ops/basic_usage#running-a-nodejs-script)
@@ -48,25 +50,40 @@ examples. Below are links to simple examples using various programming platforms
 * [Ruby2.3](https://github.com/nanovms/ops-examples/tree/master/ruby/01-hello-world)
 * [Rust](https://github.com/nanovms/ops-examples/tree/master/rust/01-hello-world)
 * [Scheme](https://github.com/nanovms/ops-examples/tree/master/scheme/01-hello-world)
+* [Forth](https://github.com/nanovms/ops-examples/tree/master/forth/01-hello-world)
+* [Java](https://github.com/nanovms/ops-examples/tree/master/java/01-hello-world-example)
+
+Applications:
+
+* Nginx
+* HAProxy
+* Tarantool
+* Hiawatha
+* Mosquitto
+* Kache
+* Gnatsd
+* [Wasmer](https://github.com/nanovms/ops-examples/tree/master/wasm/01-hello-world)
 
 # Setup networking
 
-## bridge network 
-`sudo ops net setup` 
+New users wishing to play around in a dev environment are encouraged to
+use the default user-mode networking. Other production users are
+encouraged to utilize native cloud builds such as [Google
+Cloud](https://nanovms.gitbook.io/ops/google_cloud) which
+handle networking for you.
 
-## reset
-`sudo ops net reset`
+Only advanced/power users should use the bridge networking option.
 
 # Build a bootable image
-`ops build <ELFBinary>`
+`ops build <app>`
 
 # Package and run
-    ops run <ELFBinary>
+    ops run <app>
     OR
-    ops run -p <port> <ELFBinary>
+    ops run -p <port> <app>
 
 # Using a config file
-    ops run -p <port> -c <file> <ELFBinary>
+    ops run -p <port> -c <file> <app>
 
 # Example config file
 
@@ -84,6 +101,7 @@ ops config files are plain JSON, below is an example
                 -example.html
                 -stylesheet 
                     -main.css
+
     ## File  layout on VM
         /myapp
             app
@@ -96,6 +114,9 @@ ops config files are plain JSON, below is an example
 
 Feel free to open up a pull request. It's helpful to have your OPS
 version and the release channel you are using.
+
+Also - if it doesn't work on the main release you can try the nightly -
+the main release can tail the nightly by many weeks sometimes.
 
 ```
 ops version
@@ -124,3 +145,11 @@ working on the feature or plans to do something entirely different.
 [Security](https://github.com/nanovms/ops/blob/master/SECURITY.md)
 
 Feel free to email security at.
+
+## Support
+
+If you are having trouble running a particular application please feel
+free to open an issue and we can take a look. In general we'll only want
+to support the latest release from a given application/project, however
+if you really want/need support for something older there are paid
+support plans available - contact the folks at https://nanovms.com .
