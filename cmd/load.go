@@ -105,7 +105,17 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(errors.New("No hypervisor found on $PATH"))
 	}
 
-	expackage := downloadAndExtractPackage(args[0])
+	local, err := cmd.Flags().GetBool("local")
+	if err != nil {
+		panic(err)
+	}
+
+	var expackage string
+	if local {
+		expackage = path.Join(api.GetOpsHome(), "local_packages", args[0])
+	} else {
+		expackage = downloadAndExtractPackage(args[0])
+	}
 
 	// load the package manifest
 	manifest := path.Join(expackage, "package.manifest")
@@ -188,10 +198,10 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 func LoadCommand() *cobra.Command {
 	var (
-		ports, args                []string
-		force, debugflags, verbose bool
-		nightly, accel, bridged    bool
-		config, imageName          string
+		ports, args                    []string
+		force, debugflags, verbose     bool
+		nightly, accel, bridged, local bool
+		config, imageName              string
 	)
 
 	var cmdLoadPackage = &cobra.Command{
@@ -210,5 +220,6 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
 	return cmdLoadPackage
 }
