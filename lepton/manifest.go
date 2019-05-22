@@ -185,6 +185,16 @@ func (m *Manifest) AddUserData(dir string) {
 	// TODO
 }
 
+func escapeValue(s string) string {
+	if strings.Contains(s, "\"") {
+		s = strings.Replace(s, "\"", "\\\"", -1)
+	}
+	if strings.ContainsAny(s, "\":()[] \t\n") {
+		s = "\"" + s + "\""
+	}
+	return s
+}
+
 func (m *Manifest) String() string {
 	sb := m.sb
 	sb.WriteString("(\n")
@@ -244,9 +254,9 @@ func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 		value, ok := v.(string)
 		sb.WriteString(strings.Repeat(" ", indent))
 		if ok {
-			sb.WriteString(k)
+			sb.WriteString(escapeValue(k))
 			sb.WriteString(":(contents:(host:")
-			sb.WriteString(value)
+			sb.WriteString(escapeValue(value))
 			sb.WriteString("))\n")
 		} else {
 			sb.WriteString(k)
