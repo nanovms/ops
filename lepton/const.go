@@ -25,7 +25,7 @@ const manifest string = `(
     environment:(USER:bobby PWD:/)
 )`
 
-const Version = "0.5"
+const Version = "0.1.6"
 const OpsReleaseUrl = "https://storage.googleapis.com/cli/%v/ops"
 
 const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/"
