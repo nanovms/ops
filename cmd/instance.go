@@ -38,6 +38,10 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if zone != "" {
 		c.CloudConfig.Zone = zone
 	}
+	flavor, _ := cmd.Flags().GetString("flavor")
+	if flavor != "" {
+		c.CloudConfig.Flavor = flavor
+	}
 	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
@@ -50,7 +54,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceCreateCommand() *cobra.Command {
-	var imageName, config string
+	var imageName, config, flavor string
 	var cmdInstanceCreate = &cobra.Command{
 		Use:   "create",
 		Short: "create nanos instance",
@@ -58,6 +62,8 @@ func instanceCreateCommand() *cobra.Command {
 	}
 	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "g1-small", "flavor name for GCP")
+
 	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
 	return cmdInstanceCreate
 }

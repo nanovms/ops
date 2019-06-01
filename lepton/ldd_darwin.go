@@ -151,7 +151,7 @@ func unique(a []string) []string {
 	}
 
 	result := []string{}
-	for key, _ := range keys {
+	for key := range keys {
 		result = append(result, key)
 	}
 	return result
