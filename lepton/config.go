@@ -29,6 +29,7 @@ type ProviderConfig struct {
 	Zone       string `cloud:"zone"`
 	BucketName string `cloud:"bucketname"`
 	ImageName  string `cloud:"imagename"`
+	Flavor     string `cloud:"flavor"`
 }
 
 // Runtime configs

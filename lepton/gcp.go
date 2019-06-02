@@ -305,6 +305,9 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.", creds.ProjectID)
 		c.CloudConfig.ProjectID = creds.ProjectID
 	}
+	if c.CloudConfig.Flavor == "" {
+		return fmt.Errorf("Flavor not provided in config.CloudConfig")
+	}
 
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
 	if err != nil {
@@ -316,7 +319,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	machineType := fmt.Sprintf("zones/%s/machineTypes/custom-1-2048", c.CloudConfig.Zone)
+	machineType := fmt.Sprintf("zones/%s/machineTypes/%s", c.CloudConfig.Zone, c.CloudConfig.Flavor)
 	instanceName := fmt.Sprintf("%v-%v",
 		filepath.Base(c.CloudConfig.ImageName),
 		strconv.FormatInt(time.Now().Unix(), 10),
@@ -332,7 +335,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		Name:        instanceName,
 		MachineType: machineType,
 		Disks: []*compute.AttachedDisk{
-			&compute.AttachedDisk{
+			{
 				AutoDelete: true,
 				Boot:       true,
 				Type:       "PERSISTENT",
@@ -342,10 +345,10 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			},
 		},
 		NetworkInterfaces: []*compute.NetworkInterface{
-			&compute.NetworkInterface{
+			{
 				Name: "eth0",
 				AccessConfigs: []*compute.AccessConfig{
-					&compute.AccessConfig{
+					{
 						NetworkTier: "PREMIUM",
 						Type:        "ONE_TO_ONE_NAT",
 						Name:        "External NAT",
@@ -355,7 +358,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		},
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{
-				&compute.MetadataItems{
+				{
 					Key:   "serial-port-enable",
 					Value: &serialTrue,
 				},
