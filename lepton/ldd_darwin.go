@@ -9,43 +9,6 @@ import (
 	"github.com/go-errors/errors"
 )
 
-func lookupFile(targetRoot string, path string) (string, error) {
-	if targetRoot != "" {
-		var targetPath string
-		currentPath := path
-		for {
-			targetPath = filepath.Join(targetRoot, currentPath)
-			fi, err := os.Lstat(targetPath)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return path, err
-				}
-				// lookup on host
-				break
-			}
-			if fi.Mode()&os.ModeSymlink == 0 {
-				// not a symlink found in target root
-				return targetPath, nil
-			}
-
-			currentPath, err = os.Readlink(targetPath)
-			if err != nil {
-				return path, err
-			}
-			if currentPath[0] != '/' {
-				// relative symlinks are ok
-				path = targetPath
-				break
-			}
-
-			// absolute symlinks need to be resolved again
-		}
-	}
-
-	_, err := os.Stat(path)
-	return path, err
-}
-
 func expandVars(origin string, s string) string {
 	return strings.Replace(s, "$ORIGIN", origin, -1)
 }

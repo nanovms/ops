@@ -18,14 +18,16 @@ type Manifest struct {
 	debugFlags  map[string]rune
 	noTrace     []string
 	environment map[string]string
+	targetRoot  string
 }
 
 // NewManifest init
-func NewManifest() *Manifest {
+func NewManifest(targetRoot string) *Manifest {
 	return &Manifest{
 		children:    make(map[string]interface{}),
 		debugFlags:  make(map[string]rune),
 		environment: make(map[string]string),
+		targetRoot:  targetRoot,
 	}
 }
 
@@ -158,7 +160,7 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
-	_, err := os.Stat(hostpath)
+	_, err := lookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		return err
 	}
