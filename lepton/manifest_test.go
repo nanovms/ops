@@ -21,7 +21,7 @@ const (
 )
 
 func TestAddKernel(t *testing.T) {
-	m := NewManifest()
+	m := NewManifest("")
 	m.AddKernel("stage3/stage3")
 	var sb strings.Builder
 	toString(&m.children, &sb, 0)
@@ -32,7 +32,7 @@ func TestAddKernel(t *testing.T) {
 }
 
 func TestAddRelativePath(t *testing.T) {
-	m := NewManifest()
+	m := NewManifest("")
 	m.AddRelative("hw", "examples/hw")
 	var sb strings.Builder
 	toString(&m.children, &sb, 0)
@@ -43,7 +43,7 @@ func TestAddRelativePath(t *testing.T) {
 }
 
 func TestAddLibs(t *testing.T) {
-	m := NewManifest()
+	m := NewManifest("")
 	m.AddLibrary("/lib/x86_64-linux-gnu/libc.so.6")
 	var sb strings.Builder
 	toString(&m.children, &sb, 0)
@@ -66,7 +66,7 @@ func TestManifestWithDeps(t *testing.T) {
 }
 
 func TestSerializeManifest(t *testing.T) {
-	m := NewManifest()
+	m := NewManifest("")
 	m.AddUserProgram("/bin/ls")
 	m.AddKernel("stage3/stage3")
 	m.AddArgument("first")

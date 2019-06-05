@@ -178,7 +178,7 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 
 // BuildPackageManifest builds manifest using package
 func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
-	m := NewManifest()
+	m := NewManifest(c.TargetRoot)
 
 	// Add files from package
 	addFilesFromPackage(packagepath, m)
@@ -247,7 +247,7 @@ func addFromConfig(m *Manifest, c *Config) error {
 // BuildManifest builds manifest using config
 func BuildManifest(c *Config) (*Manifest, error) {
 
-	m := NewManifest()
+	m := NewManifest(c.TargetRoot)
 
 	err := addFromConfig(m, c)
 	if err != nil {
@@ -461,4 +461,41 @@ func DownloadFile(filepath string, url string, timeout int) error {
 		return err
 	}
 	return nil
+}
+
+func lookupFile(targetRoot string, path string) (string, error) {
+	if targetRoot != "" {
+		var targetPath string
+		currentPath := path
+		for {
+			targetPath = filepath.Join(targetRoot, currentPath)
+			fi, err := os.Lstat(targetPath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					return path, err
+				}
+				// lookup on host
+				break
+			}
+			if fi.Mode()&os.ModeSymlink == 0 {
+				// not a symlink found in target root
+				return targetPath, nil
+			}
+
+			currentPath, err = os.Readlink(targetPath)
+			if err != nil {
+				return path, err
+			}
+			if currentPath[0] != '/' {
+				// relative symlinks are ok
+				path = targetPath
+				break
+			}
+
+			// absolute symlinks need to be resolved again
+		}
+	}
+
+	_, err := os.Stat(path)
+	return path, err
 }
