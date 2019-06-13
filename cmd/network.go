@@ -90,7 +90,6 @@ func assignIP(bridge *netlink.Bridge) error {
 	}
 	addr, err := netlink.ParseAddr(fmt.Sprintf("%v/%v", ip, 24))
 	if err != nil {
-		panic(err)
 		return err
 	}
 	netlink.AddrAdd(bridge, addr)
