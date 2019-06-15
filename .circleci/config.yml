@@ -8,6 +8,8 @@ jobs:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
+      - run: ./hack/verify-gofmt.sh
+      - run: ./hack/verify-govet.sh
       - run: sudo apt-get install qemu
       - run: make deps
       - run: mkdir -p $TEST_RESULTS
