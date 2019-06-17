@@ -258,6 +258,7 @@ func (p *GCloud) ListImages() error {
 	return nil
 }
 
+// DeleteImage deletes image from Gcloud
 func (p *GCloud) DeleteImage(imagename string) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
@@ -381,6 +382,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	return nil
 }
 
+// ListInstances lists instances on Gcloud
 func (p *GCloud) ListInstances(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
@@ -436,6 +438,7 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	return nil
 }
 
+// DeleteInstance deletes instnace from Gcloud
 func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
@@ -463,6 +466,7 @@ func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+// GetInstanceLogs gets instance related logs
 func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err

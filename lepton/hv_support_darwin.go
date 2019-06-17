@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func hv_support() (bool, error) {
+func hvSupport() (bool, error) {
 	name, err := unix.ByteSliceFromString("kern.hv_support")
 	if err != nil {
 		return false, err

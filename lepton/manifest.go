@@ -59,7 +59,7 @@ func (m *Manifest) AddDebugFlag(name string, value rune) {
 	m.debugFlags[name] = value
 }
 
-// AddDebugFlag enables debug flags
+// AddNoTrace enables debug flags
 func (m *Manifest) AddNoTrace(name string) {
 	m.noTrace = append(m.noTrace, name)
 }

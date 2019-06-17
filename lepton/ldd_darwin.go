@@ -86,42 +86,42 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 	var libDirs []string
 
 	// 1. LD_LIBRARY_PATH
-	var ld_library_path []string
+	var ldLibraryPath []string
 	val := os.Getenv("LD_LIBRARY_PATH")
 	if len(strings.TrimSpace(val)) > 0 {
-		ld_library_path = strings.Split(val, ":")
+		ldLibraryPath = strings.Split(val, ":")
 	}
 
 	// 2. DT_RUNPATH
-	dt_runpath, err := fd.DynString(elf.DT_RUNPATH)
+	dtRunpath, err := fd.DynString(elf.DT_RUNPATH)
 	if err != nil {
 		return nil, err
 	}
-	if len(dt_runpath) == 0 {
+	if len(dtRunpath) == 0 {
 		// DT_RPATH should take precedence over LD_LIBRARY_PATH
-		dt_rpath, err := fd.DynString(elf.DT_RPATH)
+		dtRpath, err := fd.DynString(elf.DT_RPATH)
 		if err != nil {
 			return nil, err
 		}
-		for _, d := range dt_rpath {
+		for _, d := range dtRpath {
 			libDirs = append(libDirs, strings.Split(d, ":")...)
 		}
-		libDirs = append(libDirs, ld_library_path...)
+		libDirs = append(libDirs, ldLibraryPath...)
 	} else {
-		libDirs = append(libDirs, ld_library_path...)
-		for _, d := range dt_runpath {
+		libDirs = append(libDirs, ldLibraryPath...)
+		for _, d := range dtRunpath {
 			libDirs = append(libDirs, strings.Split(d, ":")...)
 		}
 	}
 	libDirs = append(libDirs, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
 
-	dt_needed, err := fd.DynString(elf.DT_NEEDED)
+	dtNeeded, err := fd.DynString(elf.DT_NEEDED)
 	if err != nil {
 		return nil, err
 	}
 
 	var libs []string
-	for _, libpath := range dt_needed {
+	for _, libpath := range dtNeeded {
 		if len(libpath) == 0 {
 			continue
 		}

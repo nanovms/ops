@@ -35,7 +35,6 @@ import (
 //
 // 8. If the final rename fails, attempts to roll back by renaming /path/to/.target.old
 // back to /path/to/target.
-
 func Apply(update io.Reader, opts Options) error {
 
 	// set defaults
@@ -151,6 +150,7 @@ type rollbackErr struct {
 	rollbackErr error // error encountered while rolling back
 }
 
+// Options for binary update
 type Options struct {
 	// TargetPath defines the path to the file to update.
 	// The emptry string means 'the executable file of the running program'.
@@ -221,9 +221,8 @@ func (o *Options) SetPublicKeyPEM(pembytes []byte) error {
 func (o *Options) getPath() (string, error) {
 	if o.TargetPath == "" {
 		return os.Executable()
-	} else {
-		return o.TargetPath, nil
 	}
+	return o.TargetPath, nil
 }
 
 func (o *Options) verifyChecksum(updated []byte) error {
@@ -247,6 +246,7 @@ func checksumFor(h crypto.Hash, payload []byte) ([]byte, error) {
 	return hash.Sum([]byte{}), nil
 }
 
+// DoUpdate updates file using provided URL
 func DoUpdate(url string) error {
 	resp, err := http.Get(url)
 	if err != nil {

@@ -29,9 +29,10 @@ type Package struct {
 	MD5         string `json:"md5,omitempty"`
 }
 
+// DownloadPackage downloads package by name
 func DownloadPackage(name string) (string, error) {
 	if _, ok := (*GetPackageList())[name]; !ok {
-		return "", fmt.Errorf("package %q does not exist\n", name)
+		return "", fmt.Errorf("package %q does not exist", name)
 	}
 
 	archivename := name + ".tar.gz"
@@ -45,6 +46,7 @@ func DownloadPackage(name string) (string, error) {
 	return packagepath, nil
 }
 
+// GetPackageList provides list of packages
 func GetPackageList() *map[string]Package {
 	var err error
 	packageManifest := GetPackageManifestFile()
@@ -77,18 +79,21 @@ func getPackageCache() string {
 	return packagefolder
 }
 
+// GetPackageManifestFile give path for package manifest file
 func GetPackageManifestFile() string {
 	return path.Join(getPackageCache(), PackageManifestFileName)
 }
 
-func PackageManifestChanged(fino os.FileInfo, remoteUrl string) bool {
-	res, err := http.Head(remoteUrl)
+// PackageManifestChanged verifies if package manifest changed
+func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
+	res, err := http.Head(remoteURL)
 	if err != nil {
 		panic(err)
 	}
 	return fino.Size() != res.ContentLength
 }
 
+// ExtractPackage extracts package in ops home
 func ExtractPackage(archive string, dest string) {
 	in, err := os.Open(archive)
 	if err != nil {
@@ -133,6 +138,7 @@ func ExtractPackage(archive string, dest string) {
 	}
 }
 
+// BuildImageFromPackage builds nanos image using a package
 func BuildImageFromPackage(packagepath string, c Config) error {
 	m, err := BuildPackageManifest(packagepath, &c)
 	if err != nil {

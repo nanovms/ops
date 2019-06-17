@@ -21,7 +21,7 @@ type drive struct {
 	format string
 	iftype string
 	index  string
-	Id     string
+	ID     string
 }
 
 type device struct {
@@ -80,8 +80,8 @@ func (d drive) String() string {
 	if len(d.iftype) > 0 {
 		sb.WriteString(fmt.Sprintf(",if=%s", d.iftype))
 	}
-	if len(d.Id) > 0 {
-		sb.WriteString(fmt.Sprintf(",id=%s", d.Id))
+	if len(d.ID) > 0 {
+		sb.WriteString(fmt.Sprintf(",id=%s", d.ID))
 	}
 	return sb.String()
 }
@@ -178,7 +178,7 @@ func (q *qemu) addDrive(id, image, ifaceType string) {
 		path:   image,
 		format: "raw",
 		iftype: ifaceType,
-		Id:     id,
+		ID:     id,
 	}
 	q.drives = append(q.drives, drv)
 }
@@ -345,7 +345,7 @@ func (q *qemu) addAccel() {
 	if err != nil {
 		return
 	}
-	ok, err := hv_support()
+	ok, err := hvSupport()
 	if !(ok && err == nil) {
 		return
 	}

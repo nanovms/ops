@@ -12,6 +12,7 @@ func printVersion(cmd *cobra.Command, args []string) {
 	fmt.Printf("Nanos version: %s\n", api.LocalReleaseVersion)
 }
 
+// VersionCommand provides version command
 func VersionCommand() *cobra.Command {
 	var cmdVersion = &cobra.Command{
 		Use:   "version",

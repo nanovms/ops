@@ -1,6 +1,6 @@
 package lepton
 
-// Build configs
+// Config for Build
 type Config struct {
 	Args         []string
 	Dirs         []string
@@ -23,6 +23,7 @@ type Config struct {
 	ManifestName string // save manifest to
 }
 
+// ProviderConfig give provider details
 type ProviderConfig struct {
 	Platform   string `cloud:"platfom"`
 	ProjectID  string `cloud:"projectid"`
@@ -32,7 +33,7 @@ type ProviderConfig struct {
 	Flavor     string `cloud:"flavor"`
 }
 
-// Runtime configs
+// RunConfig provides runtime details
 type RunConfig struct {
 	Imagename string
 	Ports     []int
@@ -43,6 +44,7 @@ type RunConfig struct {
 	Accel     bool
 }
 
+// RuntimeConfig constructs runtime config
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
 	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G"}
 }

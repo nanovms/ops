@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 
 	"github.com/vishvananda/netlink"
 )
@@ -14,28 +13,6 @@ import (
 const bridgeName string = "br0"
 const tapName string = "tap0"
 const macAddr string = "08-00-27-00-A8-E8"
-
-func AddNextTapDevice() error {
-	br0, err := netlink.LinkByName(bridgeName)
-	if err != nil {
-		return err
-	}
-	var tap string
-	for i := 0; i < 10; i++ {
-		tap = "tap" + strconv.Itoa(i)
-		_, err := netlink.LinkByName(tap + strconv.Itoa(i))
-		if err != nil {
-			break
-		}
-	}
-	bridge, ok := br0.(*netlink.Bridge)
-	if ok {
-		addTapDevice(tap, bridge)
-	} else {
-		return errors.New("No network bridge found")
-	}
-	return nil
-}
 
 func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
 	// create a bridge named br0

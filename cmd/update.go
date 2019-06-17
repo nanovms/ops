@@ -11,7 +11,7 @@ import (
 
 func updateCommandHandler(cmd *cobra.Command, args []string) {
 	fmt.Println("Checking for updates...")
-	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseUrl, runtime.GOOS))
+	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, runtime.GOOS))
 	if err != nil {
 		fmt.Println("Failed to update.", err)
 	} else {
@@ -29,6 +29,7 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
+// UpdateCommand provides update related commands
 func UpdateCommand() *cobra.Command {
 	var cmdUpdate = &cobra.Command{
 		Use:   "update",

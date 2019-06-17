@@ -132,6 +132,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
+// RunCommand provides support for running binary with nanos
 func RunCommand() *cobra.Command {
 	var ports []string
 	var force bool
