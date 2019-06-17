@@ -31,6 +31,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	fmt.Printf("Bootable image file:%s\n", c.RunConfig.Imagename)
 }
 
+// BuildCommand helps you to build image from ELF
 func BuildCommand() *cobra.Command {
 	var config string
 	var targetRoot string

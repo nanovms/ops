@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GetRootCommand provides set all commands for Ops
 func GetRootCommand() *cobra.Command {
 	var rootCmd = &cobra.Command{Use: "ops"}
 	rootCmd.AddCommand(RunCommand())

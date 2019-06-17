@@ -39,6 +39,7 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 	fmt.Println(m.String())
 }
 
+// ManifestCommand dumps manifest for binary file
 func ManifestCommand() *cobra.Command {
 	var config string
 	var targetRoot string

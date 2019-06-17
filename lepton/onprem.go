@@ -10,6 +10,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// OnPrem provider for ops
 type OnPrem struct{}
 
 // BuildImage for onprem
@@ -29,6 +30,7 @@ func (p *OnPrem) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 	return "", nil
 }
 
+// CreateImage on prem
 func (p *OnPrem) CreateImage(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
@@ -88,18 +90,22 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// ListInstances on premise
 func (p *OnPrem) ListInstances(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// DeleteInstance from on premise
 func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// GetInstanceLogs for onprem instance logs
 func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// Initialize on prem provider
 func (p *OnPrem) Initialize() error {
 	return nil
 }

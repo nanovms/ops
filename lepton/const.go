@@ -25,18 +25,30 @@ const manifest string = `(
     environment:(USER:bobby PWD:/)
 )`
 
+// Version for ops
 const Version = "0.1.6"
-const OpsReleaseUrl = "https://storage.googleapis.com/cli/%v/ops"
 
-const ReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/"
-const NightlyReleaseBaseUrl string = "https://storage.googleapis.com/nanos/release/nightly/"
+// OpsReleaseURL gives URL to download latest ops binary
+const OpsReleaseURL = "https://storage.googleapis.com/cli/%v/ops"
+
+const releaseBaseURL string = "https://storage.googleapis.com/nanos/release/"
+
+const nightlyReleaseBaseURL string = "https://storage.googleapis.com/nanos/release/nightly/"
+
+// PackageBaseURL gives URL for downloading of packages
 const PackageBaseURL string = "https://storage.googleapis.com/packagehub/%v"
+
+// PackageManifestURL stores info about all packages
 const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
+
+// PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
 const mergedImg string = "tempimage"
 
+// GCPStorageURL is GCP storage path
 const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 
+// GenerateImageName generate image name
 func GenerateImageName(program string) string {
 	program = filepath.Base(program)
 	images := path.Join(GetOpsHome(), "images")
@@ -48,8 +60,11 @@ func GenerateImageName(program string) string {
 	return buffer.String()
 }
 
-var PackagesCache string = getPackageCache()
+// PackagesCache where all packages are stored
+var PackagesCache = getPackageCache()
 
+// GetOpsHome get ops directory path
+// We store all ops related info, packages, images in this directory
 func GetOpsHome() string {
 	home, err := HomeDir()
 	if err != nil {
@@ -73,15 +88,16 @@ func getImageTempDir(program string) string {
 	return path
 }
 
-var NightlyReleaseUrl string = nightlyReleaseUrl()
+// NightlyReleaseURL give URL for nightly build
+var NightlyReleaseURL = nightlyReleaseURL()
 
 func nightlyFileName() string {
 	return fmt.Sprintf("nanos-nightly-%v.tar.gz", runtime.GOOS)
 }
 
-func nightlyReleaseUrl() string {
+func nightlyReleaseURL() string {
 	var sb strings.Builder
-	sb.WriteString(NightlyReleaseBaseUrl)
+	sb.WriteString(nightlyReleaseBaseURL)
 	sb.WriteString(nightlyFileName())
 	return sb.String()
 }
@@ -90,10 +106,11 @@ func nightlyLocalFolder() string {
 	return path.Join(GetOpsHome(), "nightly")
 }
 
-var NightlyLocalFolder string = nightlyLocalFolder()
+// NightlyLocalFolder is directory path where nightly builds are stored
+var NightlyLocalFolder = nightlyLocalFolder()
 
+// LocalTimeStamp gives local timestamp from download nightly build
 func LocalTimeStamp() (string, error) {
-
 	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", runtime.GOOS)
 	data, err := ioutil.ReadFile(path.Join(NightlyLocalFolder, timestamp))
 	// first time download?
@@ -107,9 +124,10 @@ func LocalTimeStamp() (string, error) {
 	return string(data), nil
 }
 
+// RemoteTimeStamp gives latest nightly build timestamp
 func RemoteTimeStamp() (string, error) {
 	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", runtime.GOOS)
-	resp, err := http.Get(NightlyReleaseBaseUrl + timestamp)
+	resp, err := http.Get(nightlyReleaseBaseURL + timestamp)
 	if err != nil {
 		return "", err
 	}
@@ -132,15 +150,18 @@ func updateLocalRelease(version string) error {
 	return ioutil.WriteFile(local, []byte(version), 0755)
 }
 
-var LatestReleaseVersion string = getLatestRelVersion()
+// LatestReleaseVersion give latest stable release for nanos
+var LatestReleaseVersion = getLatestRelVersion()
 
 const (
+	// WarningColor used in warning texts
 	WarningColor = "\033[1;33m%s\033[0m"
-	ErrorColor   = "\033[1;31m%s\033[0m"
+	// ErrorColor used in error texts
+	ErrorColor = "\033[1;31m%s\033[0m"
 )
 
 func getLatestRelVersion() string {
-	resp, err := http.Get(ReleaseBaseUrl + "latest.txt")
+	resp, err := http.Get(releaseBaseURL + "latest.txt")
 	if err != nil {
 		fmt.Printf(WarningColor, "version lookup failed, using local.\n")
 		if LocalReleaseVersion == "0.0" {
@@ -154,7 +175,8 @@ func getLatestRelVersion() string {
 	return strings.TrimSuffix(string(data), "\n")
 }
 
-var LocalReleaseVersion string = getLocalRelVersion()
+// LocalReleaseVersion is version latest release downloaded in ops home
+var LocalReleaseVersion = getLocalRelVersion()
 
 func getLocalRelVersion() string {
 	data, err := ioutil.ReadFile(path.Join(GetOpsHome(), "latest.txt"))
@@ -169,9 +191,9 @@ func releaseFileName(version string) string {
 	return fmt.Sprintf("nanos-release-%v-%v.tar.gz", runtime.GOOS, version)
 }
 
-func getReleaseUrl(version string) string {
+func getReleaseURL(version string) string {
 	var sb strings.Builder
-	sb.WriteString(ReleaseBaseUrl)
+	sb.WriteString(releaseBaseURL)
 	sb.WriteString(version)
 	sb.WriteRune('/')
 	sb.WriteString(releaseFileName(version))

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const START_WAIT_TIMEOUT = time.Second * 30
+const StartWaitTimeout = time.Second * 30
 
 func runAndWaitForString(rconfig *api.RunConfig, timeout time.Duration, text string, t *testing.T) api.Hypervisor {
 	hypervisor := api.HypervisorInstance()
@@ -114,7 +114,7 @@ func runHyperVisor(userImage string, started string, expected string, t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	hypervisor := runAndWaitForString(&c.RunConfig, START_WAIT_TIMEOUT, started, t)
+	hypervisor := runAndWaitForString(&c.RunConfig, StartWaitTimeout, started, t)
 	defer hypervisor.Stop()
 
 	resp, err := http.Get("http://127.0.0.1:8080")
@@ -147,7 +147,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hypervisor := runAndWaitForString(&c.RunConfig, START_WAIT_TIMEOUT, "Listening...", t)
+	hypervisor := runAndWaitForString(&c.RunConfig, StartWaitTimeout, "Listening...", t)
 	defer hypervisor.Stop()
 
 	resp, err := http.Get("http://localhost:8080/example.html")

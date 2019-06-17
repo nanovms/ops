@@ -6,7 +6,7 @@ import (
 	pb "github.com/cheggaaa/pb"
 )
 
-const RefreshRate = time.Millisecond * 100
+const refreshRate = time.Millisecond * 100
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer
 // interface and we can pass this into io.TeeReader() which will report progress on each
@@ -16,9 +16,10 @@ type WriteCounter struct {
 	bar *pb.ProgressBar
 }
 
+// NewWriteCounter creates new write counter
 func NewWriteCounter(total int) *WriteCounter {
 	b := pb.New(total)
-	b.SetRefreshRate(RefreshRate)
+	b.SetRefreshRate(refreshRate)
 	b.ShowTimeLeft = true
 	b.ShowSpeed = true
 	b.SetUnits(pb.U_BYTES)
@@ -34,10 +35,12 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	return wc.n, nil
 }
 
+// Start progress bar
 func (wc *WriteCounter) Start() {
 	wc.bar.Start()
 }
 
+// Finish progress bar
 func (wc *WriteCounter) Finish() {
 	wc.bar.Finish()
 }

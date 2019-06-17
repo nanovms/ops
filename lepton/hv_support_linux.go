@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func hv_support() (bool, error) {
+func hvSupport() (bool, error) {
 	const intel string = "vmx"
 	const amd string = "svm"
 

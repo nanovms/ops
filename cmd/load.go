@@ -10,6 +10,7 @@ import (
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
+	"github.com/ttacon/chalk"
 )
 
 func parseVersion(s string, width int) int64 {
@@ -27,18 +28,23 @@ func parseVersion(s string, width int) int64 {
 	return result
 }
 
-func downloadReleaseImages(c *api.Config) (string, error) {
+func downloadReleaseImages() (string, error) {
 	var err error
 	// if it's first run or we have an update
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
-	u := os.Getenv("NANOS_UPDATE")
-	if local == "0.0" || (u == "1" && parseVersion(local, 4) != parseVersion(remote, 4)) {
+	if local == "0.0" {
 		err = api.DownloadReleaseImages(remote)
 		if err != nil {
 			return "", err
 		}
+		return remote, nil
+
 	}
-	return remote, nil
+	if parseVersion(local, 4) != parseVersion(remote, 4) {
+		fmt.Println(chalk.Red, "You are running an older version of Ops.", chalk.Reset)
+		fmt.Println(chalk.Red, "Update: Run", chalk.Reset, chalk.Bold.TextStyle("`ops update`"))
+	}
+	return local, nil
 }
 
 func downloadNightlyImages(c *api.Config) (string, error) {
@@ -91,7 +97,7 @@ func buildFromPackage(packagepath string, c *api.Config) error {
 	if c.NightlyBuild {
 		currversion, err = downloadNightlyImages(c)
 	} else {
-		currversion, err = downloadReleaseImages(c)
+		currversion, err = downloadReleaseImages()
 	}
 	panicOnError(err)
 	fixupConfigImages(c, currversion)
@@ -196,6 +202,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
+// LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var (
 		ports, args                    []string

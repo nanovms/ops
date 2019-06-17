@@ -176,6 +176,7 @@ func addFilesFromPackage(packagepath string, m *Manifest) {
 	})
 }
 
+// BuildPackageManifest builds manifest using package
 func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	m := NewManifest()
 
@@ -243,6 +244,7 @@ func addFromConfig(m *Manifest, c *Config) error {
 	return nil
 }
 
+// BuildManifest builds manifest using config
 func BuildManifest(c *Config) (*Manifest, error) {
 
 	m := NewManifest()
@@ -363,6 +365,7 @@ func (bc dummy) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// DownloadNightlyImages downloads nightly build for nanos
 func DownloadNightlyImages(c *Config) error {
 	local, err := LocalTimeStamp()
 	if err != nil {
@@ -379,7 +382,7 @@ func DownloadNightlyImages(c *Config) error {
 	localtar := path.Join(NightlyLocalFolder, nightlyFileName())
 	// we have an update, let's download since it's nightly
 	if remote != local || c.Force {
-		if err = DownloadFile(localtar, NightlyReleaseUrl, 600); err != nil {
+		if err = DownloadFile(localtar, NightlyReleaseURL, 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 		// update local timestamp
@@ -395,8 +398,9 @@ func DownloadNightlyImages(c *Config) error {
 	return nil
 }
 
+// DownloadReleaseImages downloads nanos for particular release version
 func DownloadReleaseImages(version string) error {
-	url := getReleaseUrl(version)
+	url := getReleaseURL(version)
 	localFolder := getReleaseLocalFolder(version)
 	if _, err := os.Stat(localFolder); os.IsNotExist(err) {
 		os.MkdirAll(localFolder, 0755)
@@ -419,6 +423,7 @@ func DownloadReleaseImages(version string) error {
 	return nil
 }
 
+// DownloadFile downloads file using URL
 func DownloadFile(filepath string, url string, timeout int) error {
 	fmt.Println("Downloading..", url)
 	out, err := os.Create(filepath + ".tmp")

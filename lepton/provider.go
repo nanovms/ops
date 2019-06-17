@@ -1,5 +1,6 @@
 package lepton
 
+// Provider is an interface that provider must implement
 type Provider interface {
 	Initialize() error
 	BuildImage(ctx *Context) (string, error)
@@ -13,6 +14,7 @@ type Provider interface {
 	GetInstanceLogs(ctx *Context, instancename string) error
 }
 
+// Context captures required info for provider operation
 type Context struct {
 	config   *Config
 	provider *Provider
