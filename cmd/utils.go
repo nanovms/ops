@@ -122,7 +122,7 @@ func prepareImages(c *api.Config) {
 	if c.NightlyBuild {
 		currversion, err = downloadNightlyImages(c)
 	} else {
-		currversion, err = downloadReleaseImages(c)
+		currversion, err = downloadReleaseImages()
 	}
 	panicOnError(err)
 	fixupConfigImages(c, currversion)

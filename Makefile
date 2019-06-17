@@ -45,6 +45,7 @@ deps:
 	$(GOGET) github.com/cheggaaa/pb
 	$(GOGET) github.com/olekukonko/tablewriter
 	$(GOGET) cloud.google.com/go/storage
+	$(GOGET) github.com/ttacon/chalk
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build

@@ -15,7 +15,16 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println("Failed to update.", err)
 	} else {
-		fmt.Println("Successfully updated ops. Please restart.")
+		fmt.Println("Updates ops to latest release.")
+	}
+	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
+	if local == "0.0" || parseVersion(local, 4) != parseVersion(remote, 4) {
+		err = api.DownloadReleaseImages(remote)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Printf("Update nanos to %s version.\n", remote)
 	}
 	os.Exit(0)
 }
