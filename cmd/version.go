@@ -8,8 +8,10 @@ import (
 )
 
 func printVersion(cmd *cobra.Command, args []string) {
-	fmt.Println(api.Version)
+	fmt.Printf("Ops version: %s\n", api.Version)
+	fmt.Printf("Nanos version: %s\n", api.LocalReleaseVersion)
 }
+
 func VersionCommand() *cobra.Command {
 	var cmdVersion = &cobra.Command{
 		Use:   "version",
