@@ -1,9 +1,10 @@
 package lepton
 
 import (
+	"fmt"
 	"time"
 
-	pb "github.com/cheggaaa/pb"
+	pb "github.com/schollz/progressbar"
 )
 
 const refreshRate = time.Millisecond * 100
@@ -19,28 +20,23 @@ type WriteCounter struct {
 // NewWriteCounter creates new write counter
 func NewWriteCounter(total int) *WriteCounter {
 	b := pb.New(total)
-	b.SetRefreshRate(refreshRate)
-	b.ShowTimeLeft = true
-	b.ShowSpeed = true
-	b.SetUnits(pb.U_BYTES)
-
 	return &WriteCounter{
 		bar: b,
 	}
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
-	wc.n += len(p)
-	wc.bar.Set(wc.n)
+	wc.bar.Add(len(p))
 	return wc.n, nil
 }
 
 // Start progress bar
 func (wc *WriteCounter) Start() {
-	wc.bar.Start()
+	wc.bar.RenderBlank()
 }
 
 // Finish progress bar
 func (wc *WriteCounter) Finish() {
 	wc.bar.Finish()
+	fmt.Printf("\n")
 }

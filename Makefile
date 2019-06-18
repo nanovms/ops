@@ -36,16 +36,7 @@ run:
 	./$(BINARY_NAME)
 
 deps:
-	$(GOGET) github.com/spf13/cobra
-	$(GOGET) github.com/vishvananda/netlink
-	$(GOGET) github.com/jstemmer/go-junit-report
-	$(GOGET) github.com/d2g/dhcp4
-	$(GOGET) github.com/d2g/dhcp4client
-	$(GOGET) github.com/go-errors/errors  
-	$(GOGET) github.com/cheggaaa/pb
-	$(GOGET) github.com/olekukonko/tablewriter
-	$(GOGET) cloud.google.com/go/storage
-	$(GOGET) github.com/ttacon/chalk
+	dep ensure
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build
