@@ -45,7 +45,7 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 	}
 }
 
-// AddEnvironmentVariable adds envirnoment variables
+// AddEnvironmentVariable adds environment variables
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 	m.environment[name] = value
 }

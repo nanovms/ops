@@ -102,7 +102,7 @@ func Apply(update io.Reader, opts Options) error {
 		return err
 	}
 
-	// move the new exectuable in to become the new program
+	// move the new executable in to become the new program
 	err = os.Rename(newPath, opts.TargetPath)
 
 	if err != nil {
