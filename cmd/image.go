@@ -29,11 +29,11 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.ProjectID) == 0 {
-		exitWithError("Please specifiy a cloud projectid in config")
+		exitWithError("Please specify a cloud projectid in config")
 	}
 
 	if len(c.CloudConfig.BucketName) == 0 {
-		exitWithError("Please specifiy a cloud bucket in config")
+		exitWithError("Please specify a cloud bucket in config")
 	}
 
 	if len(pkg) > 0 {

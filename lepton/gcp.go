@@ -115,7 +115,7 @@ func (p *GCloud) pollOperation(ctx context.Context, projectID string, service *c
 		// TODO: Rate limit API instead of time.Sleep
 		time.Sleep(2 * time.Second)
 	}
-	fmt.Printf("\nOperation %s completed successfullly.\n", op.Name)
+	fmt.Printf("\nOperation %s completed successfully.\n", op.Name)
 	return nil
 }
 

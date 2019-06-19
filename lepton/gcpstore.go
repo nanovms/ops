@@ -13,7 +13,7 @@ import (
 // GCPStorage provides GCP storage related operations
 type GCPStorage struct{}
 
-// CopyToBucket copies archieve to bucket
+// CopyToBucket copies archive to bucket
 func (s *GCPStorage) CopyToBucket(config *Config, archPath string) error {
 
 	ctx := context.Background()

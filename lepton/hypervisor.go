@@ -10,7 +10,7 @@ func checkExists(key string) bool {
 	return true
 }
 
-// HypervisorInstance provides avaiable hypervisor
+// HypervisorInstance provides available hypervisor
 func HypervisorInstance() Hypervisor {
 	for k := range hypervisors {
 		if checkExists(k) {
