@@ -8,14 +8,14 @@ jobs:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - run: ./hack/verify-gofmt.sh
-      - run: ./hack/verify-govet.sh
       - run: go get -u golang.org/x/lint/golint
-      - run: ./hack/verify-golint.sh
       - run: sudo apt-get install qemu
       - run: go get -u github.com/golang/dep/cmd/dep
       - run: go get -u github.com/jstemmer/go-junit-report
       - run: make deps
+      - run: ./hack/verify-gofmt.sh
+      - run: ./hack/verify-govet.sh
+      - run: ./hack/verify-golint.sh
       - run: mkdir -p $TEST_RESULTS
       - run:
           name : run unit tests
