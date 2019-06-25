@@ -4,6 +4,8 @@
 
 [![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops)
 
+[OPS](https://i.imgur.com/OtfAABU.png)
+
 Ops is the main interface for creating and running a Nanos unikernel. It is used to 
 package, create and run your application as a nanos unikernel instance.
 
@@ -38,6 +40,23 @@ For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisit
 Before learning more about `ops` it is a good idea to see some basic usage
 examples. Below are links to simple examples using various programming platforms:
 
+Let's run your first unikernel right now.
+
+Throw this into hi.js:
+
+```javascript
+var http = require('http');
+http.createServer(function (req, res) {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end('Hello World\n');
+}).listen(8083, "0.0.0.0");
+console.log('Server running at http://127.0.0.1:8083/');
+```
+
+```bash
+ops load node_v11.5.0 -p 8083 -f -n -a hi.js
+```
+
 Languages:
 
 * [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)
@@ -63,6 +82,12 @@ Applications:
 * Kache
 * Gnatsd
 * [Wasmer](https://github.com/nanovms/ops-examples/tree/master/wasm/01-hello-world)
+
+You can always find more pre-made packages via:
+
+```bash
+ops pkg list
+```
 
 # Setup networking
 
