@@ -43,7 +43,6 @@ const PackageManifestURL string = "https://storage.googleapis.com/packagehub/man
 
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
-const mergedImg string = "tempimage"
 
 // GCPStorageURL is GCP storage path
 const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"

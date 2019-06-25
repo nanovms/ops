@@ -306,16 +306,22 @@ func buildImage(c *Config, m *Manifest) error {
 		}
 	}
 
-	// invoke mkfs to create the filesystem ie kernel + elf image
-	createFile(mergedImg)
-
+	// produce final image, boot + kernel + elf
+	fd, err := createFile(c.RunConfig.Imagename)
+	defer func() {
+		fd.Close()
+	}()
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
 	defer cleanup(c)
 
 	args := []string{}
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
 	}
-	args = append(args, mergedImg)
+	args = append(args, "-b", c.Boot)
+	args = append(args, c.RunConfig.Imagename)
 	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
@@ -331,23 +337,6 @@ func buildImage(c *Config, m *Manifest) error {
 		return errors.Wrap(err, 1)
 	}
 
-	// produce final image, boot + kernel + elf
-	fd, err := createFile(c.RunConfig.Imagename)
-	defer func() {
-		os.Remove(mergedImg)
-		fd.Close()
-	}()
-
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	catcmd := exec.Command("cat", c.Boot, mergedImg)
-	catcmd.Stdout = fd
-	err = catcmd.Start()
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	catcmd.Wait()
 	return nil
 }
 
