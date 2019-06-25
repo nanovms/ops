@@ -1,3 +1,4 @@
+#!/bin/sh
 
 GOOS=linux go build
 gsutil cp ops gs://cli/linux

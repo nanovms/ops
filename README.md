@@ -4,14 +4,18 @@
 
 [![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops)
 
-Ops is the main interface for creating and running a Nanos unikernel. It is used to 
+<p align="center">
+  <img src="https://i.imgur.com/OtfAABU.png" style="width:200px;"/>
+</p>
+
+Ops is a tool for creating and running a Nanos unikernel. It is used to 
 package, create and run your application as a nanos unikernel instance.
 
 Check out the [DOCS](https://nanovms.gitbook.io/ops/)
 
-### `ops <command> [flags] [ARG]`
-
 # Installation
+
+Most users should just download the binary from the website:
 
 ## Binary install
 
@@ -21,14 +25,18 @@ curl https://ops.city/get.sh -sSfL | sh
 
 ## Build and Install from source
 
+Building from source is easy if you have used Go before.
+
 This program requires GO Version 1.10.x or greater.
 
-Installing from source follows three general steps:
+Installing from source follows these general steps:
 
-1. Clone the repository.
-2. Install dependencies:
+Install dependencies:
+
     - `make deps`
-3. Build 
+
+Build:
+
     - `make build`
     
 For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites) please consult the documentation.
@@ -37,6 +45,25 @@ For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisit
 
 Before learning more about `ops` it is a good idea to see some basic usage
 examples. Below are links to simple examples using various programming platforms:
+
+Let's run your first unikernel right now.
+
+Throw this into hi.js:
+
+```javascript
+var http = require('http');
+http.createServer(function (req, res) {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end('Hello World\n');
+}).listen(8083, "0.0.0.0");
+console.log('Server running at http://127.0.0.1:8083/');
+```
+
+Then you can run it like so:
+
+```bash
+ops load node_v11.5.0 -p 8083 -f -n -a hi.js
+```
 
 Languages:
 
@@ -64,15 +91,12 @@ Applications:
 * Gnatsd
 * [Wasmer](https://github.com/nanovms/ops-examples/tree/master/wasm/01-hello-world)
 
-# Setup networking
+You can always find more pre-made packages via:
 
-New users wishing to play around in a dev environment are encouraged to
-use the default user-mode networking. Other production users are
-encouraged to utilize native cloud builds such as [Google
-Cloud](https://nanovms.gitbook.io/ops/google_cloud) which
-handle networking for you.
+```bash
+ops pkg list
+```
 
-Only advanced/power users should use the bridge networking option.
 
 # Build a bootable image
 `ops build <app>`
@@ -89,26 +113,22 @@ Only advanced/power users should use the bridge networking option.
 
 ops config files are plain JSON, below is an example 
 
-    {
-        "Args":["one","two"],
-        "Dirs":["myapp/static"]
-    }
+```JSON
+  {
+    "Args":["one","two"],
+    "Dirs":["myapp/static"]
+  }
+```
 
-    ## File layout on local host machine 
-        -myapp
-            app
-            -static
-                -example.html
-                -stylesheet 
-                    -main.css
+## Setup networking
 
-    ## File  layout on VM
-        /myapp
-            app
-            /static
-                -example.html
-                /stylesheet
-                    -main.css
+New users wishing to play around in a dev environment are encouraged to
+use the default user-mode networking. Other production users are
+encouraged to utilize native cloud builds such as [Google
+Cloud](https://nanovms.gitbook.io/ops/google_cloud) which
+handle networking for you.
+
+Only advanced/power users should use the bridge networking option.
 
 ## Reporting Bugs
 
