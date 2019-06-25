@@ -4,7 +4,9 @@
 
 [![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops)
 
-![OPS](https://i.imgur.com/OtfAABU.png)
+<p align="center">
+  <img src="https://i.imgur.com/OtfAABU.png" style="width:200px;"/>
+</p>
 
 Ops is a tool for creating and running a Nanos unikernel. It is used to 
 package, create and run your application as a nanos unikernel instance.
@@ -30,8 +32,11 @@ This program requires GO Version 1.10.x or greater.
 Installing from source follows these general steps:
 
 Install dependencies:
+
     - `make deps`
-3. Build 
+
+Build:
+
     - `make build`
     
 For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites) please consult the documentation.
