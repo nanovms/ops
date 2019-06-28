@@ -1,0 +1,6 @@
+{
+    "Args": ["main"],
+    "RunConfig": {
+        "Ports": [8080]
+    }
+}
