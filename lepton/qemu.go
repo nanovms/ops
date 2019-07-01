@@ -293,9 +293,11 @@ func groupPermissions(u *user.User, groupName string) (bool, error) {
 // greater then true is returned, if the second argument is greater
 // then versionCompare returns false, otherwise it returns true.
 func (q *qemu) versionCompare(v1, v2 string) (bool, error) {
+	const formatError = "improperly formated qemu version %q"
+
 	ver1 := strings.Split(v1, ".")
 	ver2 := strings.Split(v2, ".")
-	const formatError = "improperly formated qemu version %q"
+
 	errV1 := fmt.Errorf(formatError, v1)
 	errV2 := fmt.Errorf(formatError, v2)
 
@@ -305,22 +307,35 @@ func (q *qemu) versionCompare(v1, v2 string) (bool, error) {
 	if len(ver2) < 2 {
 		return false, errV2
 	}
+
 	majorV1, err := strconv.Atoi(ver1[0])
+	if err != nil {
+		return false, err
+	}
+
 	minorV1, err := strconv.Atoi(ver1[1])
 	if err != nil {
 		return false, errV1
 	}
+
 	majorV2, err := strconv.Atoi(ver2[0])
+	if err != nil {
+		return false, err
+	}
+
 	minorV2, err := strconv.Atoi(ver2[1])
 	if err != nil {
 		return false, errV2
 	}
+
 	if majorV1 < majorV2 {
 		return false, nil
 	}
+
 	if majorV1 == majorV2 && minorV1 < minorV2 {
 		return false, nil
 	}
+
 	return true, nil
 }
 

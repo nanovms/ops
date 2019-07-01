@@ -132,7 +132,7 @@ func TestVersionCompareMalformat(t *testing.T) {
 	v1 := "2dd.7x"
 	v2 := "2.8"
 	_, err := q.versionCompare(v1, v2)
-	if err.Error() != `improperly formated qemu version "2dd.7x"` {
+	if err.Error() != `strconv.Atoi: parsing "2dd": invalid syntax` {
 		t.Errorf("Did not detect improperly formated error %q", v1)
 	}
 }
