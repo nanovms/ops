@@ -29,6 +29,10 @@ func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
 	}
 	// add network adapter to bridge
 	eth0, err := netlink.LinkByName(adapterName)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = netlink.LinkSetMaster(eth0, bridge); err != nil {
 		return nil, err
 	}
@@ -78,34 +82,47 @@ func resetBridgeNetwork() error {
 	if err != nil {
 		return err
 	}
+
 	adapterName := eth0.Name
 	br0, err := netlink.LinkByName(bridgeName)
 	if err != nil {
 		return err
 	}
+
 	adapter, err := netlink.LinkByName(adapterName)
 	if err != nil {
 		return err
 	}
+
 	if err = netlink.LinkSetNoMaster(adapter); err != nil {
 		return err
 	}
+
 	tap0, err := netlink.LinkByName(tapName)
+	if err != nil {
+		return err
+	}
+
 	if err = netlink.LinkSetNoMaster(tap0); err != nil {
 		return err
 	}
+
 	if err = netlink.LinkSetDown(tap0); err != nil {
 		return err
 	}
+
 	if err = netlink.LinkSetDown(br0); err != nil {
 		return err
 	}
+
 	if err = netlink.LinkDel(tap0); err != nil {
 		return err
 	}
+
 	if err = netlink.LinkDel(br0); err != nil {
 		return err
 	}
+
 	return nil
 }
 
