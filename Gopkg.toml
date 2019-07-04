@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "cloud.google.com/go"
-  version = "0.40.0"
+  version = "0.41.0"
 
 [[constraint]]
   branch = "master"
@@ -67,7 +67,7 @@
 
 [[constraint]]
   name = "google.golang.org/api"
-  version = "0.6.0"
+  version = "0.7.0"
 
 [prune]
   go-tests = true
