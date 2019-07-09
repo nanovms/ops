@@ -101,7 +101,7 @@ func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 }
 
 // GetInstanceLogs for onprem instance logs
-func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string) error {
+func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
 	return fmt.Errorf("Operation not supported")
 }
 
