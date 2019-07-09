@@ -128,27 +128,20 @@ func imageListCommand() *cobra.Command {
 
 func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	imageName, _ := cmd.Flags().GetString("imagename")
-	if imageName == "" {
-		exitForCmd(cmd, "Please provide image name with -i option")
-	}
 	p := getCloudProvider(provider)
-	err := p.DeleteImage(imageName)
+	err := p.DeleteImage(args[0])
 	if err != nil {
 		exitWithError(err.Error())
 	}
 }
 
 func imageDeleteCommand() *cobra.Command {
-	var (
-		imageName string
-	)
 	var cmdImageDelete = &cobra.Command{
-		Use:   "delete",
-		Short: "Delete images from provider",
+		Use:   "delete <image_name>",
+		Short: "delete images from provider",
 		Run:   imageDeleteCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
 	}
-	cmdImageDelete.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	return cmdImageDelete
 }
 
