@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
@@ -141,22 +142,28 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	if zone == "" {
 		exitForCmd(cmd, "zone argument missing")
 	}
+	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
+	if err != nil {
+		panic(err)
+	}
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
-	err := p.GetInstanceLogs(ctx, args[0])
+	err = p.GetInstanceLogs(ctx, args[0], watch)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 }
 
 func instanceLogsCommand() *cobra.Command {
+	var watch bool
 	var cmdLogsCommand = &cobra.Command{
 		Use:   "logs <instance_name>",
 		Short: "Show logs from console for an instance",
 		Run:   instanceLogsCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
+	cmdLogsCommand.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "watch logs")
 	return cmdLogsCommand
 }
 

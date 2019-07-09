@@ -471,7 +471,7 @@ func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 }
 
 // GetInstanceLogs gets instance related logs
-func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string) error {
+func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}
@@ -494,7 +494,7 @@ func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string) error {
 		if resp.Contents != "" {
 			fmt.Printf("%s", resp.Contents)
 		}
-		if lastPos == resp.Next {
+		if lastPos == resp.Next && !watch {
 			break
 		}
 		lastPos = resp.Next
