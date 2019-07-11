@@ -1,10 +1,6 @@
 # OPS
 
-[![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
-
-[![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops)
-
-[![](https://godoc.org/github.com/nanovms/ops?status.svg)](http://godoc.org/github.com/nanovms/ops)
+[![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops) [![Go Report (https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/badge/github.com/nanovms/ops) [![](https://godoc.org/github.com/nanovms/ops?status.svg)](http://godoc.org/github.com/nanovms/ops)
 
 <p align="center">
   <img src="https://i.imgur.com/OtfAABU.png" style="width:200px;"/>
@@ -49,6 +45,8 @@ Before learning more about `ops` it is a good idea to see some basic usage
 examples. Below are links to simple examples using various programming platforms:
 
 Let's run your first unikernel right now.
+
+[![asciicast](https://asciinema.org/a/256914.svg)](https://asciinema.org/a/256914)
 
 Throw this into hi.js:
 
