@@ -4,5 +4,3 @@
 /tags
 /Makefile.local
 vendor/
-e2e/go/main
-.ruby/
