@@ -1,7 +1,0 @@
-{
-  "Files": ["index.html"],
-  "Dirs": ["usr"],
-  "RunConfig": {
-    "Ports": [8084]
-  }
-}

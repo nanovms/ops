@@ -1,6 +1,0 @@
-{
-    "Args": ["hi.js"],
-    "RunConfig": {
-        "Ports": [8083]
-    }
-}

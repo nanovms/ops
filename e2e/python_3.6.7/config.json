@@ -1,6 +1,0 @@
-{
-  "Args":["-m", "http.server"],
-  "RunConfig": {
-        "Ports": [8000]
-  }
-}
