@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/schollz/progressbar"
+	pb "github.com/schollz/progressbar/v2"
 )
 
 const refreshRate = time.Millisecond * 100

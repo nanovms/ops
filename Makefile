@@ -36,7 +36,7 @@ run:
 	./$(BINARY_NAME)
 
 deps:
-	dep ensure
+	@GO111MODULE=on go mod download
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build
