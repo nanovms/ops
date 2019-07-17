@@ -21,7 +21,7 @@ build: post-build
 pre-test:
 
 do-test: pre-test
-	$(GOTEST) -v
+	@GO111MODULE=on $(GOTEST) -v
 
 post-test: do-test
 
