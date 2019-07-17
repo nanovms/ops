@@ -6,8 +6,8 @@
   <img src="https://i.imgur.com/OtfAABU.png" style="width:200px;"/>
 </p>
 
-Ops is a tool for creating and running a Nanos unikernel. It is used to 
-package, create and run your application as a nanos unikernel instance.
+Ops is a tool for creating and running a [Nanos](https://github.com/nanovms/nanos) unikernel. It is used to 
+package, create and run your application as a [nanos](https://github.com/nanovms/nanos) unikernel instance.
 
 Check out the [DOCS](https://nanovms.gitbook.io/ops/)
 
