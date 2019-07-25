@@ -37,6 +37,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	gdbport, err := cmd.Flags().GetInt("gdbport")
+	if err != nil {
+		panic(err)
+	}
+
 	noTrace, err := cmd.Flags().GetStringArray("no-trace")
 	if err != nil {
 		panic(err)
@@ -94,6 +99,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
+	c.RunConfig.GdbPort = gdbport
 	c.TargetRoot = targetRoot
 
 	c.RunConfig.TapName = tapDeviceName
@@ -123,6 +129,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		if err != nil {
 			panic(err)
 		}
+
+		if i == gdbport {
+			errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
+			panic(errors.New(errstr))
+		}
 		ports = append(ports, i)
 	}
 
@@ -137,6 +148,7 @@ func RunCommand() *cobra.Command {
 	var ports []string
 	var force bool
 	var debugflags bool
+	var gdbport int
 	var noTrace []string
 	var args []string
 	var verbose bool
@@ -161,6 +173,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
 	cmdRun.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
+	cmdRun.PersistentFlags().IntVarP(&gdbport, "gdbport", "g", 0, "qemu TCP port used for GDB interface")
 	cmdRun.PersistentFlags().StringArrayVarP(&noTrace, "no-trace", "", nil, "do not trace syscall")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
