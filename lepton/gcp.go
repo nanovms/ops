@@ -181,6 +181,7 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}
+
 	c := ctx.config
 	context := context.TODO()
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
@@ -217,7 +218,7 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 }
 
 // ListImages lists images on Google Cloud
-func (p *GCloud) ListImages() error {
+func (p *GCloud) ListImages(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}
@@ -263,7 +264,7 @@ func (p *GCloud) ListImages() error {
 }
 
 // DeleteImage deletes image from Gcloud
-func (p *GCloud) DeleteImage(imagename string) error {
+func (p *GCloud) DeleteImage(ctx *Context, imagename string) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}

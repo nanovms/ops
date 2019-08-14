@@ -116,6 +116,7 @@ func runHyperVisor(userImage string, started string, expected string, t *testing
 	}
 	hypervisor := runAndWaitForString(&c.RunConfig, StartWaitTimeout, started, t)
 	defer hypervisor.Stop()
+	time.Sleep(500 * time.Millisecond)
 
 	resp, err := http.Get("http://127.0.0.1:8080")
 	if err != nil {
@@ -149,6 +150,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 	}
 	hypervisor := runAndWaitForString(&c.RunConfig, StartWaitTimeout, "Listening...", t)
 	defer hypervisor.Stop()
+	time.Sleep(500 * time.Millisecond)
 
 	resp, err := http.Get("http://localhost:8080/example.html")
 	if err != nil {

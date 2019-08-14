@@ -25,24 +25,29 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
+
 	var c *api.Config
 	if config != "" {
 		c = unWarpConfig(config)
 	} else {
 		c = &api.Config{}
 	}
+
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID != "" {
 		c.CloudConfig.ProjectID = projectID
 	}
+
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
 		c.CloudConfig.Zone = zone
 	}
+
 	flavor, _ := cmd.Flags().GetString("flavor")
 	if flavor != "" {
 		c.CloudConfig.Flavor = flavor
 	}
+
 	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
@@ -176,7 +181,7 @@ func InstanceCommands() *cobra.Command {
 		ValidArgs: []string{"create", "list", "delete", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
-	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, onprem]")
+	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem]")
 	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "p", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
 	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdInstance.AddCommand(instanceCreateCommand())

@@ -36,7 +36,7 @@ func (p *OnPrem) CreateImage(ctx *Context) error {
 }
 
 // ListImages on premise
-func (p *OnPrem) ListImages() error {
+func (p *OnPrem) ListImages(ctx *Context) error {
 	opshome := GetOpsHome()
 	imgpath := path.Join(opshome, "images")
 	if _, err := os.Stat(imgpath); os.IsNotExist(err) {
@@ -75,7 +75,7 @@ func (p *OnPrem) ListImages() error {
 }
 
 // DeleteImage on premise
-func (p *OnPrem) DeleteImage(imagename string) error {
+func (p *OnPrem) DeleteImage(ctx *Context, imagename string) error {
 	opshome := GetOpsHome()
 	imgpath := path.Join(opshome, "images", imagename)
 	err := os.Remove(imgpath)

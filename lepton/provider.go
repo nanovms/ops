@@ -6,8 +6,8 @@ type Provider interface {
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
 	CreateImage(ctx *Context) error
-	ListImages() error
-	DeleteImage(imagename string) error
+	ListImages(ctx *Context) error
+	DeleteImage(ctx *Context, imagename string) error
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	DeleteInstance(ctx *Context, instancename string) error
@@ -21,7 +21,7 @@ type Context struct {
 }
 
 // NewContext Create a new context for the given provider
-// valid providers are "gcp" and "onprem"
+// valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *Config, provider *Provider) *Context {
 	return &Context{
 		config:   c,
