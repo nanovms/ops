@@ -54,6 +54,8 @@ func getCloudProvider(providerName string) api.Provider {
 		provider = &api.GCloud{}
 	} else if providerName == "onprem" {
 		provider = &api.OnPrem{}
+	} else if providerName == "aws" {
+		provider = &api.AWS{}
 	} else {
 		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
 		os.Exit(1)
