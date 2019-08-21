@@ -37,6 +37,7 @@ type ProviderConfig struct {
 type RunConfig struct {
 	Imagename string
 	Ports     []int
+	GdbPort   int
 	Verbose   bool
 	Memory    string
 	Bridged   bool

@@ -404,6 +404,11 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	q.addFlag("-no-reboot")
 	q.addOption("-device", "isa-debug-exit")
 	q.addOption("-m", rconfig.Memory)
+
+	if rconfig.GdbPort > 0 {
+		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)
+		q.addOption("-gdb", gdbProtoStr)
+	}
 }
 
 func (q *qemu) Args(rconfig *RunConfig) []string {
