@@ -28,7 +28,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp]")
 	}
 
-	if len(c.CloudConfig.ProjectID) == 0 {
+	if c.CloudConfig.Platform == "gcp" && len(c.CloudConfig.ProjectID) == 0 {
 		exitWithError("Please specify a cloud projectid in config")
 	}
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -166,9 +167,14 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		return err
 	}
 
+	t := time.Now().UnixNano()
+	s := strconv.FormatInt(t, 10)
+
+	amiName := key + s
+
 	// register ami
 	rinput := &ec2.RegisterImageInput{
-		Name:         aws.String(key),
+		Name:         aws.String(amiName),
 		Architecture: aws.String("x86_64"),
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
 			{
@@ -176,7 +182,7 @@ func (p *AWS) CreateImage(ctx *Context) error {
 				Ebs: &ec2.EbsBlockDevice{
 					DeleteOnTermination: aws.Bool(false),
 					SnapshotId:          snapshotID,
-					VolumeType:          aws.String("standard"),
+					VolumeType:          aws.String("gp2"),
 				},
 			},
 		},
@@ -193,10 +199,21 @@ func (p *AWS) CreateImage(ctx *Context) error {
 
 	fmt.Printf("%v\n", resreg)
 
+	// Add name tag to the created ami
+	_, err = compute.CreateTags(&ec2.CreateTagsInput{
+		Resources: []*string{resreg.ImageId},
+		Tags: []*ec2.Tag{
+			{
+				Key:   aws.String("Name"),
+				Value: aws.String(key),
+			},
+		},
+	})
+
 	return nil
 }
 
-func getAWSImages(region string) *ec2.DescribeImagesOutput {
+func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
@@ -213,15 +230,14 @@ func getAWSImages(region string) *ec2.DescribeImagesOutput {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				return nil, errors.New(aerr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			return nil, errors.New(err.Error())
 		}
-		return nil
 	}
 
-	return result
+	return result, nil
 }
 
 func getAWSInstances(region string) *ec2.DescribeInstancesOutput {
@@ -241,11 +257,15 @@ func getAWSInstances(region string) *ec2.DescribeInstancesOutput {
 
 // ListImages lists images on AWS
 func (p *AWS) ListImages(ctx *Context) error {
-	result := getAWSImages(ctx.config.CloudConfig.Zone)
+	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	if err != nil {
+		return err
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeader([]string{"Name", "Id", "Status", "Created"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
@@ -254,6 +274,13 @@ func (p *AWS) ListImages(ctx *Context) error {
 	images := result.Images
 	for i := 0; i < len(images); i++ {
 		var row []string
+
+		if images[i].Tags != nil {
+			row = append(row, aws.StringValue(images[i].Tags[0].Value))
+		} else {
+			row = append(row, "n/a")
+		}
+
 		row = append(row, aws.StringValue(images[i].Name))
 		row = append(row, aws.StringValue(images[i].State))
 		row = append(row, aws.StringValue(images[i].CreationDate))
@@ -309,7 +336,6 @@ func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 	}
 
 	// DeleteSnapshot
-
 	params2 := &ec2.DeleteSnapshotInput{
 		SnapshotId: aws.String(snapID),
 		DryRun:     aws.Bool(false),
@@ -324,15 +350,35 @@ func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *Context) error {
-	result := getAWSImages(ctx.config.CloudConfig.Zone)
+	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	if err != nil {
+		return err
+	}
 
 	imgName := ctx.config.CloudConfig.ImageName
 
 	ami := ""
+	var last time.Time
+	layout := "2006-01-02T15:04:05.000Z"
+
 	for i := 0; i < len(result.Images); i++ {
-		n := aws.StringValue(result.Images[i].Name)
-		if n == imgName {
+		n := ""
+		if result.Images[i].Tags != nil {
+			n = aws.StringValue(result.Images[i].Tags[0].Value)
+		}
+
+		if n != "" && n == imgName {
 			ami = aws.StringValue(result.Images[i].ImageId)
+
+			ntime := aws.StringValue(result.Images[i].CreationDate)
+			t, err := time.Parse(layout, ntime)
+			if err != nil {
+				return err
+			}
+
+			if last.Before(t) {
+				last = t
+			}
 		}
 	}
 
@@ -347,12 +393,22 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	// Create EC2 service client
 	svc := ec2.New(sess)
 
+	// create security group - could take a potential 'RemotePort' from
+	// config.json in future
+	sg, err := p.CreateSG(ctx, svc, imgName)
+	if err != nil {
+		return err
+	}
+
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
 		InstanceType: aws.String("t2.micro"),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
+		SecurityGroupIds: []*string{
+			aws.String(sg),
+		},
 	})
 
 	if err != nil {
@@ -378,6 +434,77 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	}
 
 	return nil
+}
+
+// CreateSG - Create security group
+// for now just use default vpc
+func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, error) {
+
+	// grab first default vpc
+	result, err := svc.DescribeVpcs(nil)
+	if err != nil {
+		fmt.Printf("Unable to describe VPCs, %v\n", err)
+		return "", err
+	}
+	if len(result.Vpcs) == 0 {
+		fmt.Println("No VPCs found to associate security group with.")
+	}
+	vpcID := aws.StringValue(result.Vpcs[0].VpcId)
+
+	t := time.Now().UnixNano()
+	s := strconv.FormatInt(t, 10)
+
+	sgName := imgName + s
+
+	createRes, err := svc.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+		GroupName:   aws.String(sgName),
+		Description: aws.String("security group for " + imgName),
+		VpcId:       aws.String(vpcID),
+	})
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case "InvalidVpcID.NotFound":
+				errstr := fmt.Sprintf("Unable to find VPC with ID %q.", vpcID)
+				return "", errors.New(errstr)
+			case "InvalidGroup.Duplicate":
+				errstr := fmt.Sprintf("Security group %q already exists.", imgName)
+				return "", errors.New(errstr)
+			}
+		}
+		errstr := fmt.Sprintf("Unable to create security group %q, %v", imgName, err)
+		return "", errors.New(errstr)
+
+	}
+	fmt.Printf("Created security group %s with VPC %s.\n",
+		aws.StringValue(createRes.GroupId), vpcID)
+
+	// maybe have these ports specified from config.json in near future
+	_, err = svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+		GroupName: aws.String(sgName),
+		IpPermissions: []*ec2.IpPermission{
+			(&ec2.IpPermission{}).
+				SetIpProtocol("tcp").
+				SetFromPort(80).
+				SetToPort(80).
+				SetIpRanges([]*ec2.IpRange{
+					{CidrIp: aws.String("0.0.0.0/0")},
+				}),
+			(&ec2.IpPermission{}).
+				SetIpProtocol("tcp").
+				SetFromPort(443).
+				SetToPort(443).
+				SetIpRanges([]*ec2.IpRange{
+					{CidrIp: aws.String("0.0.0.0/0")},
+				}),
+		},
+	})
+	if err != nil {
+		errstr := fmt.Sprintf("Unable to set security group %q ingress, %v", imgName, err)
+		return "", errors.New(errstr)
+	}
+
+	return aws.StringValue(createRes.GroupId), nil
 }
 
 // ListInstances lists instances on AWS
@@ -448,7 +575,7 @@ func (p *AWS) DeleteInstance(ctx *Context, instancename string) error {
 		},
 	}
 
-	result, err := compute.TerminateInstances(input)
+	_, err = compute.TerminateInstances(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -461,7 +588,7 @@ func (p *AWS) DeleteInstance(ctx *Context, instancename string) error {
 		return err
 	}
 
-	fmt.Println(result)
+	// kill off any old security group as well
 
 	return nil
 }
