@@ -6,7 +6,6 @@ import (
 
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -633,12 +632,11 @@ func (p *AWS) GetInstanceLogs(ctx *Context, instancename string, watch bool) err
 // TODO - make me shared
 func (p *AWS) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
-	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
-	return symlink, nil
+	return imagePath, nil
 }
 
 // not an archive - just raw disk image
 func (p *AWS) getArchiveName(ctx *Context) string {
 	imagePath := ctx.config.RunConfig.Imagename
-	return filepath.Join(filepath.Dir(imagePath), "disk.raw")
+	return imagePath
 }

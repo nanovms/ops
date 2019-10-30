@@ -36,7 +36,13 @@ Install dependencies:
 Build:
 
     - `make build`
-    
+
+osx notes:
+
+```
+GO111MODULE=on go build -ldflags "-w"
+```
+ 
 For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites) please consult the documentation.
     
 # Basic usage examples
