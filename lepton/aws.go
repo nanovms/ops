@@ -140,15 +140,12 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
 	// delete the tmp s3 image
-	fmt.Println("deleting...")
 	err = p.Storage.DeleteFromBucket(c, key)
 
 	describeOutput, err = compute.DescribeImportSnapshotTasks(taskFilter)
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("snap: %v\n", describeOutput.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId)
 
 	snapshotID := describeOutput.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId
 

@@ -66,7 +66,7 @@ func (s *S3) DeleteFromBucket(config *Config, key string) error {
 		Key:    aws.String(key),
 	}
 
-	result, err := svc.DeleteObject(input)
+	_, err = svc.DeleteObject(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -78,9 +78,6 @@ func (s *S3) DeleteFromBucket(config *Config, key string) error {
 		}
 		return err
 	}
-
-	fmt.Println("done deleting.")
-	fmt.Println(result)
 
 	return nil
 }
