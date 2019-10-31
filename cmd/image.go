@@ -97,8 +97,11 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if c.CloudConfig.Platform == "aws" {
-		// copy to bucket
 		aws := p.(*api.AWS)
+
+		// verify we can even use the vm importer
+		api.VerifyRole(ctx, c.CloudConfig.BucketName)
+
 		err = aws.Storage.CopyToBucket(c, keypath)
 		if err != nil {
 			exitWithError(err.Error())
