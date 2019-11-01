@@ -71,6 +71,12 @@ Then you can run it like so:
 ops load node_v11.5.0 -p 8083 -f -n -a hi.js
 ```
 
+Want to push your app out to the cloud?
+
+For Google: https://nanovms.gitbook.io/ops/google_cloud
+
+For AWS: https://nanovms.gitbook.io/ops/aws
+
 Languages:
 
 * [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)

@@ -61,11 +61,13 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 func instanceCreateCommand() *cobra.Command {
 	var imageName, config, flavor string
+
 	var cmdInstanceCreate = &cobra.Command{
 		Use:   "create",
 		Short: "create nanos instance",
 		Run:   instanceCreateCommandHandler,
 	}
+
 	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "g1-small", "flavor name for GCP")
@@ -76,16 +78,20 @@ func instanceCreateCommand() *cobra.Command {
 
 func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
+
 	p := getCloudProvider(provider)
 	c := api.Config{}
+
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" {
+	if projectID == "" && provider == "gcp" {
 		exitForCmd(cmd, "projectid argument missing")
 	}
+
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
 		exitForCmd(cmd, "zone argument missing")
 	}
+
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
@@ -108,10 +114,13 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p := getCloudProvider(provider)
 	c := api.Config{}
+
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" {
+
+	if projectID == "" && provider == "gcp" {
 		exitForCmd(cmd, "projectid argument missing")
 	}
+
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone == "" {
 		exitForCmd(cmd, "zone argument missing")

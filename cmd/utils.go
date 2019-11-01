@@ -50,6 +50,7 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 // TODO : use factory or DI
 func getCloudProvider(providerName string) api.Provider {
 	var provider api.Provider
+
 	if providerName == "gcp" {
 		provider = &api.GCloud{}
 	} else if providerName == "onprem" {
@@ -60,6 +61,7 @@ func getCloudProvider(providerName string) api.Provider {
 		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
 		os.Exit(1)
 	}
+
 	provider.Initialize()
 	return provider
 }
