@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"debug/elf"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,10 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 
 	fd, err := elf.Open(path)
 	if err != nil {
+		if strings.Contains(err.Error(), "bad magic number") {
+			fmt.Printf(ErrorColor, "Only ELF binaries are supported. Is thia a Mach-0 (osx) binary? run 'file "+path+"' on it\n")
+			os.Exit(1)
+		}
 		return nil, errors.WrapPrefix(err, path, 0)
 	}
 	defer fd.Close()
