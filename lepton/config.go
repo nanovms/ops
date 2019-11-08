@@ -3,6 +3,7 @@ package lepton
 // Config for Build
 type Config struct {
 	Args         []string
+	BuildDir     string
 	Dirs         []string
 	Files        []string
 	MapDirs      map[string]string
