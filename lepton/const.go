@@ -78,13 +78,20 @@ func GetOpsHome() string {
 	return opshome
 }
 
-func getImageTempDir(program string) string {
-	temp := filepath.Base(program) + "_temp"
-	path := path.Join(GetOpsHome(), temp)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(path, 0755)
+func getImageTempDir(c *Config) string {
+	temp := filepath.Base(c.Program) + "_temp"
+
+	if c.BuildDir == "" {
+		dir, err := ioutil.TempDir("", temp)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		c.BuildDir = dir
+
 	}
-	return path
+
+	return c.BuildDir
 }
 
 // NightlyReleaseURL give URL for nightly build

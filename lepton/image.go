@@ -46,7 +46,7 @@ func createFile(filepath string) (*os.File, error) {
 
 // add /etc/resolv.conf
 func addDNSConfig(m *Manifest, c *Config) {
-	temp := getImageTempDir(c.Program)
+	temp := getImageTempDir(c)
 	resolv := path.Join(temp, "resolv.conf")
 	data := []byte("nameserver ")
 	data = append(data, []byte(c.NameServer)...)
@@ -62,7 +62,7 @@ func addDNSConfig(m *Manifest, c *Config) {
 
 // /proc/sys/kernel/hostname
 func addHostName(m *Manifest, c *Config) {
-	temp := getImageTempDir(c.Program)
+	temp := getImageTempDir(c)
 	hostname := path.Join(temp, "hostname")
 	data := []byte("uniboot")
 	err := ioutil.WriteFile(hostname, data, 0644)
@@ -80,7 +80,7 @@ func addPasswd(m *Manifest, c *Config) {
 	if m.FileExists("/etc/passwd") {
 		return
 	}
-	temp := getImageTempDir(c.Program)
+	temp := getImageTempDir(c)
 	passwd := path.Join(temp, "passwd")
 	data := []byte("root:x:0:0:root:/root:/bin/nobash")
 	err := ioutil.WriteFile(passwd, data, 0644)
@@ -212,18 +212,21 @@ func addFromConfig(m *Manifest, c *Config) error {
 			return err
 		}
 	}
+
 	for k, v := range c.MapDirs {
 		err := addMappedFiles(k, v, m)
 		if err != nil {
 			return err
 		}
 	}
+
 	for _, d := range c.Dirs {
 		err := m.AddDirectory(d)
 		if err != nil {
 			return err
 		}
 	}
+
 	for _, a := range c.Args {
 		m.AddArgument(a)
 	}
@@ -255,8 +258,6 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	}
 	m.AddUserProgram(c.Program)
 
-	// run ldd and capture dependencies
-	fmt.Println("Finding dependent shared libs")
 	deps, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -314,6 +315,7 @@ func buildImage(c *Config, m *Manifest) error {
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	defer cleanup(c)
 
 	args := []string{}
@@ -341,9 +343,7 @@ func buildImage(c *Config, m *Manifest) error {
 }
 
 func cleanup(c *Config) {
-	temp := filepath.Base(c.Program) + "_temp"
-	path := path.Join(GetOpsHome(), temp)
-	os.RemoveAll(path)
+	os.RemoveAll(c.BuildDir)
 }
 
 type dummy struct {
