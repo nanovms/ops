@@ -26,7 +26,7 @@ jobs:
     steps:
       - checkout
       - run: CI=1 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-      - run: brew update && brew install go qemu
+      - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu
       - run: make deps
       - run: mkdir -p $TEST_RESULTS
       - run:
