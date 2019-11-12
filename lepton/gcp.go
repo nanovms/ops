@@ -443,7 +443,7 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	return nil
 }
 
-// DeleteInstance deletes instnace from Gcloud
+// DeleteInstance deletes instance from Gcloud
 func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
@@ -468,6 +468,73 @@ func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 		return err
 	}
 	fmt.Printf("Instance deletion succeeded %s.\n", instancename)
+	return nil
+}
+
+// StartInstance starts an instance in GCloud
+func (p *GCloud) StartInstance(ctx *Context, instancename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+
+	cloudConfig := ctx.config.CloudConfig
+	op, err := computeService.Instances.Start(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance started. Monitoring operation %s.\n", op.Name)
+	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance started %s.\n", instancename)
+	return nil
+
+}
+
+// StopInstance deletes instance from GCloud
+func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
+	if err := checkCredentialsProvided(); err != nil {
+		return err
+	}
+
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+
+	cloudConfig := ctx.config.CloudConfig
+	op, err := computeService.Instances.Stop(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance stopping started. Monitoring operation %s.\n", op.Name)
+	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance stop succeeded %s.\n", instancename)
 	return nil
 }
 
