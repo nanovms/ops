@@ -134,6 +134,56 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p := getCloudProvider(provider)
+	c := api.Config{}
+
+	projectID, _ := cmd.Flags().GetString("projectid")
+
+	if projectID == "" && provider == "gcp" {
+		exitForCmd(cmd, "projectid argument missing")
+	}
+
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone == "" {
+		exitForCmd(cmd, "zone argument missing")
+	}
+
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
+	ctx := api.NewContext(&c, &p)
+	err := p.StartInstance(ctx, args[0])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p := getCloudProvider(provider)
+	c := api.Config{}
+
+	projectID, _ := cmd.Flags().GetString("projectid")
+
+	if projectID == "" && provider == "gcp" {
+		exitForCmd(cmd, "projectid argument missing")
+	}
+
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone == "" {
+		exitForCmd(cmd, "zone argument missing")
+	}
+
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
+	ctx := api.NewContext(&c, &p)
+	err := p.StopInstance(ctx, args[0])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
 func instanceDeleteCommand() *cobra.Command {
 	var cmdInstanceDelete = &cobra.Command{
 		Use:   "delete <instance_name>",
@@ -142,6 +192,26 @@ func instanceDeleteCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 	return cmdInstanceDelete
+}
+
+func instanceStopCommand() *cobra.Command {
+	var cmdInstanceStop = &cobra.Command{
+		Use:   "stop <instance_name>",
+		Short: "stop instance on provider",
+		Run:   instanceStopCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdInstanceStop
+}
+
+func instanceStartCommand() *cobra.Command {
+	var cmdInstanceStart = &cobra.Command{
+		Use:   "start <instance_name>",
+		Short: "start instance on provider",
+		Run:   instanceStartCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdInstanceStart
 }
 
 func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
@@ -187,7 +257,7 @@ func InstanceCommands() *cobra.Command {
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
-		ValidArgs: []string{"create", "list", "delete", "logs"},
+		ValidArgs: []string{"create", "list", "delete", "stop", "start", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem]")
@@ -196,6 +266,8 @@ func InstanceCommands() *cobra.Command {
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
 	cmdInstance.AddCommand(instanceDeleteCommand())
+	cmdInstance.AddCommand(instanceStopCommand())
+	cmdInstance.AddCommand(instanceStartCommand())
 	cmdInstance.AddCommand(instanceLogsCommand())
 	return cmdInstance
 }

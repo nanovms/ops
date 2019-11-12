@@ -95,6 +95,16 @@ func (p *OnPrem) ListInstances(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// StartInstance from on premise
+func (p *OnPrem) StartInstance(ctx *Context, instancename string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// StopInstance from on premise
+func (p *OnPrem) StopInstance(ctx *Context, instancename string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
 // DeleteInstance from on premise
 func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 	return fmt.Errorf("Operation not supported")

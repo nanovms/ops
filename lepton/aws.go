@@ -288,6 +288,16 @@ func (p *AWS) ListImages(ctx *Context) error {
 	return nil
 }
 
+// StartInstance stops instance from AWS by ami name
+func (p *AWS) StartInstance(ctx *Context, imagename string) error {
+	return nil
+}
+
+// StopInstance stops instance from AWS by ami name
+func (p *AWS) StopInstance(ctx *Context, imagename string) error {
+	return nil
+}
+
 // DeleteImage deletes image from AWS by ami name
 func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 	// delete ami by ami name
