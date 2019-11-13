@@ -26,7 +26,7 @@ const manifest string = `(
 )`
 
 // Version for ops
-const Version = "0.1.7"
+const Version = "0.1.8"
 
 // OpsReleaseURL gives URL to download latest ops binary
 const OpsReleaseURL = "https://storage.googleapis.com/cli/%v/ops"
