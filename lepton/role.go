@@ -72,6 +72,8 @@ type ResourceWrapper struct {
 	List       []string
 }
 
+// UnmarshalJSON is a custom unmarshaller to support multiple types for
+// Resource.
 func (w *ResourceWrapper) UnmarshalJSON(data []byte) (err error) {
 	if string(data) == "\"*\"" {
 		w.Everything = true
@@ -81,12 +83,14 @@ func (w *ResourceWrapper) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
+// MarshalJSON is a custom unmarshaller to support multiple types for
+// Resource.
 func (w ResourceWrapper) MarshalJSON() ([]byte, error) {
 	if w.Everything {
 		return []byte("\"*\""), nil
-	} else {
-		return json.Marshal(w.List)
 	}
+
+	return json.Marshal(w.List)
 }
 
 // RoleStatement is the representation of a statement of a RolePolicy.
@@ -220,27 +224,27 @@ func VerifyRole(ctx *Context, bucket string) {
 
 			if strings.Contains(dval, bucket) {
 				return
-			} else {
-				s := appendBucket(dval, bucket)
-
-				uri := &iam.PutRolePolicyInput{
-					PolicyName:     aws.String(vmiName),
-					RoleName:       aws.String(vmiName),
-					PolicyDocument: aws.String(s),
-				}
-
-				_, err = svc.PutRolePolicy(uri)
-				if err != nil {
-					roleError(bucket, err)
-					os.Exit(1)
-				}
-
-				return
 			}
+
+			s := appendBucket(dval, bucket)
+
+			uri := &iam.PutRolePolicyInput{
+				PolicyName:     aws.String(vmiName),
+				RoleName:       aws.String(vmiName),
+				PolicyDocument: aws.String(s),
+			}
+
+			_, err = svc.PutRolePolicy(uri)
+			if err != nil {
+				roleError(bucket, err)
+				os.Exit(1)
+			}
+
+			return
 		}
 	}
 
-	err = CreateRole(svc, bucket)
+	err = createRole(svc, bucket)
 	if err != nil {
 		roleError(bucket, err)
 		os.Exit(1)
@@ -248,7 +252,7 @@ func VerifyRole(ctx *Context, bucket string) {
 
 }
 
-func CreateRole(svc *iam.IAM, bucket string) error {
+func createRole(svc *iam.IAM, bucket string) error {
 	fmt.Println("creating a vmimport role for bucket " + bucket)
 
 	ri := &iam.CreateRoleInput{
