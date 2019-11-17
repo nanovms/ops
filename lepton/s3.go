@@ -18,7 +18,7 @@ type S3 struct{}
 func (s *S3) CopyToBucket(config *Config, archPath string) error {
 
 	bucket := config.CloudConfig.BucketName
-	zone := "us-west-1"
+	zone := config.CloudConfig.Zone
 
 	file, err := os.Open(archPath)
 	if err != nil {
@@ -51,7 +51,7 @@ func (s *S3) CopyToBucket(config *Config, archPath string) error {
 // DeleteFromBucket deletes key from config's bucket
 func (s *S3) DeleteFromBucket(config *Config, key string) error {
 	bucket := config.CloudConfig.BucketName
-	zone := "us-west-1"
+	zone := config.CloudConfig.Zone
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(zone)},
