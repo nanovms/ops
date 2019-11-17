@@ -193,8 +193,6 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		return err
 	}
 
-	fmt.Printf("%v\n", resreg)
-
 	// Add name tag to the created ami
 	_, err = compute.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{resreg.ImageId},
