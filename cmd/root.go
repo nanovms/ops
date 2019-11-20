@@ -12,6 +12,7 @@ func GetRootCommand() *cobra.Command {
 	rootCmd.AddCommand(BuildCommand())
 	rootCmd.AddCommand(ManifestCommand())
 	rootCmd.AddCommand(VersionCommand())
+	rootCmd.AddCommand(ProfileCommand())
 	rootCmd.AddCommand(UpdateCommand())
 	rootCmd.AddCommand(PackageCommands())
 	rootCmd.AddCommand(LoadCommand())

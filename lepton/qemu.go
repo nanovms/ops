@@ -243,7 +243,8 @@ func generateMac() string {
 		octets[0], octets[1], octets[2], octets[3], octets[4], octets[5])
 }
 
-func qemuVersion() (string, error) {
+// QemuVersion gives the version of qemu running locally.
+func QemuVersion() (string, error) {
 	versionData, err := exec.Command(qemuBaseCommand, "--version").Output()
 	if err != nil {
 		return "", err
@@ -252,7 +253,7 @@ func qemuVersion() (string, error) {
 }
 
 func parseQemuVersion(data []byte) string {
-	rgx := regexp.MustCompile("[0-9]+\\.[0-9]+")
+	rgx := regexp.MustCompile("[0-9]+\\.[0-9]+\\.[0-9]+")
 	return rgx.FindString(string(data))
 }
 
@@ -356,14 +357,16 @@ func (q *qemu) addAccel() {
 	// add the flag.
 
 	const hvfSupportedVersion = "2.12" // https://wiki.qemu.org/ChangeLog/2.12#Host_support
-	qemuVersion, err := qemuVersion()
+	qemuVersion, err := QemuVersion()
 	if err != nil {
 		return
 	}
+
 	ok, err := hvSupport()
 	if !(ok && err == nil) {
 		return
 	}
+
 	if runtime.GOOS == "darwin" {
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
@@ -414,18 +417,23 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 func (q *qemu) Args(rconfig *RunConfig) []string {
 	q.setConfig(rconfig)
 	args := []string{}
+
 	for _, drive := range q.drives {
 		args = append(args, drive.String())
 	}
+
 	for _, device := range q.devices {
 		args = append(args, device.String())
 	}
+
 	for _, iface := range q.ifaces {
 		args = append(args, iface.String())
 	}
+
 	for _, flag := range q.flags {
 		args = append(args, flag)
 	}
+
 	args = append(args, q.display.String())
 	args = append(args, q.serial.String())
 
