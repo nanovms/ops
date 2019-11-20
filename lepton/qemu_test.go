@@ -82,7 +82,7 @@ QEMU emulator version 2.11.1(Debian 1:2.8+dfsg-6+deb9u5)
 Copyright (c) 2003-2016 Fabrice Bellard and the QEMU Project developers
 `
 	actual := parseQemuVersion([]byte(testData))
-	expected := "2.11"
+	expected := "2.11.1"
 	if actual != expected {
 		t.Errorf("Parsed Qemu version %q not %q", actual, expected)
 	}
