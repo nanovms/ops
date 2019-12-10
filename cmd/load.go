@@ -161,6 +161,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	skipbuild, err := strconv.ParseBool(cmd.Flag("skipbuild").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -179,8 +184,10 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.RunConfig.Accel = accel
 	setDefaultImageName(cmd, c)
 
-	if err = buildFromPackage(expackage, c); err != nil {
-		panic(err)
+	if !skipbuild {
+		if err = buildFromPackage(expackage, c); err != nil {
+			panic(err)
+		}
 	}
 
 	ports := []int{}
@@ -208,6 +215,7 @@ func LoadCommand() *cobra.Command {
 		ports, args                    []string
 		force, debugflags, verbose     bool
 		nightly, accel, bridged, local bool
+		skipbuild                      bool
 		config, imageName              string
 	)
 
@@ -227,6 +235,7 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
+	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
 	return cmdLoadPackage
 }
