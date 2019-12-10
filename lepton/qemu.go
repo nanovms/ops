@@ -377,10 +377,10 @@ func (q *qemu) addAccel() {
 	if runtime.GOOS == "linux" {
 		ok, err := kvmGroupPermissions()
 		if !(ok && err == nil) {
-            fmt.Printf("You specified hardware acceleration but you don't have rights.\n" +
-                "Try adding yourself to the kvm group: `sudo adduser $user kvm`\n" +
-                "You'll need to re login for this to take affect.\n")
-            os.Exit(1)
+			fmt.Printf("You specified hardware acceleration but you don't have rights.\n" +
+				"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n" +
+				"You'll need to re login for this to take affect.\n")
+			os.Exit(1)
 		}
 		q.addFlag("-enable-kvm")
 		q.addOption("-cpu", "host")
