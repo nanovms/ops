@@ -22,6 +22,7 @@ type Config struct {
 	Force        bool
 	TargetRoot   string
 	ManifestName string // save manifest to
+	RebootOnExit bool   // Reboot on Failure Exit
 }
 
 // ProviderConfig give provider details

@@ -231,6 +231,10 @@ func addFromConfig(m *Manifest, c *Config) error {
 		m.AddArgument(a)
 	}
 
+	if c.RebootOnExit {
+		m.AddDebugFlag("reboot_on_exit", 't')
+	}
+
 	for _, dbg := range c.Debugflags {
 		m.AddDebugFlag(dbg, 't')
 	}
