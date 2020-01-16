@@ -128,6 +128,7 @@ func prepareImages(c *api.Config) {
 	} else {
 		currversion, err = downloadReleaseImages()
 	}
+
 	panicOnError(err)
 	fixupConfigImages(c, currversion)
 	validateRequired(c)

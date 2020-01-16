@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -49,6 +50,7 @@ func DownloadPackage(name string) (string, error) {
 // GetPackageList provides list of packages
 func GetPackageList() *map[string]Package {
 	var err error
+
 	packageManifest := GetPackageManifestFile()
 	stat, err := os.Stat(packageManifest)
 	if os.IsNotExist(err) || PackageManifestChanged(stat, PackageManifestURL) {
@@ -88,8 +90,15 @@ func GetPackageManifestFile() string {
 func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	res, err := http.Head(remoteURL)
 	if err != nil {
-		panic(err)
+		if err, ok := err.(net.Error); ok {
+			fmt.Printf(WarningColor, "missing internet?, using local manifest.\n")
+		} else {
+			panic(err)
+		}
+
+		return false
 	}
+
 	return fino.Size() != res.ContentLength
 }
 

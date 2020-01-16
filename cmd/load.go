@@ -30,6 +30,7 @@ func parseVersion(s string, width int) int64 {
 
 func downloadReleaseImages() (string, error) {
 	var err error
+
 	// if it's first run or we have an update
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
 	if local == "0.0" {
@@ -40,10 +41,12 @@ func downloadReleaseImages() (string, error) {
 		return remote, nil
 
 	}
+
 	if parseVersion(local, 4) != parseVersion(remote, 4) {
 		fmt.Println(chalk.Red, "You are running an older version of Ops.", chalk.Reset)
 		fmt.Println(chalk.Red, "Update: Run", chalk.Reset, chalk.Bold.TextStyle("`ops update`"))
 	}
+
 	return local, nil
 }
 
