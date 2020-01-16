@@ -96,9 +96,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
 	c.Program = args[0]
+
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
 	}
+
 	c.RunConfig.GdbPort = gdbport
 	c.TargetRoot = targetRoot
 
@@ -109,6 +111,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.NightlyBuild = nightly
 	c.Force = force
 	c.ManifestName = manifestName
+
 	if len(noTrace) > 0 {
 		c.NoTrace = noTrace
 	}
@@ -120,10 +123,10 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	ports := []int{}
 	port, err := cmd.Flags().GetStringArray("port")
-
 	if err != nil {
 		panic(err)
 	}
+
 	for _, p := range port {
 		i, err := strconv.Atoi(p)
 		if err != nil {
