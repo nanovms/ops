@@ -162,6 +162,10 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 	}
 	_, err := lookupFile(m.targetRoot, hostpath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
+			os.Exit(1)
+		}
 		return err
 	}
 	node[parts[len(parts)-1]] = hostpath
