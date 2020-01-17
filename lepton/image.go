@@ -21,13 +21,16 @@ import (
 // supplied ELF binary.
 func BuildImage(c Config) error {
 	var err error
+
 	m, err := BuildManifest(&c)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	if err = buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	return nil
 }
 
@@ -490,5 +493,6 @@ func lookupFile(targetRoot string, path string) (string, error) {
 	}
 
 	_, err := os.Stat(path)
+
 	return path, err
 }
