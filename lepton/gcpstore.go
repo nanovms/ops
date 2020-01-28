@@ -18,11 +18,13 @@ func (s *GCPStorage) CopyToBucket(config *Config, archPath string) error {
 
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
-	defer client.Close()
-
 	if err != nil {
-		return fmt.Errorf("failed to create client: %+v", err)
+		fmt.Println(err)
+		fmt.Println("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
+		os.Exit(1)
 	}
+
+	defer client.Close()
 
 	bucket := client.Bucket(config.CloudConfig.BucketName)
 	_, err = bucket.Attrs(ctx)
