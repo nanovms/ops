@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -19,7 +20,9 @@ func buildImages(c *api.Config) {
 func runCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
-		panic(errors.New("No hypervisor found on $PATH"))
+		fmt.Println("No hypervisor found on $PATH")
+		fmt.Println("Please install OPS using curl https://ops.city/get.sh -sSfL | sh")
+		os.Exit(1)
 	}
 
 	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
