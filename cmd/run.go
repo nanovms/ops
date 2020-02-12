@@ -96,9 +96,26 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	cmdenvs, err := cmd.Flags().GetStringArray("envs")
+	if err != nil {
+		panic(err)
+	}
+
 	c := unWarpConfig(config)
+
 	c.Args = append(c.Args, cmdargs...)
 	c.Program = args[0]
+
+	if len(cmdenvs) > 0 {
+		if len(c.Env) == 0 {
+			c.Env = make(map[string]string)
+		}
+
+		for i := 0; i < len(cmdenvs); i++ {
+			ez := strings.Split(cmdenvs[i], "=")
+			c.Env[ez[0]] = ez[1]
+		}
+	}
 
 	if debugflags {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
@@ -157,6 +174,7 @@ func RunCommand() *cobra.Command {
 	var gdbport int
 	var noTrace []string
 	var args []string
+	var envs []string
 	var verbose bool
 	var bridged bool
 	var nightly bool
@@ -182,6 +200,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().IntVarP(&gdbport, "gdbport", "g", 0, "qemu TCP port used for GDB interface")
 	cmdRun.PersistentFlags().StringArrayVarP(&noTrace, "no-trace", "", nil, "do not trace syscall")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
+	cmdRun.PersistentFlags().StringArrayVarP(&envs, "envs", "e", nil, "env arguments")
 	cmdRun.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
