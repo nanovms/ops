@@ -71,10 +71,17 @@ func GetOpsHome() string {
 	}
 
 	opshome := path.Join(home, ".ops")
-	images := path.Join(opshome, ".ops", "images")
+	images := path.Join(opshome, "images")
+	instances := path.Join(opshome, "instances")
+
 	if _, err := os.Stat(images); os.IsNotExist(err) {
 		os.MkdirAll(images, 0755)
 	}
+
+	if _, err := os.Stat(instances); os.IsNotExist(err) {
+		os.MkdirAll(instances, 0755)
+	}
+
 	return opshome
 }
 

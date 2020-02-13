@@ -2,10 +2,13 @@ package lepton
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -31,6 +34,7 @@ func (p *OnPrem) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 }
 
 // CreateImage on prem
+// assumes local for now
 func (p *OnPrem) CreateImage(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
@@ -86,13 +90,82 @@ func (p *OnPrem) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // CreateInstance on premise
+// assumes local
 func (p *OnPrem) CreateInstance(ctx *Context) error {
-	return fmt.Errorf("Operation not supported")
+	c := ctx.config
+
+	hypervisor := HypervisorInstance()
+	if hypervisor == nil {
+		fmt.Println("No hypervisor found on $PATH")
+		fmt.Println("Please install OPS using curl https://ops.city/get.sh -sSfL | sh")
+		os.Exit(1)
+	}
+
+	instancename := c.CloudConfig.ImageName
+
+	fmt.Printf("booting %s ...\n", instancename)
+
+	opshome := GetOpsHome()
+	imgpath := path.Join(opshome, "images", instancename)
+
+	c.RunConfig.BaseName = instancename
+	c.RunConfig.Imagename = imgpath
+	c.RunConfig.OnPrem = true
+
+	hypervisor.Start(&c.RunConfig)
+
+	return nil
 }
 
 // ListInstances on premise
 func (p *OnPrem) ListInstances(ctx *Context) error {
-	return fmt.Errorf("Operation not supported")
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"PID", "Name", "Status", "Created", "Private Ips", "Port"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+
+	table.SetRowLine(true)
+
+	opshome := GetOpsHome()
+	instances := path.Join(opshome, "instances")
+
+	files, err := ioutil.ReadDir(instances)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, f := range files {
+		var rows []string
+
+		fullpath := path.Join(instances, f.Name())
+		body, err := ioutil.ReadFile(fullpath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		rows = append(rows, f.Name())
+		rows = append(rows, string(body))
+		rows = append(rows, "Running")
+		rows = append(rows, f.ModTime().String())
+
+		privateIps := []string{"127.0.0.1"}
+		ports := []string{"8080"}
+
+		rows = append(rows, strings.Join(privateIps, ","))
+		rows = append(rows, strings.Join(ports, ","))
+		table.Append(rows)
+	}
+
+	table.Render()
+
+	return nil
+
 }
 
 // StartInstance from on premise
@@ -107,12 +180,40 @@ func (p *OnPrem) StopInstance(ctx *Context, instancename string) error {
 
 // DeleteInstance from on premise
 func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
-	return fmt.Errorf("Operation not supported")
+
+	pid, err := strconv.Atoi(instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// yolo
+	err = syscall.Kill(pid, 9)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	opshome := GetOpsHome()
+	ipath := path.Join(opshome, "instances", instancename)
+	err = os.Remove(ipath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetInstanceLogs for onprem instance logs
 func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-	return fmt.Errorf("Operation not supported")
+
+	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println(string(body))
+
+	return nil
 }
 
 // Initialize on prem provider

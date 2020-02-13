@@ -51,9 +51,26 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
+	ports := []int{}
+	port, err := cmd.Flags().GetStringArray("port")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, p := range port {
+		i, err := strconv.Atoi(p)
+		if err != nil {
+			panic(err)
+		}
+
+		ports = append(ports, i)
+	}
+
+	initDefaultRunConfigs(c, ports)
+
 	p := getCloudProvider(provider)
 	ctx := api.NewContext(c, &p)
-	err := p.CreateInstance(ctx)
+	err = p.CreateInstance(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -254,14 +271,18 @@ func instanceLogsCommand() *cobra.Command {
 // InstanceCommands provided instance related commands
 func InstanceCommands() *cobra.Command {
 	var targetCloud, projectID, zone string
+	var ports []string
+
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
 		ValidArgs: []string{"create", "list", "delete", "stop", "start", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
+
+	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
 	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem]")
-	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "p", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
+	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
 	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
@@ -269,5 +290,6 @@ func InstanceCommands() *cobra.Command {
 	cmdInstance.AddCommand(instanceStopCommand())
 	cmdInstance.AddCommand(instanceStartCommand())
 	cmdInstance.AddCommand(instanceLogsCommand())
+
 	return cmdInstance
 }
