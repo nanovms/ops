@@ -37,7 +37,8 @@ type ProviderConfig struct {
 
 // RunConfig provides runtime details
 type RunConfig struct {
-	Imagename string
+	Imagename string // FIXME: fullpath? of image
+	BaseName  string // FIXME: basename of image only
 	Ports     []int
 	GdbPort   int
 	Verbose   bool
@@ -45,6 +46,7 @@ type RunConfig struct {
 	Bridged   bool
 	TapName   string
 	Accel     bool
+	OnPrem    bool // true if in a multi-instance/tenant on-prem env
 }
 
 // RuntimeConfig constructs runtime config

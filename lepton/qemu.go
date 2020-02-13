@@ -3,10 +3,12 @@ package lepton
 import (
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
 	"os/user"
+	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -166,10 +168,29 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 		q.cmd.Stderr = os.Stderr
 	}
 
-	if err := q.cmd.Run(); err != nil {
-		fmt.Println(err)
-		return err
+	if rconfig.OnPrem {
+		err := q.cmd.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		pid := strconv.Itoa(q.cmd.Process.Pid)
+		opshome := GetOpsHome()
+		instances := path.Join(opshome, "instances")
+
+		d1 := []byte(rconfig.Imagename)
+		err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	} else {
+
+		if err := q.cmd.Run(); err != nil {
+			fmt.Println(err)
+		}
 	}
+
 	return nil
 }
 
@@ -374,6 +395,7 @@ func (q *qemu) addAccel() {
 			return
 		}
 	}
+
 	if runtime.GOOS == "linux" {
 		ok, err := kvmGroupPermissions()
 		if !(ok && err == nil) {
@@ -405,7 +427,13 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports)
 	q.addDisplay("none")
-	q.addSerial("stdio")
+
+	if rconfig.OnPrem {
+		q.addSerial("file:/tmp/" + rconfig.BaseName + ".log")
+	} else {
+		q.addSerial("stdio")
+	}
+
 	q.addFlag("-nodefaults")
 	q.addFlag("-no-reboot")
 	q.addOption("-device", "isa-debug-exit")

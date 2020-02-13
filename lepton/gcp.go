@@ -298,19 +298,23 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}
+
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
 		return err
 	}
+
 	c := ctx.config
 	if c.CloudConfig.Zone == "" {
 		return fmt.Errorf("Zone not provided in config.CloudConfig")
 	}
+
 	if c.CloudConfig.ProjectID == "" {
 		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.", creds.ProjectID)
 		c.CloudConfig.ProjectID = creds.ProjectID
 	}
+
 	if c.CloudConfig.Flavor == "" {
 		return fmt.Errorf("Flavor not provided in config.CloudConfig")
 	}
