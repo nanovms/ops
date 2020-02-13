@@ -43,12 +43,15 @@ func (p *OnPrem) CreateImage(ctx *Context) error {
 func (p *OnPrem) ListImages(ctx *Context) error {
 	opshome := GetOpsHome()
 	imgpath := path.Join(opshome, "images")
+
 	if _, err := os.Stat(imgpath); os.IsNotExist(err) {
 		return err
 	}
+
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Path", "Size"})
+	table.SetHeader([]string{"Name", "Path", "Size", "CreatedAt"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
@@ -66,7 +69,8 @@ func (p *OnPrem) ListImages(ctx *Context) error {
 			var row []string
 			row = append(row, info.Name())
 			row = append(row, hostpath)
-			row = append(row, fmt.Sprintf("%v", info.Size()))
+			row = append(row, bytes2Human(info.Size()))
+			row = append(row, time2Human(info.ModTime()))
 			table.Append(row)
 		}
 		return nil
