@@ -8,7 +8,9 @@ require (
 	github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c
 	github.com/d2g/dhcp4client v1.0.0
 	github.com/go-errors/errors v1.0.1
+	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/schollz/progressbar v1.0.0
 	github.com/schollz/progressbar/v2 v2.13.2

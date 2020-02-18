@@ -25,7 +25,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
-		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp]")
+		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vultr]")
 	}
 
 	if c.CloudConfig.Platform == "gcp" && len(c.CloudConfig.ProjectID) == 0 {
@@ -79,6 +79,36 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	if err != nil {
 		exitWithError(err.Error())
+	}
+
+	if c.CloudConfig.Platform == "vultr" {
+		do := p.(*api.Vultr)
+		err = do.Storage.CopyToBucket(c, keypath)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+
+		err = do.CreateImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("do image '%s' created...\n", c.CloudConfig.ImageName)
+		}
+	}
+
+	if c.CloudConfig.Platform == "do" {
+		do := p.(*api.DigitalOcean)
+		err = do.Storage.CopyToBucket(c, keypath)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+
+		err = do.CreateImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("do image '%s' created...\n", c.CloudConfig.ImageName)
+		}
 	}
 
 	if c.CloudConfig.Platform == "gcp" {
@@ -203,7 +233,7 @@ func ImageCommands() *cobra.Command {
 		ValidArgs: []string{"create"},
 		Args:      cobra.OnlyValidArgs,
 	}
-	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem]")
+	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, do, vultr, onprem]")
 	cmdImage.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
