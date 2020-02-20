@@ -57,6 +57,10 @@ func getCloudProvider(providerName string) api.Provider {
 		provider = &api.OnPrem{}
 	} else if providerName == "aws" {
 		provider = &api.AWS{}
+	} else if providerName == "do" {
+		provider = &api.DigitalOcean{}
+	} else if providerName == "vultr" {
+		provider = &api.Vultr{}
 	} else {
 		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
 		os.Exit(1)
