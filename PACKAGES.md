@@ -100,7 +100,7 @@ gsutil cp gs://packagehub/manifest.json .
 ```
 
 ```
-md5 "$PKG_NAME"_"$PKGVERSION"
+shasum -a 256 "$PKG_NAME"_"$PKGVERSION"
 ```
 
 ```
@@ -109,7 +109,7 @@ md5 "$PKG_NAME"_"$PKGVERSION"
       "version": "5.2.4",
       "language": "lua",
       "description": "lua",
-      "md5":"deadbeefdeadbeefdeadbeefdeadbeef"
+      "shasum256":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
   },
 ```
 

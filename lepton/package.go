@@ -2,6 +2,8 @@ package lepton
 
 import (
 	"archive/tar"
+	"crypto/sha256"
+
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-errors/errors"
 )
@@ -27,7 +30,7 @@ type Package struct {
 	Version     string `json:"version"`
 	Language    string `json:"language"`
 	Description string `json:"description,omitempty"`
-	MD5         string `json:"md5,omitempty"`
+	SHA256      string `json:"sha256"`
 }
 
 // DownloadPackage downloads package by name
@@ -102,8 +105,45 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	return fino.Size() != res.ContentLength
 }
 
-// ExtractPackage extracts package in ops home
+func sha256Of(filename string) string {
+	f, err := os.Open(filename)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// ExtractPackage extracts package in ops home.
+// This function is currently over-loaded.
 func ExtractPackage(archive string, dest string) {
+	sha := sha256Of(archive)
+	list := *GetPackageList()
+
+	// hack
+	// this only verifies for packages - unfortunately this function is
+	// used for extracting releases (which currently don't have
+	// checksums)
+	if strings.Contains(archive, ".ops/packages") {
+
+		fname := filepath.Base(archive)
+		fname = strings.ReplaceAll(fname, ".tar.gz", "")
+
+		if list[fname].SHA256 != sha {
+			fmt.Println("This package doesn't match what is in the manifest.")
+			os.Exit(1)
+		}
+
+	}
+
 	in, err := os.Open(archive)
 	if err != nil {
 		panic(err)
