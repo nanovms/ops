@@ -126,7 +126,6 @@ func sha256Of(filename string) string {
 // This function is currently over-loaded.
 func ExtractPackage(archive string, dest string) {
 	sha := sha256Of(archive)
-	list := *GetPackageList()
 
 	// hack
 	// this only verifies for packages - unfortunately this function is
@@ -136,6 +135,8 @@ func ExtractPackage(archive string, dest string) {
 
 		fname := filepath.Base(archive)
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
+
+		list := *GetPackageList()
 
 		if list[fname].SHA256 != sha {
 			fmt.Println("This package doesn't match what is in the manifest.")
