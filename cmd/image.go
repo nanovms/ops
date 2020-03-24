@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
@@ -18,10 +19,19 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	pkg = strings.TrimSpace(pkg)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 
+	nightly, err := strconv.ParseBool(cmd.Flag("nightly").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	c := unWarpConfig(config)
 	// override config from command line
 	if len(provider) > 0 {
 		c.CloudConfig.Platform = provider
+	}
+
+	if nightly {
+		c.NightlyBuild = nightly
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
@@ -53,7 +63,6 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(c, &p)
 
 	var keypath string
-	var err error
 	if len(pkg) > 0 {
 		expackage := downloadAndExtractPackage(pkg)
 
@@ -151,15 +160,20 @@ func imageCreateCommand() *cobra.Command {
 	var (
 		config, pkg, imageName string
 		args                   []string
+		nightly                bool
 	)
+
 	var cmdImageCreate = &cobra.Command{
 		Use:   "create",
 		Short: "create nanos image from ELF",
 		Run:   imageCreateCommandHandler,
 	}
+
 	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImageCreate.PersistentFlags().StringVarP(&pkg, "package", "p", "", "ops package name")
 	cmdImageCreate.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
+	cmdImageCreate.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
+
 	cmdImageCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	return cmdImageCreate
 }
