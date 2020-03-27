@@ -2,6 +2,7 @@ package lepton
 
 // Config for Build
 type Config struct {
+	PackageName  string
 	Args         []string
 	BuildDir     string
 	Dirs         []string
