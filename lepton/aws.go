@@ -324,6 +324,9 @@ func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 		}
 		return err
 	}
+	if len(result.Images) == 0 {
+		return fmt.Errorf("Error running deregister image operation: image %v not found", imagename)
+	}
 
 	amiID := aws.StringValue(result.Images[0].ImageId)
 	snapID := aws.StringValue(result.Images[0].BlockDeviceMappings[0].Ebs.SnapshotId)
