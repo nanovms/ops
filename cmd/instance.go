@@ -281,7 +281,7 @@ func InstanceCommands() *cobra.Command {
 	}
 
 	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
-	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem]")
+	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, onprem, vultr, vsphere]")
 	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
 	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdInstance.AddCommand(instanceCreateCommand())
