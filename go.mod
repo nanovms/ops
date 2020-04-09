@@ -12,8 +12,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
-	github.com/schollz/progressbar v1.0.0
 	github.com/schollz/progressbar/v2 v2.13.2
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vishvananda/netlink v1.0.0
@@ -21,5 +21,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7
 	google.golang.org/api v0.7.0
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/ini.v1 v1.55.0 // indirect
 )
