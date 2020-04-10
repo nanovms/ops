@@ -62,6 +62,29 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 	fmt.Println("response Body:", string(body))
 }
 
+func (v *Vultr) destroyImage(snapshotid string) {
+	destroyURL := "https://api.vultr.com/v1/snapshot/destroy"
+
+	token := os.Getenv("TOKEN")
+
+	urlData := url.Values{}
+	urlData.Set("SNAPSHOTID", snapshotid)
+
+	req, err := http.NewRequest("POST", destroyURL, strings.NewReader(urlData.Encode()))
+	req.Header.Set("API-Key", token)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+}
+
 // Initialize GCP related things
 func (v *Vultr) Initialize() error {
 	return nil
@@ -147,7 +170,9 @@ func (v *Vultr) ListImages(ctx *Context) error {
 }
 
 // DeleteImage deletes image from v
-func (v *Vultr) DeleteImage(ctx *Context, imagename string) error {
+func (v *Vultr) DeleteImage(ctx *Context, snapshotID string) error {
+	v.destroyImage(snapshotID)
+
 	return nil
 }
 
