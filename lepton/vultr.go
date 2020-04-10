@@ -282,17 +282,77 @@ func (v *Vultr) ListInstances(ctx *Context) error {
 }
 
 // DeleteInstance deletes instance from v
-func (v *Vultr) DeleteInstance(ctx *Context, instancename string) error {
+func (v *Vultr) DeleteInstance(ctx *Context, instanceID string) error {
+	destroyInstanceURL := "https://api.vultr.com/v1/server/destroy"
+
+	token := os.Getenv("TOKEN")
+
+	urlData := url.Values{}
+	urlData.Set("SUBID", instanceID)
+
+	req, err := http.NewRequest("POST", destroyInstanceURL, strings.NewReader(urlData.Encode()))
+	req.Header.Set("API-Key", token)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 	return nil
 }
 
 // StartInstance starts an instance in v
-func (v *Vultr) StartInstance(ctx *Context, instancename string) error {
+func (v *Vultr) StartInstance(ctx *Context, instanceID string) error {
+	startInstanceURL := "https://api.vultr.com/v1/server/start"
+
+	token := os.Getenv("TOKEN")
+
+	urlData := url.Values{}
+	urlData.Set("SUBID", instanceID)
+
+	req, err := http.NewRequest("POST", startInstanceURL, strings.NewReader(urlData.Encode()))
+	req.Header.Set("API-Key", token)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 	return nil
 }
 
-// StopInstance deletes instance from v
-func (v *Vultr) StopInstance(ctx *Context, instancename string) error {
+// StopInstance halts instance from v
+func (v *Vultr) StopInstance(ctx *Context, instanceID string) error {
+	haltInstanceURL := "https://api.vultr.com/v1/server/halt"
+
+	token := os.Getenv("TOKEN")
+
+	urlData := url.Values{}
+	urlData.Set("SUBID", instanceID)
+
+	req, err := http.NewRequest("POST", haltInstanceURL, strings.NewReader(urlData.Encode()))
+	req.Header.Set("API-Key", token)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 	return nil
 }
 
