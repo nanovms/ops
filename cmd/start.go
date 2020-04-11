@@ -122,7 +122,7 @@ func startCommandHandler(cmd *cobra.Command, args []string) {
 	hypervisor.Start(&c.RunConfig)
 }
 
-// LoadCommand helps you to run application with package
+// StartCommand helps you to run application from a config.json
 func StartCommand() *cobra.Command {
 	var (
 		ports, args                    []string
