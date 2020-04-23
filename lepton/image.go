@@ -329,8 +329,14 @@ func buildImage(c *Config, m *Manifest) error {
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
 	}
+
+	if c.BaseVolumeSz != "" {
+		args = append(args, "-s", c.BaseVolumeSz)
+	}
+
 	args = append(args, "-b", c.Boot)
 	args = append(args, c.RunConfig.Imagename)
+
 	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {

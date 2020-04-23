@@ -21,6 +21,7 @@ type Config struct {
 	CloudConfig  ProviderConfig
 	Force        bool
 	TargetRoot   string
+	BaseVolumeSz string // optional base volume sz
 	ManifestName string // save manifest to
 	RebootOnExit bool   // Reboot on Failure Exit
 }
