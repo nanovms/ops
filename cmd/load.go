@@ -79,6 +79,7 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 		pkgConfig.Env[k] = v
 	}
 
+	pkgConfig.BaseVolumeSz = usrConfig.BaseVolumeSz
 	pkgConfig.RunConfig = usrConfig.RunConfig
 	pkgConfig.CloudConfig = usrConfig.CloudConfig
 	pkgConfig.Kernel = usrConfig.Kernel
