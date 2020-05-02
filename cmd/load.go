@@ -224,7 +224,7 @@ func LoadCommand() *cobra.Command {
 
 	var cmdLoadPackage = &cobra.Command{
 		Use:   "load [packagename]",
-		Short: "load and run a package from ['ops list']",
+		Short: "load and run a package from ['ops pkg list']",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   loadCommandHandler,
 	}
