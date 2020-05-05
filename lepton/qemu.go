@@ -436,6 +436,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 
 	q.addFlag("-nodefaults")
 	q.addFlag("-no-reboot")
+	q.addOption("-cpu", "max")
 	q.addOption("-device", "isa-debug-exit")
 	q.addOption("-m", rconfig.Memory)
 
