@@ -437,6 +437,11 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	q.addFlag("-nodefaults")
 	q.addFlag("-no-reboot")
 	q.addOption("-cpu", "max")
+
+	// we could perhaps cascade for different versions of qemu here but
+	// I think everyone should have this
+	q.addOption("-machine", "q35")
+
 	q.addOption("-device", "isa-debug-exit")
 	q.addOption("-m", rconfig.Memory)
 
