@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -153,16 +154,20 @@ func (p *OnPrem) ListInstances(ctx *Context) error {
 			fmt.Println(err)
 		}
 
+		var i instance
+		if err := json.Unmarshal(body, &i); err != nil {
+			return err
+		}
+
 		rows = append(rows, f.Name())
-		rows = append(rows, string(body))
+		rows = append(rows, i.Image)
 		rows = append(rows, "Running")
-		rows = append(rows, f.ModTime().String())
+		rows = append(rows, time2Human(f.ModTime()))
 
 		privateIps := []string{"127.0.0.1"}
-		ports := []string{"8080"}
 
 		rows = append(rows, strings.Join(privateIps, ","))
-		rows = append(rows, strings.Join(ports, ","))
+		rows = append(rows, i.portList())
 		table.Append(rows)
 	}
 
