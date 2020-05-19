@@ -40,6 +40,20 @@ func (p *OnPrem) CreateImage(ctx *Context) error {
 	return fmt.Errorf("Operation not supported")
 }
 
+// ResizeImage resizes the lcoal image imagename. You should never
+// specify a negative size.
+func (p *OnPrem) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	opshome := GetOpsHome()
+	imgpath := path.Join(opshome, "images", imagename)
+
+	bytes, err := parseBytes(hbytes)
+	if err != nil {
+		return err
+	}
+
+	return os.Truncate(imgpath, bytes)
+}
+
 // ListImages on premise
 func (p *OnPrem) ListImages(ctx *Context) error {
 	opshome := GetOpsHome()

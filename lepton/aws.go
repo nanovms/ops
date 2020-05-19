@@ -296,6 +296,11 @@ func (p *AWS) StopInstance(ctx *Context, imagename string) error {
 	return nil
 }
 
+// ResizeImage is not supported on AWS.
+func (p *AWS) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
 // DeleteImage deletes image from AWS by ami name
 func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 	// delete ami by ami name

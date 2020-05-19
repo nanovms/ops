@@ -178,6 +178,39 @@ func imageCreateCommand() *cobra.Command {
 	return cmdImageCreate
 }
 
+// only targets local images today
+func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
+
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p := getCloudProvider(provider)
+
+	var c *api.Config
+	c = &api.Config{}
+
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone != "" {
+		c.CloudConfig.Zone = zone
+	}
+
+	ctx := api.NewContext(c, &p)
+
+	err := p.ResizeImage(ctx, args[0], args[1])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+}
+
+func imageResizeCommand() *cobra.Command {
+	var cmdImageResize = &cobra.Command{
+		Use:   "resize <image_name> <new_size>",
+		Short: "resize image",
+		Run:   imageResizeCommandHandler,
+		Args:  cobra.MinimumNArgs(2),
+	}
+	return cmdImageResize
+}
+
 func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 
@@ -252,5 +285,6 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
 	cmdImage.AddCommand(imageDeleteCommand())
+	cmdImage.AddCommand(imageResizeCommand())
 	return cmdImage
 }
