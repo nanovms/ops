@@ -8,6 +8,7 @@ type Provider interface {
 	CreateImage(ctx *Context) error
 	ListImages(ctx *Context) error
 	DeleteImage(ctx *Context, imagename string) error
+	ResizeImage(ctx *Context, imagename string, hbytes string) error
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	DeleteInstance(ctx *Context, instancename string) error

@@ -176,6 +176,11 @@ func (v *Vultr) DeleteImage(ctx *Context, snapshotID string) error {
 	return nil
 }
 
+// ResizeImage is not supported on Vultr.
+func (v *Vultr) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
 // CreateInstance - Creates instance on Digital Ocean Platform
 func (v *Vultr) CreateInstance(ctx *Context) error {
 	c := ctx.config
