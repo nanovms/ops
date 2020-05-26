@@ -79,6 +79,7 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 		pkgConfig.Env[k] = v
 	}
 
+	pkgConfig.BaseVolumeSz = usrConfig.BaseVolumeSz
 	pkgConfig.RunConfig = usrConfig.RunConfig
 	pkgConfig.CloudConfig = usrConfig.CloudConfig
 	pkgConfig.Kernel = usrConfig.Kernel
@@ -224,7 +225,7 @@ func LoadCommand() *cobra.Command {
 
 	var cmdLoadPackage = &cobra.Command{
 		Use:   "load [packagename]",
-		Short: "load and run a package from ['ops list']",
+		Short: "load and run a package from ['ops pkg list']",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   loadCommandHandler,
 	}

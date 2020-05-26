@@ -13,7 +13,6 @@ import (
 
 	"github.com/vmware/govmomi/find"
 
-	//	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -25,6 +24,11 @@ import (
 type Vsphere struct {
 	Storage *Datastores
 	client  *vim25.Client
+}
+
+// ResizeImage is not supported on VSphere.
+func (v *Vsphere) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	return fmt.Errorf("Operation not supported")
 }
 
 // BuildImage to be upload on VSphere
