@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -178,7 +179,19 @@ func (q *qemu) Start(rconfig *RunConfig) error {
 		opshome := GetOpsHome()
 		instances := path.Join(opshome, "instances")
 
-		d1 := []byte(rconfig.Imagename)
+		base := path.Base(rconfig.Imagename)
+		sbase := strings.Split(base, ".")
+
+		i := instance{
+			Image: sbase[0],
+			Ports: rconfig.Ports,
+		}
+
+		d1, err := json.Marshal(i)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
 		if err != nil {
 			fmt.Println(err)
@@ -448,6 +461,12 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 
 	q.addFlag("-nodefaults")
 	q.addFlag("-no-reboot")
+	q.addOption("-cpu", "max")
+
+	// we could perhaps cascade for different versions of qemu here but
+	// I think everyone should have this
+	q.addOption("-machine", "q35")
+
 	q.addOption("-device", "isa-debug-exit")
 	q.addOption("-m", rconfig.Memory)
 

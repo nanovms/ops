@@ -125,6 +125,11 @@ func (do *DigitalOcean) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// ResizeImage is not supported on Digital Ocean.
+func (do *DigitalOcean) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	return fmt.Errorf("Operation not supported")
+}
+
 // CreateInstance - Creates instance on Digital Ocean Platform
 func (do *DigitalOcean) CreateInstance(ctx *Context) error {
 	return nil

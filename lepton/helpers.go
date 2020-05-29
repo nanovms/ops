@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
+	"unicode"
 )
 
 // time stolen from https://raw.githubusercontent.com/dustin/go-humanize/master/times.go
@@ -16,6 +19,29 @@ const (
 	Month    = 30 * Day
 	Year     = 12 * Month
 	LongTime = 37 * Year
+)
+
+// IEC Sizes.
+// kibis of bits
+const (
+	Byte = 1 << (iota * 10)
+	KiByte
+	MiByte
+	GiByte
+	TiByte
+	PiByte
+	EiByte
+)
+
+// SI Sizes.
+const (
+	IByte = 1
+	KByte = IByte * 1000
+	MByte = KByte * 1000
+	GByte = MByte * 1000
+	TByte = GByte * 1000
+	PByte = TByte * 1000
+	EByte = PByte * 1000
 )
 
 // Time formats a time into a relative string.
@@ -44,6 +70,36 @@ type RelTimeMagnitude struct {
 	D      time.Duration
 	Format string
 	DivBy  time.Duration
+}
+
+var bytesSizeTable = map[string]uint64{
+	"b":   Byte,
+	"kib": KiByte,
+	"kb":  KByte,
+	"mib": MiByte,
+	"mb":  MByte,
+	"gib": GiByte,
+	"gb":  GByte,
+	"tib": TiByte,
+	"tb":  TByte,
+	"pib": PiByte,
+	"pb":  PByte,
+	"eib": EiByte,
+	"eb":  EByte,
+	// Without suffix
+	"":   Byte,
+	"ki": KiByte,
+	"k":  KByte,
+	"mi": MiByte,
+	"m":  MByte,
+	"gi": GiByte,
+	"g":  GByte,
+	"ti": TiByte,
+	"t":  TByte,
+	"pi": PiByte,
+	"p":  PByte,
+	"ei": EiByte,
+	"e":  EByte,
 }
 
 var defaultMagnitudes = []RelTimeMagnitude{
@@ -131,4 +187,39 @@ func bytes2Human(b int64) string {
 	}
 	return fmt.Sprintf("%.1f %cB",
 		float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func parseBytes(s string) (int64, error) {
+	lastDigit := 0
+	hasComma := false
+	for _, r := range s {
+		if !(unicode.IsDigit(r) || r == '.' || r == ',') {
+			break
+		}
+		if r == ',' {
+			hasComma = true
+		}
+		lastDigit++
+	}
+
+	num := s[:lastDigit]
+	if hasComma {
+		num = strings.Replace(num, ",", "", -1)
+	}
+
+	f, err := strconv.ParseFloat(num, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	extra := strings.ToLower(strings.TrimSpace(s[lastDigit:]))
+	if m, ok := bytesSizeTable[extra]; ok {
+		f *= float64(m)
+		if f >= math.MaxUint64 {
+			return 0, fmt.Errorf("too large: %v", s)
+		}
+		return int64(f), nil
+	}
+
+	return 0, fmt.Errorf("unhandled size name: %v", extra)
 }

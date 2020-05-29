@@ -626,3 +626,8 @@ func createArchive(archive string, files []string) error {
 	}
 	return nil
 }
+
+// ResizeImage is not supported on google cloud.
+func (p *GCloud) ResizeImage(ctx *Context, imagename string, hbytes string) error {
+	return fmt.Errorf("Operation not supported")
+}

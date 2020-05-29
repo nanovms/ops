@@ -329,8 +329,14 @@ func buildImage(c *Config, m *Manifest) error {
 	if c.TargetRoot != "" {
 		args = append(args, "-r", c.TargetRoot)
 	}
+
+	if c.BaseVolumeSz != "" {
+		args = append(args, "-s", c.BaseVolumeSz)
+	}
+
 	args = append(args, "-b", c.Boot)
 	args = append(args, c.RunConfig.Imagename)
+
 	mkfs := exec.Command(c.Mkfs, args...)
 	stdin, err := mkfs.StdinPipe()
 	if err != nil {
@@ -473,6 +479,7 @@ func lookupFile(targetRoot string, path string) (string, error) {
 				// lookup on host
 				break
 			}
+
 			if fi.Mode()&os.ModeSymlink == 0 {
 				// not a symlink found in target root
 				return targetPath, nil
@@ -482,6 +489,7 @@ func lookupFile(targetRoot string, path string) (string, error) {
 			if err != nil {
 				return path, err
 			}
+
 			if currentPath[0] != '/' {
 				// relative symlinks are ok
 				path = targetPath

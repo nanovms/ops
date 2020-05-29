@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+// link refers to a link filetype
+type link struct {
+	path string
+}
+
 // Manifest represent the filesystem.
 type Manifest struct {
 	sb          strings.Builder
@@ -98,7 +103,16 @@ func (m *Manifest) AddDirectory(dir string) error {
 				// ignore invalid symlinks
 				return nil
 			}
+
+			// add link and continue on
+			err = m.AddLink(vmpath, hostpath)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		}
+
 		if info.IsDir() {
 			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
 			node := m.children
@@ -120,6 +134,7 @@ func (m *Manifest) AddDirectory(dir string) error {
 			}
 		}
 		return nil
+
 	})
 	return err
 }
@@ -141,25 +156,29 @@ func (m *Manifest) FileExists(filepath string) bool {
 	return false
 }
 
-// AddFile to add a file to manifest
-func (m *Manifest) AddFile(filepath string, hostpath string) error {
+// AddLink to add a file to manifest
+func (m *Manifest) AddLink(filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := m.children
+
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
 			node[parts[i]] = make(map[string]interface{})
 		}
 		node = node[parts[i]].(map[string]interface{})
 	}
+
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
 		err := fmt.Errorf("file %s overriding an existing directory", filepath)
 		fmt.Println(err)
 		return err
 	}
+
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
+
 	_, err := lookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -168,6 +187,49 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 		}
 		return err
 	}
+
+	s, err := os.Readlink(hostpath)
+	if err != nil {
+		fmt.Println("bad link")
+		os.Exit(1)
+	}
+
+	node[parts[len(parts)-1]] = link{path: s}
+	return nil
+}
+
+// AddFile to add a file to manifest
+func (m *Manifest) AddFile(filepath string, hostpath string) error {
+	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
+	node := m.children
+
+	for i := 0; i < len(parts)-1; i++ {
+		if _, ok := node[parts[i]]; !ok {
+			node[parts[i]] = make(map[string]interface{})
+		}
+		node = node[parts[i]].(map[string]interface{})
+	}
+
+	pathtest := node[parts[len(parts)-1]]
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
+		err := fmt.Errorf("file %s overriding an existing directory", filepath)
+		fmt.Println(err)
+		return err
+	}
+
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
+		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
+	}
+
+	_, err := lookupFile(m.targetRoot, hostpath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
+			os.Exit(1)
+		}
+		return err
+	}
+
 	node[parts[len(parts)-1]] = hostpath
 	return nil
 }
@@ -261,13 +323,28 @@ func (m *Manifest) String() string {
 
 func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 	for k, v := range *m {
-		value, ok := v.(string)
 		sb.WriteString(strings.Repeat(" ", indent))
+
+		nvalue, nok := v.(link)
+		// link
+		if nok {
+			sb.WriteString(escapeValue(k))
+			sb.WriteString(":(linktarget:")
+			sb.WriteString(escapeValue(nvalue.path))
+			sb.WriteString(")\n")
+			continue
+		}
+
+		value, ok := v.(string)
+
+		// file
 		if ok {
 			sb.WriteString(escapeValue(k))
 			sb.WriteString(":(contents:(host:")
 			sb.WriteString(escapeValue(value))
 			sb.WriteString("))\n")
+
+			// dir
 		} else {
 			sb.WriteString(k)
 			sb.WriteString(":(children:(")
