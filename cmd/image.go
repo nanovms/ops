@@ -155,7 +155,6 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if c.CloudConfig.Platform == "vsphere" {
-		fmt.Println("should here")
 		vsphere := p.(*api.Vsphere)
 		err = vsphere.Storage.CopyToBucket(c, keypath)
 		if err != nil {

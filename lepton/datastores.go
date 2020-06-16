@@ -9,10 +9,8 @@ import (
 // Datastores provides access to VSphere's Datastores
 type Datastores struct{}
 
-// CopyToBucket copies archive to bucket
+// CopyToBucket converts the raw disk image to a monolithicFlat vmdk.
 func (s *Datastores) CopyToBucket(config *Config, archPath string) error {
-
-	fmt.Printf("copying %v\n", archPath)
 
 	vmdkPath := "/tmp/" + config.CloudConfig.ImageName + ".vmdk"
 
