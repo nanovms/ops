@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/vmware/govmomi/find"
+
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/methods"
 
 	"github.com/vmware/govmomi/vim25/types"
-
-	"github.com/vmware/govmomi/find"
 
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
-	"github.com/vmware/govmomi/vmdk"
 )
 
 // Vsphere provides access to the Vsphere API.
@@ -91,43 +92,34 @@ func (v *Vsphere) Initialize() error {
 // CreateImage - Creates image on vsphere using nanos images
 func (v *Vsphere) CreateImage(ctx *Context) error {
 
-	vmdkPath := "/tmp/" + ctx.config.CloudConfig.ImageName + ".vmdk"
+	// create new image w/ paravirtual && vmnetx3
+	// this step prob belongs on creatinstance though..
+
+	vmdkBase := strings.ReplaceAll(ctx.config.CloudConfig.ImageName, "-image", "")
+
+	flatPath := "/tmp/" + vmdkBase + "-flat" + ".vmdk"
+	imgPath := "/tmp/" + vmdkBase + ".vmdk"
 
 	f := find.NewFinder(v.client, true)
-	ds, err := f.DatastoreOrDefault(context.TODO(), "/ha-datacenter/datastore/nanos-test")
+	ds, err := f.DatastoreOrDefault(context.TODO(), "/ha-datacenter/datastore/datastore1/")
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	p := vmdk.ImportParams{
-		Path: vmdkPath,
-		//Logger:     logger,
-		Type: "", // TODO: flag
-		//Force: cmd.force,
-		//Datacenter: dc,
-		//Pool:       pool,
-		//Folder:     folder,
-	}
+	p := soap.DefaultUpload
+	ds.UploadFile(context.TODO(), flatPath, vmdkBase+"/"+vmdkBase+"-flat.vmdk", &p)
+	ds.UploadFile(context.TODO(), imgPath, vmdkBase+"/"+vmdkBase+".vmdk", &p)
 
-	// "/ha-datacenter/datastore/nanos-test"
-
-	/*
-		var ds = &object.Datastore{
-			DatacenterPath: "/ha-datacenter",
-		}
-	*/
-
-	err = vmdk.Import(context.TODO(), v.client, vmdkPath, ds, p)
+	dc, err := f.DatacenterOrDefault(context.TODO(), "/ha-datacenter/")
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
-	/*
-		if err := v.client.ImportVmdk(vmdkPath, vsphereVolumeDir); err != nil {
-			return nil, errors.New("importing data.vmdk to vsphere datastore", err)
-		}
-	*/
+	m := ds.NewFileManager(dc, true)
+
+	m.Copy(context.TODO(), vmdkBase+"/"+vmdkBase+".vmdk", vmdkBase+"/"+vmdkBase+"2.vmdk")
 
 	return nil
 }
@@ -185,8 +177,126 @@ func (v *Vsphere) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
-// CreateInstance - Creates instance on VSphere
+// CreateInstance - Creates instance on VSphere.
+// Currently we support pvsci adapter && vmnetx3 network driver.
 func (v *Vsphere) CreateInstance(ctx *Context) error {
+
+	var devices object.VirtualDeviceList
+	var err error
+
+	controller := "pvscsi"
+
+	spec := &types.VirtualMachineConfigSpec{
+		Name:       "gtest", // FIXME: change hardcode
+		GuestId:    "otherGuest64",
+		NumCPUs:    1,
+		MemoryMB:   1024,
+		Annotation: "",
+		Firmware:   string(types.GuestOsDescriptorFirmwareTypeBios),
+		Version:    "",
+	}
+
+	// add disk
+	scsi, err := devices.CreateSCSIController(controller)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	devices = append(devices, scsi)
+	controller = devices.Name(scsi)
+
+	dcontroller, err := devices.FindDiskController(controller)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	f := find.NewFinder(v.client, true)
+	ds, err := f.DatastoreOrDefault(context.TODO(), "/ha-datacenter/datastore/datastore1/")
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	// FIXME - change hard-code
+	path := ds.Path("gtest/gtest2.vmdk")
+	disk := devices.CreateDisk(dcontroller, ds.Reference(), path)
+
+	disk = devices.ChildDisk(disk)
+
+	devices = append(devices, disk)
+
+	// end add disk
+
+	// add network
+	// infer network stub
+	net, err := f.NetworkOrDefault(context.TODO(), "/ha-datacenter/network/VM Network")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	backing, err := net.EthernetCardBackingInfo(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	device, err := object.EthernetCardTypes().CreateEthernetCard("vmxnet3", backing)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	netdev := device
+
+	devices = append(devices, netdev)
+
+	deviceChange, err := devices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	spec.DeviceChange = deviceChange
+
+	var datastore *object.Datastore
+
+	datastore = ds
+
+	dc, err := f.DatacenterOrDefault(context.TODO(), "/ha-datacenter/")
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	folders, err := dc.Folders(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	spec.Files = &types.VirtualMachineFileInfo{
+		VmPathName: fmt.Sprintf("[%s]", datastore.Name()),
+	}
+
+	folder := folders.VmFolder
+
+	pool, err := f.ResourcePoolOrDefault(context.TODO(), "/ha-datacenter/host/localhost.hsd1.ca.comcast.net/Resources")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	task, err := folder.CreateVM(context.TODO(), *spec, pool, nil)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	info, err := task.WaitForResult(context.TODO(), nil)
+	if err != nil {
+		fmt.Printf("%+v", info)
+		fmt.Printf("%+v", info.Reason)
+		fmt.Println(err)
+		return err
+	}
+
+	object.NewVirtualMachine(v.client, info.Result.(types.ManagedObjectReference))
+
 	return nil
 }
 

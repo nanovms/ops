@@ -3,6 +3,7 @@ package lepton
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // Datastores provides access to VSphere's Datastores
@@ -13,14 +14,14 @@ func (s *Datastores) CopyToBucket(config *Config, archPath string) error {
 
 	fmt.Printf("copying %v\n", archPath)
 
-	// -O vmdk -o subformat=streamOptimized -o compat6 gtest.vmdk
-
 	vmdkPath := "/tmp/" + config.CloudConfig.ImageName + ".vmdk"
 
+	vmdkPath = strings.ReplaceAll(vmdkPath, "-image", "")
+
 	args := []string{
-		"convert", "-f", "raw", archPath,
-		"-O", "vmdk", "-o", "subformat=streamOptimized",
-		"-o", "compat6", vmdkPath,
+		"convert", "-f", "raw",
+		"-O", "vmdk", "-o", "subformat=monolithicFlat",
+		archPath, vmdkPath,
 	}
 
 	cmd := exec.Command("qemu-img", args...)
