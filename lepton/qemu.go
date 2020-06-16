@@ -426,7 +426,19 @@ func (q *qemu) addAccel() {
 func (q *qemu) setConfig(rconfig *RunConfig) {
 	// add virtio drive
 	q.addDrive("hd0", rconfig.Imagename, "none")
-	q.addDiskDevice("hd0", "virtio-blk")
+
+	pciBus := "pcie.0"
+
+	// pcie root ports need to come before virtio/scsi devices
+	q.addOption("-machine", "q35")
+	q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
+	q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x1")
+	q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
+
+	// FIXME for multiple local tenants
+
+	q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
+	q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
 
 	netDevType := "user"
 	ifaceName := ""
@@ -468,6 +480,11 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 	q.setConfig(rconfig)
 	args := []string{}
 
+	// pci bus needs to be declared before devices using them
+	for _, flag := range q.flags {
+		args = append(args, flag)
+	}
+
 	for _, drive := range q.drives {
 		args = append(args, drive.String())
 	}
@@ -478,10 +495,6 @@ func (q *qemu) Args(rconfig *RunConfig) []string {
 
 	for _, iface := range q.ifaces {
 		args = append(args, iface.String())
-	}
-
-	for _, flag := range q.flags {
-		args = append(args, flag)
 	}
 
 	args = append(args, q.display.String())
