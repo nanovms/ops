@@ -11,25 +11,24 @@ import (
 	"github.com/vmware/govmomi/find"
 
 	"github.com/vmware/govmomi/object"
-	"github.com/vmware/govmomi/vim25/methods"
-
-	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
+	"github.com/vmware/govmomi/vim25/types"
 )
-
-const datacenter = "/ha-datacenter/"
-const datastore = "/ha-datacenter/datastore/datastore1/"
-const network = "/ha-datacenter/network/VM Network"
-const resourcePool = "/ha-datacenter/host/localhost.hsd1.ca.comcast.net/Resources"
 
 // Vsphere provides access to the Vsphere API.
 type Vsphere struct {
 	Storage *Datastores
 	client  *vim25.Client
+
+	datacenter   string
+	datastore    string
+	network      string
+	resourcePool string
 }
 
 // ResizeImage is not supported on VSphere.
@@ -59,16 +58,48 @@ func (v *Vsphere) BuildImageWithPackage(ctx *Context, pkgpath string) (string, e
 }
 
 func (v *Vsphere) createImage(key string, bucket string, region string) {
-	fmt.Println("private create")
+	fmt.Println("un-implemented")
 }
 
 // Initialize Vsphere related things
 func (v *Vsphere) Initialize() error {
 	venv := os.Getenv("GOVC_URL")
+	if venv == "" {
+		fmt.Println("At the very least GOVC_URL should be set to https://login:pass@host:port")
+		os.Exit(1)
+	}
+
+	// consume from env vars if set
+	dc := os.Getenv("GOVC_DATACENTER")
+	ds := os.Getenv("GOVC_DATASTORE")
+	nw := os.Getenv("GOVC_NETWORK")
+	rp := os.Getenv("GOVC_RESOURCE_POOL")
+
+	v.datacenter = "/ha-datacenter/"
+	if dc != "" {
+		v.datacenter = dc
+	}
+
+	v.datastore = "/ha-datacenter/datastore/datastore1/"
+	if ds != "" {
+		v.datastore = ds
+	}
+
+	v.network = "/ha-datacenter/network/VM Network"
+	if nw != "" {
+		v.network = nw
+	}
+
+	// this can be inferred?
+	v.resourcePool = "/ha-datacenter/host/localhost.hsd1.ca.comcast.net/Resources"
+	if rp != "" {
+		v.resourcePool = rp
+	}
 
 	u, err := url.Parse("https://" + venv + "/sdk")
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	soapClient := soap.NewClient(u, true)
@@ -95,28 +126,31 @@ func (v *Vsphere) Initialize() error {
 }
 
 // CreateImage - Creates image on vsphere using nanos images
+// This merely uploads the flat and base image to the datastore and then
+// creates a copy of the image to perform the vmfs translation (import
+// does not do this by default). This sidesteps the vmfkstools
+// transformation.
 func (v *Vsphere) CreateImage(ctx *Context) error {
-
-	// create new image w/ paravirtual && vmnetx3
-	// this step prob belongs on creatinstance though..
-
 	vmdkBase := strings.ReplaceAll(ctx.config.CloudConfig.ImageName, "-image", "")
 
-	flatPath := "/tmp/" + vmdkBase + "-flat" + ".vmdk"
-	imgPath := "/tmp/" + vmdkBase + ".vmdk"
+	flat := vmdkBase + "-flat.vmdk"
+	base := vmdkBase + ".vmdk"
+
+	flatPath := "/tmp/" + flat
+	imgPath := "/tmp/" + base
 
 	f := find.NewFinder(v.client, true)
-	ds, err := f.DatastoreOrDefault(context.TODO(), datastore)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
 	p := soap.DefaultUpload
-	ds.UploadFile(context.TODO(), flatPath, vmdkBase+"/"+vmdkBase+"-flat.vmdk", &p)
-	ds.UploadFile(context.TODO(), imgPath, vmdkBase+"/"+vmdkBase+".vmdk", &p)
+	ds.UploadFile(context.TODO(), flatPath, vmdkBase+"/"+flat, &p)
+	ds.UploadFile(context.TODO(), imgPath, vmdkBase+"/"+base, &p)
 
-	dc, err := f.DatacenterOrDefault(context.TODO(), datacenter)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -124,19 +158,19 @@ func (v *Vsphere) CreateImage(ctx *Context) error {
 
 	m := ds.NewFileManager(dc, true)
 
-	m.Copy(context.TODO(), vmdkBase+"/"+vmdkBase+".vmdk", vmdkBase+"/"+vmdkBase+"2.vmdk")
+	m.Copy(context.TODO(), vmdkBase+"/"+base, vmdkBase+"/"+vmdkBase+"2.vmdk")
 
 	return nil
 }
 
 // ListImages lists images on a datastore.
-// this is incredibly naive at the moment and probably worth putting
+// This is incredibly naive at the moment and probably worth putting
 // under a root folder.
 // essentially does the equivalent of 'govc datastore.ls'
 func (v *Vsphere) ListImages(ctx *Context) error {
 
 	f := find.NewFinder(v.client, true)
-	ds, err := f.DatastoreOrDefault(context.TODO(), datastore)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -214,8 +248,6 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	var devices object.VirtualDeviceList
 	var err error
 
-	controller := "pvscsi"
-
 	imgName := ctx.config.CloudConfig.ImageName
 
 	fmt.Printf("spinning up:\t%s\n" + imgName)
@@ -231,13 +263,13 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	}
 
 	// add disk
-	scsi, err := devices.CreateSCSIController(controller)
+	scsi, err := devices.CreateSCSIController("pvscsi")
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	devices = append(devices, scsi)
-	controller = devices.Name(scsi)
+	controller := devices.Name(scsi)
 
 	dcontroller, err := devices.FindDiskController(controller)
 	if err != nil {
@@ -245,7 +277,7 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	}
 
 	f := find.NewFinder(v.client, true)
-	ds, err := f.DatastoreOrDefault(context.TODO(), datastore)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -261,7 +293,7 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 
 	// add network
 	// infer network stub
-	net, err := f.NetworkOrDefault(context.TODO(), network)
+	net, err := f.NetworkOrDefault(context.TODO(), v.network)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -276,9 +308,7 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 		fmt.Println(err)
 	}
 
-	netdev := device
-
-	devices = append(devices, netdev)
+	devices = append(devices, device)
 
 	deviceChange, err := devices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
 	if err != nil {
@@ -287,11 +317,11 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 
 	spec.DeviceChange = deviceChange
 
-	var datastore *object.Datastore
+	var datastorez *object.Datastore
 
-	datastore = ds
+	datastorez = ds
 
-	dc, err := f.DatacenterOrDefault(context.TODO(), datacenter)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -303,12 +333,12 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	}
 
 	spec.Files = &types.VirtualMachineFileInfo{
-		VmPathName: fmt.Sprintf("[%s]", datastore.Name()),
+		VmPathName: fmt.Sprintf("[%s]", datastorez.Name()),
 	}
 
 	folder := folders.VmFolder
 
-	pool, err := f.ResourcePoolOrDefault(context.TODO(), resourcePool)
+	pool, err := f.ResourcePoolOrDefault(context.TODO(), v.resourcePool)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -332,11 +362,11 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	return nil
 }
 
-// ListInstances lists instances on VSphere
+// ListInstances lists instances on VSphere.
+// It essentially does:
+// govc ls /ha-datacenter/vm
 func (v *Vsphere) ListInstances(ctx *Context) error {
-	//  govc ls /ha-datacenter/vm
 
-	// Create view of VirtualMachine objects
 	m := view.NewManager(v.client)
 
 	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
@@ -346,16 +376,11 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 
 	defer cv.Destroy(context.TODO())
 
-	// Retrieve summary property for all machines
-	// Reference:
-	// http://pubs.vmware.com/vsphere-60/topic/com.vmware.wssdk.apiref.doc/vim.VirtualMachine.html
 	var vms []mo.VirtualMachine
 	err = cv.Retrieve(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms)
 	if err != nil {
 		return err
 	}
-
-	// Print summary per vm (see also: govc/vm/info.go)
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "ID", "Status", "Created"})
@@ -378,7 +403,6 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	table.Render()
 
 	return nil
-
 }
 
 // DeleteInstance deletes instance from VSphere
@@ -393,7 +417,7 @@ func (v *Vsphere) DeleteInstance(ctx *Context, instancename string) error {
 func (v *Vsphere) StartInstance(ctx *Context, instancename string) error {
 	f := find.NewFinder(v.client, true)
 
-	dc, err := f.DatacenterOrDefault(context.TODO(), datacenter)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -404,7 +428,7 @@ func (v *Vsphere) StartInstance(ctx *Context, instancename string) error {
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			fmt.Println("tu-can-sam?")
+			fmt.Println("can't find vm " + instancename)
 		}
 		fmt.Println(err)
 	}
@@ -424,7 +448,7 @@ func (v *Vsphere) StartInstance(ctx *Context, instancename string) error {
 func (v *Vsphere) StopInstance(ctx *Context, instancename string) error {
 	f := find.NewFinder(v.client, true)
 
-	dc, err := f.DatacenterOrDefault(context.TODO(), datacenter)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -435,7 +459,7 @@ func (v *Vsphere) StopInstance(ctx *Context, instancename string) error {
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			fmt.Println("tu-can-sam?")
+			fmt.Println("can't find vm " + instancename)
 		}
 		fmt.Println(err)
 	}
