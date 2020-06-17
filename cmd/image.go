@@ -35,7 +35,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
-		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vultr]")
+		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
 	}
 
 	if c.CloudConfig.Platform == "gcp" && len(c.CloudConfig.ProjectID) == 0 {
@@ -151,6 +151,21 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 			exitWithError(err.Error())
 		} else {
 			fmt.Printf("aws image '%s' created...\n", c.CloudConfig.ImageName)
+		}
+	}
+
+	if c.CloudConfig.Platform == "vsphere" {
+		vsphere := p.(*api.Vsphere)
+		err = vsphere.Storage.CopyToBucket(c, keypath)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+
+		err = vsphere.CreateImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("vsphere image '%s' created...\n", c.CloudConfig.ImageName)
 		}
 	}
 
