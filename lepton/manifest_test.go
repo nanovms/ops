@@ -24,7 +24,7 @@ func TestAddKernel(t *testing.T) {
 	m := NewManifest("")
 	m.AddKernel("stage3/stage3")
 	var sb strings.Builder
-	toString(&m.children, &sb, 0)
+	toString(&m.boot, &sb, 0)
 	s := sb.String()
 	if s != kernel {
 		t.Errorf("Expected:%v Actual:%v", kernel, s)
