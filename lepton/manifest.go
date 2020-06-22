@@ -17,7 +17,8 @@ type link struct {
 // Manifest represent the filesystem.
 type Manifest struct {
 	sb          strings.Builder
-	children    map[string]interface{}
+	children    map[string]interface{} // root fs
+	boot        map[string]interface{} // boot fs
 	program     string
 	args        []string
 	debugFlags  map[string]rune
@@ -29,6 +30,7 @@ type Manifest struct {
 // NewManifest init
 func NewManifest(targetRoot string) *Manifest {
 	return &Manifest{
+		boot:        make(map[string]interface{}),
 		children:    make(map[string]interface{}),
 		debugFlags:  make(map[string]rune),
 		environment: make(map[string]string),
@@ -73,7 +75,9 @@ func (m *Manifest) AddNoTrace(name string) {
 
 // AddKernel the kernel to use
 func (m *Manifest) AddKernel(path string) {
-	m.children["kernel"] = path
+	node := make(map[string]interface{})
+	node["kernel"] = path
+	m.boot = node
 }
 
 // AddRelative path
@@ -266,6 +270,13 @@ func escapeValue(s string) string {
 func (m *Manifest) String() string {
 	sb := m.sb
 	sb.WriteString("(\n")
+
+	// write boot fs
+	sb.WriteString("boot:(children:(\n")
+	toString(&m.boot, &sb, 4)
+	sb.WriteString("))\n")
+
+	// write root fs
 	sb.WriteString("children:(\n")
 	toString(&m.children, &sb, 4)
 	sb.WriteString(")\n")
@@ -355,6 +366,7 @@ func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
 				toString(&ch, sb, indent+4)
 				sb.WriteString(strings.Repeat(" ", indent))
 			}
+
 			sb.WriteString("))\n")
 		}
 	}
