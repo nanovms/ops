@@ -91,7 +91,14 @@ func (d drive) String() string {
 
 func (dv device) String() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
+
+	// simple pci net hack -- FIXME
+	if dv.driver == "virtio-net" {
+		sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=0x0,%s=%s", dv.driver, dv.devtype, dv.devid))
+	} else {
+		sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
+	}
+
 	if len(dv.mac) > 0 {
 		sb.WriteString(fmt.Sprintf(",mac=%s", dv.mac))
 	}
@@ -241,6 +248,7 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []int) {
 		nettype: devType,
 		id:      id,
 	}
+
 	if devType != "user" {
 		if mac == "" {
 			dv.mac = generateMac()
@@ -251,6 +259,7 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []int) {
 			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
 		}
 	}
+
 	q.devices = append(q.devices, dv)
 	q.ifaces = append(q.ifaces, ndv)
 }
@@ -459,7 +468,6 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		q.addSerial("stdio")
 	}
 
-	q.addFlag("-nodefaults")
 	q.addFlag("-no-reboot")
 	q.addOption("-cpu", "max")
 
