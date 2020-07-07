@@ -27,7 +27,7 @@ curl https://ops.city/get.sh -sSfL | sh
 
 Building from source is easy if you have used Go before.
 
-This program requires GO Version 1.10.x or greater.
+This program requires GO Version 1.13.x or greater.
 
 Installing from source follows these general steps:
 
