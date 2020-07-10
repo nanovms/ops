@@ -47,6 +47,7 @@ type RunConfig struct {
 	Bridged   bool
 	TapName   string
 	Accel     bool
+	UDP       bool // enable UDP
 	OnPrem    bool // true if in a multi-instance/tenant on-prem env
 }
 

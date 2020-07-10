@@ -70,7 +70,7 @@ func TestStringSerial(t *testing.T) {
 
 func TestRandomMacGen(t *testing.T) {
 	q := qemu{}
-	q.addNetDevice("tap", "tap0", "", []int{})
+	q.addNetDevice("tap", "tap0", "", []int{}, false)
 	if len(q.devices[0].mac) == 0 {
 		t.Errorf("No RandomMac was assigned %s", q.devices[0].mac)
 	}
