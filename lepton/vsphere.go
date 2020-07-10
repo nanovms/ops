@@ -250,7 +250,7 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 
 	imgName := ctx.config.CloudConfig.ImageName
 
-	fmt.Printf("spinning up:\t%s\n" + imgName)
+	fmt.Printf("spinning up:\t%s\n", imgName)
 
 	spec := &types.VirtualMachineConfigSpec{
 		Name:       imgName,
