@@ -341,6 +341,8 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	pool, err := f.ResourcePoolOrDefault(context.TODO(), v.resourcePool)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println("Did you set the correct Resource Pool? https://nanovms.gitbook.io/ops/vsphere#create-instance ")
+		os.Exit(1)
 	}
 
 	task, err := folder.CreateVM(context.TODO(), *spec, pool, nil)
