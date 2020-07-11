@@ -34,12 +34,12 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID != "" {
+	if projectID == "" && provider == "gcp" {
 		c.CloudConfig.ProjectID = projectID
 	}
 
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone != "" {
+	if zone == "" && (provider == "gcp" || provider == "aws") {
 		c.CloudConfig.Zone = zone
 	}
 
@@ -105,7 +105,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" {
+	if zone == "" && (provider == "gcp" || provider == "aws") {
 		exitForCmd(cmd, "zone argument missing")
 	}
 
@@ -139,9 +139,10 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" {
+	if zone == "" && (provider == "gcp" || provider == "aws") {
 		exitForCmd(cmd, "zone argument missing")
 	}
+
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
@@ -163,7 +164,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" {
+	if zone == "" && (provider == "gcp" || provider == "aws") {
 		exitForCmd(cmd, "zone argument missing")
 	}
 
