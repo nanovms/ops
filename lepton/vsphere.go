@@ -409,7 +409,46 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 
 // DeleteInstance deletes instance from VSphere
 func (v *Vsphere) DeleteInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
+	f := find.NewFinder(v.client, true)
+
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	f.SetDatacenter(dc)
+
+	vms, err := f.VirtualMachineList(context.TODO(), instancename)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			fmt.Println("can't find vm " + instancename)
+		}
+		fmt.Println(err)
+	}
+
+	vm := vms[0]
+
+	task, err := vm.PowerOff(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Ignore error since the VM may already been in powered off
+	// state.
+	// vm.Destroy will fail if the VM is still powered on.
+	_ = task.Wait(context.TODO())
+
+	task, err = vm.Destroy(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	err = task.Wait(context.TODO())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
