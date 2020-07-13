@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
 
+	"github.com/vmware/govmomi/govc/host/esxcli"
 	"github.com/vmware/govmomi/object"
 
 	"github.com/vmware/govmomi/view"
@@ -385,7 +387,7 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "ID", "Status", "Created"})
+	table.SetHeader([]string{"Name", "IP", "Status", "Created"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -396,7 +398,15 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	for _, vm := range vms {
 		var row []string
 		row = append(row, vm.Summary.Config.Name)
-		row = append(row, "")
+
+		ps := string(vm.Summary.Runtime.PowerState)
+		if ps == "poweredOn" {
+			ip := v.ipFor(vm.Summary.Config.Name)
+			row = append(row, ip)
+		} else {
+			row = append(row, "")
+		}
+
 		row = append(row, string(vm.Summary.Runtime.PowerState))
 		row = append(row, fmt.Sprintf("%s", vm.Summary.Runtime.BootTime))
 		table.Append(row)
@@ -405,6 +415,61 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	table.Render()
 
 	return nil
+}
+
+// govc vm.ip -esxcli -wait 5s dtest
+// waits for up to 1hr!?? wtf
+//
+// if we get empty string set the following && try again
+//  govc host.esxcli system settings advanced set -o /Net/GuestIPHack -i
+//  1
+func (v *Vsphere) ipFor(instancename string) string {
+
+	f := find.NewFinder(v.client, true)
+
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	f.SetDatacenter(dc)
+
+	vm, err := f.VirtualMachine(context.TODO(), instancename)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			fmt.Println("can't find vm " + instancename)
+		}
+		fmt.Println(err)
+	}
+
+	var get func(*object.VirtualMachine) (string, error) = func(vm *object.VirtualMachine) (string, error) {
+
+		guest := esxcli.NewGuestInfo(v.client)
+
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				ip, err := guest.IpAddress(vm)
+				if err != nil {
+					return "", err
+				}
+
+				if ip != "0.0.0.0" {
+					return ip, nil
+				}
+			}
+		}
+	}
+
+	ip, err := get(vm)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return ip
 }
 
 // DeleteInstance deletes instance from VSphere
