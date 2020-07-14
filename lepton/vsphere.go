@@ -3,8 +3,10 @@ package lepton
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -285,8 +287,8 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	path := ds.Path(imgName + "/" + imgName + "2.vmdk")
-	disk := devices.CreateDisk(dcontroller, ds.Reference(), path)
+	dpath := ds.Path(imgName + "/" + imgName + "2.vmdk")
+	disk := devices.CreateDisk(dcontroller, ds.Reference(), dpath)
 
 	disk = devices.ChildDisk(disk)
 
@@ -361,7 +363,48 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	object.NewVirtualMachine(v.client, info.Result.(types.ManagedObjectReference))
+	vm := object.NewVirtualMachine(v.client, info.Result.(types.ManagedObjectReference))
+
+	devices, err = vm.Device(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	// add serial for logs
+	serial, err := devices.CreateSerialPort()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = vm.AddDevice(context.TODO(), serial)
+	if err != nil {
+		return err
+	}
+
+	devices, err = vm.Device(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	d, err := devices.FindSerialPort("")
+	if err != nil {
+		return err
+	}
+
+	devices = devices.SelectByType(d)
+
+	var mvm mo.VirtualMachine
+	err = vm.Properties(context.TODO(), vm.Reference(), []string{"config.files.logDirectory"}, &mvm)
+	if err != nil {
+		return err
+	}
+
+	uri := path.Join(mvm.Config.Files.LogDirectory, "console.log")
+
+	err = vm.EditDevice(context.TODO(), devices.ConnectSerialPort(d, uri, false, ""))
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	return nil
 }
@@ -669,9 +712,41 @@ func (v *Vsphere) StopInstance(ctx *Context, instancename string) error {
 	return err
 }
 
-// GetInstanceLogs gets instance related logs
+// GetInstanceLogs gets instance related logs.
+// govc datastore.tail -n 100 gtest/serial.out
+// logs don't appear until you spin up the instance.
 func (v *Vsphere) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-	fmt.Println("un-implemented")
+
+	f := find.NewFinder(v.client, true)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	_, err = f.DefaultHostSystem(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	serialFile := instancename + "/console.log"
+
+	file, err := ds.Open(context.TODO(), serialFile)
+	if err != nil {
+		return err
+	}
+
+	var reader io.ReadCloser = file
+
+	err = file.Tail(100)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, reader)
+
+	_ = reader.Close()
+
 	return nil
 }
 

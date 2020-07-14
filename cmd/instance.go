@@ -234,20 +234,25 @@ func instanceStartCommand() *cobra.Command {
 
 func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
+
 	p := getCloudProvider(provider)
 	c := api.Config{}
+
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" {
+	if projectID == "" && provider == "gcp" {
 		exitForCmd(cmd, "projectid argument missing")
 	}
+
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" {
+	if zone == "" && (provider == "gcp" || provider == "aws") {
 		exitForCmd(cmd, "zone argument missing")
 	}
+
 	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
 	if err != nil {
 		panic(err)
 	}
+
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
