@@ -449,17 +449,28 @@ func (v *Vsphere) ipFor(instancename string) string {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		defer ticker.Stop()
 
+		icnt := 0
+
 		for {
 			select {
 			case <-ticker.C:
+
+				if icnt > 3 {
+					v.setGuestIPHack()
+				}
+
 				ip, err := guest.IpAddress(vm)
 				if err != nil {
+					fmt.Println(err)
 					return "", err
 				}
 
 				if ip != "0.0.0.0" {
 					return ip, nil
 				}
+
+				icnt++
+
 			}
 		}
 	}
@@ -470,6 +481,85 @@ func (v *Vsphere) ipFor(instancename string) string {
 	}
 
 	return ip
+}
+
+func (v *Vsphere) findHostPath() string {
+	f := find.NewFinder(v.client, true)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	f.SetDatacenter(dc)
+
+	host, err := f.DefaultHostSystem(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return host.InventoryPath
+}
+
+func (v *Vsphere) runCLI(args []string) (*esxcli.Response, error) {
+	f := find.NewFinder(v.client, true)
+
+	hostPath := v.findHostPath()
+	host, err := f.HostSystemOrDefault(context.TODO(), hostPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	e, err := esxcli.NewExecutor(v.client, host)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return e.Run(args)
+}
+
+func (v *Vsphere) iphackEnabled() bool {
+	args := []string{"system", "settings", "advanced", "list", "-o", "/Net/GuestIPHack"}
+	res, err := v.runCLI(args)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, val := range res.Values {
+		if ival, ok := val["IntValue"]; ok {
+			if ival[0] == "1" {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (v *Vsphere) setGuestIPHack() {
+	if v.iphackEnabled() {
+		fmt.Println("ip hack enabled")
+	} else {
+		fmt.Println("setting ip hack")
+
+		args := []string{"system", "settings", "advanced", "set", "-o", "/Net/GuestIPHack", "-i", "1"}
+
+		res, err := v.runCLI(args)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		debug := false // FIXME: should have a debug log throughout OPS
+		if debug {
+			for _, val := range res.Values {
+				fmt.Println(val)
+			}
+
+		}
+
+	}
+
+	fmt.Println("IP hack has been enabled for all new ARP requests, however, for existing hosts the easiest way to trigger that is to simply reboot the vm.")
+	os.Exit(0)
 }
 
 // DeleteInstance deletes instance from VSphere
