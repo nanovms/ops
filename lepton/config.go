@@ -42,6 +42,7 @@ type RunConfig struct {
 	BaseName  string // FIXME: basename of image only
 	Ports     []int
 	GdbPort   int
+	CPUs      int // number of cpus
 	Verbose   bool
 	Memory    string
 	Bridged   bool
