@@ -476,6 +476,10 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	q.addFlag("-no-reboot")
 	q.addOption("-cpu", "max")
 
+	if rconfig.CPUs > 0 {
+		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
+	}
+
 	// we could perhaps cascade for different versions of qemu here but
 	// I think everyone should have this
 	q.addOption("-machine", "q35")

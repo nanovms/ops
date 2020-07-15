@@ -45,6 +45,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	smp, err := cmd.Flags().GetInt("smp")
+	if err != nil {
+		panic(err)
+	}
+
 	noTrace, err := cmd.Flags().GetStringArray("no-trace")
 	if err != nil {
 		panic(err)
@@ -122,6 +127,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	c.RunConfig.GdbPort = gdbport
+
+	if smp > 0 {
+		c.RunConfig.CPUs = smp
+	}
+
 	c.TargetRoot = targetRoot
 
 	c.RunConfig.TapName = tapDeviceName
@@ -172,6 +182,7 @@ func RunCommand() *cobra.Command {
 	var force bool
 	var debugflags bool
 	var gdbport int
+	var smp int
 	var noTrace []string
 	var args []string
 	var envs []string
@@ -210,6 +221,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
+	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
 
 	return cmdRun
 }
