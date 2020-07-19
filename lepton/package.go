@@ -42,7 +42,7 @@ func DownloadPackage(name string) (string, error) {
 	archivename := name + ".tar.gz"
 	packagepath := path.Join(PackagesCache, archivename)
 	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
-		if err = DownloadFile(packagepath,
+		if err = DownloadFileWithProgress(packagepath,
 			fmt.Sprintf(PackageBaseURL, archivename), 600); err != nil {
 			return "", err
 		}
@@ -57,7 +57,7 @@ func GetPackageList() *map[string]Package {
 	packageManifest := GetPackageManifestFile()
 	stat, err := os.Stat(packageManifest)
 	if os.IsNotExist(err) || PackageManifestChanged(stat, PackageManifestURL) {
-		if err = DownloadFile(packageManifest, PackageManifestURL, 10); err != nil {
+		if err = DownloadFile(packageManifest, PackageManifestURL, 10, false); err != nil {
 			panic(err)
 		}
 	}

@@ -108,7 +108,7 @@ func addDefaultFiles(m *Manifest, c *Config) error {
 
 	localtar := path.Join(GetOpsHome(), "common.tar.gz")
 	if _, err := os.Stat(localtar); os.IsNotExist(err) {
-		err := DownloadFile(localtar, commonArchive, 10)
+		err := DownloadFileWithProgress(localtar, commonArchive, 10)
 		if err != nil {
 			return err
 		}
@@ -384,7 +384,7 @@ func DownloadNightlyImages(c *Config) error {
 	localtar := path.Join(NightlyLocalFolder, nightlyFileName())
 	// we have an update, let's download since it's nightly
 	if remote != local || c.Force {
-		if err = DownloadFile(localtar, NightlyReleaseURL, 600); err != nil {
+		if err = DownloadFileWithProgress(localtar, NightlyReleaseURL, 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 		// update local timestamp
@@ -410,7 +410,7 @@ func DownloadReleaseImages(version string) error {
 
 	localtar := path.Join(localFolder, releaseFileName(version))
 
-	if err := DownloadFile(localtar, url, 600); err != nil {
+	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
@@ -425,8 +425,13 @@ func DownloadReleaseImages(version string) error {
 	return nil
 }
 
+// DownloadFileWithProgress downloads file using URL displaying progress counter
+func DownloadFileWithProgress(filepath string, url string, timeout int) error {
+	return DownloadFile(filepath, url, timeout, true)
+}
+
 // DownloadFile downloads file using URL
-func DownloadFile(filepath string, url string, timeout int) error {
+func DownloadFile(filepath string, url string, timeout int, showProgress bool) error {
 	fmt.Println("Downloading..", url)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
@@ -447,16 +452,19 @@ func DownloadFile(filepath string, url string, timeout int) error {
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
-	// Create our progress reporter and pass it to be used alongside our writer
-	counter := NewWriteCounter(fsize)
-	counter.Start()
+	// Optionally create a progress reporter and pass it to be used alongside our writer
+	if showProgress {
+		counter := NewWriteCounter(fsize)
+		counter.Start()
+		_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+		counter.Finish()
+	} else {
+		_, err = io.Copy(out, resp.Body)
+	}
 
-	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
 	if err != nil {
 		return err
 	}
-
-	counter.Finish()
 
 	err = os.Rename(filepath+".tmp", filepath)
 	if err != nil {
