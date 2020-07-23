@@ -63,6 +63,8 @@ func getCloudProvider(providerName string) api.Provider {
 		provider = &api.Vultr{}
 	} else if providerName == "vsphere" {
 		provider = &api.Vsphere{}
+	} else if providerName == "azure" {
+		provider = &api.Azure{}
 	} else {
 		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
 		os.Exit(1)

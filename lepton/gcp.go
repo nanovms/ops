@@ -396,15 +396,18 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
 		return err
 	}
+
 	context := context.TODO()
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
 	if err != nil {
 		return err
 	}
+
 	computeService, err := compute.New(client)
 	if err != nil {
 		return err
 	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
 	table.SetHeaderColor(

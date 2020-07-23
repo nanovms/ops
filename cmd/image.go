@@ -169,6 +169,22 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if c.CloudConfig.Platform == "azure" {
+		azure := p.(*api.Azure)
+
+		err = azure.Storage.CopyToBucket(c, keypath)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+
+		err = azure.CreateImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("azure image '%s' created...\n", c.CloudConfig.ImageName)
+		}
+	}
+
 }
 
 func imageCreateCommand() *cobra.Command {
