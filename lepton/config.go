@@ -42,11 +42,13 @@ type RunConfig struct {
 	BaseName  string // FIXME: basename of image only
 	Ports     []int
 	GdbPort   int
+	CPUs      int // number of cpus
 	Verbose   bool
 	Memory    string
 	Bridged   bool
 	TapName   string
 	Accel     bool
+	UDP       bool // enable UDP
 	OnPrem    bool // true if in a multi-instance/tenant on-prem env
 }
 

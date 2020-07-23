@@ -26,6 +26,10 @@ dim="\e[2m"
 RELEASES_URL="https://storage.googleapis.com/cli"
 
 
+initArch() {
+    ARCH=$(uname -m)
+}
+
 initOS() {
     OS=$(uname | tr '[:upper:]' '[:lower:]')
     if [ -n "$OPS_OS" ]; then
@@ -72,7 +76,12 @@ ops_download() {
   # use github release tags
 
   # assemble expected release URL
-  BINARY_URL="$RELEASES_URL/${OS}/ops"
+
+  if [ "$ARCH" = "aarch64" ]; then
+    BINARY_URL="$RELEASES_URL/${OS}/${ARCH}/ops"
+  else 
+    BINARY_URL="$RELEASES_URL/${OS}/ops"
+  fi
 
   DOWNLOAD_FILE=$(mktemp -t ops.XXXXXXXXXX)
 
@@ -301,6 +310,7 @@ ops_install() {
 
   # identify platform based on uname output
   initOS
+  initArch
   ops_install_qemu
   ops_set_user_permissions
   ops_download

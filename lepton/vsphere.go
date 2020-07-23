@@ -3,13 +3,17 @@ package lepton
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
 
+	"github.com/vmware/govmomi/govc/host/esxcli"
 	"github.com/vmware/govmomi/object"
 
 	"github.com/vmware/govmomi/view"
@@ -250,7 +254,7 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 
 	imgName := ctx.config.CloudConfig.ImageName
 
-	fmt.Printf("spinning up:\t%s\n" + imgName)
+	fmt.Printf("spinning up:\t%s\n", imgName)
 
 	spec := &types.VirtualMachineConfigSpec{
 		Name:       imgName,
@@ -283,8 +287,8 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	path := ds.Path(imgName + "/" + imgName + "2.vmdk")
-	disk := devices.CreateDisk(dcontroller, ds.Reference(), path)
+	dpath := ds.Path(imgName + "/" + imgName + "2.vmdk")
+	disk := devices.CreateDisk(dcontroller, ds.Reference(), dpath)
 
 	disk = devices.ChildDisk(disk)
 
@@ -341,6 +345,8 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	pool, err := f.ResourcePoolOrDefault(context.TODO(), v.resourcePool)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println("Did you set the correct Resource Pool? https://nanovms.gitbook.io/ops/vsphere#create-instance ")
+		os.Exit(1)
 	}
 
 	task, err := folder.CreateVM(context.TODO(), *spec, pool, nil)
@@ -357,7 +363,48 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	object.NewVirtualMachine(v.client, info.Result.(types.ManagedObjectReference))
+	vm := object.NewVirtualMachine(v.client, info.Result.(types.ManagedObjectReference))
+
+	devices, err = vm.Device(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	// add serial for logs
+	serial, err := devices.CreateSerialPort()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = vm.AddDevice(context.TODO(), serial)
+	if err != nil {
+		return err
+	}
+
+	devices, err = vm.Device(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	d, err := devices.FindSerialPort("")
+	if err != nil {
+		return err
+	}
+
+	devices = devices.SelectByType(d)
+
+	var mvm mo.VirtualMachine
+	err = vm.Properties(context.TODO(), vm.Reference(), []string{"config.files.logDirectory"}, &mvm)
+	if err != nil {
+		return err
+	}
+
+	uri := path.Join(mvm.Config.Files.LogDirectory, "console.log")
+
+	err = vm.EditDevice(context.TODO(), devices.ConnectSerialPort(d, uri, false, ""))
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	return nil
 }
@@ -383,7 +430,7 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "ID", "Status", "Created"})
+	table.SetHeader([]string{"Name", "IP", "Status", "Created"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -394,7 +441,15 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	for _, vm := range vms {
 		var row []string
 		row = append(row, vm.Summary.Config.Name)
-		row = append(row, "")
+
+		ps := string(vm.Summary.Runtime.PowerState)
+		if ps == "poweredOn" {
+			ip := v.ipFor(vm.Summary.Config.Name)
+			row = append(row, ip)
+		} else {
+			row = append(row, "")
+		}
+
 		row = append(row, string(vm.Summary.Runtime.PowerState))
 		row = append(row, fmt.Sprintf("%s", vm.Summary.Runtime.BootTime))
 		table.Append(row)
@@ -405,9 +460,193 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 	return nil
 }
 
+// govc vm.ip -esxcli -wait 5s dtest
+// waits for up to 1hr!?? wtf
+//
+// if we get empty string set the following && try again
+//  govc host.esxcli system settings advanced set -o /Net/GuestIPHack -i
+//  1
+func (v *Vsphere) ipFor(instancename string) string {
+
+	f := find.NewFinder(v.client, true)
+
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	f.SetDatacenter(dc)
+
+	vm, err := f.VirtualMachine(context.TODO(), instancename)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			fmt.Println("can't find vm " + instancename)
+		}
+		fmt.Println(err)
+	}
+
+	var get func(*object.VirtualMachine) (string, error) = func(vm *object.VirtualMachine) (string, error) {
+
+		guest := esxcli.NewGuestInfo(v.client)
+
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
+
+		icnt := 0
+
+		for {
+			select {
+			case <-ticker.C:
+
+				if icnt > 3 {
+					v.setGuestIPHack()
+				}
+
+				ip, err := guest.IpAddress(vm)
+				if err != nil {
+					fmt.Println(err)
+					return "", err
+				}
+
+				if ip != "0.0.0.0" {
+					return ip, nil
+				}
+
+				icnt++
+
+			}
+		}
+	}
+
+	ip, err := get(vm)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return ip
+}
+
+func (v *Vsphere) findHostPath() string {
+	f := find.NewFinder(v.client, true)
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	f.SetDatacenter(dc)
+
+	host, err := f.DefaultHostSystem(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return host.InventoryPath
+}
+
+func (v *Vsphere) runCLI(args []string) (*esxcli.Response, error) {
+	f := find.NewFinder(v.client, true)
+
+	hostPath := v.findHostPath()
+	host, err := f.HostSystemOrDefault(context.TODO(), hostPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	e, err := esxcli.NewExecutor(v.client, host)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return e.Run(args)
+}
+
+func (v *Vsphere) iphackEnabled() bool {
+	args := []string{"system", "settings", "advanced", "list", "-o", "/Net/GuestIPHack"}
+	res, err := v.runCLI(args)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, val := range res.Values {
+		if ival, ok := val["IntValue"]; ok {
+			if ival[0] == "1" {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (v *Vsphere) setGuestIPHack() {
+	if v.iphackEnabled() {
+		fmt.Println("ip hack enabled")
+	} else {
+		fmt.Println("setting ip hack")
+
+		args := []string{"system", "settings", "advanced", "set", "-o", "/Net/GuestIPHack", "-i", "1"}
+
+		res, err := v.runCLI(args)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		debug := false // FIXME: should have a debug log throughout OPS
+		if debug {
+			for _, val := range res.Values {
+				fmt.Println(val)
+			}
+
+		}
+
+	}
+
+	fmt.Println("IP hack has been enabled for all new ARP requests, however, for existing hosts the easiest way to trigger that is to simply reboot the vm.")
+	os.Exit(0)
+}
+
 // DeleteInstance deletes instance from VSphere
 func (v *Vsphere) DeleteInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
+	f := find.NewFinder(v.client, true)
+
+	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	f.SetDatacenter(dc)
+
+	vms, err := f.VirtualMachineList(context.TODO(), instancename)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			fmt.Println("can't find vm " + instancename)
+		}
+		fmt.Println(err)
+	}
+
+	vm := vms[0]
+
+	task, err := vm.PowerOff(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Ignore error since the VM may already been in powered off
+	// state.
+	// vm.Destroy will fail if the VM is still powered on.
+	_ = task.Wait(context.TODO())
+
+	task, err = vm.Destroy(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	err = task.Wait(context.TODO())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -473,9 +712,41 @@ func (v *Vsphere) StopInstance(ctx *Context, instancename string) error {
 	return err
 }
 
-// GetInstanceLogs gets instance related logs
+// GetInstanceLogs gets instance related logs.
+// govc datastore.tail -n 100 gtest/serial.out
+// logs don't appear until you spin up the instance.
 func (v *Vsphere) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-	fmt.Println("un-implemented")
+
+	f := find.NewFinder(v.client, true)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	_, err = f.DefaultHostSystem(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	serialFile := instancename + "/console.log"
+
+	file, err := ds.Open(context.TODO(), serialFile)
+	if err != nil {
+		return err
+	}
+
+	var reader io.ReadCloser = file
+
+	err = file.Tail(100)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, reader)
+
+	_ = reader.Close()
+
 	return nil
 }
 
