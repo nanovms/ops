@@ -188,7 +188,7 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 	ilength := int(length)
 	q, r := int(ilength/max), ilength%max
 	if r != 0 {
-		q += 1
+		q++
 	}
 
 	_, err = blobURL.Create(ctx, length, 0, azblob.BlobHTTPHeaders{},
