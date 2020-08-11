@@ -247,7 +247,8 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 	region := "West US 2"
 	container := "quickstart-nanos"
-	disk := "disk.vhd"
+	disk := c.CloudConfig.ImageName + ".vhd"
+
 	uri := "https://" + bucket + ".blob.core.windows.net/" + container + "/" + disk
 
 	imageParams := compute.Image{

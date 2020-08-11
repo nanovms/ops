@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -168,19 +169,48 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 		fmt.Println(err)
 	}
 
-	blobURL := containerURL.NewBlockBlobURL(config.CloudConfig.ImageName + ".vhd")
+	blobURL := containerURL.NewPageBlobURL(config.CloudConfig.ImageName + ".vhd")
 
 	file, err := os.Open(vhdPath)
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer file.Close()
 
-	fmt.Printf("Uploading the file with blob name: %s\n", vhdPath)
-	_, err = azblob.UploadFileToBlockBlob(ctx, file, blobURL, azblob.UploadToBlockBlobOptions{
-		BlockSize:   4 * 1024 * 1024,
-		Parallelism: 16})
+	fi, err := file.Stat()
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	max := 4194304
+
+	length := fi.Size()
+	ilength := int(length)
+	q, r := int(ilength/max), ilength%max
+	if r != 0 {
+		q++
+	}
+
+	_, err = blobURL.Create(ctx, length, 0, azblob.BlobHTTPHeaders{},
+		azblob.Metadata{}, azblob.BlobAccessConditions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("max is -> %v\n", max)
+	fmt.Printf("q val -> %+v\n", q)
+
+	for i := 0; i < q; i++ {
+		page := make([]byte, max)
+		n, err := file.Read(page)
+		fmt.Printf("read %d bytes\n", n)
+
+		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Printf("chunk %d\n", i)
 	}
 
 	return nil
