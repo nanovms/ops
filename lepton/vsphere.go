@@ -84,18 +84,18 @@ func (v *Vsphere) Initialize() error {
 		v.datacenter = dc
 	}
 
-	v.datastore = "/ha-datacenter/datastore/datastore1/"
+	v.datastore = v.datacenter + "datastore/datastore1/"
 	if ds != "" {
 		v.datastore = ds
 	}
 
-	v.network = "/ha-datacenter/network/VM Network"
+	v.network = v.datacenter + "network/VM Network"
 	if nw != "" {
 		v.network = nw
 	}
 
 	// this can be inferred?
-	v.resourcePool = "/ha-datacenter/host/localhost.hsd1.ca.comcast.net/Resources"
+	v.resourcePool = v.datacenter + "host/localhost.hsd1.ca.comcast.net/Resources"
 	if rp != "" {
 		v.resourcePool = rp
 	}
