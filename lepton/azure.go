@@ -411,7 +411,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 			Location: to.StringPtr(a.locationDefault),
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
-					VMSize: compute.VirtualMachineSizeTypesBasicA0,
+					VMSize: compute.VirtualMachineSizeTypesStandardA1V2,
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{

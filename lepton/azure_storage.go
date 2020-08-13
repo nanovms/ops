@@ -197,20 +197,15 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("max is -> %v\n", max)
-	fmt.Printf("q val -> %+v\n", q)
-
 	for i := 0; i < q; i++ {
 		page := make([]byte, max)
 		n, err := file.Read(page)
-		fmt.Printf("read %d bytes\n", n)
 
 		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Printf("chunk %d\n", i)
 	}
 
 	return nil
