@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UnWarpConfig parses lepton config file from file
+// unWarpConfig parses lepton config file from file
 func unWarpConfig(file string) *api.Config {
 	var c api.Config
 	if file != "" {
@@ -27,11 +28,52 @@ func unWarpConfig(file string) *api.Config {
 			fmt.Fprintf(os.Stderr, "error config: %v\n", err)
 			os.Exit(1)
 		}
+		return &c
+	}
+	c = *unWarpDefaultConfig()
+	return &c
+}
+
+// unWarpDefaultConfig gets default config file from env
+func unWarpDefaultConfig() *api.Config {
+	var c api.Config
+	conf := os.Getenv("OPS_DEFAULT_CONFIG")
+	if conf != "" {
+		data, err := ioutil.ReadFile(conf)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
+			os.Exit(1)
+		}
+		err = json.Unmarshal(data, &c)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error config: %v\n", err)
+			os.Exit(1)
+		}
+		return &c
+	}
+	usr, err := user.Current()
+	if err != nil {
+		return &c
+	}
+	conf = usr.HomeDir + "/.opsrc"
+	_, err = os.Stat(conf)
+	if err != nil {
+		return &c
+	}
+	data, err := ioutil.ReadFile(conf)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
+		os.Exit(1)
+	}
+	err = json.Unmarshal(data, &c)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error config: %v\n", err)
+		os.Exit(1)
 	}
 	return &c
 }
 
-// SetDefaultImageName set default name for an image
+// setDefaultImageName set default name for an image
 func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 	// if user have not supplied an imagename, use the default as program_image
 	// all images goes to $HOME/.ops/images
@@ -75,7 +117,6 @@ func getCloudProvider(providerName string) api.Provider {
 }
 
 func initDefaultRunConfigs(c *api.Config, ports []int) {
-
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
 	}
