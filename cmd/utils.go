@@ -126,6 +126,7 @@ func initDefaultRunConfigs(c *api.Config, ports []int) {
 func fixupConfigImages(c *api.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
+		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 	}
 
 	if c.Boot == "" {
