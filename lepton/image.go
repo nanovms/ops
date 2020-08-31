@@ -421,7 +421,20 @@ func DownloadReleaseImages(version string) error {
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	updateLocalRelease(version)
+	// FIXME hack to rename stage3.img to kernel.img
+	oldKernel := path.Join(localFolder, "stage3.img")
+	newKernel := path.Join(localFolder, "kernel.img")
+	_, err = os.Stat(newKernel)
+	if err == nil {
+		return nil
+	}
+	_, err = os.Stat(oldKernel)
+	if err == nil {
+		os.Rename(oldKernel, newKernel)
+	}
+
 	return nil
 }
 

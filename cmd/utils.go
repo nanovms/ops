@@ -134,7 +134,7 @@ func fixupConfigImages(c *api.Config, version string) {
 	}
 
 	if c.Kernel == "" {
-		c.Kernel = path.Join(api.GetOpsHome(), version, "stage3.img")
+		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 	}
 
 	if c.Mkfs == "" {
