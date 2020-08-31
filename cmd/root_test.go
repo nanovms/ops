@@ -66,7 +66,7 @@ func TestDownloadImages(t *testing.T) {
 	// remove the files to force a download
 	// ignore any error from remove
 	boot := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "boot.img")
-	kernel := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "stage3.img")
+	kernel := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "kernel.img")
 	mkfs := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "mkfs")
 	os.Remove(mkfs)
 	os.Remove(boot)
