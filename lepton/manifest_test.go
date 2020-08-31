@@ -10,7 +10,7 @@ import (
 const (
 	relpath = `hw:(contents:(host:examples/hw))
 `
-	kernel = `kernel:(contents:(host:stage3/stage3))
+	kernel = `kernel:(contents:(host:kernel/kernel))
 `
 	lib = `lib:(children:(
     x86_64-linux-gnu:(children:(
@@ -22,7 +22,7 @@ const (
 
 func TestAddKernel(t *testing.T) {
 	m := NewManifest("")
-	m.AddKernel("stage3/stage3")
+	m.AddKernel("kernel/kernel")
 	var sb strings.Builder
 	toString(&m.boot, &sb, 0)
 	s := sb.String()
@@ -68,7 +68,7 @@ func TestManifestWithDeps(t *testing.T) {
 func TestSerializeManifest(t *testing.T) {
 	m := NewManifest("")
 	m.AddUserProgram("/bin/ls")
-	m.AddKernel("stage3/stage3")
+	m.AddKernel("kernel/kernel")
 	m.AddArgument("first")
 	m.AddEnvironmentVariable("var1", "value1")
 	m.AddLibrary("/usr/local/u.so")
