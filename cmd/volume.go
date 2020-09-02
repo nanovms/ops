@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"path"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
@@ -30,10 +31,12 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fixupConfigImages(conf, version)
+	if conf.Mkfs == "" {
+		conf.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
+	}
 
 	vol := api.NewVolume(conf)
-	err = vol.Create(name, data, size, provider, conf.Mkfs)
+	err = vol.Create(name, data, size, provider)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,11 +76,11 @@ func volumeListCommand() *cobra.Command {
 }
 
 func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	name := args[0]
+	id := args[0]
 	config, _ := cmd.Flags().GetString("config")
 	conf := unWarpConfig(config)
 	vol := api.NewVolume(conf)
-	err := vol.Delete(name)
+	err := vol.Delete(id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,6 +96,29 @@ func volumeDeleteCommand() *cobra.Command {
 	return cmdVolumeDelete
 }
 
+func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
+	image := args[0]
+	id := args[1]
+	mount := args[2]
+	config, _ := cmd.Flags().GetString("config")
+	conf := unWarpConfig(config)
+	vol := api.NewVolume(conf)
+	err := vol.Attach(image, id, mount)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func volumeAttachCommand() *cobra.Command {
+	cmdVolumeAttach := &cobra.Command{
+		Use:   "attach <image_name> <volume_id> <mount_path>",
+		Short: "attach volume",
+		Run:   volumeAttachCommandHandler,
+		Args:  cobra.MinimumNArgs(3),
+	}
+	return cmdVolumeAttach
+}
+
 // VolumeCommands handles volumes related operations
 func VolumeCommands() *cobra.Command {
 	var config string
@@ -101,7 +127,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
 		Short:     "manage nanos volumes",
-		ValidArgs: []string{"create, list"},
+		ValidArgs: []string{"create, list, delete, attach"},
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdVolume.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
@@ -110,5 +136,6 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.AddCommand(volumeCreateCommand())
 	cmdVolume.AddCommand(volumeListCommand())
 	cmdVolume.AddCommand(volumeDeleteCommand())
+	cmdVolume.AddCommand(volumeAttachCommand())
 	return cmdVolume
 }

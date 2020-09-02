@@ -455,6 +455,7 @@ func (q *qemu) addAccel() error {
 func (q *qemu) setConfig(rconfig *RunConfig) {
 	// add virtio drive
 	q.addDrive("hd0", rconfig.Imagename, "none")
+	// q.addOption("-drive", fmt.Sprintf("if=none,id=hd0,format=raw,file=%s", rconfig.Imagename))
 
 	pciBus := "pcie.0"
 
@@ -465,9 +466,13 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
 
 	// FIXME for multiple local tenants
-
 	q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
 	q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
+
+	for n, file := range rconfig.Mounts {
+		q.addDrive(fmt.Sprintf("hd%d", n+1), file, "none")
+		q.addOption("-device", fmt.Sprintf("scsi-hd,bus=scsi0.0,drive=hd%d", n+1))
+	}
 
 	netDevType := "user"
 	ifaceName := ""

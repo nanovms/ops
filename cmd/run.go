@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -106,10 +108,17 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	mounts, err := cmd.Flags().GetStringArray("mounts")
+	if err != nil {
+		panic(err)
+	}
+
 	c := unWarpConfig(config)
 
 	c.Args = append(c.Args, cmdargs...)
 	c.Program = args[0]
+	curdir, _ := os.Getwd()
+	c.ProgramPath = path.Join(curdir, args[0])
 
 	if len(cmdenvs) > 0 {
 		if len(c.Env) == 0 {
@@ -146,6 +155,16 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.NoTrace = noTrace
 	}
 	setDefaultImageName(cmd, c)
+
+	if len(mounts) > 0 {
+		for _, mount := range mounts {
+			vol := api.NewVolume(c)
+			err := vol.AttachOnRun(mount)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 
 	if !skipbuild {
 		buildImages(c)
@@ -190,6 +209,7 @@ func RunCommand() *cobra.Command {
 	var bridged bool
 	var nightly bool
 	var tap string
+	var mounts []string
 
 	var skipbuild bool
 	var manifestName string
@@ -222,6 +242,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdRun.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
+	cmdRun.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "mount <volume_id:mount_path>")
 
 	return cmdRun
 }

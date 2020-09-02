@@ -1,73 +1,103 @@
 package lepton
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
-	"reflect"
+	"strings"
 
 	"github.com/go-errors/errors"
 )
 
-var volumeDir = path.Join(GetOpsHome(), "volumes")
-var volumeData = path.Join(GetOpsHome(), "volumes", "volumes.json")
+var (
+	localVolumeDir  = path.Join(GetOpsHome(), "volumes")
+	localVolumeData = path.Join(GetOpsHome(), "volumes", "volumes.json")
+)
 
-var errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
+var (
+	errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
+	errVolumeMounted  = func(id, image string) error {
+		return errors.Errorf("volume with UUID %s is already mounted on %s", id, image)
+	}
+	errVolumeNotMounted = func(id, image string) error {
+		return errors.Errorf("volume with UUID %s is not mounted on %s", id, image)
+	}
+	errMountOccupied = func(mount, image string) error {
+		return errors.Errorf("path %s on image %s is mounted", mount, image)
+	}
+	errInvalidMountConfiguration = func(mount string) error { return errors.Errorf("%s: invalid mount configuration", mount) }
+)
 
+// Volume is service for managing nanos-managed volumes
 type Volume struct {
 	config *Config
 	store  volumeStore
 }
 
-type volume struct {
-	ID       string
-	Name     string
-	Data     string
-	Size     string
-	Path     string
-	Provider string // TODO change to enum/custom type
+// volumeStore interface for managing nanos volumes
+type volumeStore interface {
+	Insert(NanosVolume) error
+	Get(string) (NanosVolume, error)
+	GetAll() ([]NanosVolume, error)
+	Update(NanosVolume) error
+	Delete(string) (NanosVolume, error)
 }
 
+// NanosVolume information for nanos-managed volume
+type NanosVolume struct {
+	ID         string
+	Name       string
+	Data       string
+	Size       string
+	Path       string
+	AttachedTo string
+	Provider   string // TODO change to enum/custom type
+}
+
+// NewVolume instantiates new Volume
 func NewVolume(config *Config) *Volume {
 	return &Volume{
 		config: config,
-		store:  &JSONStore{path: volumeData},
+		store:  &JSONStore{path: localVolumeData},
 	}
 }
 
 // Create creates volume
-func (v *Volume) Create(name, data, size, provider, mkfs string) error {
+func (v *Volume) Create(name, data, size, provider string) error {
+	mkfs := v.config.Mkfs
 	raw := name + ".raw"
-	rawPath := path.Join(volumeDir, raw)
+	mnf := name + ".manifest"
+	rawPath := path.Join(localVolumeDir, raw)
 	var args []string
 	if data != "" {
-		var manifest string
-		// build manifest and return out path
-		args = append(args, rawPath)
-		args = append(args, "<")
-		args = append(args, manifest)
+		v.config.Dirs = append(v.config.Dirs, data)
+		mnfPath := path.Join(localVolumeDir, mnf)
+		err := buildVolumeManifest(v.config, mnfPath)
+		if err != nil {
+			return err
+		}
+		args = append(args, rawPath, "<", mnfPath)
 	} else {
-		args = append(args, "-e")
-		args = append(args, rawPath)
+		args = append(args, "-e", rawPath)
 	}
 	if size != "" {
-		args = append(args, "-s")
-		args = append(args, size)
+		args = append(args, "-s", size)
 	}
 
 	cmd := exec.Command(mkfs, args...)
-	out, err := cmd.Output()
+	log.Println(cmd.String())
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
 	uuid := uuidFromMKFS(out)
+	log.Println(uuid)
 
-	vol := volume{
+	vol := NanosVolume{
 		ID:       uuid,
 		Name:     name,
 		Data:     data,
@@ -77,6 +107,7 @@ func (v *Volume) Create(name, data, size, provider, mkfs string) error {
 	}
 	err = v.store.Insert(vol)
 	if err != nil {
+		log.Println("insert", err)
 		return errors.Wrap(err, 1)
 	}
 
@@ -84,6 +115,7 @@ func (v *Volume) Create(name, data, size, provider, mkfs string) error {
 	return nil
 }
 
+// GetAll gets list of all nanos-managed volumes
 func (v *Volume) GetAll() error {
 	vols, err := v.store.GetAll()
 	if err != nil {
@@ -96,10 +128,27 @@ func (v *Volume) GetAll() error {
 	return nil
 }
 
-func (v *Volume) Get(id string) (volume, error) {
+// Get gets nanos-managed volume by its UUID
+func (v *Volume) Get(id string) (NanosVolume, error) {
 	return v.store.Get(id)
 }
 
+// Update updates nanos-managed volume for attach/detach purposes
+func (v *Volume) Update(id string, vol NanosVolume) error {
+	cur, err := v.Get(id)
+	if err != nil {
+		return err
+	}
+	// TODO more general update
+	cur.AttachedTo = vol.AttachedTo
+	err = v.store.Update(cur)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Delete deletes nanos-managed volume by its UUID
 func (v *Volume) Delete(id string) error {
 	// delete from storage
 	vol, err := v.store.Delete(id)
@@ -116,116 +165,79 @@ func (v *Volume) Delete(id string) error {
 	return nil
 }
 
-type volumeStore interface {
-	Insert(volume) error
-	Get(string) (volume, error)
-	GetAll() ([]volume, error)
-	Delete(string) (volume, error)
-}
+// Attach attaches volume to a stopped instance
+func (v *Volume) Attach(image, id, mount string) error {
+	mount = strings.TrimPrefix(mount, "/")
+	mnf := image + ".json"
+	mnfPath := path.Join(localManifestDir, mnf)
 
-type JSONStore struct {
-	path string
-}
-
-func (s *JSONStore) Insert(vol volume) error {
-	f, err := os.OpenFile(s.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	b, err := ioutil.ReadFile(mnfPath)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	enc := json.NewEncoder(f)
-	err = enc.Encode(vol)
+
+	// unmarshal manifest to config
+	var conf Config
+	err = json.Unmarshal(b, &conf)
+	if err != nil {
+		return err
+	}
+	conf.NightlyBuild = v.config.NightlyBuild
+
+	// preserve default
+	conf.BuildDir = v.config.BuildDir
+
+	// check if mounted
+	if conf.Mounts == nil {
+		conf.Mounts = make(map[string]string)
+	}
+	_, ok := conf.Mounts[id]
+	if ok {
+		return errVolumeMounted(id, image)
+	}
+	for _, mnt := range conf.Mounts {
+		if mnt == mount {
+			return errMountOccupied(mount, image)
+		}
+	}
+	// rebuild config to add mount
+	conf.Mounts[id] = mount
+	// rebuild image and manifest to add mount
+	err = rebuildImage(conf)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *JSONStore) Get(id string) (volume, error) {
-	var vol volume
-	f, err := os.Open(s.path)
+// AttachOnRun attaches volume to instance on `ops run`
+func (v *Volume) AttachOnRun(mount string) error {
+	um := strings.Split(mount, ":")
+	if len(um) < 2 {
+		return errInvalidMountConfiguration(mount)
+	}
+	uuid := um[0]
+	path := strings.TrimPrefix(um[1], "/")
+	vol, err := v.Get(uuid)
 	if err != nil {
-		return vol, err
+		return err
 	}
-	defer f.Close()
-	dec := json.NewDecoder(f)
-	for {
-		err = dec.Decode(&vol)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return vol, err
-		}
-		if vol.ID == id {
-			return vol, nil
-		}
+	conf := v.config
+	// check if mounted
+	if conf.Mounts == nil {
+		conf.Mounts = make(map[string]string)
 	}
-	return vol, errVolumeNotFound(id)
-}
-
-func (s *JSONStore) GetAll() ([]volume, error) {
-	var volumes []volume
-	f, err := os.Open(s.path)
-	if err != nil {
-		return volumes, err
+	_, ok := conf.Mounts[uuid]
+	if ok {
+		return errVolumeMounted(uuid, "")
 	}
-	defer f.Close()
-	dec := json.NewDecoder(f)
-	for {
-		var vol volume
-		err = dec.Decode(&vol)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return volumes, err
-		}
-		volumes = append(volumes, vol)
-	}
-	return volumes, nil
-}
-
-func (s *JSONStore) Delete(id string) (volume, error) {
-	var volumes []volume
-	var vol volume
-	f, err := os.Open(s.path)
-	if err != nil {
-		return vol, err
-	}
-	dec := json.NewDecoder(f)
-	for {
-		var cur volume
-		err = dec.Decode(&cur)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return vol, err
-		}
-		if cur.ID == id {
-			vol = cur
-			continue
-		}
-		volumes = append(volumes, cur)
-	}
-	if reflect.DeepEqual(vol, volume{}) {
-		return vol, errVolumeNotFound(id)
-	}
-	f.Close()
-
-	f, _ = os.OpenFile(s.path, os.O_RDWR|os.O_TRUNC, 0644)
-	buf := bytes.NewBuffer([]byte{})
-	enc := json.NewEncoder(buf)
-	for _, vol := range volumes {
-		err = enc.Encode(vol)
-		if err != nil {
-			return vol, err
+	for _, mnt := range conf.Mounts {
+		if mnt == mount {
+			return errMountOccupied(path, "")
 		}
 	}
-	_, err = f.Write(buf.Bytes())
-	if err != nil {
-		return vol, err
-	}
-	return vol, nil
+	// rebuild config to add mount
+	conf.Mounts[uuid] = path
+	conf.RunConfig.Mounts = append(conf.RunConfig.Mounts, vol.Path)
+	return nil
 }
