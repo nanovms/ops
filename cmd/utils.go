@@ -18,6 +18,7 @@ import (
 func unWarpConfig(file string) *api.Config {
 	var c api.Config
 	if file != "" {
+		c = *api.NewConfig()
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
@@ -36,7 +37,7 @@ func unWarpConfig(file string) *api.Config {
 
 // unWarpDefaultConfig gets default config file from env
 func unWarpDefaultConfig() *api.Config {
-	var c api.Config
+	c := *api.NewConfig()
 	conf := os.Getenv("OPS_DEFAULT_CONFIG")
 	if conf != "" {
 		data, err := ioutil.ReadFile(conf)

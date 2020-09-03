@@ -30,7 +30,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if config != "" {
 		c = unWarpConfig(config)
 	} else {
-		c = &api.Config{}
+		c = api.NewConfig()
 	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
@@ -97,7 +97,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 
 	p := getCloudProvider(provider)
-	c := api.Config{}
+	c := *api.NewConfig()
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" && provider == "gcp" {
@@ -130,7 +130,7 @@ func instanceListCommand() *cobra.Command {
 func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p := getCloudProvider(provider)
-	c := api.Config{}
+	c := *api.NewConfig()
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -155,7 +155,7 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p := getCloudProvider(provider)
-	c := api.Config{}
+	c := *api.NewConfig()
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -180,7 +180,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p := getCloudProvider(provider)
-	c := api.Config{}
+	c := *api.NewConfig()
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -236,7 +236,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 
 	p := getCloudProvider(provider)
-	c := api.Config{}
+	c := *api.NewConfig()
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" && provider == "gcp" {

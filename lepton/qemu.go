@@ -462,6 +462,8 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 	}
 	if rconfig.Accel || rconfig.Bridged {
 		q.addAccel()
+	} else {
+		fmt.Printf(WarningColor, "Hardware acceleration disabled\n")
 	}
 
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)

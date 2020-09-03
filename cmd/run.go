@@ -220,7 +220,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
-	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", false, "use cpu virtualization extension")
+	cmdRun.PersistentFlags().BoolVarP(&accel, "accel", "x", true, "use cpu virtualization extension")
 	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
 
 	return cmdRun
