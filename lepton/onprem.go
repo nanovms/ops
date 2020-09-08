@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -210,7 +209,7 @@ func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 	}
 
 	// yolo
-	err = syscall.Kill(pid, 9)
+	err = sysKill(pid)
 	if err != nil {
 		fmt.Println(err)
 	}
