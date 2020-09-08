@@ -1,6 +1,7 @@
 /.staging
 /image
 /ops
+ops.exe
 /tags
 /Makefile.local
 vendor/
