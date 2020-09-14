@@ -436,9 +436,8 @@ func (q *qemu) addAccel() error {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host")
 			return nil
-		} else {
-			return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
 		}
+		return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
 	}
 
 	if runtime.GOOS == "linux" {
@@ -519,11 +518,11 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 func (q *qemu) isInstalled() bool {
 	qemuCommand := qemuBaseCommand
 	if filepath.Base(qemuCommand) == qemuCommand {
-		if lp, err := exec.LookPath(qemuCommand); err != nil {
+		lp, err := exec.LookPath(qemuCommand)
+		if err != nil {
 			return false
-		} else {
-			qemuCommand = lp
 		}
+		qemuCommand = lp
 	}
 
 	fi, err := os.Stat(qemuCommand)
