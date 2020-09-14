@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -295,7 +296,7 @@ func generateMac() string {
 func QemuVersion() (string, error) {
 	versionData, err := exec.Command(qemuBaseCommand, "--version").Output()
 	if err != nil {
-		return "", err
+		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
 	}
 	return parseQemuVersion(versionData), nil
 }
@@ -307,15 +308,18 @@ func parseQemuVersion(data []byte) string {
 
 // kvmGroupPermission returns true if the current user is part of the kvm qroup,
 // false if she is not, or an error. or an error.
-func kvmGroupPermissions() (bool, error) {
+func kvmGroupPermissions() error {
 	currentUser, err := user.Current()
 	if err != nil {
-		return false, err
+		return err
 	}
 	if currentUser.Uid == "0" {
-		return true, nil
+		return nil
 	}
-	return groupPermissions(currentUser, "kvm")
+	if inGroup, err := groupPermissions(currentUser, "kvm"); !inGroup || err != nil {
+		return &errQemuHWAccelNoUserRights{errCustom{"user not in kvm group", err}}
+	}
+	return nil
 }
 
 // groupPermissions returns true if the user is in the group specified by the
@@ -397,44 +401,56 @@ func (q *qemu) addOption(flag, value string) {
 	q.flags = append(q.flags, option)
 }
 
-func (q *qemu) addAccel() {
+func (q *qemu) setAccel(rconfig *RunConfig) error {
+	if rconfig.Accel || rconfig.Bridged {
+		return q.addAccel()
+	}
+	return &errQemuHWAccelDisabledInConfig{errCustom{"Hardware acceleration disabled in config", nil}}
+}
+
+func (q *qemu) addAccel() error {
 	// hv_support should not throw errors. When error/log handling is
 	// implemented, then errors in detecting hardware acceleration support
 	// should be reported. Here we treat any error in detecting hardware
 	// acceleration the same as detecting no hardware acceleration - we don't
 	// add the flag.
 
+	// Check qemu is installed or not
+	if q.isInstalled() == false {
+		return &errQemuNotInstalled{errCustom{"QEMU not found", nil}}
+	}
+
 	const hvfSupportedVersion = "2.12" // https://wiki.qemu.org/ChangeLog/2.12#Host_support
 	qemuVersion, err := QemuVersion()
 	if err != nil {
-		return
+		return &errQemuCannotGetQemuVersion{errCustom{"cannot get QEMU version", err}}
 	}
 
 	ok, err := hvSupport()
 	if !(ok && err == nil) {
-		return
+		return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 	}
 
 	if runtime.GOOS == "darwin" {
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host")
-			return
+			return nil
+		} else {
+			return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
 		}
 	}
 
 	if runtime.GOOS == "linux" {
-		ok, err := kvmGroupPermissions()
-		if !(ok && err == nil) {
-			fmt.Printf("You specified hardware acceleration but you don't have rights.\n" +
-				"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n" +
-				"You'll need to re login for this to take affect.\n")
-			os.Exit(1)
+		if err := kvmGroupPermissions(); err != nil {
+			return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 		}
 		q.addFlag("-enable-kvm")
 		q.addOption("-cpu", "host")
-		return
+		return nil
 	}
+
+	return nil
 }
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
@@ -460,10 +476,15 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		netDevType = "tap"
 		ifaceName = rconfig.TapName
 	}
-	if rconfig.Accel || rconfig.Bridged {
-		q.addAccel()
-	} else {
-		fmt.Printf(WarningColor, "Hardware acceleration disabled\n")
+
+	if err := q.setAccel(rconfig); err != nil {
+		msg, terminate := qemuAccelWarningMessage(err)
+		if msg != "" {
+			fmt.Println(msg)
+		}
+		if terminate {
+			os.Exit(1)
+		}
 	}
 
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)
@@ -493,6 +514,25 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)
 		q.addOption("-gdb", gdbProtoStr)
 	}
+}
+
+func (q *qemu) isInstalled() bool {
+	qemuCommand := qemuBaseCommand
+	if filepath.Base(qemuCommand) == qemuCommand {
+		if lp, err := exec.LookPath(qemuCommand); err != nil {
+			return false
+		} else {
+			qemuCommand = lp
+		}
+	}
+
+	fi, err := os.Stat(qemuCommand)
+	if err != nil || fi.IsDir() {
+		return false
+	}
+
+	// Can any (Owner, Group or Other) execute the file
+	return fi.Mode().Perm()&0111 != 0
 }
 
 func (q *qemu) Args(rconfig *RunConfig) []string {

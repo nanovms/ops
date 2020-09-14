@@ -212,7 +212,7 @@ ops_install_qemu() {
 ops_user_permissions() {
     local group="kvm"
     local username=`whoami`
-    local prompt="Ops uses kvm acceleration. Would you like to add ${username} to the kvm group [yes/No]? "
+    local prompt="Ops uses kvm acceleration. Would you like to add ${username} to the kvm group [Yes/no]? "
     local notification="Adding ${username} to ${group} using sudo."
     local failure="Unable to add ${username} to ${group}. Please add the $username to ${group} manually."
     local success="${username} has been added to kvm ${group}. The change will take affect on the next login."
@@ -229,7 +229,7 @@ ops_user_permissions() {
         local reply=`echo $REPLY | tr '[:upper:]' '[:lower:]'`
 
         if [ -z "$reply" ]; then
-            reply="no"
+            reply="yes"
         fi
 
         case "$reply" in
@@ -297,6 +297,49 @@ ops_link() {
   fi
 }
 
+checkHWAccelSupport() {
+  echo ""
+
+  local hwSupported=false
+  local haveRights=false
+
+  if [ "$OS" = "linux" ]; then
+    local group="kvm"
+    local username=`whoami`
+    local hw_support="grep -woE 'svm|vmx' /proc/cpuinfo | uniq"
+
+    #check acceleration supported
+    if [ "$hw_support" = "svm" ] || [ "$hw_support" = "vmx" ]; then
+      hwSupported=true
+    fi
+
+    #check permissions
+    if groups $username | grep -q "\b${group}\b"; then
+        haveRights=true
+    fi
+  fi
+
+  if [ "$OS" = "darwin" ]; then
+    haveRights=true
+    local hw_support=`sysctl kern.hv_support`
+    if [ "$hw_support" = "kern.hv_support: 1" ]; then
+      hwSupported=true
+    fi
+  fi
+
+  if [ "$hwSupported" = "false" ]; then
+        echo "$yellow> Hardware acceleration not supported by your system. $reset"
+        echo "$yellow> Ops will attempt to enable acceleration by default and will show a warning if the system doesn't support it. $reset"
+        echo "$yellow> To avoid such warnings you may disable acceleration in configuration or via command line parameters. $reset"
+  else
+    if [ "$haveRights" = "false" ]; then
+      echo "$yellow> Hardware acceleration is supported, but you don't have rights. $reset"
+      echo "$yellow> Try adding yourself to the kvm group: sudo adduser ${username} kvm $reset"
+      echo "$yellow> You'll need to re-login for this to take affect. $reset"
+    fi
+  fi
+}
+
 ops_install() {
   magenta1="${reset}\033[34;1m"
   magenta2="${reset}\033[34m"
@@ -313,6 +356,7 @@ ops_install() {
   initArch
   ops_install_qemu
   ops_set_user_permissions
+  checkHWAccelSupport
   ops_download
   ops_link
 }
