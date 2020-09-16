@@ -281,7 +281,7 @@ ops_link() {
     printf "* Append the following lines to the correct file yourself:$reset\n"
     command printf "${SOURCE_STR}"
   else
-    if ! grep -q 'ops.sh' "$OPS_PROFILE"; then
+    if ! grep -q 'ops' "$OPS_PROFILE"; then
       command printf "$SOURCE_STR" >> "$OPS_PROFILE"
     fi
     printf "\033[1A$cyan> Adding to bash profile... ✓$reset\n"
