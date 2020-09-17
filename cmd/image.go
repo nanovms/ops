@@ -222,7 +222,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	var c *api.Config
-	c = &api.Config{}
+	c = api.NewConfig()
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
@@ -251,7 +251,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 
 	var c *api.Config
-	c = &api.Config{}
+	c = api.NewConfig()
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
@@ -288,7 +288,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	var c *api.Config
-	c = &api.Config{}
+	c = api.NewConfig()
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
