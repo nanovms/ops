@@ -90,30 +90,30 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 }
 
 // TODO : use factory or DI
-func getCloudProvider(providerName string) api.Provider {
+func getCloudProvider(providerName string) (api.Provider, error) {
 	var provider api.Provider
 
-	if providerName == "gcp" {
+	switch providerName {
+	case "gcp":
 		provider = &api.GCloud{}
-	} else if providerName == "onprem" {
+	case "onprem":
 		provider = &api.OnPrem{}
-	} else if providerName == "aws" {
+	case "aws":
 		provider = &api.AWS{}
-	} else if providerName == "do" {
+	case "do":
 		provider = &api.DigitalOcean{}
-	} else if providerName == "vultr" {
+	case "vultr":
 		provider = &api.Vultr{}
-	} else if providerName == "vsphere" {
+	case "vsphere":
 		provider = &api.Vsphere{}
-	} else if providerName == "azure" {
+	case "azure":
 		provider = &api.Azure{}
-	} else {
-		fmt.Fprintf(os.Stderr, "error:Unknown provider %s", providerName)
-		os.Exit(1)
+	default:
+		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
 
-	provider.Initialize()
-	return provider
+	err := provider.Initialize()
+	return provider, err
 }
 
 func initDefaultRunConfigs(c *api.Config, ports []int) {
