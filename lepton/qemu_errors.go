@@ -41,7 +41,7 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 	}
 	if errors.As(err, &targetErrQemuNotInstalled) {
 		return fmt.Sprintf(WarningColor, "Cannot find QEMU (looks like it is not installed)\n"+
-			"Please install qemu using your package manager and re-run current command\n"), true
+			"Please install QEMU using your package manager and re-run current command\n"), true
 	}
 	if errors.As(err, &targetErrQemuCannotExecute) {
 		return fmt.Sprintf(WarningColor, "QEMU installed, but cannot be executed\n"+
@@ -49,9 +49,9 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 	}
 
 	if errors.As(err, &targetQemuHWAccelNoUserRights) {
-		return fmt.Sprintf(WarningColor, "You specified hardware acceleration, but you don't have rights\n"+
+		return fmt.Sprintf(WarningColor, "You don't have rights for using hardware acceleration\\n"+
 			"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n"+
-			"You'll need to re-login for this to take affect\n"), true
+			"You'll need to re-login for this to take affect\n"), false
 	}
 
 	if errors.As(err, &targetQemuHWAccelNotSupported) {

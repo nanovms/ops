@@ -238,7 +238,7 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
-	cmdLoadPackage.PersistentFlags().BoolVarP(&accel, "accel", "x", true, "use cpu virtualization extension")
+	cmdLoadPackage.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
 	return cmdLoadPackage

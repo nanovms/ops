@@ -205,7 +205,7 @@ ops_install_qemu() {
   fi
 
   if ! which qemu-system-x86_64>/dev/null; then
-    printf "QEMU not found. Please install qemu using your package manager and re-run this script"
+    printf "QEMU not found. Please install QEMU using your package manager and re-run this script"
   fi
 }
 
@@ -306,7 +306,7 @@ checkHWAccelSupport() {
   if [ "$OS" = "linux" ]; then
     local group="kvm"
     local username=`whoami`
-    local hw_support="grep -woE 'svm|vmx' /proc/cpuinfo | uniq"
+    local hw_support=`grep -woE 'svm|vmx' /proc/cpuinfo | uniq`
 
     #check acceleration supported
     if [ "$hw_support" = "svm" ] || [ "$hw_support" = "vmx" ]; then
@@ -335,7 +335,7 @@ checkHWAccelSupport() {
     if [ "$haveRights" = "false" ]; then
       echo "$yellow> Hardware acceleration is supported, but you don't have rights. $reset"
       echo "$yellow> Try adding yourself to the kvm group: sudo adduser ${username} kvm $reset"
-      echo "$yellow> You'll need to re-login for this to take affect. $reset"
+      echo "$yellow> You'll need to re-login for this to take effect. $reset"
     fi
   fi
 }
