@@ -402,7 +402,7 @@ func (q *qemu) addOption(flag, value string) {
 }
 
 func (q *qemu) setAccel(rconfig *RunConfig) error {
-	if rconfig.Accel || rconfig.Bridged {
+	if rconfig.Accel {
 		return q.addAccel()
 	}
 	return &errQemuHWAccelDisabledInConfig{errCustom{"Hardware acceleration disabled in config", nil}}
