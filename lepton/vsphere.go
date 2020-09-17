@@ -764,16 +764,20 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 		return nil, err
 	}
 
+	// if credential is found and not empty string, return immediately
 	un := u.User.Username()
+	up, ok := u.User.Password()
+	if un != "" && up != "" && ok {
+		return u, nil
+	}
+
 	if un == "" {
 		un = os.Getenv("GOVC_USERNAME")
 	}
 	if un == "" {
 		return nil, fmt.Errorf("Incomplete credentials, set either via <GOVC_URL> with https://username:password@host:port or <GOVC_USERNAME and GOVC_PASSWORD>")
 	}
-
 	var pw string
-	up, ok := u.User.Password()
 	if ok {
 		pw = up
 	} else {
@@ -783,15 +787,7 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 		return nil, fmt.Errorf("Incomplete credentials, set either via <GOVC_URL> with https://username:password@host:port or <GOVC_USERNAME and GOVC_PASSWORD>")
 	}
 
-	// warn if HTTP?
-	if !strings.Contains(gu, "http") {
-		tempURL = "https://" + gu
-	} else {
-		tempURL = fmt.Sprintf("https://%s:%s@%s", un, pw, gu)
-	}
-	u, err = url.Parse(tempURL)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
+	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, pw, u.Host)
+	u, err = url.Parse(tempURL + "/sdk")
+	return u, err
 }
