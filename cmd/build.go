@@ -39,7 +39,10 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	setDefaultImageName(cmd, c)
 
-	p := getCloudProvider(provider)
+	p, err := getCloudProvider(provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	ctx := api.NewContext(c, &p)
 	prepareImages(c)

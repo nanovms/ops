@@ -59,7 +59,10 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	prepareImages(c)
-	p := getCloudProvider(provider)
+	p, err := getCloudProvider(provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 	ctx := api.NewContext(c, &p)
 
 	var keypath string
@@ -213,7 +216,10 @@ func imageCreateCommand() *cobra.Command {
 func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	p := getCloudProvider(provider)
+	p, err := getCloudProvider(provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	var c *api.Config
 	c = api.NewConfig()
@@ -225,11 +231,10 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
 	ctx := api.NewContext(c, &p)
 
-	err := p.ResizeImage(ctx, args[0], args[1])
+	err = p.ResizeImage(ctx, args[0], args[1])
 	if err != nil {
 		exitWithError(err.Error())
 	}
-
 }
 
 func imageResizeCommand() *cobra.Command {
@@ -253,11 +258,14 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
-	p := getCloudProvider(provider)
+	p, err := getCloudProvider(provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	ctx := api.NewContext(c, &p)
 
-	err := p.ListImages(ctx)
+	err = p.ListImages(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -274,7 +282,10 @@ func imageListCommand() *cobra.Command {
 
 func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	p := getCloudProvider(provider)
+	p, err := getCloudProvider(provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	var c *api.Config
 	c = api.NewConfig()
@@ -286,7 +297,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 	ctx := api.NewContext(c, &p)
 
-	err := p.DeleteImage(ctx, args[0])
+	err = p.DeleteImage(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
 	}
