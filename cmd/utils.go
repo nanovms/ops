@@ -162,11 +162,17 @@ func validateRequired(c *api.Config) {
 		os.Exit(1)
 	}
 	_, err := os.Stat(path.Join(api.GetOpsHome(), c.Program))
-	_, err1 := os.Stat(c.Program)
+	fileInfo, err1 := os.Stat(c.Program)
 
 	if os.IsNotExist(err) && os.IsNotExist(err1) {
 		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Program, err)
 		os.Exit(1)
+	}
+	if err1 == nil {
+		if fileInfo.IsDir() {
+			fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Program, fmt.Errorf("this is a directory, command expects a file"))
+			os.Exit(1)
+		}
 	}
 }
 
