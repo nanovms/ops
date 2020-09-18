@@ -19,7 +19,7 @@ func (a *Azure) getNicClient() network.InterfacesClient {
 
 // CreateNIC creates a new network interface. The Network Security Group
 // is not a required parameter
-func (a *Azure) CreateNIC(ctx context.Context, vnetName, subnetName, nsgName, ipName, nicName string) (nic network.Interface, err error) {
+func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string) (nic network.Interface, err error) {
 	subnet, err := a.GetVirtualNetworkSubnet(ctx, vnetName, subnetName)
 	if err != nil {
 		log.Fatalf("failed to get subnet: %v", err)
@@ -32,7 +32,7 @@ func (a *Azure) CreateNIC(ctx context.Context, vnetName, subnetName, nsgName, ip
 
 	nicParams := network.Interface{
 		Name:     to.StringPtr(nicName),
-		Location: to.StringPtr(a.locationDefault),
+		Location: to.StringPtr(location),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{
@@ -78,7 +78,7 @@ func (a *Azure) getIPClient() network.PublicIPAddressesClient {
 }
 
 // CreatePublicIP creates a new public IP
-func (a *Azure) CreatePublicIP(ctx context.Context, ipName string) (ip network.PublicIPAddress, err error) {
+func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string) (ip network.PublicIPAddress, err error) {
 	ipClient := a.getIPClient()
 	future, err := ipClient.CreateOrUpdate(
 		ctx,
@@ -86,7 +86,7 @@ func (a *Azure) CreatePublicIP(ctx context.Context, ipName string) (ip network.P
 		ipName,
 		network.PublicIPAddress{
 			Name:     to.StringPtr(ipName),
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 				PublicIPAddressVersion:   network.IPv4,
 				PublicIPAllocationMethod: network.Static,
@@ -121,14 +121,14 @@ func (a *Azure) getVnetClient() network.VirtualNetworksClient {
 }
 
 // CreateVirtualNetwork creates a virtual network
-func (a *Azure) CreateVirtualNetwork(ctx context.Context, vnetName string) (vnet network.VirtualNetwork, err error) {
+func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string) (vnet network.VirtualNetwork, err error) {
 	vnetClient := a.getVnetClient()
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
 		vnetName,
 		network.VirtualNetwork{
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 				AddressSpace: &network.AddressSpace{
 					AddressPrefixes: &[]string{"10.0.0.0/8"},
@@ -150,14 +150,14 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, vnetName string) (vnet
 
 // CreateVirtualNetworkAndSubnets creates a virtual network with two
 // subnets
-func (a *Azure) CreateVirtualNetworkAndSubnets(ctx context.Context, vnetName, subnet1Name, subnet2Name string) (vnet network.VirtualNetwork, err error) {
+func (a *Azure) CreateVirtualNetworkAndSubnets(ctx context.Context, location string, vnetName, subnet1Name, subnet2Name string) (vnet network.VirtualNetwork, err error) {
 	vnetClient := a.getVnetClient()
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
 		vnetName,
 		network.VirtualNetwork{
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 				AddressSpace: &network.AddressSpace{
 					AddressPrefixes: &[]string{"10.0.0.0/8"},
@@ -274,14 +274,14 @@ func (a *Azure) getNsgClient() network.SecurityGroupsClient {
 
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
-func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, nsgName string) (nsg network.SecurityGroup, err error) {
+func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string) (nsg network.SecurityGroup, err error) {
 	nsgClient := a.getNsgClient()
 	future, err := nsgClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
 		nsgName,
 		network.SecurityGroup{
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 				SecurityRules: &[]network.SecurityRule{
 					{
@@ -316,14 +316,14 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, nsgName string) 
 
 // CreateSimpleNetworkSecurityGroup creates a new network security
 // group, without rules (rules can be set later)
-func (a *Azure) CreateSimpleNetworkSecurityGroup(ctx context.Context, nsgName string) (nsg network.SecurityGroup, err error) {
+func (a *Azure) CreateSimpleNetworkSecurityGroup(ctx context.Context, location string, nsgName string) (nsg network.SecurityGroup, err error) {
 	nsgClient := a.getNsgClient()
 	future, err := nsgClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
 		nsgName,
 		network.SecurityGroup{
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 		},
 	)
 

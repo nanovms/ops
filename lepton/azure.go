@@ -127,6 +127,19 @@ func (a *Azure) getVMExtensionsClient() compute.VirtualMachineExtensionsClient {
 	return extClient
 }
 
+func (a *Azure) getLocation(ctx *Context) string {
+	c := ctx.config
+	location := c.CloudConfig.Zone
+	if location == "" {
+		location = a.locationDefault
+	}
+	if location == "" {
+		fmt.Println("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
+		os.Exit(1)
+	}
+	return location
+}
+
 // GetVM gets the specified VM info
 func (a *Azure) GetVM(ctx context.Context, vmName string) (compute.VirtualMachine, error) {
 	vmClient := a.getVMClient()
@@ -245,7 +258,7 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 	bucket := c.CloudConfig.BucketName
 
-	region := "West US 2"
+	region := a.getLocation(ctx)
 	container := "quickstart-nanos"
 	disk := c.CloudConfig.ImageName + ".vhd"
 
@@ -342,6 +355,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 		fmt.Println("AZURE_STORAGE_ACCOUNT should be set otherwise logs can not be retrieved.")
 		os.Exit(1)
 	}
+	location := a.getLocation(ctx)
 
 	debug := false
 
@@ -349,7 +363,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	fmt.Printf("spinning up:\t%s\n", vmName)
 
 	// create virtual network
-	vnet, err := a.CreateVirtualNetwork(context.TODO(), vmName)
+	vnet, err := a.CreateVirtualNetwork(context.TODO(), location, vmName)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -359,7 +373,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 
 	// create nsg
-	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), vmName)
+	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -379,7 +393,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 
 	// create ip
-	ip, err := a.CreatePublicIP(context.TODO(), vmName)
+	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -390,7 +404,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create nic
 	// pass vnet, subnet, ip, nicname
-	nic, err := a.CreateNIC(context.TODO(), vmName, vmName, vmName, vmName, vmName)
+	nic, err := a.CreateNIC(context.TODO(), location, vmName, vmName, vmName, vmName, vmName)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -408,7 +422,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 		a.groupName,
 		vmName,
 		compute.VirtualMachine{
-			Location: to.StringPtr(a.locationDefault),
+			Location: to.StringPtr(location),
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
 					VMSize: compute.VirtualMachineSizeTypesStandardA1V2,
