@@ -168,7 +168,7 @@ ops_brew_install_qemu() {
 }
 
 ops_apt_install_qemu(){
-  apt install qemu -y --no-upgrade
+  apt install qemu-system-x86 -y --no-upgrade
 }
 
 ops_dnf_install_qemu(){
