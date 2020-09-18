@@ -216,9 +216,9 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
-		err := fmt.Errorf("file %s overriding an existing directory", filepath)
+		err := fmt.Errorf("file '%s' overriding an existing directory", filepath)
 		fmt.Println(err)
-		return err
+		os.Exit(1)
 	}
 
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
