@@ -170,6 +170,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	manifestName, err := cmd.Flags().GetString("manifest-name")
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -186,6 +191,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 	pkgConfig.RunConfig.Accel = accel
+	pkgConfig.ManifestName = manifestName
 	setDefaultImageName(cmd, c)
 
 	if !skipbuild {
@@ -216,11 +222,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 // LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var (
-		ports, args                    []string
-		force, debugflags, verbose     bool
-		nightly, accel, bridged, local bool
-		skipbuild                      bool
-		config, imageName              string
+		ports, args                     []string
+		force, debugflags, verbose      bool
+		nightly, accel, bridged, local  bool
+		skipbuild                       bool
+		config, imageName, manifestName string
 	)
 
 	var cmdLoadPackage = &cobra.Command{
@@ -238,6 +244,7 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
+	cmdLoadPackage.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdLoadPackage.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
