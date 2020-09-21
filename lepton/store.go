@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"reflect"
 )
 
 // JSONStore implements volumeStore
@@ -101,7 +100,7 @@ func (s *JSONStore) Update(v NanosVolume) error {
 		}
 		volumes = append(volumes, cur)
 	}
-	if reflect.DeepEqual(vol, NanosVolume{}) {
+	if vol.ID == "" {
 		return errVolumeNotFound(v.ID)
 	}
 	f.Close()
@@ -146,7 +145,7 @@ func (s *JSONStore) Delete(id string) (NanosVolume, error) {
 		}
 		volumes = append(volumes, cur)
 	}
-	if reflect.DeepEqual(vol, NanosVolume{}) {
+	if vol.ID == "" {
 		return vol, errVolumeNotFound(id)
 	}
 	f.Close()

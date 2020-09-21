@@ -68,6 +68,7 @@ func NewVolume(config *Config) *Volume {
 
 // Create creates volume
 func (v *Volume) Create(name, data, size, provider string) error {
+	var cmd *exec.Cmd
 	mkfs := v.config.Mkfs
 	raw := name + ".raw"
 	mnf := name + ".manifest"
@@ -80,22 +81,28 @@ func (v *Volume) Create(name, data, size, provider string) error {
 		if err != nil {
 			return err
 		}
-		args = append(args, rawPath, "<", mnfPath)
+		args = append(args, rawPath)
+		src, err := os.Open(mnfPath)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+		cmd = exec.Command(mkfs, args...)
+		cmd.Stdin = src
 	} else {
 		args = append(args, "-e", rawPath)
-	}
-	if size != "" {
-		args = append(args, "-s", size)
+		if size != "" {
+			args = append(args, "-s", size)
+		}
+		cmd = exec.Command(mkfs, args...)
 	}
 
-	cmd := exec.Command(mkfs, args...)
 	log.Println(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
 	uuid := uuidFromMKFS(out)
-	log.Println(uuid)
 
 	vol := NanosVolume{
 		ID:       uuid,
