@@ -159,12 +159,7 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 			return err
 		}
 
-		var vmpath string
-		if hostpath[0] != '/' {
-			vmpath = "/" + strings.TrimPrefix(hostpath, src)
-		} else {
-			vmpath = "/" + strings.TrimPrefix(hostpath, src)
-		}
+		vmpath := "/" + strings.TrimPrefix(hostpath, src)
 
 		if (info.Mode() & os.ModeSymlink) != 0 {
 			info, err = os.Stat(hostpath)

@@ -97,7 +97,6 @@ func (v *Volume) Create(name, data, size, provider string) error {
 		cmd = exec.Command(mkfs, args...)
 	}
 
-	log.Println(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, 1)
