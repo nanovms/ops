@@ -11,6 +11,7 @@ type Config struct {
 	Debugflags   []string
 	NoTrace      []string
 	Program      string
+	ProgramPath  string // original path of the program to refer to on attach/detach
 	Version      string
 	Boot         string
 	Kernel       string
@@ -24,6 +25,7 @@ type Config struct {
 	BaseVolumeSz string // optional base volume sz
 	ManifestName string // save manifest to
 	RebootOnExit bool   // Reboot on Failure Exit
+	Mounts       map[string]string
 }
 
 // ProviderConfig give provider details
@@ -50,6 +52,7 @@ type RunConfig struct {
 	Accel     bool
 	UDP       bool // enable UDP
 	OnPrem    bool // true if in a multi-instance/tenant on-prem env
+	Mounts    []string
 }
 
 // RuntimeConfig constructs runtime config

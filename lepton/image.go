@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,11 +18,11 @@ import (
 	"github.com/go-errors/errors"
 )
 
+var localImageDir = path.Join(GetOpsHome(), "images")
+
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
 func BuildImage(c Config) error {
-	var err error
-
 	m, err := BuildManifest(&c)
 	if err != nil {
 		return errors.Wrap(err, 1)
@@ -29,6 +30,32 @@ func BuildImage(c Config) error {
 
 	if err = buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
+	}
+
+	err = saveImageConfig(c)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// rebuildImage rebuilds a unikernel image for user
+// supplied ELF binary after volume attach/detach
+func rebuildImage(c Config) error {
+	c.Program = c.ProgramPath
+	m, err := BuildManifest(&c)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	if err = buildImage(&c, m); err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	err = saveImageConfig(c)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -246,9 +273,15 @@ func addFromConfig(m *Manifest, c *Config) error {
 		m.AddNoTrace(syscallName)
 	}
 
+	m.AddUserProgram(c.Program)
 	m.AddEnvironmentVariable("USER", "root")
+	m.AddEnvironmentVariable("PWD", "/")
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
+	}
+
+	for k, v := range c.Mounts {
+		m.AddMount(k, v)
 	}
 
 	return nil
@@ -256,14 +289,12 @@ func addFromConfig(m *Manifest, c *Config) error {
 
 // BuildManifest builds manifest using config
 func BuildManifest(c *Config) (*Manifest, error) {
-
 	m := NewManifest(c.TargetRoot)
 
 	err := addFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
-	m.AddUserProgram(c.Program)
 
 	deps, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
@@ -524,4 +555,20 @@ func lookupFile(targetRoot string, path string) (string, error) {
 	_, err := os.Stat(path)
 
 	return path, err
+}
+
+// saveImageConfig saves image config as JSON
+// for volume attach/detach purposes
+func saveImageConfig(c Config) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	imgFile := path.Base(c.RunConfig.Imagename)
+	mnfName := strings.TrimSuffix(imgFile, "img") + "json"
+	err = ioutil.WriteFile(path.Join(localManifestDir, mnfName), b, 0644)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+	return nil
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var localManifestDir = path.Join(GetOpsHome(), "manifests")
+
 // link refers to a link filetype
 type link struct {
 	path string
@@ -25,6 +27,7 @@ type Manifest struct {
 	noTrace     []string
 	environment map[string]string
 	targetRoot  string
+	mounts      map[string]string
 }
 
 // NewManifest init
@@ -35,12 +38,12 @@ func NewManifest(targetRoot string) *Manifest {
 		debugFlags:  make(map[string]rune),
 		environment: make(map[string]string),
 		targetRoot:  targetRoot,
+		mounts:      make(map[string]string),
 	}
 }
 
 // AddUserProgram adds user program
 func (m *Manifest) AddUserProgram(imgpath string) {
-
 	parts := strings.Split(imgpath, "/")
 	if parts[0] == "." {
 		parts = parts[1:]
@@ -50,6 +53,12 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// AddMount adds mount
+func (m *Manifest) AddMount(uuid, path string) {
+	m.children[path] = map[string]interface{}{}
+	m.mounts[uuid] = path
 }
 
 // AddEnvironmentVariable adds environment variables
@@ -139,6 +148,57 @@ func (m *Manifest) AddDirectory(dir string) error {
 		}
 		return nil
 
+	})
+	return err
+}
+
+// AddRelativeDirectory adds all files in dir to image
+func (m *Manifest) AddRelativeDirectory(src string) error {
+	err := filepath.Walk(src, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		vmpath := "/" + strings.TrimPrefix(hostpath, src)
+
+		if (info.Mode() & os.ModeSymlink) != 0 {
+			info, err = os.Stat(hostpath)
+			if err != nil {
+				fmt.Printf("warning: %v\n", err)
+				// ignore invalid symlinks
+				return nil
+			}
+
+			// add link and continue on
+			err = m.AddLink(vmpath, hostpath)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if info.IsDir() {
+			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
+			node := m.children
+			for i := 0; i < len(parts); i++ {
+				if _, ok := node[parts[i]]; !ok {
+					node[parts[i]] = make(map[string]interface{})
+				}
+				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
+					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
+					fmt.Println(err)
+					return err
+				}
+				node = node[parts[i]].(map[string]interface{})
+			}
+		} else {
+			err = m.AddFile(vmpath, hostpath)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	return err
 }
@@ -272,19 +332,23 @@ func (m *Manifest) String() string {
 	sb.WriteString("(\n")
 
 	// write boot fs
-	sb.WriteString("boot:(children:(\n")
-	toString(&m.boot, &sb, 4)
-	sb.WriteString("))\n")
+	if len(m.boot) > 0 {
+		sb.WriteString("boot:(children:(\n")
+		toString(&m.boot, &sb, 4)
+		sb.WriteString("))\n")
+	}
 
 	// write root fs
 	sb.WriteString("children:(\n")
 	toString(&m.children, &sb, 4)
 	sb.WriteString(")\n")
 
-	//program
-	sb.WriteString("program:")
-	sb.WriteString(m.program)
-	sb.WriteRune('\n')
+	// program
+	if m.program != "" {
+		sb.WriteString("program:")
+		sb.WriteString(m.program)
+		sb.WriteRune('\n')
+	}
 
 	// arguments
 	sb.WriteString("arguments:[")
@@ -326,6 +390,19 @@ func (m *Manifest) String() string {
 		}
 	}
 	sb.WriteString(")\n")
+
+	// mounts
+	if len(m.mounts) > 0 {
+		sb.WriteString("mounts:(\n")
+		for k, v := range m.mounts {
+			sb.WriteString("    ")
+			sb.WriteString(k)
+			sb.WriteString(":/")
+			sb.WriteString(v)
+			sb.WriteRune('\n')
+		}
+		sb.WriteString(")\n")
+	}
 
 	//
 	sb.WriteString(")\n")
