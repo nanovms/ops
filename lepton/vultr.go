@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"io/ioutil"
@@ -226,6 +227,12 @@ type vultrServer struct {
 	PrivateIP string `json:"internal_ip"`
 	CreatedAt string `json:"date_created"`
 	Name      string `json:"label"`
+}
+
+// GetInstances return all instances on Vultr
+// TODO
+func (v *Vultr) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
 }
 
 // ListInstances lists instances on v

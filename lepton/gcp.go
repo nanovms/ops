@@ -393,17 +393,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 // ListInstances lists instances on Gcloud
 func (p *GCloud) ListInstances(ctx *Context) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
-
-	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
+	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return err
 	}
@@ -417,16 +407,56 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
-	req := computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+
+	for _, instance := range instances {
+		var rows []string
+		rows = append(rows, instance.Name)
+		rows = append(rows, instance.Status)
+		rows = append(rows, instance.Created)
+		rows = append(rows, strings.Join(instance.PrivateIps, ","))
+		rows = append(rows, strings.Join(instance.PublicIps, ","))
+		table.Append(rows)
+	}
+	table.Render()
+	return nil
+}
+
+// CloudInstance represents the instance that widely use in difference Cloud Providers
+type CloudInstance struct {
+	Name       string
+	Status     string
+	Created    string
+	PrivateIps []string
+	PublicIps  []string
+}
+
+// GetInstances return all instances on GCloud
+func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	if err := checkCredentialsProvided(); err != nil {
+		return nil, err
+	}
+
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		cinstances []CloudInstance
+		req        = computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+	)
+
 	if err := req.Pages(context, func(page *compute.InstanceList) error {
 		for _, instance := range page.Items {
-
-			var rows []string
-			rows = append(rows, instance.Name)
-			rows = append(rows, instance.Status)
-			rows = append(rows, instance.CreationTimestamp)
-
-			var privateIps, publicIps []string
+			var (
+				privateIps, publicIps []string
+			)
 			for _, ninterface := range instance.NetworkInterfaces {
 				if ninterface.NetworkIP != "" {
 					privateIps = append(privateIps, ninterface.NetworkIP)
@@ -438,16 +468,22 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 					}
 				}
 			}
-			rows = append(rows, strings.Join(privateIps, ","))
-			rows = append(rows, strings.Join(publicIps, ","))
-			table.Append(rows)
+
+			cinstance := CloudInstance{
+				Name:       instance.Name,
+				Status:     instance.Status,
+				Created:    instance.CreationTimestamp,
+				PublicIps:  publicIps,
+				PrivateIps: privateIps,
+			}
+			cinstances = append(cinstances, cinstance)
 		}
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
-	table.Render()
-	return nil
+
+	return cinstances, nil
 }
 
 // DeleteInstance deletes instance from Gcloud
