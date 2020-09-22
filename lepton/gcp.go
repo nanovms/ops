@@ -399,6 +399,7 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
