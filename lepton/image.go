@@ -273,7 +273,6 @@ func addFromConfig(m *Manifest, c *Config) error {
 		m.AddNoTrace(syscallName)
 	}
 
-	m.AddUserProgram(c.Program)
 	m.AddEnvironmentVariable("USER", "root")
 	m.AddEnvironmentVariable("PWD", "/")
 	for k, v := range c.Env {
@@ -295,6 +294,7 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
+	m.AddUserProgram(c.Program)
 
 	deps, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
