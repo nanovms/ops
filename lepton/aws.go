@@ -249,6 +249,11 @@ func getAWSInstances(region string) *ec2.DescribeInstancesOutput {
 	return result
 }
 
+// GetImages return all images on AWS
+func (p *AWS) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages lists images on AWS
 func (p *AWS) ListImages(ctx *Context) error {
 	result, err := getAWSImages(ctx.config.CloudConfig.Zone)

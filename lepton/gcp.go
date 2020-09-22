@@ -217,24 +217,52 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 	return nil
 }
 
-// ListImages lists images on Google Cloud
-func (p *GCloud) ListImages(ctx *Context) error {
+// GetImages return all images on GCloud
+func (p *GCloud) GetImages(ctx *Context) ([]CloudImage, error) {
 	if err := checkCredentialsProvided(); err != nil {
-		return err
+		return nil, err
 	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	computeService, err := compute.New(client)
 	if err != nil {
+		return nil, err
+	}
+
+	var images []CloudImage
+
+	req := computeService.Images.List(creds.ProjectID)
+	err = req.Pages(context, func(page *compute.ImageList) error {
+		for _, image := range page.Items {
+			ci := CloudImage{
+				Name:    image.Name,
+				Status:  fmt.Sprintf("%v", image.Status),
+				Created: image.CreationTimestamp,
+			}
+
+			images = append(images, ci)
+		}
+		return nil
+	})
+
+	return images, err
+
+}
+
+// ListImages lists images on Google Cloud
+func (p *GCloud) ListImages(ctx *Context) error {
+	images, err := p.GetImages(ctx)
+	if err != nil {
 		return err
 	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created"})
 	table.SetHeaderColor(
@@ -243,22 +271,14 @@ func (p *GCloud) ListImages(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	req := computeService.Images.List(creds.ProjectID)
-	if err := req.Pages(context, func(page *compute.ImageList) error {
-		for _, image := range page.Items {
-			var row []string
-			row = append(row, image.Name)
-			row = append(row, fmt.Sprintf("%v", image.Status))
-			row = append(row, image.CreationTimestamp)
-			table.Append(row)
-		}
-		return nil
-	}); err != nil {
-		return err
+	for _, image := range images {
+		var row []string
+		row = append(row, image.Name)
+		row = append(row, image.Status)
+		row = append(row, image.Created)
+		table.Append(row)
 	}
-	if err != nil {
-		return fmt.Errorf("error:%+v", err)
-	}
+
 	table.Render()
 	return nil
 }
@@ -419,15 +439,6 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	}
 	table.Render()
 	return nil
-}
-
-// CloudInstance represents the instance that widely use in difference Cloud Providers
-type CloudInstance struct {
-	Name       string
-	Status     string
-	Created    string
-	PrivateIps []string
-	PublicIps  []string
 }
 
 // GetInstances return all instances on GCloud

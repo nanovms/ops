@@ -159,6 +159,11 @@ func (v *Vsphere) CreateImage(ctx *Context) error {
 	return nil
 }
 
+// GetImages return all images for vsphere
+func (v *Vsphere) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages lists images on a datastore.
 // This is incredibly naive at the moment and probably worth putting
 // under a root folder.

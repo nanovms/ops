@@ -91,6 +91,11 @@ func (do *DigitalOcean) CreateImage(ctx *Context) error {
 	return nil
 }
 
+// GetImages return all images on DigitalOcean
+func (do *DigitalOcean) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages lists images on Digital Ocean
 func (do *DigitalOcean) ListImages(ctx *Context) error {
 

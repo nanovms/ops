@@ -114,6 +114,11 @@ type vultrSnap struct {
 	APPID       string `json:"APPID"`
 }
 
+// GetImages return all images on Vultr
+func (v *Vultr) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages lists images on Digital Ocean
 func (v *Vultr) ListImages(ctx *Context) error {
 
