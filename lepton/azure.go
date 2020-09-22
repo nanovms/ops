@@ -3,6 +3,7 @@ package lepton
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -487,6 +488,12 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	fmt.Printf("%+v\n", vm)
 
 	return nil
+}
+
+// GetInstances return all instances on Azure
+// TODO
+func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
 }
 
 // ListInstances lists instances on Azure

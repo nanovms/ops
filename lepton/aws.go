@@ -519,6 +519,12 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 	return aws.StringValue(createRes.GroupId), nil
 }
 
+// GetInstances return all instances on AWS
+// TODO
+func (p *AWS) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListInstances lists instances on AWS
 func (p *AWS) ListInstances(ctx *Context) error {
 	result := getAWSInstances(ctx.config.CloudConfig.Zone)

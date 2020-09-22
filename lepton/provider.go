@@ -11,6 +11,7 @@ type Provider interface {
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
+	GetInstances(ctx *Context) ([]CloudInstance, error)
 	DeleteInstance(ctx *Context, instancename string) error
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error

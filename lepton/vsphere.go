@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -398,6 +399,12 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	}
 
 	return nil
+}
+
+// GetInstances return all instances on vSphere
+// TODO
+func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
 }
 
 // ListInstances lists instances on VSphere.

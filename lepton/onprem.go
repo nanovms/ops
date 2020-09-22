@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -133,6 +134,12 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 	hypervisor.Start(&c.RunConfig)
 
 	return nil
+}
+
+// GetInstances return all instances on prem
+// TODO
+func (p *OnPrem) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
 }
 
 // ListInstances on premise

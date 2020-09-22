@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -133,6 +134,12 @@ func (do *DigitalOcean) ResizeImage(ctx *Context, imagename string, hbytes strin
 // CreateInstance - Creates instance on Digital Ocean Platform
 func (do *DigitalOcean) CreateInstance(ctx *Context) error {
 	return nil
+}
+
+// GetInstances return all instances on DigitalOcean
+// TODO
+func (do *DigitalOcean) GetInstances(ctx *Context) ([]CloudInstance, error) {
+	return nil, errors.New("un-implemented")
 }
 
 // ListInstances lists instances on DO
