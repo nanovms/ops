@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/olekukonko/tablewriter"
 )
 
 var (
@@ -127,10 +127,16 @@ func (v *Volume) GetAll() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("NAME\t\t\tUUID\t\t\tPATH")
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"NAME", "UUID", "PATH"})
 	for _, vol := range vols {
-		fmt.Printf("%s\t\t\t%s\t\t\t%s\n", vol.Name, vol.ID, vol.Path)
+		var row []string
+		row = append(row, vol.Name)
+		row = append(row, vol.ID)
+		row = append(row, vol.Path)
+		table.Append(row)
 	}
+	table.Render()
 	return nil
 }
 
