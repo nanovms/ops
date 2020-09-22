@@ -57,7 +57,7 @@ type RunConfig struct {
 
 // RuntimeConfig constructs runtime config
 func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
-	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G"}
+	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
 }
 
 // NewConfig construct instance of Config with default values
