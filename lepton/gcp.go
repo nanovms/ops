@@ -450,6 +450,40 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	return nil
 }
 
+// GetInstances return all instances on GCloud
+func (p *GCloud) GetInstances(ctx *Context) ([]compute.Instance, error) {
+	if err := checkCredentialsProvided(); err != nil {
+		return nil, err
+	}
+
+	context := context.TODO()
+	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+
+	computeService, err := compute.New(client)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		instances []compute.Instance
+		req       = computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+	)
+
+	if err := req.Pages(context, func(page *compute.InstanceList) error {
+		for i := range page.Items {
+			instances = append(instances, *page.Items[i])
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return instances, nil
+}
+
 // DeleteInstance deletes instance from Gcloud
 func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 	if err := checkCredentialsProvided(); err != nil {
