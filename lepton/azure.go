@@ -289,6 +289,11 @@ func (a *Azure) CreateImage(ctx *Context) error {
 	return nil
 }
 
+// GetImages return all images for azure
+func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages lists images on azure
 func (a *Azure) ListImages(ctx *Context) error {
 	imagesClient := a.getImagesClient()

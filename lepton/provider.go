@@ -7,6 +7,7 @@ type Provider interface {
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
 	CreateImage(ctx *Context) error
 	ListImages(ctx *Context) error
+	GetImages(ctx *Context) ([]CloudImage, error)
 	DeleteImage(ctx *Context, imagename string) error
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
 	CreateInstance(ctx *Context) error

@@ -54,6 +54,11 @@ func (p *OnPrem) ResizeImage(ctx *Context, imagename string, hbytes string) erro
 	return os.Truncate(imgpath, bytes)
 }
 
+// GetImages return all images on prem
+func (p *OnPrem) GetImages(ctx *Context) ([]CloudImage, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // ListImages on premise
 func (p *OnPrem) ListImages(ctx *Context) error {
 	opshome := GetOpsHome()
