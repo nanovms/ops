@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -16,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 const qemuBaseCommand = "qemu-system-x86_64"
@@ -306,40 +307,10 @@ func parseQemuVersion(data []byte) string {
 	return rgx.FindString(string(data))
 }
 
-// kvmGroupPermission returns true if the current user is part of the kvm qroup,
-// false if she is not, or an error. or an error.
-func kvmGroupPermissions() error {
-	currentUser, err := user.Current()
-	if err != nil {
-		return err
-	}
-	if currentUser.Uid == "0" {
-		return nil
-	}
-	if inGroup, err := groupPermissions(currentUser, "kvm"); !inGroup || err != nil {
-		return &errQemuHWAccelNoUserRights{errCustom{"user not in kvm group", err}}
-	}
-	return nil
-}
-
-// groupPermissions returns true if the user is in the group specified by the
-// argument string, false if she is not, or an error.
-func groupPermissions(u *user.User, groupName string) (bool, error) {
-	gids, err := u.GroupIds()
-	if err != nil {
-		return false, err
-	}
-	g, err := user.LookupGroup(groupName)
-	if err != nil {
-		return false, err
-	}
-	for _, gid := range gids {
-		if g.Gid == gid {
-			return true, nil
-		}
-	}
-
-	return false, nil
+// kvmAvailable returns nil if the current user have read and write access to /dev/kvm
+// or error in other case
+func kvmAvailable() error {
+	return syscall.Access("/dev/kvm", unix.R_OK|unix.W_OK)
 }
 
 // versionCompare compares Qemu version numbers. If the the first argument is
@@ -401,14 +372,38 @@ func (q *qemu) addOption(flag, value string) {
 	q.flags = append(q.flags, option)
 }
 
-func (q *qemu) setAccel(rconfig *RunConfig) error {
+// setAccel - trying to set accel.
+// Shows Warning messages if can't enable.
+// May terminate ops (depends on error, see qemu_errors:qemuAccelWarningMessage for details).
+func (q *qemu) setAccel(rconfig *RunConfig) {
+	var (
+		isAdded      bool  = false
+		supportedErr error = &errQemuHWAccelDisabledInConfig{errCustom{"Hardware acceleration disabled in config", nil}}
+	)
+
 	if rconfig.Accel {
-		return q.addAccel()
+		isAdded, supportedErr = q.addAccel()
 	}
-	return &errQemuHWAccelDisabledInConfig{errCustom{"Hardware acceleration disabled in config", nil}}
+
+	if supportedErr != nil {
+		msg, terminate := qemuAccelWarningMessage(supportedErr)
+		if msg != "" {
+			fmt.Println(msg)
+		}
+		if terminate {
+			os.Exit(1)
+		}
+		if isAdded {
+			fmt.Printf(WarningColor, "Anyway, we will try to enable hardware acceleration\n")
+		}
+	}
 }
 
-func (q *qemu) addAccel() error {
+// addAccel - trying to enable hardware acceleration and check if it is supported.
+// In some cases it tries to enable even if it's not supported.
+// Returns true in case if it tries to enable, false otherwise.
+// Returns err if not supported, nil otherwise.
+func (q *qemu) addAccel() (bool, error) {
 	// hv_support should not throw errors. When error/log handling is
 	// implemented, then errors in detecting hardware acceleration support
 	// should be reported. Here we treat any error in detecting hardware
@@ -417,39 +412,39 @@ func (q *qemu) addAccel() error {
 
 	// Check qemu is installed or not
 	if q.isInstalled() == false {
-		return &errQemuNotInstalled{errCustom{"QEMU not found", nil}}
+		return false, &errQemuNotInstalled{errCustom{"QEMU not found", nil}}
 	}
 
 	const hvfSupportedVersion = "2.12" // https://wiki.qemu.org/ChangeLog/2.12#Host_support
 	qemuVersion, err := QemuVersion()
 	if err != nil {
-		return &errQemuCannotGetQemuVersion{errCustom{"cannot get QEMU version", err}}
+		return false, &errQemuCannotGetQemuVersion{errCustom{"cannot get QEMU version", err}}
 	}
 
 	ok, err := hvSupport()
 	if !(ok && err == nil) {
-		return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
+		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 	}
 
 	if runtime.GOOS == "darwin" {
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host")
-			return nil
+			return true, nil
 		}
-		return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
+		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
 	}
 
 	if runtime.GOOS == "linux" {
-		if err := kvmGroupPermissions(); err != nil {
-			return &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
-		}
-		q.addFlag("-enable-kvm")
+		q.addFlag("-machine accel=kvm:tcg")
 		q.addOption("-cpu", "host")
-		return nil
+		if err := kvmAvailable(); err != nil {
+			return true, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
+		}
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func (q *qemu) setConfig(rconfig *RunConfig) {
@@ -481,15 +476,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		ifaceName = rconfig.TapName
 	}
 
-	if err := q.setAccel(rconfig); err != nil {
-		msg, terminate := qemuAccelWarningMessage(err)
-		if msg != "" {
-			fmt.Println(msg)
-		}
-		if terminate {
-			os.Exit(1)
-		}
-	}
+	q.setAccel(rconfig)
 
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)
 	q.addDisplay("none")
