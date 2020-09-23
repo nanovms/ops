@@ -128,11 +128,12 @@ func (v *Volume) GetAll() error {
 		return err
 	}
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"NAME", "UUID", "PATH"})
+	table.SetHeader([]string{"NAME", "UUID", "SIZE", "PATH"})
 	for _, vol := range vols {
 		var row []string
 		row = append(row, vol.Name)
 		row = append(row, vol.ID)
+		row = append(row, v.parseSize(vol))
 		row = append(row, vol.Path)
 		table.Append(row)
 	}
@@ -252,4 +253,16 @@ func (v *Volume) AttachOnRun(mount string) error {
 	conf.Mounts[uuid] = path
 	conf.RunConfig.Mounts = append(conf.RunConfig.Mounts, vol.Path)
 	return nil
+}
+
+func (v *Volume) parseSize(vol NanosVolume) string {
+	if vol.Size == "" {
+		return bytes2Human(MiByte)
+	}
+	bytes, err := parseBytes(vol.Size)
+	if err != nil {
+		log.Printf("warning: invalid size value for volume %s with UUID %s: %s", vol.Name, vol.ID, err.Error())
+	}
+	size := bytes2Human(bytes)
+	return size
 }
