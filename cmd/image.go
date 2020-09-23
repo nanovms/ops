@@ -172,6 +172,17 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if c.CloudConfig.Platform == "openstack" {
+		os := p.(*api.OpenStack)
+
+		err = os.CreateImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("openstack image '%s' created...\n", c.CloudConfig.ImageName)
+		}
+	}
+
 	if c.CloudConfig.Platform == "azure" {
 		azure := p.(*api.Azure)
 

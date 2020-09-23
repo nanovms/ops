@@ -16,6 +16,7 @@ require (
 	github.com/d2g/dhcp4client v1.0.0
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
+	github.com/gophercloud/gophercloud v0.12.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
@@ -27,7 +28,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20190625233234-7109fa855b0f // indirect
 	github.com/vmware/govmomi v0.22.2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7
+	golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9
 	google.golang.org/api v0.7.0
 	gopkg.in/ini.v1 v1.55.0 // indirect
 )
