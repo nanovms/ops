@@ -107,6 +107,8 @@ func getCloudProvider(providerName string) (api.Provider, error) {
 		provider = &api.Vultr{}
 	case "vsphere":
 		provider = &api.Vsphere{}
+	case "openstack":
+		provider = &api.OpenStack{}
 	case "azure":
 		provider = &api.Azure{}
 	default:
