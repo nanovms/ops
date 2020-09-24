@@ -381,11 +381,71 @@ func (o *OpenStack) StopInstance(ctx *Context, instancename string) error {
 
 }
 
+func (o *OpenStack) findInstance(name string) (id string, err error) {
+
+	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	opts := servers.ListOpts{}
+
+	pager := servers.List(client, opts)
+
+	sid := ""
+
+	err = pager.EachPage(func(page pagination.Page) (bool, error) {
+		serverList, err := servers.ExtractServers(page)
+		if err != nil {
+			fmt.Println(err)
+			return false, err
+		}
+
+		for _, s := range serverList {
+			if s.Name == name {
+				sid = s.ID
+				return true, nil
+			}
+		}
+
+		return true, nil
+	})
+
+	if sid != "" {
+		return sid, nil
+	}
+
+	return sid, errors.New("could not find server")
+}
+
 // GetInstanceLogs gets instance related logs.
 func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-	fmt.Println("un-implemented")
-	return nil
 
+	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	sid, err := o.findInstance(instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	outputOpts := &servers.ShowConsoleOutputOpts{
+		Length: 100,
+	}
+	output, err := servers.ShowConsoleOutput(client, sid, outputOpts).Extract()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(output)
+
+	return nil
 }
 
 // Todo - make me shared
