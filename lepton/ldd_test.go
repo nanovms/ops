@@ -7,7 +7,7 @@ import (
 
 func TestGetSharedLibs(t *testing.T) {
 	targetRoot := os.Getenv("NANOS_TARGET_ROOT")
-	deps, err := getSharedLibs(targetRoot, "../data/webg")
+	deps, _, err := getSharedLibs(targetRoot, "../data/webg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func TestGetSharedLibsSystemLs(t *testing.T) {
 		t.Skip("could not stat /bin/ls:", err)
 	}
 	targetRoot := os.Getenv("NANOS_TARGET_ROOT")
-	if _, err := getSharedLibs(targetRoot, "/bin/ls"); err != nil {
+	if _, _, err := getSharedLibs(targetRoot, "/bin/ls"); err != nil {
 		t.Fatal(err)
 	}
 }
