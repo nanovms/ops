@@ -296,8 +296,11 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	}
 	m.AddUserProgram(c.Program)
 
-	deps, err := getSharedLibs(c.TargetRoot, c.Program)
+	deps, fileName, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
+		if len(fileName) == 0 {
+			return nil, errors.New("library " + fileName + " not found")
+		}
 		return nil, errors.Wrap(err, 1)
 	}
 	for _, libpath := range deps {

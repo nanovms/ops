@@ -31,14 +31,14 @@ func isDynamicLinked(path string) (bool, error) {
 
 // works only on linux, need to
 // replace looking up in dynamic section in ELF
-func getSharedLibs(targetRoot string, path string) ([]string, error) {
+func getSharedLibs(targetRoot string, path string) ([]string, string, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	if _, err := os.Stat(path); err != nil {
-		return nil, errors.Wrap(err, 1)
+	if file, err := os.Stat(path); err != nil {
+		return nil, file.Name(), errors.Wrap(err, 1)
 	}
 	// LD_TRACE_LOADED_OBJECTS need to fork with out executing it.
 	// TODO:move away from LD_TRACE_LOADED_OBJECTS
@@ -54,7 +54,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 
 		err = cmd.Start()
 		if err != nil {
-			return deps, err
+			return deps, "", err
 		}
 		// vsdo is user space mapped, there is no backing lib
 		vsdo := "linux-vdso.so"
@@ -75,8 +75,8 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		}
 		defer out.Close()
 		if err := cmd.Wait(); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
-	return deps, nil
+	return deps, "", nil
 }
