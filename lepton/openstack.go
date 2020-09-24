@@ -12,9 +12,11 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/startstop"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
+
 	"github.com/gophercloud/gophercloud/pagination"
 )
 
@@ -370,15 +372,46 @@ func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
 
 // StartInstance starts an instance in OpenStack.
 func (o *OpenStack) StartInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
+	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	sid, err := o.findInstance(instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = startstop.Start(client, sid).ExtractErr()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	return nil
 }
 
 // StopInstance stops an instance from OpenStack
 func (o *OpenStack) StopInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
-	return nil
+	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	sid, err := o.findInstance(instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = startstop.Stop(client, sid).ExtractErr()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return nil
 }
 
 func (o *OpenStack) findInstance(name string) (id string, err error) {
