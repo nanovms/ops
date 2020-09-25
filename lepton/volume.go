@@ -31,7 +31,7 @@ var (
 	errInvalidMountConfiguration = func(mount string) error { return errors.Errorf("%s: invalid mount configuration", mount) }
 )
 
-// Volume interface for volume related operations
+// VolumeService interface for volume related operations
 type VolumeService interface {
 	CreateVolume(name, data, size string, config *Config) (NanosVolume, error)
 	GetAllVolume(config *Config) error
@@ -72,7 +72,7 @@ func NewLocalVolume() *LocalVolume {
 	}
 }
 
-// Create creates local volume
+// CreateVolume creates local volume
 func (v *LocalVolume) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
 	var cmd *exec.Cmd
 	var vol NanosVolume
@@ -126,7 +126,7 @@ func (v *LocalVolume) CreateVolume(name, data, size string, config *Config) (Nan
 	return vol, nil
 }
 
-// GetAll gets list of all nanos-managed local volumes
+// GetAllVolume gets list of all nanos-managed local volumes
 func (v *LocalVolume) GetAllVolume(config *Config) error {
 	vols, err := v.store.GetAll()
 	if err != nil {
@@ -145,12 +145,12 @@ func (v *LocalVolume) GetAllVolume(config *Config) error {
 	return nil
 }
 
-// Get gets nanos-managed local volume by its UUID
+// GetVolume gets nanos-managed local volume by its UUID
 func (v *LocalVolume) GetVolume(id string, config *Config) (NanosVolume, error) {
 	return v.store.Get(id)
 }
 
-// Delete deletes nanos-managed local volume by its UUID
+// DeleteVolume deletes nanos-managed local volume by its UUID
 func (v *LocalVolume) DeleteVolume(id string, config *Config) error {
 	// delete from storage
 	vol, err := v.store.Delete(id)
@@ -167,7 +167,7 @@ func (v *LocalVolume) DeleteVolume(id string, config *Config) error {
 	return nil
 }
 
-// Attach attaches local volume to a stopped instance
+// AttachVolume attaches local volume to a stopped instance
 func (v *LocalVolume) AttachVolume(image, volume, mount string, config *Config) error {
 	um := strings.Split(mount, ":")
 	if len(um) < 2 {
@@ -199,7 +199,7 @@ func (v *LocalVolume) AttachVolume(image, volume, mount string, config *Config) 
 	return nil
 }
 
-// Detach detaches local volume to a stopped instance
+// DetachVolume detaches local volume to a stopped instance
 func (v *LocalVolume) DetachVolume(image, volume string, config *Config) error {
 	return nil
 }

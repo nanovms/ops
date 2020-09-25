@@ -587,7 +587,7 @@ func (p *GCloud) ResizeImage(ctx *Context, imagename string, hbytes string) erro
 	return fmt.Errorf("Operation not supported")
 }
 
-// Create creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
+// CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
 // TODO treat GCS object and Compute Image as temporary and delete after volume is created?
 func (p *GCloud) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
 	v := NewLocalVolume()
