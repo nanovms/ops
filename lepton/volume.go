@@ -18,6 +18,9 @@ var (
 	localVolumeData = path.Join(GetOpsHome(), "volumes", "volumes.json")
 )
 
+// MinimumVolumeSize is the minimum size of a volume created with mkfs (1 MB).
+const MinimumVolumeSize = MByte
+
 var (
 	errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
 	errVolumeMounted  = func(id, image string) error {
@@ -255,8 +258,11 @@ func (v *Volume) AttachOnRun(mount string) error {
 	return nil
 }
 
+// parseSize parses the size of the NanosVolume to human readable format.
+// If the size value is empty, it returns 1 MB (the default size of volumes).
 func (v *Volume) parseSize(vol NanosVolume) string {
 	if vol.Size == "" {
+		// return the default size of a volume
 		return bytes2Human(MiByte)
 	}
 	bytes, err := parseBytes(vol.Size)
