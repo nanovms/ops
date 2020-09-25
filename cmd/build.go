@@ -26,16 +26,6 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	c.Program = args[0]
 	c.TargetRoot = targetRoot
 
-	err = os.Setenv("OPS", api.Version)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.Setenv("NANOS", api.LocalReleaseVersion)
-	if err != nil {
-		panic(err)
-	}
-
 	if len(cmdenvs) > 0 {
 		if len(c.Env) == 0 {
 			c.Env = make(map[string]string)

@@ -275,6 +275,8 @@ func addFromConfig(m *Manifest, c *Config) error {
 
 	m.AddEnvironmentVariable("USER", "root")
 	m.AddEnvironmentVariable("PWD", "/")
+	m.AddEnvironmentVariable("OPS_VERSION", "")
+	m.AddEnvironmentVariable("NANOS_VERSION", "")
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
