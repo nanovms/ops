@@ -190,23 +190,9 @@ func (p *GCloud) Initialize() error {
 }
 
 // CreateImage - Creates image on GCP using nanos images
-// TODO : re-use and cache DefaultClient and instances.
 func (p *GCloud) CreateImage(ctx *Context) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
-
 	c := ctx.config
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
 
 	sourceURL := fmt.Sprintf(GCPStorageURL,
 		c.CloudConfig.BucketName, p.getArchiveName(ctx))
@@ -218,12 +204,12 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		},
 	}
 
-	op, err := computeService.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()
+	op, err := p.compute.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()
 	if err != nil {
 		return fmt.Errorf("error:%+v", err)
 	}
 	fmt.Printf("Image creation started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -233,26 +219,15 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 
 // GetImages return all images on GCloud
 func (p *GCloud) GetImages(ctx *Context) ([]CloudImage, error) {
-	if err := checkCredentialsProvided(); err != nil {
-		return nil, err
-	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
-	if err != nil {
-		return nil, err
-	}
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return nil, err
-	}
-	computeService, err := compute.New(client)
 	if err != nil {
 		return nil, err
 	}
 
 	var images []CloudImage
 
-	req := computeService.Images.List(creds.ProjectID)
+	req := p.compute.Images.List(creds.ProjectID)
 	err = req.Pages(context, func(page *compute.ImageList) error {
 		for _, image := range page.Items {
 			ci := CloudImage{
@@ -299,27 +274,17 @@ func (p *GCloud) ListImages(ctx *Context) error {
 
 // DeleteImage deletes image from Gcloud
 func (p *GCloud) DeleteImage(ctx *Context, imagename string) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
 		return err
 	}
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
-	op, err := computeService.Images.Delete(creds.ProjectID, imagename).Context(context).Do()
+
+	op, err := p.compute.Images.Delete(creds.ProjectID, imagename).Context(context).Do()
 	if err != nil {
 		return fmt.Errorf("error:%+v", err)
 	}
-	err = p.pollOperation(context, creds.ProjectID, computeService, *op)
+	err = p.pollOperation(context, creds.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -329,10 +294,6 @@ func (p *GCloud) DeleteImage(ctx *Context, imagename string) error {
 
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
-
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
@@ -351,16 +312,6 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 	if c.CloudConfig.Flavor == "" {
 		return fmt.Errorf("Flavor not provided in config.CloudConfig")
-	}
-
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
 	}
 
 	machineType := fmt.Sprintf("zones/%s/machineTypes/%s", c.CloudConfig.Zone, c.CloudConfig.Flavor)
@@ -412,12 +363,12 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			Items: []string{"http-server", "https-server"},
 		},
 	}
-	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
+	op, err := p.compute.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Instance creation started using image %s. Monitoring operation %s.\n", imageName, op.Name)
-	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context, c.CloudConfig.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -457,24 +408,10 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 
 // GetInstances return all instances on GCloud
 func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	if err := checkCredentialsProvided(); err != nil {
-		return nil, err
-	}
-
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return nil, err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return nil, err
-	}
-
 	var (
 		cinstances []CloudInstance
-		req        = computeService.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
+		req        = p.compute.Instances.List(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone)
 	)
 
 	if err := req.Pages(context, func(page *compute.InstanceList) error {
@@ -513,25 +450,15 @@ func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
 
 // DeleteInstance deletes instance from Gcloud
 func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
 	cloudConfig := ctx.config.CloudConfig
-	op, err := computeService.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+
+	op, err := p.compute.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Instance deletion started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context, cloudConfig.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -541,29 +468,16 @@ func (p *GCloud) DeleteInstance(ctx *Context, instancename string) error {
 
 // StartInstance starts an instance in GCloud
 func (p *GCloud) StartInstance(ctx *Context, instancename string) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
-
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
-
 	cloudConfig := ctx.config.CloudConfig
-	op, err := computeService.Instances.Start(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+
+	op, err := p.compute.Instances.Start(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Instance started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context, cloudConfig.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -575,29 +489,16 @@ func (p *GCloud) StartInstance(ctx *Context, instancename string) error {
 
 // StopInstance deletes instance from GCloud
 func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
-
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
-
 	cloudConfig := ctx.config.CloudConfig
-	op, err := computeService.Instances.Stop(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+
+	op, err := p.compute.Instances.Stop(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Instance stopping started. Monitoring operation %s.\n", op.Name)
-	err = p.pollOperation(context, cloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context, cloudConfig.ProjectID, p.compute, *op)
 	if err != nil {
 		return err
 	}
@@ -608,22 +509,12 @@ func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
 
 // GetInstanceLogs gets instance related logs
 func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-	if err := checkCredentialsProvided(); err != nil {
-		return err
-	}
 	context := context.TODO()
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
 	cloudConfig := ctx.config.CloudConfig
+
 	lastPos := int64(0)
 	for {
-		resp, err := computeService.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
+		resp, err := p.compute.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
 		if err != nil {
 			return err
 		}
@@ -697,7 +588,7 @@ func (p *GCloud) ResizeImage(ctx *Context, imagename string, hbytes string) erro
 }
 
 // Create creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
-// TODO treat storage and image as temporary and delete after volume is created?
+// TODO treat GCS object and Compute Image as temporary and delete after volume is created?
 func (p *GCloud) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
 	v := NewLocalVolume()
 	arch := name + ".tar.gz"
@@ -759,7 +650,6 @@ func (p *GCloud) CreateVolume(name, data, size string, config *Config) (NanosVol
 }
 
 // GetAllVolume gets all volumes created in GCP as Compute Engine Disks
-// TODO missing attached status
 func (p *GCloud) GetAllVolume(config *Config) error {
 	ctx := context.Background()
 	dl, err := p.compute.Disks.List(config.CloudConfig.ProjectID, config.CloudConfig.Zone).Context(ctx).Do()
@@ -812,7 +702,7 @@ func (p *GCloud) GetVolume(id string, config *Config) (NanosVolume, error) {
 }
 
 // DeleteVolume deletes specific volume in GCP
-// TODO delete storage and image as well?
+// TODO delete GCS object and Compute Image as well? - related to CreateVolume
 func (p *GCloud) DeleteVolume(id string, config *Config) error {
 	ctx := context.Background()
 
