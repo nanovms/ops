@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"path"
+	"strconv"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
@@ -52,7 +53,7 @@ func volumeCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume data source")
-	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume initial size")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", strconv.Itoa(api.MinimumVolumeSize), "volume initial size")
 	return cmdVolumeCreate
 }
 
