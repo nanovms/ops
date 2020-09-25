@@ -803,3 +803,35 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 	u, err = url.Parse(tempURL + "/sdk")
 	return u, err
 }
+
+// CreateVolume ...
+func (v *Vsphere) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// GetAllVolume ...
+func (v *Vsphere) GetAllVolume(config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// GetVolume ...
+func (v *Vsphere) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// DeleteVolume ...
+func (v *Vsphere) DeleteVolume(id string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// AttachVolume ...
+func (v *Vsphere) AttachVolume(image, volume, mount string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// DetachVolume ...
+func (v *Vsphere) DetachVolume(image, volume string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}

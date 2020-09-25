@@ -664,3 +664,35 @@ func (p *AWS) getArchiveName(ctx *Context) string {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath
 }
+
+// CreateVolume ...
+func (p *AWS) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// GetAllVolume ...
+func (p *AWS) GetAllVolume(config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// GetVolume ...
+func (p *AWS) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// DeleteVolume ...
+func (p *AWS) DeleteVolume(id string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// AttachVolume ...
+func (p *AWS) AttachVolume(image, volume, mount string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// DetachVolume ...
+func (p *AWS) DetachVolume(image, volume string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}

@@ -383,3 +383,35 @@ func (v *Vultr) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }
+
+// CreateVolume ...
+func (v *Vultr) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// GetAllVolume ...
+func (v *Vultr) GetAllVolume(config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// GetVolume ...
+func (v *Vultr) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// DeleteVolume ...
+func (v *Vultr) DeleteVolume(id string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// AttachVolume ...
+func (v *Vultr) AttachVolume(image, volume, mount string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// DetachVolume ...
+func (v *Vultr) DetachVolume(image, volume string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}

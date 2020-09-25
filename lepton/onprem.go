@@ -254,3 +254,35 @@ func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) 
 func (p *OnPrem) Initialize() error {
 	return nil
 }
+
+// CreateVolume ...
+func (p *OnPrem) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// GetAllVolume ...
+func (p *OnPrem) GetAllVolume(config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// GetVolume ...
+func (p *OnPrem) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// DeleteVolume ...
+func (p *OnPrem) DeleteVolume(id string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// AttachVolume ...
+func (p *OnPrem) AttachVolume(image, volume, mount string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// DetachVolume ...
+func (p *OnPrem) DetachVolume(image, volume string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}

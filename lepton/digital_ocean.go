@@ -177,3 +177,35 @@ func (do *DigitalOcean) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }
+
+// CreateVolume ...
+func (do *DigitalOcean) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// GetAllVolume ...
+func (do *DigitalOcean) GetAllVolume(config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// GetVolume ...
+func (do *DigitalOcean) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, fmt.Errorf("Operation not supported")
+}
+
+// DeleteVolume ...
+func (do *DigitalOcean) DeleteVolume(id string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// AttachVolume ...
+func (do *DigitalOcean) AttachVolume(image, volume, mount string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}
+
+// DetachVolume ...
+func (do *DigitalOcean) DetachVolume(image, volume string, config *Config) error {
+	return fmt.Errorf("Operation not supported")
+}

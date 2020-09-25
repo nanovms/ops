@@ -158,8 +158,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	if len(mounts) > 0 {
 		for _, mount := range mounts {
-			vol := api.NewVolume(c)
-			err := vol.AttachOnRun(mount)
+			vol := api.NewLocalVolume()
+			err := vol.AttachVolume("", "", mount, c)
 			if err != nil {
 				log.Fatal(err)
 			}

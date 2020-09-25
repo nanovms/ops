@@ -17,6 +17,7 @@ type Provider interface {
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error
 	GetInstanceLogs(ctx *Context, instancename string, watch bool) error
+	VolumeService
 }
 
 // Context captures required info for provider operation

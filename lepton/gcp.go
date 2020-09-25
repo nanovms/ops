@@ -15,7 +15,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	"golang.org/x/oauth2/google"
-	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 )
 
 // GCloudOperation status check
@@ -71,6 +72,7 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 // GCloud contains all operations for GCP
 type GCloud struct {
 	Storage *GCPStorage
+	compute *compute.Service
 }
 
 func (p *GCloud) getArchiveName(ctx *Context) string {
@@ -172,6 +174,18 @@ func (p *GCloud) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 // Initialize GCP related things
 func (p *GCloud) Initialize() error {
 	p.Storage = &GCPStorage{}
+
+	err := checkCredentialsProvided()
+	if err != nil {
+		return err
+	}
+	creds := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	svc, err := compute.NewService(context.Background(), option.WithCredentialsFile(creds))
+	if err != nil {
+		return err
+	}
+	p.compute = svc
+
 	return nil
 }
 
@@ -680,4 +694,179 @@ func createArchive(archive string, files []string) error {
 // ResizeImage is not supported on google cloud.
 func (p *GCloud) ResizeImage(ctx *Context, imagename string, hbytes string) error {
 	return fmt.Errorf("Operation not supported")
+}
+
+// Create creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
+// TODO treat storage and image as temporary and delete after volume is created?
+func (p *GCloud) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
+	v := NewLocalVolume()
+	arch := name + ".tar.gz"
+	ctx := context.Background()
+
+	lv, err := v.CreateVolume(name, data, size, config)
+	if err != nil {
+		return lv, err
+	}
+
+	link := filepath.Join(filepath.Dir(lv.Path), "disk.raw")
+	if _, err := os.Lstat(link); err == nil {
+		if err := os.Remove(link); err != nil {
+			return lv, fmt.Errorf("failed to unlink: %+v", err)
+		}
+	}
+	err = os.Link(lv.Path, link)
+	if err != nil {
+		return lv, err
+	}
+	archPath := filepath.Join(filepath.Dir(lv.Path), arch)
+	// compress it into a tar.gz file
+	err = createArchive(archPath, []string{link})
+	if err != nil {
+		return lv, err
+	}
+
+	err = p.Storage.CopyToBucket(config, archPath)
+	if err != nil {
+		return lv, err
+	}
+
+	img := &compute.Image{
+		Name: name,
+		RawDisk: &compute.ImageRawDisk{
+			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
+		},
+	}
+	op, err := p.compute.Images.Insert(config.CloudConfig.ProjectID, img).Context(ctx).Do()
+	if err != nil {
+		return lv, err
+	}
+	err = p.pollOperation(ctx, config.CloudConfig.ProjectID, p.compute, *op)
+	if err != nil {
+		return lv, err
+	}
+
+	disk := &compute.Disk{
+		Name:        name,
+		SourceImage: "global/images/" + name,
+		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
+	}
+
+	_, err = p.compute.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(ctx).Do()
+	if err != nil {
+		return lv, err
+	}
+	return lv, nil
+}
+
+// GetAllVolume gets all volumes created in GCP as Compute Engine Disks
+// TODO missing attached status
+func (p *GCloud) GetAllVolume(config *Config) error {
+	ctx := context.Background()
+	dl, err := p.compute.Disks.List(config.CloudConfig.ProjectID, config.CloudConfig.Zone).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "URI", "Created", "Attached"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+	)
+	table.SetRowLine(true)
+
+	for _, d := range dl.Items {
+		var row []string
+		var users []string
+		for _, u := range d.Users {
+			uri := strings.Split(u, "/")
+			users = append(users, uri[len(uri)-1])
+		}
+		row = append(row, d.Name)
+		row = append(row, d.SelfLink)
+		row = append(row, d.CreationTimestamp)
+		row = append(row, strings.Join(users, ";"))
+		table.Append(row)
+	}
+
+	table.Render()
+	return nil
+}
+
+// GetVolume gets specific volume created in GCP as Compute Engine Disk
+func (p *GCloud) GetVolume(id string, config *Config) (NanosVolume, error) {
+	var vol NanosVolume
+	ctx := context.Background()
+	d, err := p.compute.Disks.Get(config.CloudConfig.ProjectID, config.CloudConfig.Zone, id).Context(ctx).Do()
+	if err != nil {
+		return vol, err
+	}
+	vol = NanosVolume{
+		ID:   strconv.Itoa(int(d.Id)),
+		Name: d.Name,
+		Path: d.SelfLink,
+	}
+	return vol, nil
+}
+
+// DeleteVolume deletes specific volume in GCP
+// TODO delete storage and image as well?
+func (p *GCloud) DeleteVolume(id string, config *Config) error {
+	ctx := context.Background()
+
+	_, err := p.compute.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, id).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// AttachVolume attaches Compute Engine Disk volume to existing instance
+func (p *GCloud) AttachVolume(image, volume, mount string, config *Config) error {
+	ctx := context.Background()
+	disk := &compute.AttachedDisk{
+		AutoDelete: false,
+		DeviceName: mount,
+		Source:     fmt.Sprintf("zones/%s/disks/%s", config.CloudConfig.Zone, volume),
+	}
+	op, err := p.compute.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	err = p.pollOperation(ctx, config.CloudConfig.ProjectID, p.compute, *op)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DetachVolume detaches Compute Engine Disk volume from existing instance
+func (p *GCloud) DetachVolume(image, volume string, config *Config) error {
+	var mount string
+	ctx := context.Background()
+	ins, err := p.compute.Instances.Get(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	for _, d := range ins.Disks {
+		name := strings.Split(d.Source, "/")
+		if volume == name[len(name)-1] {
+			mount = d.DeviceName
+			break
+		}
+	}
+	if mount == "" {
+		return fmt.Errorf("volume %s not found in %s", volume, image)
+	}
+	op, err := p.compute.Instances.DetachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, mount).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	err = p.pollOperation(ctx, config.CloudConfig.ProjectID, p.compute, *op)
+	if err != nil {
+		return err
+	}
+	return nil
 }

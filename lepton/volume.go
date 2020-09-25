@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,10 +31,19 @@ var (
 	errInvalidMountConfiguration = func(mount string) error { return errors.Errorf("%s: invalid mount configuration", mount) }
 )
 
-// Volume is service for managing nanos-managed volumes
-type Volume struct {
-	config *Config
-	store  volumeStore
+// Volume interface for volume related operations
+type VolumeService interface {
+	CreateVolume(name, data, size string, config *Config) (NanosVolume, error)
+	GetAllVolume(config *Config) error
+	GetVolume(id string, config *Config) (NanosVolume, error)
+	DeleteVolume(id string, config *Config) error
+	AttachVolume(image, volume, mount string, config *Config) error
+	DetachVolume(image, volume string, config *Config) error
+}
+
+// LocalVolume is service for managing nanos-managed local volumes
+type LocalVolume struct {
+	store volumeStore
 }
 
 // volumeStore interface for managing nanos volumes
@@ -55,36 +63,35 @@ type NanosVolume struct {
 	Size       string
 	Path       string
 	AttachedTo string
-	Provider   string // TODO change to enum/custom type
 }
 
-// NewVolume instantiates new Volume
-func NewVolume(config *Config) *Volume {
-	return &Volume{
-		config: config,
-		store:  &JSONStore{path: localVolumeData},
+// NewLocalVolume instantiates new Volume
+func NewLocalVolume() *LocalVolume {
+	return &LocalVolume{
+		store: &JSONStore{path: localVolumeData},
 	}
 }
 
-// Create creates volume
-func (v *Volume) Create(name, data, size, provider string) error {
+// Create creates local volume
+func (v *LocalVolume) CreateVolume(name, data, size string, config *Config) (NanosVolume, error) {
 	var cmd *exec.Cmd
-	mkfs := v.config.Mkfs
+	var vol NanosVolume
+	mkfs := config.Mkfs
 	raw := name + ".raw"
 	mnf := name + ".manifest"
 	rawPath := path.Join(localVolumeDir, raw)
 	var args []string
 	if data != "" {
-		v.config.Dirs = append(v.config.Dirs, data)
+		config.Dirs = append(config.Dirs, data)
 		mnfPath := path.Join(localVolumeDir, mnf)
-		err := buildVolumeManifest(v.config, mnfPath)
+		err := buildVolumeManifest(config, mnfPath)
 		if err != nil {
-			return err
+			return vol, err
 		}
 		args = append(args, rawPath)
 		src, err := os.Open(mnfPath)
 		if err != nil {
-			return err
+			return vol, err
 		}
 		defer src.Close()
 		cmd = exec.Command(mkfs, args...)
@@ -99,30 +106,28 @@ func (v *Volume) Create(name, data, size, provider string) error {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return vol, err
 	}
 	uuid := uuidFromMKFS(out)
 
-	vol := NanosVolume{
-		ID:       uuid,
-		Name:     name,
-		Data:     data,
-		Size:     size,
-		Path:     rawPath,
-		Provider: provider,
+	vol = NanosVolume{
+		ID:   uuid,
+		Name: name,
+		Data: data,
+		Size: size,
+		Path: rawPath,
 	}
 	err = v.store.Insert(vol)
 	if err != nil {
-		log.Println("insert", err)
-		return errors.Wrap(err, 1)
+		return vol, err
 	}
 
 	log.Printf("volume %s created with UUID %s", name, uuid)
-	return nil
+	return vol, nil
 }
 
-// GetAll gets list of all nanos-managed volumes
-func (v *Volume) GetAll() error {
+// GetAll gets list of all nanos-managed local volumes
+func (v *LocalVolume) GetAllVolume(config *Config) error {
 	vols, err := v.store.GetAll()
 	if err != nil {
 		return err
@@ -140,28 +145,13 @@ func (v *Volume) GetAll() error {
 	return nil
 }
 
-// Get gets nanos-managed volume by its UUID
-func (v *Volume) Get(id string) (NanosVolume, error) {
+// Get gets nanos-managed local volume by its UUID
+func (v *LocalVolume) GetVolume(id string, config *Config) (NanosVolume, error) {
 	return v.store.Get(id)
 }
 
-// Update updates nanos-managed volume for attach/detach purposes
-func (v *Volume) Update(id string, vol NanosVolume) error {
-	cur, err := v.Get(id)
-	if err != nil {
-		return err
-	}
-	// TODO more general update
-	cur.AttachedTo = vol.AttachedTo
-	err = v.store.Update(cur)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Delete deletes nanos-managed volume by its UUID
-func (v *Volume) Delete(id string) error {
+// Delete deletes nanos-managed local volume by its UUID
+func (v *LocalVolume) DeleteVolume(id string, config *Config) error {
 	// delete from storage
 	vol, err := v.store.Delete(id)
 	if err != nil {
@@ -177,64 +167,19 @@ func (v *Volume) Delete(id string) error {
 	return nil
 }
 
-// Attach attaches volume to a stopped instance
-func (v *Volume) Attach(image, id, mount string) error {
-	mount = strings.TrimPrefix(mount, "/")
-	mnf := image + ".json"
-	mnfPath := path.Join(localManifestDir, mnf)
-
-	b, err := ioutil.ReadFile(mnfPath)
-	if err != nil {
-		return err
-	}
-
-	// unmarshal manifest to config
-	var conf Config
-	err = json.Unmarshal(b, &conf)
-	if err != nil {
-		return err
-	}
-	conf.NightlyBuild = v.config.NightlyBuild
-
-	// preserve default
-	conf.BuildDir = v.config.BuildDir
-
-	// check if mounted
-	if conf.Mounts == nil {
-		conf.Mounts = make(map[string]string)
-	}
-	_, ok := conf.Mounts[id]
-	if ok {
-		return errVolumeMounted(id, image)
-	}
-	for _, mnt := range conf.Mounts {
-		if mnt == mount {
-			return errMountOccupied(mount, image)
-		}
-	}
-	// rebuild config to add mount
-	conf.Mounts[id] = mount
-	// rebuild image and manifest to add mount
-	err = rebuildImage(conf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// AttachOnRun attaches volume to instance on `ops run`
-func (v *Volume) AttachOnRun(mount string) error {
+// Attach attaches local volume to a stopped instance
+func (v *LocalVolume) AttachVolume(image, volume, mount string, config *Config) error {
 	um := strings.Split(mount, ":")
 	if len(um) < 2 {
 		return errInvalidMountConfiguration(mount)
 	}
 	uuid := um[0]
 	path := strings.TrimPrefix(um[1], "/")
-	vol, err := v.Get(uuid)
+	vol, err := v.GetVolume(uuid, config)
 	if err != nil {
 		return err
 	}
-	conf := v.config
+	conf := config
 	// check if mounted
 	if conf.Mounts == nil {
 		conf.Mounts = make(map[string]string)
@@ -252,4 +197,32 @@ func (v *Volume) AttachOnRun(mount string) error {
 	conf.Mounts[uuid] = path
 	conf.RunConfig.Mounts = append(conf.RunConfig.Mounts, vol.Path)
 	return nil
+}
+
+// Detach detaches local volume to a stopped instance
+func (v *LocalVolume) DetachVolume(image, volume string, config *Config) error {
+	return nil
+}
+
+func buildVolumeManifest(conf *Config, out string) error {
+	m := &Manifest{
+		children:    make(map[string]interface{}),
+		debugFlags:  make(map[string]rune),
+		environment: make(map[string]string),
+	}
+
+	for _, d := range conf.Dirs {
+		err := m.AddRelativeDirectory(d)
+		if err != nil {
+			return err
+		}
+	}
+
+	m.AddEnvironmentVariable("USER", "root")
+	m.AddEnvironmentVariable("PWD", "/")
+	for k, v := range conf.Env {
+		m.AddEnvironmentVariable(k, v)
+	}
+
+	return ioutil.WriteFile(out, []byte(m.String()), 0644)
 }
