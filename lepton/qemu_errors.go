@@ -49,7 +49,7 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 	}
 
 	if errors.As(err, &targetQemuHWAccelNoUserRights) {
-		return fmt.Sprintf(WarningColor, "You don't have rights for using hardware acceleration\\n"+
+		return fmt.Sprintf(WarningColor, "You don't have rights for using hardware acceleration\n"+
 			"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n"+
 			"You'll need to re-login for this to take affect\n"), false
 	}
