@@ -365,6 +365,12 @@ func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *Context) error {
 	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
@@ -653,7 +659,6 @@ func (p *AWS) GetInstanceLogs(ctx *Context, instancename string, watch bool) err
 	return nil
 }
 
-// TODO - make me shared
 func (p *AWS) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
@@ -663,4 +668,9 @@ func (p *AWS) customizeImage(ctx *Context) (string, error) {
 func (p *AWS) getArchiveName(ctx *Context) string {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath
+}
+
+// GetStorage returns storage interface for cloud provider
+func (p *AWS) GetStorage() Storage {
+	return p.Storage
 }

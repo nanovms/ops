@@ -222,6 +222,12 @@ func (o *OpenStack) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (o *OpenStack) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
@@ -481,8 +487,12 @@ func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string, watch boo
 	return nil
 }
 
-// Todo - make me shared
 func (o *OpenStack) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
+}
+
+// GetStorage returns storage interface for cloud provider
+func (o *OpenStack) GetStorage() Storage {
+	return o.Storage
 }

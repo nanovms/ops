@@ -313,6 +313,12 @@ func (p *GCloud) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (p *GCloud) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
 	if err := checkCredentialsProvided(); err != nil {
@@ -680,4 +686,9 @@ func createArchive(archive string, files []string) error {
 // ResizeImage is not supported on google cloud.
 func (p *GCloud) ResizeImage(ctx *Context, imagename string, hbytes string) error {
 	return fmt.Errorf("Operation not supported")
+}
+
+// GetStorage returns storage interface for cloud provider
+func (p *GCloud) GetStorage() Storage {
+	return p.Storage
 }

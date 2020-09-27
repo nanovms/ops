@@ -3,6 +3,7 @@ package lepton
 // Provider is an interface that provider must implement
 type Provider interface {
 	Initialize() error
+
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
 	CreateImage(ctx *Context) error
@@ -10,6 +11,9 @@ type Provider interface {
 	GetImages(ctx *Context) ([]CloudImage, error)
 	DeleteImage(ctx *Context, imagename string) error
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
+	SyncImage(config *Config, target Provider, imagename string) error
+	customizeImage(ctx *Context) (string, error)
+
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	GetInstances(ctx *Context) ([]CloudInstance, error)
@@ -17,6 +21,13 @@ type Provider interface {
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error
 	GetInstanceLogs(ctx *Context, instancename string, watch bool) error
+
+	GetStorage() Storage
+}
+
+// Storage is an interface that provider's storage must implement
+type Storage interface {
+	CopyToBucket(config *Config, source string) error
 }
 
 // Context captures required info for provider operation

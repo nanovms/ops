@@ -131,6 +131,12 @@ func (do *DigitalOcean) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (do *DigitalOcean) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // ResizeImage is not supported on Digital Ocean.
 func (do *DigitalOcean) ResizeImage(ctx *Context, imagename string, hbytes string) error {
 	return fmt.Errorf("Operation not supported")
@@ -172,8 +178,12 @@ func (do *DigitalOcean) GetInstanceLogs(ctx *Context, instancename string, watch
 	return nil
 }
 
-// TODO - make me shared
 func (do *DigitalOcean) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
+}
+
+// GetStorage returns storage interface for cloud provider
+func (do *DigitalOcean) GetStorage() Storage {
+	return do.Storage
 }

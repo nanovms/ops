@@ -242,6 +242,12 @@ func (v *Vsphere) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (v *Vsphere) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // CreateInstance - Creates instance on VSphere.
 // Currently we support pvsci adapter && vmnetx3 network driver.
 func (v *Vsphere) CreateInstance(ctx *Context) error {
@@ -753,7 +759,6 @@ func (v *Vsphere) GetInstanceLogs(ctx *Context, instancename string, watch bool)
 	return nil
 }
 
-// Todo - make me shared
 func (v *Vsphere) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
@@ -802,4 +807,9 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, pw, u.Host)
 	u, err = url.Parse(tempURL + "/sdk")
 	return u, err
+}
+
+// GetStorage returns storage interface for cloud provider
+func (v *Vsphere) GetStorage() Storage {
+	return v.Storage
 }

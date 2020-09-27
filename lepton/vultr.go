@@ -182,6 +182,12 @@ func (v *Vultr) DeleteImage(ctx *Context, snapshotID string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (v *Vultr) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // ResizeImage is not supported on Vultr.
 func (v *Vultr) ResizeImage(ctx *Context, imagename string, hbytes string) error {
 	return fmt.Errorf("Operation not supported")
@@ -378,8 +384,12 @@ func (v *Vultr) GetInstanceLogs(ctx *Context, instancename string, watch bool) e
 	return nil
 }
 
-// TOv - make me shared
 func (v *Vultr) customizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
+}
+
+// GetStorage returns storage interface for cloud provider
+func (v *Vultr) GetStorage() Storage {
+	return v.Storage
 }

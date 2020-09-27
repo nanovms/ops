@@ -324,20 +324,66 @@ func imageDeleteCommand() *cobra.Command {
 	return cmdImageDelete
 }
 
+func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
+	image := args[0]
+	// TODO only accepts onprem for now, implement for other source providers later
+	source, _ := cmd.Flags().GetString("source-cloud")
+	if source != "onprem" {
+		exitWithError(source + " sync not yet implemented")
+	}
+	src, err := getCloudProvider(source)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	target, _ := cmd.Flags().GetString("target-cloud")
+	tar, err := getCloudProvider(target)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	config, _ := cmd.Flags().GetString("config")
+	conf := unWarpConfig(config)
+
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone != "" {
+		conf.CloudConfig.Zone = zone
+	}
+
+	err = src.SyncImage(conf, tar, image)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+func imageSyncCommand() *cobra.Command {
+	var sourceCloud string
+	var cmdImageSync = &cobra.Command{
+		Use:   "sync <image_name>",
+		Short: "sync image with from one provider to another",
+		Run:   imageSyncCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	cmdImageSync.PersistentFlags().StringVarP(&sourceCloud, "source-cloud", "s", "onprem", "cloud platform [gcp, aws, do, vultr, onprem]")
+	return cmdImageSync
+}
+
 // ImageCommands provides image related command on GCP
 func ImageCommands() *cobra.Command {
-	var targetCloud, zone string
+	var config, targetCloud, zone string
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync"},
 		Args:      cobra.OnlyValidArgs,
 	}
+	cmdImage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, do, vultr, onprem]")
-	cmdImage.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
+	cmdImage.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for target cloud platform. defaults to GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
 	cmdImage.AddCommand(imageDeleteCommand())
 	cmdImage.AddCommand(imageResizeCommand())
+	cmdImage.AddCommand(imageSyncCommand())
 	return cmdImage
 }

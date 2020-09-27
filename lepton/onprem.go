@@ -113,6 +113,31 @@ func (p *OnPrem) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from onprem to target provider provided in Context
+func (p *OnPrem) SyncImage(config *Config, target Provider, image string) error {
+	imagePath := path.Join(localImageDir, image+".img")
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		return nil
+	}
+	config.RunConfig.Imagename = imagePath
+	config.CloudConfig.ImageName = image
+
+	// customizes image for target
+	ctx := NewContext(config, &target)
+	archive, err := target.customizeImage(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = target.GetStorage().CopyToBucket(config, archive)
+	if err != nil {
+		return err
+	}
+
+	return target.CreateImage(ctx)
+}
+
 // CreateInstance on premise
 // assumes local
 func (p *OnPrem) CreateInstance(ctx *Context) error {
@@ -253,4 +278,14 @@ func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) 
 // Initialize on prem provider
 func (p *OnPrem) Initialize() error {
 	return nil
+}
+
+// GetStorage returns storage interface for cloud provider
+func (p *OnPrem) GetStorage() Storage {
+	return nil
+}
+
+// customizeImage for onprem as stub to satisfy interface
+func (p *OnPrem) customizeImage(ctx *Context) (string, error) {
+	return "", nil
 }
