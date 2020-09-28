@@ -2,21 +2,24 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/go-errors/errors"
 	"log"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 
-func buildImages(c *api.Config) {
+func buildImages(c *api.Config) error {
 	prepareImages(c)
 	err := api.BuildImage(*c)
-	panicOnError(err)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func runCommandHandler(cmd *cobra.Command, args []string) {
@@ -155,7 +158,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.NoTrace = noTrace
 	}
 	setDefaultImageName(cmd, c)
-
 	if len(mounts) > 0 {
 		for _, mount := range mounts {
 			vol := api.NewVolume(c)
@@ -165,34 +167,36 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
-
 	if !skipbuild {
-		buildImages(c)
+		err = buildImages(c)
 	}
-
-	ports := []int{}
-	port, err := cmd.Flags().GetStringArray("port")
 	if err != nil {
-		panic(err)
-	}
-
-	for _, p := range port {
-		i, err := strconv.Atoi(p)
+		fmt.Println(err)
+	} else {
+		ports := []int{}
+		port, err := cmd.Flags().GetStringArray("port")
 		if err != nil {
 			panic(err)
 		}
+		for _, p := range port {
+			i, err := strconv.Atoi(p)
+			if err != nil {
+				panic(err)
+			}
 
-		if i == gdbport {
-			errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
-			panic(errors.New(errstr))
+			if i == gdbport {
+				errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
+				panic(errors.New(errstr))
+			}
+			ports = append(ports, i)
 		}
-		ports = append(ports, i)
+
+		fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
+
+		initDefaultRunConfigs(c, ports)
+		hypervisor.Start(&c.RunConfig)
 	}
 
-	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
-
-	initDefaultRunConfigs(c, ports)
-	hypervisor.Start(&c.RunConfig)
 }
 
 // RunCommand provides support for running binary with nanos
