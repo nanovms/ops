@@ -340,6 +340,12 @@ func (a *Azure) DeleteImage(ctx *Context, imagename string) error {
 	return nil
 }
 
+// SyncImage syncs image from provider to another provider
+func (a *Azure) SyncImage(config *Config, target Provider, image string) error {
+	fmt.Println("not yet implemented")
+	return nil
+}
+
 // CreateInstance - Creates instance on azure Platform
 //
 // this is kind of a pita
@@ -678,4 +684,9 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string, watch bool) e
 // ResizeImage is not supported on azure.
 func (a *Azure) ResizeImage(ctx *Context, imagename string, hbytes string) error {
 	return fmt.Errorf("Operation not supported")
+}
+
+// GetStorage returns storage interface for cloud provider
+func (a *Azure) GetStorage() Storage {
+	return a.Storage
 }
