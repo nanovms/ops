@@ -32,6 +32,7 @@ func isDynamicLinked(path string) (bool, error) {
 // works only on linux, need to
 // replace looking up in dynamic section in ELF
 func getSharedLibs(targetRoot string, path string) ([]string, error) {
+	var notExistLib []string
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -71,8 +72,24 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 			if strings.HasPrefix(libpath, dir) {
 				libpath = libpath[len(dir)+1:]
 			}
+			if strings.Contains(text, "not found") {
+				notExistLib = append(notExistLib, text)
+			}
+			err = errors.New("")
 			deps = append(deps, strings.TrimSpace(libpath))
 		}
+
+		if len(notExistLib) != 0 {
+			errMessage := "Library: "
+			for i := range notExistLib {
+				errMessage += notExistLib[i]
+				if i+1 != len(notExistLib) {
+					errMessage += "\n"
+				}
+			}
+			return nil, errors.New(errMessage)
+		}
+
 		defer out.Close()
 		if err := cmd.Wait(); err != nil {
 			return nil, err
