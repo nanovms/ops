@@ -1,9 +1,9 @@
 package lepton
 
 import (
-    "fmt"
 	"bufio"
 	"debug/elf"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,7 +88,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 					errMessage += "\n"
 				}
 			}
-            fmt.Println("Ops can't find the following missing libraries:")
+			fmt.Println("Ops can't find the following missing libraries:")
 			return nil, errors.New(errMessage)
 		}
 
