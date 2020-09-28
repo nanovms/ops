@@ -3,6 +3,7 @@ package lepton
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -58,13 +59,19 @@ func (s *JSONStore) GetAll() ([]NanosVolume, error) {
 	var volumes []NanosVolume
 	f, err := os.Open(s.path)
 	if err != nil {
-		return volumes, err
+		if errors.Is(err, os.ErrNotExist) {
+			// volumes config file does not exist
+			// This indicates that there are no volumes mounted
+			return nil, nil
+		}
+		return nil, err
 	}
 	defer f.Close()
 	dec := json.NewDecoder(f)
 	for {
 		var vol NanosVolume
 		err = dec.Decode(&vol)
+		// TODO Use errors.Is() instead of error comparison
 		if err == io.EOF {
 			break
 		}
