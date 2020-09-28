@@ -122,6 +122,10 @@ func createBridgeNetwork(adapterName string) (*netlink.Bridge, error) {
 func assignIP(bridge *netlink.Bridge) error {
 	var err error
 	ip, err := dhcpAcquireIPAddress(macAddr)
+	ipV4 := net.ParseIP(ip)
+	if ipV4.To4() == nil {
+		return errors.New("Both ipv6 && user-mode are enabled. Select ipv4")
+	}
 	if err != nil {
 		return err
 	}
