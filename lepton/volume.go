@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -71,12 +70,14 @@ func NewVolume(config *Config) *Volume {
 
 // Create creates volume
 func (v *Volume) Create(name, data, size, provider string) error {
-	var cmd *exec.Cmd
-	mkfs := v.config.Mkfs
+	mkfsPath := v.config.Mkfs
+	var mkfsCommand = NewMkfsCommand(mkfsPath)
 	raw := name + ".raw"
 	mnf := name + ".manifest"
+
 	rawPath := path.Join(localVolumeDir, raw)
-	var args []string
+	mkfsCommand.SetFileSystemPath(rawPath)
+
 	if data != "" {
 		v.config.Dirs = append(v.config.Dirs, data)
 		mnfPath := path.Join(localVolumeDir, mnf)
@@ -84,27 +85,26 @@ func (v *Volume) Create(name, data, size, provider string) error {
 		if err != nil {
 			return err
 		}
-		args = append(args, rawPath)
+
 		src, err := os.Open(mnfPath)
 		if err != nil {
 			return err
 		}
+
 		defer src.Close()
-		cmd = exec.Command(mkfs, args...)
-		cmd.Stdin = src
-	} else {
-		args = append(args, "-e", rawPath)
-		if size != "" {
-			args = append(args, "-s", size)
-		}
-		cmd = exec.Command(mkfs, args...)
+
+		mkfsCommand.SetStdin(src)
+	} else if size != "" {
+		mkfsCommand.SetFileSystemSize(size)
 	}
 
-	out, err := cmd.CombinedOutput()
+	mkfsCommand.SetupCommand()
+	err := mkfsCommand.Execute()
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
-	uuid := uuidFromMKFS(out)
+
+	uuid := mkfsCommand.GetUUID()
 
 	vol := NanosVolume{
 		ID:       uuid,
