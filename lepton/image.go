@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -358,30 +357,33 @@ func buildImage(c *Config, m *Manifest) error {
 
 	defer cleanup(c)
 
-	args := []string{}
+	mkfsCommand := NewMkfsCommand(c.Mkfs)
+
 	if c.TargetRoot != "" {
-		args = append(args, "-r", c.TargetRoot)
+		mkfsCommand.SetTargetRoot(c.TargetRoot)
 	}
 
 	if c.BaseVolumeSz != "" {
-		args = append(args, "-s", c.BaseVolumeSz)
+		mkfsCommand.SetFileSystemSize(c.BaseVolumeSz)
 	}
 
-	args = append(args, "-b", c.Boot)
-	args = append(args, c.RunConfig.Imagename)
+	mkfsCommand.SetBoot(c.Boot)
+	mkfsCommand.SetImageName(c.RunConfig.Imagename)
 
-	mkfs := exec.Command(c.Mkfs, args...)
-	stdin, err := mkfs.StdinPipe()
+	mkfsCommand.SetupCommand()
+	stdin, err := mkfsCommand.GetStdinPipe()
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	go func() {
 		defer stdin.Close()
 		io.WriteString(stdin, elfmanifest)
 	}()
-	out, err := mkfs.CombinedOutput()
+
+	err = mkfsCommand.Execute()
 	if err != nil {
-		log.Println("mkfs:" + string(out))
+		log.Println("mkfs:" + string(mkfsCommand.GetOutput()))
 		return errors.Wrap(err, 1)
 	}
 
