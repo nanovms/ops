@@ -591,7 +591,7 @@ func (p *AWS) ListInstances(ctx *Context) error {
 	return nil
 }
 
-// DeleteInstance deletes instnace from AWS
+// DeleteInstance deletes instance from AWS
 func (p *AWS) DeleteInstance(ctx *Context, instancename string) error {
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(ctx.config.CloudConfig.Zone)},

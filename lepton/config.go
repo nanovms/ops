@@ -30,7 +30,7 @@ type Config struct {
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
-	Platform   string `cloud:"platfom"`
+	Platform   string `cloud:"platform"`
 	ProjectID  string `cloud:"projectid"`
 	Zone       string `cloud:"zone"`
 	BucketName string `cloud:"bucketname"`
