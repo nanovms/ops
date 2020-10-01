@@ -133,7 +133,7 @@ func TestVersionCompareMalformat(t *testing.T) {
 	v2 := "2.8"
 	_, err := q.versionCompare(v1, v2)
 	if err.Error() != `strconv.Atoi: parsing "2dd": invalid syntax` {
-		t.Errorf("Did not detect improperly formated error %q", v1)
+		t.Errorf("Did not detect improperly formatted error %q", v1)
 	}
 }
 

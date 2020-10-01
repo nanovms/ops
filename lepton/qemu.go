@@ -317,7 +317,7 @@ func kvmAvailable() error {
 // greater then true is returned, if the second argument is greater
 // then versionCompare returns false, otherwise it returns true.
 func (q *qemu) versionCompare(v1, v2 string) (bool, error) {
-	const formatError = "improperly formated qemu version %q"
+	const formatError = "improperly formatted qemu version %q"
 
 	ver1 := strings.Split(v1, ".")
 	ver2 := strings.Split(v2, ".")
