@@ -2,6 +2,7 @@ package lepton
 
 // CloudImage abstracts images for various cloud providers
 type CloudImage struct {
+	ID      string
 	Name    string
 	Status  string
 	Created string // TODO: prob. should be datetime w/helpers for human formatting

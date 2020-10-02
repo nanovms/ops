@@ -251,12 +251,38 @@ func getAWSInstances(region string) *ec2.DescribeInstancesOutput {
 
 // GetImages return all images on AWS
 func (p *AWS) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
+	var cimages []CloudImage
+
+	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	if err != nil {
+		return nil, err
+	}
+
+	images := result.Images
+	for _, image := range images {
+		var name string
+		if image.Tags != nil {
+			name = aws.StringValue(image.Tags[0].Value)
+		} else {
+			name = "n/a"
+		}
+
+		cimage := CloudImage{
+			Name:    name,
+			ID:      *image.Name,
+			Status:  *image.State,
+			Created: *image.CreationDate,
+		}
+
+		cimages = append(cimages, cimage)
+	}
+
+	return cimages, nil
 }
 
 // ListImages lists images on AWS
 func (p *AWS) ListImages(ctx *Context) error {
-	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	cimages, err := p.GetImages(ctx)
 	if err != nil {
 		return err
 	}
@@ -270,19 +296,14 @@ func (p *AWS) ListImages(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	images := result.Images
-	for i := 0; i < len(images); i++ {
+	for _, image := range cimages {
 		var row []string
 
-		if images[i].Tags != nil {
-			row = append(row, aws.StringValue(images[i].Tags[0].Value))
-		} else {
-			row = append(row, "n/a")
-		}
+		row = append(row, image.Name)
+		row = append(row, image.ID)
+		row = append(row, image.Status)
+		row = append(row, image.Created)
 
-		row = append(row, aws.StringValue(images[i].Name))
-		row = append(row, aws.StringValue(images[i].State))
-		row = append(row, aws.StringValue(images[i].CreationDate))
 		table.Append(row)
 	}
 

@@ -153,11 +153,7 @@ func (o *OpenStack) CreateImage(ctx *Context) error {
 
 // GetImages return all images for openstack
 func (o *OpenStack) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
-}
-
-// ListImages lists images on a datastore.
-func (o *OpenStack) ListImages(ctx *Context) error {
+	var cimages []CloudImage
 
 	imageClient, err := openstack.NewImageServiceV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
@@ -178,6 +174,28 @@ func (o *OpenStack) ListImages(ctx *Context) error {
 		fmt.Println(err)
 	}
 
+	for _, image := range allImages {
+
+		cimage := CloudImage{
+			Name:    image.Name,
+			Status:  string(image.Status),
+			Created: time2Human(image.CreatedAt),
+		}
+
+		cimages = append(cimages, cimage)
+	}
+
+	return cimages, nil
+}
+
+// ListImages lists images on a datastore.
+func (o *OpenStack) ListImages(ctx *Context) error {
+
+	cimages, err := o.GetImages(ctx)
+	if err != nil {
+		return err
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created"})
 	table.SetHeaderColor(
@@ -186,11 +204,13 @@ func (o *OpenStack) ListImages(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, image := range allImages {
+	for _, image := range cimages {
 		var row []string
+
 		row = append(row, image.Name)
-		row = append(row, fmt.Sprintf("%v", image.Status))
-		row = append(row, time2Human(image.CreatedAt))
+		row = append(row, image.Status)
+		row = append(row, image.Created)
+
 		table.Append(row)
 	}
 
