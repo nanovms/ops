@@ -60,6 +60,7 @@ func (o *OpenStack) createImage(key string, bucket string, region string) {
 func (o *OpenStack) Initialize() error {
 
 	opts, err := openstack.AuthOptionsFromEnv()
+
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -306,12 +307,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 // GetInstances return all instances on OpenStack
 // TODO
 func (o *OpenStack) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
-}
-
-// ListInstances lists instances on OpenStack.
-// It essentially does:
-func (o *OpenStack) ListInstances(ctx *Context) error {
+	cinstances := []CloudInstance{}
 
 	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
@@ -331,18 +327,7 @@ func (o *OpenStack) ListInstances(ctx *Context) error {
 			return false, err
 		}
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "IP", "Status", "Created"})
-		table.SetHeaderColor(
-			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
-		table.SetRowLine(true)
-
 		for _, s := range serverList {
-			var row []string
-
 			// fugly
 			ipv4 := ""
 			z := s.Addresses["public"].([]interface{})
@@ -354,18 +339,51 @@ func (o *OpenStack) ListInstances(ctx *Context) error {
 				}
 			}
 
-			row = append(row, s.Name)
-			row = append(row, ipv4)
-			row = append(row, s.Status)
-			row = append(row, s.Created.Format("2006-01-02 15:04:05"))
+			cinstance := CloudInstance{
+				Name:      s.Name,
+				PublicIps: []string{ipv4},
+				Status:    s.Status,
+				Created:   s.Created.Format("2006-01-02 15:04:05"),
+			}
 
-			table.Append(row)
-
+			cinstances = append(cinstances, cinstance)
 		}
-		table.Render()
 
-		return false, nil
+		return true, nil
 	})
+
+	return cinstances, nil
+}
+
+// ListInstances lists instances on OpenStack.
+// It essentially does:
+func (o *OpenStack) ListInstances(ctx *Context) error {
+	cinstances, err := o.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "IP", "Status", "Created"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+
+	for _, instance := range cinstances {
+		var row []string
+
+		row = append(row, instance.Name)
+		row = append(row, strings.Join(instance.PublicIps, ","))
+		row = append(row, instance.Status)
+		row = append(row, instance.Created)
+
+		table.Append(row)
+	}
+
+	table.Render()
 
 	return nil
 }

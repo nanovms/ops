@@ -533,12 +533,54 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 // GetInstances return all instances on AWS
 // TODO
 func (p *AWS) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	var cinstances []CloudInstance
+
+	result := getAWSInstances(ctx.config.CloudConfig.Zone)
+
+	for _, reservation := range result.Reservations {
+
+		for i := 0; i < len(reservation.Instances); i++ {
+			instance := reservation.Instances[i]
+
+			instanceName := "unknown"
+			for x := 0; x < len(instance.Tags); x++ {
+				if aws.StringValue(instance.Tags[i].Key) == "Name" {
+					instanceName = aws.StringValue(instance.Tags[i].Value)
+				}
+			}
+
+			var privateIps, publicIps []string
+			for _, ninterface := range instance.NetworkInterfaces {
+				privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
+
+				if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
+					publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
+				}
+			}
+
+			cinstance := CloudInstance{
+				ID:         aws.StringValue(instance.InstanceId),
+				Name:       instanceName,
+				Status:     aws.StringValue(instance.State.Name),
+				Created:    aws.TimeValue(instance.LaunchTime).String(),
+				PublicIps:  publicIps,
+				PrivateIps: privateIps,
+			}
+
+			cinstances = append(cinstances, cinstance)
+		}
+
+	}
+
+	return cinstances, nil
 }
 
 // ListInstances lists instances on AWS
 func (p *AWS) ListInstances(ctx *Context) error {
-	result := getAWSInstances(ctx.config.CloudConfig.Zone)
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips"})
@@ -551,39 +593,20 @@ func (p *AWS) ListInstances(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, reservation := range result.Reservations {
+	for _, instance := range instances {
 
-		for i := 0; i < len(reservation.Instances); i++ {
-			instance := reservation.Instances[i]
+		var rows []string
 
-			var rows []string
+		rows = append(rows, instance.Name)
+		rows = append(rows, instance.ID)
 
-			instanceName := "unknown"
-			for x := 0; x < len(instance.Tags); x++ {
-				if aws.StringValue(instance.Tags[i].Key) == "Name" {
-					instanceName = aws.StringValue(instance.Tags[i].Value)
-				}
-			}
-			rows = append(rows, instanceName)
-			rows = append(rows, aws.StringValue(instance.InstanceId))
+		rows = append(rows, instance.Status)
+		rows = append(rows, instance.Created)
 
-			rows = append(rows, aws.StringValue(instance.State.Name))
-			rows = append(rows, aws.TimeValue(instance.LaunchTime).String())
+		rows = append(rows, strings.Join(instance.PrivateIps, ","))
+		rows = append(rows, strings.Join(instance.PublicIps, ","))
 
-			var privateIps, publicIps []string
-			for _, ninterface := range instance.NetworkInterfaces {
-				privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
-
-				if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
-					publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
-				}
-
-			}
-			rows = append(rows, strings.Join(privateIps, ","))
-			rows = append(rows, strings.Join(publicIps, ","))
-			table.Append(rows)
-		}
-
+		table.Append(rows)
 	}
 
 	table.Render()
