@@ -34,14 +34,12 @@ type Storage interface {
 
 // VolumeService is an interface for volume related operations
 type VolumeService interface {
-	CreateVolume(config *Config, name, label, data, size, provider string) error
+	CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error)
 	GetAllVolumes(config *Config) error
 	UpdateVolume(config *Config, name, label string) error
 	DeleteVolume(config *Config, name, label string) error
 	AttachVolume(config *Config, image, name, label, mount string) error
 	DetachVolume(config *Config, image, label string) error
-	// TODO separate volume creation and mount creation
-	// CreateVolumeMount(config *Config, name, label, data, size, provider string) error
 }
 
 // Context captures required info for provider operation

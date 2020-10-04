@@ -1,8 +1,9 @@
 package lepton
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (v *Vsphere) CreateVolume(config *Config, name, label, data, size, provider string) error {
-	return nil
+func (v *Vsphere) CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error) {
+	var vol NanosVolume
+	return vol, nil
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface

@@ -11,9 +11,6 @@ import (
 
 func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
-	if name == "" {
-		log.Fatal("name required")
-	}
 	data, _ := cmd.Flags().GetString("data")
 	label, _ := cmd.Flags().GetString("label")
 	size, _ := cmd.Flags().GetString("size")
@@ -36,6 +33,7 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if conf.Mkfs == "" {
 		conf.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
 	}
+	conf.BuildDir = api.LocalVolumeDir
 
 	var vol api.VolumeService
 	if provider == "onprem" {
@@ -46,10 +44,11 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-	err = vol.CreateVolume(conf, name, label, data, size, provider)
+	res, err := vol.CreateVolume(conf, name, label, data, size, provider)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("volume: %s created with UUID %s and label %s\n", res.Name, res.ID, res.Label)
 }
 
 func volumeCreateCommand() *cobra.Command {
@@ -80,6 +79,9 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
+
+	conf.BuildDir = api.LocalVolumeDir
+
 	err = vol.GetAllVolumes(conf)
 	if err != nil {
 		log.Fatal(err)
@@ -87,6 +89,7 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 // TODO might be nice to be able to filter by name/label
+// api.GetVolumes can be implemented to achieve this
 func volumeListCommand() *cobra.Command {
 	cmdVolumeList := &cobra.Command{
 		Use:   "list",
@@ -94,6 +97,42 @@ func volumeListCommand() *cobra.Command {
 		Run:   volumeListCommandHandler,
 	}
 	return cmdVolumeList
+}
+
+func volumeUpdateCommandHandler(cmd *cobra.Command, args []string) {
+	name := args[0]
+	label := args[1]
+	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("provider")
+	conf := unWarpConfig(config)
+
+	var vol api.VolumeService
+	var err error
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	conf.BuildDir = api.LocalVolumeDir
+
+	err = vol.UpdateVolume(conf, name, label)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func volumeUpdateCommand() *cobra.Command {
+	cmdVolumeUpdate := &cobra.Command{
+		Use:   "update <volume_name:volume_uuid> <new_label>",
+		Short: "update volume",
+		Run:   volumeUpdateCommandHandler,
+		Args:  cobra.MinimumNArgs(2),
+	}
+	return cmdVolumeUpdate
 }
 
 func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
@@ -113,6 +152,9 @@ func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
+
+	conf.BuildDir = api.LocalVolumeDir
+
 	err = vol.DeleteVolume(conf, name, label)
 	if err != nil {
 		log.Fatal(err)
@@ -171,7 +213,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
 		Short:     "manage nanos volumes",
-		ValidArgs: []string{"create, list, delete, attach"},
+		ValidArgs: []string{"create, list, update, delete, attach"},
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdVolume.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
@@ -180,6 +222,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdVolume.AddCommand(volumeCreateCommand())
 	cmdVolume.AddCommand(volumeListCommand())
+	cmdVolume.AddCommand(volumeUpdateCommand())
 	cmdVolume.AddCommand(volumeDeleteCommand())
 	cmdVolume.AddCommand(volumeAttachCommand())
 	return cmdVolume
