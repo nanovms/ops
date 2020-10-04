@@ -18,6 +18,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	pkg, _ := cmd.Flags().GetString("package")
 	pkg = strings.TrimSpace(pkg)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
+	mounts, _ := cmd.Flags().GetStringArray("mounts")
 
 	nightly, err := strconv.ParseBool(cmd.Flag("nightly").Value.String())
 	if err != nil {
@@ -59,6 +60,11 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	prepareImages(c)
+	err = api.AddMounts(mounts, c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	p, err := getCloudProvider(provider)
 	if err != nil {
 		exitWithError(err.Error())
@@ -204,7 +210,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 func imageCreateCommand() *cobra.Command {
 	var (
 		config, pkg, imageName string
-		args                   []string
+		args, mounts           []string
 		nightly                bool
 	)
 
@@ -217,6 +223,7 @@ func imageCreateCommand() *cobra.Command {
 	cmdImageCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdImageCreate.PersistentFlags().StringVarP(&pkg, "package", "p", "", "ops package name")
 	cmdImageCreate.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
+	cmdImageCreate.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "mount <volume_id:mount_path>")
 	cmdImageCreate.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 
 	cmdImageCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")

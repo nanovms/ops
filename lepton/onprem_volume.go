@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,6 +13,7 @@ import (
 )
 
 var (
+	// localVolumeDir is the default local volume directory
 	localVolumeDir = path.Join(GetOpsHome(), "volumes")
 )
 
@@ -20,7 +22,9 @@ const (
 	DefaultVolumeLabel = "default"
 	// MinimumVolumeSize is the minimum size of a volume created with mkfs (1 MB).
 	MinimumVolumeSize = MByte
-	volumeDelimiter   = ":"
+	// VolumeDelimiter is the reserved character used as delimiter between
+	// volume name and uuid/label
+	VolumeDelimiter = ":"
 )
 
 var (
@@ -29,13 +33,13 @@ var (
 
 // NanosVolume information for nanos-managed volume
 type NanosVolume struct {
-	ID         string
-	Name       string
-	Label      string
-	Data       string
-	Size       string
-	Path       string
-	AttachedTo string
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Label      string `json:"label"`
+	Data       string `json:"data"`
+	Size       string `json:"size"`
+	Path       string `json:"path"`
+	AttachedTo string `json:"attached_to"`
 }
 
 // CreateVolume creates volume for onprem image
@@ -59,6 +63,7 @@ func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider
 	if data != "" {
 		config.Dirs = append(config.Dirs, data)
 		mnfPath = path.Join(localVolumeDir, mnf)
+		fmt.Println(mnfPath)
 		err := buildVolumeManifest(config, mnfPath)
 		if err != nil {
 			return err
@@ -82,13 +87,13 @@ func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider
 	uuid := mkfsCommand.GetUUID()
 	fmt.Printf("volume: %s created with UUID %s and label %s\n", name, uuid, label)
 
-	raw := fmt.Sprintf("%s%s%s.raw", name, volumeDelimiter, uuid)
+	raw := fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid)
 	rawPath := path.Join(localVolumeDir, raw)
 	err = os.Rename(tmpPath, rawPath)
 	if err != nil {
 		fmt.Printf("volume: UUID: failed adding UUID info for volume %s\n", name)
-		fmt.Printf("rename the file to %s%s%s should you want to attach it by UUID\n", name, volumeDelimiter, uuid)
-		fmt.Printf("symlink the file to %s%s%s should you want to attach it by label\n", name, volumeDelimiter, label)
+		fmt.Printf("rename the file to %s%s%s should you want to attach it by UUID\n", name, VolumeDelimiter, uuid)
+		fmt.Printf("symlink the file to %s%s%s should you want to attach it by label\n", name, VolumeDelimiter, label)
 	} else {
 		symlinkVolume(name, uuid, label)
 	}
@@ -98,9 +103,8 @@ func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider
 }
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes
-// TODO refactor to private, expose ListVolumes instead
 func (op *OnPrem) GetAllVolumes(config *Config) error {
-	vols, err := op.getAllVolumes()
+	vols, err := GetVolumes(nil)
 	if err != nil {
 		return err
 	}
@@ -117,56 +121,6 @@ func (op *OnPrem) GetAllVolumes(config *Config) error {
 	}
 	table.Render()
 	return nil
-}
-
-// getAllVolumes gets list of all onprem nanos-managed volumes
-func (op *OnPrem) getAllVolumes() ([]NanosVolume, error) {
-	var vols []NanosVolume
-	mvols := make(map[string]NanosVolume)
-
-	fi, err := ioutil.ReadDir(localVolumeDir)
-	if err != nil {
-		return vols, err
-	}
-
-	for _, info := range fi {
-		if info.IsDir() {
-			continue
-		}
-
-		// checks if volume has been scanned from its symlink
-		_, ok := mvols[info.Name()]
-		if ok {
-			continue
-		}
-
-		link, err := os.Readlink(path.Join(localVolumeDir, info.Name()))
-		if err != nil {
-			nu := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), volumeDelimiter)
-			mvols[info.Name()] = NanosVolume{
-				ID:   nu[1],
-				Name: nu[0],
-				Size: bytes2Human(info.Size()),
-				Path: path.Join(localVolumeDir, info.Name()),
-			}
-		} else {
-			label := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), volumeDelimiter)[1]
-			src, _ := os.Stat(link)
-			nu := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), volumeDelimiter)
-			mvols[src.Name()] = NanosVolume{
-				ID:    nu[1],
-				Name:  nu[0],
-				Label: label,
-				Size:  bytes2Human(info.Size()),
-				Path:  path.Join(localVolumeDir, src.Name()),
-			}
-		}
-	}
-
-	for _, vol := range mvols {
-		vols = append(vols, vol)
-	}
-	return vols, nil
 }
 
 // isVolumeExists checks if onprem nanos-managed volume
@@ -211,19 +165,22 @@ func (op *OnPrem) DeleteVolume(config *Config, name, label string) error {
 	return nil
 }
 
-// AttachVolume attaches volume to instance on `ops instance create`
+// AttachVolume attaches volume to instance on `ops instance create -t onprem`
 // or `ops run --mounts`
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
-// TODO unstub
 func (op *OnPrem) AttachVolume(config *Config, image, name, label, mount string) error {
+	fmt.Println("not implemented")
+	fmt.Println("use <ops run> or <ops load> with --mounts flag instead")
+	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
+	fmt.Println("and run it with <ops instance create -t onprem>")
 	return nil
 }
 
 // DetachVolume detaches volume
-// TODO unstub
 func (op *OnPrem) DetachVolume(config *Config, image, label string) error {
+	fmt.Println("not implemented")
 	return nil
 }
 
@@ -242,7 +199,7 @@ func (op *OnPrem) parseSize(vol NanosVolume) string {
 	return size
 }
 
-// buildVolumeManifest ...
+// buildVolumeManifest builds manifests for non-empty volume
 func buildVolumeManifest(conf *Config, out string) error {
 	m := &Manifest{
 		children:    make(map[string]interface{}),
@@ -266,7 +223,7 @@ func buildVolumeManifest(conf *Config, out string) error {
 	return ioutil.WriteFile(out, []byte(m.String()), 0644)
 }
 
-// cleanUpVolumeManifest ...
+// cleanUpVolumeManifest cleans up manifests for non-empty volume
 func cleanUpVolumeManifest(file string) error {
 	if file == "" {
 		return nil
@@ -283,13 +240,15 @@ func cleanUpVolumeManifest(file string) error {
 	return nil
 }
 
-// symlinkVolume ...
+// symlinkVolume creates a symlink to volume that acts as volume label
+// if label of the same name exists for a volume, removes the label from the older volume
+// and assigns it to the newly created volume
 func symlinkVolume(name, uuid, label string) error {
 	msg := fmt.Sprintf("volume: label: failed adding label info for volume %s\n", name)
-	msg = fmt.Sprintf("%vsymlink the file to %s%s%s should you want to attach it by label\n", msg, name, volumeDelimiter, label)
+	msg = fmt.Sprintf("%vsymlink the file to %s%s%s should you want to attach it by label\n", msg, name, VolumeDelimiter, label)
 
-	src := path.Join(localVolumeDir, fmt.Sprintf("%s%s%s.raw", name, volumeDelimiter, uuid))
-	dst := path.Join(localVolumeDir, fmt.Sprintf("%s%s%s.raw", name, volumeDelimiter, label))
+	src := path.Join(localVolumeDir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid))
+	dst := path.Join(localVolumeDir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, label))
 
 	_, err := os.Lstat(dst)
 	if err == nil {
@@ -310,5 +269,178 @@ func symlinkVolume(name, uuid, label string) error {
 		return err
 	}
 	fmt.Printf("volume: label: volume %s is labelled %s\n", name, label)
+	return nil
+}
+
+// GetVolumes get nanos volume using filter
+// TODO pass dir to allow for cleaner testing
+// TODO might be better to interface this
+func GetVolumes(query map[string]string) ([]NanosVolume, error) {
+	var vols []NanosVolume
+	mvols := make(map[string]NanosVolume)
+
+	fi, err := ioutil.ReadDir(localVolumeDir)
+	if err != nil {
+		return vols, err
+	}
+
+	for _, info := range fi {
+		if info.IsDir() {
+			continue
+		}
+
+		// checks if volume has been scanned from its symlink
+		_, ok := mvols[info.Name()]
+		if ok {
+			continue
+		}
+
+		link, err := os.Readlink(path.Join(localVolumeDir, info.Name()))
+		if err == nil {
+			var id string
+			var label string
+			nl := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
+			if len(nl) == 2 {
+				label = nl[1]
+			}
+			src, err := os.Stat(link)
+			// ignore dangling symlink
+			if err != nil {
+				continue
+			}
+			nu := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), VolumeDelimiter)
+			if len(nu) == 2 {
+				id = nu[1]
+			}
+			mvols[src.Name()] = NanosVolume{
+				ID:    id,
+				Name:  nu[0],
+				Label: label,
+				Size:  bytes2Human(src.Size()),
+				Path:  path.Join(localVolumeDir, src.Name()),
+			}
+		} else {
+			var id string
+			nu := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
+			if len(nu) == 2 {
+				id = nu[1]
+			}
+			mvols[info.Name()] = NanosVolume{
+				ID:   id,
+				Name: nu[0],
+				Size: bytes2Human(info.Size()),
+				Path: path.Join(localVolumeDir, info.Name()),
+			}
+		}
+	}
+
+	for _, vol := range mvols {
+		vols = append(vols, vol)
+	}
+	if query == nil {
+		return vols, nil
+	}
+
+	vols = filterVolume(vols, query)
+	return vols, nil
+}
+
+// emulate kv store to easily extend query terms
+// although multiple marshals/unmarshals makes this too convoluted
+// another approach is to simply filter by designated field and repeat
+// each time we need to query another field
+func filterVolume(all []NanosVolume, query map[string]string) []NanosVolume {
+	var vols []NanosVolume
+	b, _ := json.Marshal(all)
+	// empty slice and repopulate with filtered results
+	all = nil
+	var tmpVols []map[string]interface{}
+	json.Unmarshal(b, &tmpVols)
+	for k, v := range query {
+		var vol NanosVolume
+		for _, tmp := range tmpVols {
+			// check if key is queried
+			vv, ok := tmp[k]
+			if !ok {
+				continue
+			}
+
+			if vv == v {
+				b, _ := json.Marshal(tmp)
+				json.Unmarshal(b, &vol)
+				vols = append(vols, vol)
+			}
+		}
+	}
+	return vols
+}
+
+// AddMounts adds Mounts and RunConfig.Mounts to image from flags
+func AddMounts(mounts []string, config *Config) error {
+	if config.Mounts == nil {
+		config.Mounts = make(map[string]string)
+	}
+	query := make(map[string]string)
+
+	for _, mnt := range mounts {
+		lm := strings.Split(mnt, VolumeDelimiter)
+		if len(lm) != 2 {
+			return fmt.Errorf("mount config invalid: %s", mnt)
+		}
+		if lm[1][0] != '/' {
+			return fmt.Errorf("mount config invalid: %s", mnt)
+		}
+
+		query["id"] = lm[0]
+		query["label"] = lm[0]
+		vols, err := GetVolumes(query)
+		if err != nil {
+			return err
+		}
+
+		if len(vols) == 0 {
+			return fmt.Errorf("volume with uuid/label %s not found", lm[0])
+		} else if len(vols) > 1 {
+			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", lm[0])
+		}
+		config.Mounts[lm[0]] = lm[1]
+		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
+	}
+
+	return nil
+}
+
+// addMounts adds RunConfig.Mounts to image from existing Mounts
+// to simulate attach/detach volume locally
+func addMounts(config *Config) error {
+	if config.Mounts == nil {
+		return fmt.Errorf("no mount configuration found for image")
+	}
+	query := make(map[string]string)
+
+	for mnt, _ := range config.Mounts {
+		lm := strings.Split(mnt, VolumeDelimiter)
+		if len(lm) != 2 {
+			return fmt.Errorf("mount config invalid: %s", mnt)
+		}
+		if lm[1][0] != '/' {
+			return fmt.Errorf("mount config invalid: %s", mnt)
+		}
+
+		query["id"] = lm[0]
+		query["label"] = lm[0]
+		vols, err := GetVolumes(query)
+		if err != nil {
+			return err
+		}
+
+		if len(vols) == 0 {
+			return fmt.Errorf("volume with uuid/label %s not found", lm[0])
+		} else if len(vols) > 1 {
+			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", lm[0])
+		}
+		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
+	}
+
 	return nil
 }

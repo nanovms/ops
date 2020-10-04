@@ -158,15 +158,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		c.NoTrace = noTrace
 	}
 	setDefaultImageName(cmd, c)
-	if len(mounts) > 0 {
-		for _, mount := range mounts {
-			vol := &api.OnPrem{}
-			err := vol.AttachVolume(c, "", "", "", mount)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+
+	err = api.AddMounts(mounts, c)
+	if err != nil {
+		log.Fatal(err)
 	}
+
 	if !skipbuild {
 		err = buildImages(c)
 	}
@@ -246,7 +243,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdRun.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
-	cmdRun.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "mount <volume_id:mount_path>")
+	cmdRun.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "<volume_id/label>:/<mount_path>")
 
 	return cmdRun
 }
