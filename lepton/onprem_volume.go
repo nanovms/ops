@@ -132,7 +132,7 @@ func (op *OnPrem) GetAllVolumes(config *Config) error {
 func (op *OnPrem) UpdateVolume(config *Config, name, label string) error {
 	nu := strings.Split(name, VolumeDelimiter)
 	if len(nu) != 2 {
-		return fmt.Errorf("wrong volume name format, expected <volume_name:volume_uuid>")
+		return fmt.Errorf("expected format <volume_name:volume_uuid>: %s", name)
 	}
 	return symlinkVolume(config.BuildDir, nu[0], nu[1], label)
 }

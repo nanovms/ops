@@ -34,11 +34,12 @@ var (
 
 func TestOnPremVolume(t *testing.T) {
 	// set up here since linter/vet complains about using testing.Main
-	tmp, err := ioutil.TempDir("/tmp", "testOPs-test-*")
+	tmp, err := ioutil.TempDir("/tmp", "test-ops-*")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
+	DownloadNightlyImages(testVolumeConfig)
 
 	testVolumeConfig.BuildDir = tmp
 	count := new(int)
