@@ -14,6 +14,7 @@ func TestMKFSCommand(t *testing.T) {
 		mkfs.SetTargetRoot("targetRoot")
 		mkfs.SetBoot("boot")
 		mkfs.SetEmptyFileSystem()
+		mkfs.SetLabel("label")
 
 		got := mkfs.GetArgs()
 		want := []string{
@@ -25,10 +26,12 @@ func TestMKFSCommand(t *testing.T) {
 			"-b",
 			"boot",
 			"-e",
+			"-l",
+			"label",
 		}
 
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("Got %v want %v", got, want)
+			t.Errorf("got %v want %v", got, want)
 		}
 	})
 }

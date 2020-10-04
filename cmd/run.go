@@ -160,8 +160,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	setDefaultImageName(cmd, c)
 	if len(mounts) > 0 {
 		for _, mount := range mounts {
-			vol := api.NewVolume(c)
-			err := vol.AttachOnRun(mount)
+			vol := &api.OnPrem{}
+			err := vol.AttachVolume(c, "", "", "", mount)
 			if err != nil {
 				log.Fatal(err)
 			}

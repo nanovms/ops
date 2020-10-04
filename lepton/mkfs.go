@@ -46,17 +46,17 @@ func (m *MkfsCommand) SetEmptyFileSystem() {
 	m.args = append(m.args, "-e")
 }
 
-// SetFileSystemSize add argument that sets file system size
+// SetFileSystemSize adds argument that sets file system size
 func (m *MkfsCommand) SetFileSystemSize(size string) {
 	m.args = append(m.args, "-s", size)
 }
 
-// SetTargetRoot add argument that sets
+// SetTargetRoot adds argument that sets file system root
 func (m *MkfsCommand) SetTargetRoot(targetRoot string) {
 	m.args = append(m.args, "-r", targetRoot)
 }
 
-// SetBoot add argument that sets
+// SetBoot adds argument that sets file system boot
 func (m *MkfsCommand) SetBoot(boot string) {
 	m.args = append(m.args, "-b", boot)
 }
@@ -64,6 +64,11 @@ func (m *MkfsCommand) SetBoot(boot string) {
 // SetFileSystemPath add argument that sets file system path
 func (m *MkfsCommand) SetFileSystemPath(fsPath string) {
 	m.args = append(m.args, fsPath)
+}
+
+// SetLabel add label argument that sets file system label
+func (m *MkfsCommand) SetLabel(label string) {
+	m.args = append(m.args, "-l", label)
 }
 
 // SetStdin sets process's standard input
