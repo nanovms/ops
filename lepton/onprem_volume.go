@@ -253,7 +253,6 @@ func symlinkVolume(dir, name, uuid, label string) error {
 		fmt.Println(msg)
 		return err
 	}
-	fmt.Printf("volume: label: volume %s is labelled %s\n", name, label)
 	return nil
 }
 
@@ -369,9 +368,9 @@ func AddMounts(mounts []string, config *Config) error {
 	for _, mnt := range mounts {
 		lm := strings.Split(mnt, VolumeDelimiter)
 		if len(lm) != 2 {
-			return fmt.Errorf("mount config invalid: %s", mnt)
+			return fmt.Errorf("mount config invalid: missing parts: %s", mnt)
 		}
-		if lm[1][0] != '/' {
+		if lm[1] == "" || lm[1][0] != '/' {
 			return fmt.Errorf("mount config invalid: %s", mnt)
 		}
 
@@ -386,6 +385,10 @@ func AddMounts(mounts []string, config *Config) error {
 			return fmt.Errorf("volume with uuid/label %s not found", lm[0])
 		} else if len(vols) > 1 {
 			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", lm[0])
+		}
+		_, ok := config.Mounts[lm[0]]
+		if ok {
+			return fmt.Errorf("mount path occupied: %s", lm[0])
 		}
 		config.Mounts[lm[0]] = lm[1]
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
@@ -402,26 +405,18 @@ func addMounts(config *Config) error {
 	}
 	query := make(map[string]string)
 
-	for mnt, _ := range config.Mounts {
-		lm := strings.Split(mnt, VolumeDelimiter)
-		if len(lm) != 2 {
-			return fmt.Errorf("mount config invalid: %s", mnt)
-		}
-		if lm[1][0] != '/' {
-			return fmt.Errorf("mount config invalid: %s", mnt)
-		}
-
-		query["id"] = lm[0]
-		query["label"] = lm[0]
+	for label := range config.Mounts {
+		query["id"] = label
+		query["label"] = label
 		vols, err := GetVolumes(config.BuildDir, query)
 		if err != nil {
 			return err
 		}
 
 		if len(vols) == 0 {
-			return fmt.Errorf("volume with uuid/label %s not found", lm[0])
+			return fmt.Errorf("volume with uuid/label %s not found", label)
 		} else if len(vols) > 1 {
-			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", lm[0])
+			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", label)
 		}
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
 	}

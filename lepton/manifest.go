@@ -57,8 +57,8 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 
 // AddMount adds mount
 func (m *Manifest) AddMount(label, path string) {
-	path = strings.TrimPrefix(path, "/")
-	m.children[path] = map[string]interface{}{}
+	dir := strings.TrimPrefix(path, "/")
+	m.children[dir] = map[string]interface{}{}
 	m.mounts[label] = path
 }
 

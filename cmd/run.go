@@ -159,10 +159,14 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	setDefaultImageName(cmd, c)
 
+	// borrow BuildDir from config
+	bd := c.BuildDir
+	c.BuildDir = api.LocalVolumeDir
 	err = api.AddMounts(mounts, c)
 	if err != nil {
 		log.Fatal(err)
 	}
+	c.BuildDir = bd
 
 	if !skipbuild {
 		err = buildImages(c)

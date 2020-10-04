@@ -60,10 +60,14 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	prepareImages(c)
+	// borrow BuildDir from config
+	bd := c.BuildDir
+	c.BuildDir = api.LocalVolumeDir
 	err = api.AddMounts(mounts, c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
+	c.BuildDir = bd
 
 	p, err := getCloudProvider(provider)
 	if err != nil {

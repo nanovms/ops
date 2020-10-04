@@ -33,7 +33,7 @@ var (
 )
 
 func TestOnPremVolume(t *testing.T) {
-	// set up
+	// set up here since linter/vet complains about using testing.Main
 	tmp, err := ioutil.TempDir("/tmp", "testOPs-test-*")
 	if err != nil {
 		t.Fatal(err)
@@ -116,4 +116,67 @@ func assignVolumeData(src NanosVolume, dst *NanosVolume) {
 	dst.Label = src.Label
 	dst.Data = src.Data
 	dst.Path = src.Path
+}
+
+func TestOnPremVolume_AddMounts(t *testing.T) {
+	dir, err := ioutil.TempDir("/tmp", "testOPs-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	config := &Config{BuildDir: dir}
+
+	tests := []struct {
+		title   string
+		name    string
+		uuid    string
+		label   string
+		mount   string
+		mountAt string
+		err     bool
+	}{
+		{
+			title:   "mount_by_uuid",
+			name:    "empty",
+			uuid:    "uuid-1",
+			mount:   "uuid-1",
+			mountAt: "/mnt",
+		},
+		{
+			title: "mount_invalid_incomplete",
+			mount: "uuid-1",
+			err:   true,
+		},
+		{
+			title:   "mount_invalid_no_slash",
+			mount:   "uuid-1",
+			mountAt: "mnt",
+			err:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			var mounts []string
+			err := ioutil.WriteFile(path.Join(dir, fmt.Sprintf("%s:%s.raw", tt.name, tt.uuid)), []byte{}, 0644)
+			if err != nil {
+				t.Errorf("TempFile: %v", err)
+				return
+			}
+			mounts = append(mounts, fmt.Sprintf("%s:%s", tt.mount, tt.mountAt))
+			err = AddMounts(mounts, config)
+			if err != nil {
+				if !tt.err {
+					t.Errorf("AddMounts: %v", err)
+				}
+				return
+			}
+			err = addMounts(config)
+			if err != nil {
+				if !tt.err {
+					t.Errorf("addMounts: %v", err)
+				}
+				return
+			}
+		})
+	}
 }

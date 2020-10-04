@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,11 +30,6 @@ func BuildImage(c Config) error {
 		return errors.Wrap(err, 1)
 	}
 
-	err = saveImageConfig(c)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -50,11 +44,6 @@ func rebuildImage(c Config) error {
 
 	if err = buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
-	}
-
-	err = saveImageConfig(c)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -559,20 +548,4 @@ func lookupFile(targetRoot string, path string) (string, error) {
 	_, err := os.Stat(path)
 
 	return path, err
-}
-
-// saveImageConfig saves image config as JSON
-// for volume attach/detach purposes
-func saveImageConfig(c Config) error {
-	b, err := json.Marshal(c)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	imgFile := path.Base(c.RunConfig.Imagename)
-	mnfName := strings.TrimSuffix(imgFile, "img") + "json"
-	err = ioutil.WriteFile(path.Join(localManifestDir, mnfName), b, 0644)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-	return nil
 }
