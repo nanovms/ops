@@ -13,11 +13,10 @@ func TestMKFSCommand(t *testing.T) {
 		mkfs.SetFileSystemSize("size")
 		mkfs.SetTargetRoot("targetRoot")
 		mkfs.SetBoot("boot")
-		mkfs.SetImageName("imageName")
+		mkfs.SetEmptyFileSystem()
 
 		got := mkfs.GetArgs()
 		want := []string{
-			"-e",
 			"rawPath",
 			"-s",
 			"size",
@@ -25,7 +24,7 @@ func TestMKFSCommand(t *testing.T) {
 			"targetRoot",
 			"-b",
 			"boot",
-			"imageName",
+			"-e",
 		}
 
 		if !reflect.DeepEqual(got, want) {
