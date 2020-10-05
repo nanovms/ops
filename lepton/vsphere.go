@@ -804,7 +804,7 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 		return nil, fmt.Errorf("Incomplete credentials, set either via <GOVC_URL> with https://username:password@host:port or <GOVC_USERNAME and GOVC_PASSWORD>")
 	}
 
-	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, pw, u.Host)
+	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, url.PathEscape(pw), u.Host)
 	u, err = url.Parse(tempURL + "/sdk")
 	return u, err
 }
