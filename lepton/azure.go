@@ -3,7 +3,6 @@ package lepton
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -291,11 +290,8 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 // GetImages return all images for azure
 func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
-}
+	var cimages []CloudImage
 
-// ListImages lists images on azure
-func (a *Azure) ListImages(ctx *Context) error {
 	imagesClient := a.getImagesClient()
 
 	images, err := imagesClient.List(context.TODO())
@@ -305,6 +301,26 @@ func (a *Azure) ListImages(ctx *Context) error {
 
 	imgs := images.Values()
 
+	for _, image := range imgs {
+		cImage := CloudImage{
+			Name:   *image.Name,
+			Status: *(*image.ImageProperties).ProvisioningState,
+		}
+
+		cimages = append(cimages, cImage)
+	}
+
+	return cimages, nil
+}
+
+// ListImages lists images on azure
+func (a *Azure) ListImages(ctx *Context) error {
+
+	cimages, err := a.GetImages(ctx)
+	if err != nil {
+		return err
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created"})
 	table.SetHeaderColor(
@@ -313,10 +329,10 @@ func (a *Azure) ListImages(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, image := range imgs {
+	for _, image := range cimages {
 		var row []string
-		row = append(row, to.String(image.Name))
-		row = append(row, fmt.Sprintf("%+v", *(*image.ImageProperties).ProvisioningState))
+		row = append(row, image.Name)
+		row = append(row, image.Status)
 		row = append(row, "")
 		table.Append(row)
 	}
@@ -504,11 +520,8 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 // GetInstances return all instances on Azure
 // TODO
 func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
-}
+	var cinstances []CloudInstance
 
-// ListInstances lists instances on Azure
-func (a *Azure) ListInstances(ctx *Context) error {
 	vmClient := a.getVMClient()
 
 	vmlist, err := vmClient.List(context.TODO(), a.groupName)
@@ -517,6 +530,52 @@ func (a *Azure) ListInstances(ctx *Context) error {
 	}
 
 	instances := vmlist.Values()
+
+	for _, instance := range instances {
+		cinstance := CloudInstance{
+			Name: *instance.Name,
+		}
+		privateIP := ""
+		publicIP := ""
+
+		nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
+
+		for i := 0; i < len(nifs); i++ {
+			nicClient := a.getNicClient()
+			nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
+			for x := 0; x < len(ipconfig); x++ {
+				format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
+				privateIP = *format.PrivateIPAddress
+
+				ipClient := a.getIPClient()
+				pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+				if err != nil {
+					fmt.Println(err)
+				}
+				publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
+			}
+
+		}
+		cinstance.PrivateIps = []string{privateIP}
+		cinstance.PublicIps = []string{publicIP}
+
+		cinstances = append(cinstances, cinstance)
+	}
+
+	return cinstances, nil
+}
+
+// ListInstances lists instances on Azure
+func (a *Azure) ListInstances(ctx *Context) error {
+	cinstances, err := a.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
@@ -528,41 +587,14 @@ func (a *Azure) ListInstances(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, instance := range instances {
-		privateIP := ""
-		publicIP := ""
+	for _, instance := range cinstances {
 		var rows []string
 
-		iname := to.String(instance.Name)
-		rows = append(rows, iname)
+		rows = append(rows, instance.Name)
 		rows = append(rows, "")
-
-		nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
-
-		for i := 0; i < len(nifs); i++ {
-			nicClient := a.getNicClient()
-			nic, err := nicClient.Get(context.TODO(), a.groupName, iname, "")
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
-			for x := 0; x < len(ipconfig); x++ {
-				format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
-				privateIP = *format.PrivateIPAddress
-
-				ipClient := a.getIPClient()
-				pubip, err := ipClient.Get(context.TODO(), a.groupName, iname, "")
-				if err != nil {
-					fmt.Println(err)
-				}
-				publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
-			}
-
-		}
 		rows = append(rows, "")
-		rows = append(rows, privateIP)
-		rows = append(rows, publicIP)
+		rows = append(rows, strings.Join(instance.PrivateIps, ","))
+		rows = append(rows, strings.Join(instance.PrivateIps, ","))
 		table.Append(rows)
 	}
 
