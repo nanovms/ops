@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -161,25 +160,18 @@ func (v *Vsphere) CreateImage(ctx *Context) error {
 
 // GetImages return all images for vsphere
 func (v *Vsphere) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
-}
-
-// ListImages lists images on a datastore.
-// This is incredibly naive at the moment and probably worth putting
-// under a root folder.
-// essentially does the equivalent of 'govc datastore.ls'
-func (v *Vsphere) ListImages(ctx *Context) error {
+	var cimages []CloudImage
 
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	b, err := ds.Browser(context.TODO())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	spec := types.HostDatastoreBrowserSearchSpec{
@@ -198,8 +190,6 @@ func (v *Vsphere) ListImages(ctx *Context) error {
 		fmt.Println(err)
 	}
 
-	images := []string{}
-
 	switch r := info.Result.(type) {
 	case types.HostDatastoreBrowserSearchResults:
 		res := []types.HostDatastoreBrowserSearchResults{r}
@@ -208,11 +198,26 @@ func (v *Vsphere) ListImages(ctx *Context) error {
 				if f.GetFileInfo().Path[0] == '.' {
 					continue
 				}
-				images = append(images, f.GetFileInfo().Path)
+				cimages = append(cimages, CloudImage{
+					Name: f.GetFileInfo().Path,
+				})
 			}
 		}
 	case types.ArrayOfHostDatastoreBrowserSearchResults:
 		fmt.Println("un-implemented")
+	}
+
+	return cimages, nil
+}
+
+// ListImages lists images on a datastore.
+// This is incredibly naive at the moment and probably worth putting
+// under a root folder.
+// essentially does the equivalent of 'govc datastore.ls'
+func (v *Vsphere) ListImages(ctx *Context) error {
+	images, err := v.GetImages(ctx)
+	if err != nil {
+		return err
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -225,7 +230,7 @@ func (v *Vsphere) ListImages(ctx *Context) error {
 
 	for _, image := range images {
 		var row []string
-		row = append(row, image)
+		row = append(row, image.Name)
 		row = append(row, "")
 		row = append(row, "")
 		table.Append(row)
@@ -415,7 +420,42 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 // GetInstances return all instances on vSphere
 // TODO
 func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	var cinstances []CloudInstance
+
+	m := view.NewManager(v.client)
+
+	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer cv.Destroy(context.TODO())
+
+	var vms []mo.VirtualMachine
+	err = cv.Retrieve(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vm := range vms {
+		cInstance := CloudInstance{
+			Name:   vm.Summary.Config.Name,
+			Status: string(vm.Summary.Runtime.PowerState),
+		}
+
+		if vm.Summary.Runtime.BootTime != nil {
+			cInstance.Created = vm.Summary.Runtime.BootTime.String()
+		}
+
+		if cInstance.Status == "poweredOn" {
+			ip := v.ipFor(vm.Summary.Config.Name)
+			cInstance.PublicIps = []string{ip}
+		}
+
+		cinstances = append(cinstances, cInstance)
+	}
+
+	return cinstances, nil
 }
 
 // ListInstances lists instances on VSphere.
@@ -423,17 +463,7 @@ func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
 // govc ls /ha-datacenter/vm
 func (v *Vsphere) ListInstances(ctx *Context) error {
 
-	m := view.NewManager(v.client)
-
-	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
-	if err != nil {
-		return err
-	}
-
-	defer cv.Destroy(context.TODO())
-
-	var vms []mo.VirtualMachine
-	err = cv.Retrieve(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms)
+	cInstances, err := v.GetInstances(ctx)
 	if err != nil {
 		return err
 	}
@@ -447,20 +477,15 @@ func (v *Vsphere) ListInstances(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, vm := range vms {
+	for _, instance := range cInstances {
 		var row []string
-		row = append(row, vm.Summary.Config.Name)
 
-		ps := string(vm.Summary.Runtime.PowerState)
-		if ps == "poweredOn" {
-			ip := v.ipFor(vm.Summary.Config.Name)
-			row = append(row, ip)
-		} else {
-			row = append(row, "")
-		}
+		row = append(row, instance.Name)
 
-		row = append(row, string(vm.Summary.Runtime.PowerState))
-		row = append(row, fmt.Sprintf("%s", vm.Summary.Runtime.BootTime))
+		row = append(row, strings.Join(instance.PublicIps, ","))
+
+		row = append(row, instance.Status)
+		row = append(row, instance.Created)
 		table.Append(row)
 	}
 
@@ -804,7 +829,7 @@ func (v *Vsphere) getCredentials() (*url.URL, error) {
 		return nil, fmt.Errorf("Incomplete credentials, set either via <GOVC_URL> with https://username:password@host:port or <GOVC_USERNAME and GOVC_PASSWORD>")
 	}
 
-	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, pw, u.Host)
+	tempURL = fmt.Sprintf("%s://%s:%s@%s", u.Scheme, un, url.PathEscape(pw), u.Host)
 	u, err = url.Parse(tempURL + "/sdk")
 	return u, err
 }
