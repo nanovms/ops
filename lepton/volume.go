@@ -76,7 +76,6 @@ func (v *Volume) Create(name, data, size, provider string) error {
 	mnf := name + ".manifest"
 
 	rawPath := path.Join(localVolumeDir, raw)
-	mkfsCommand.SetFileSystemPath(rawPath)
 
 	if data != "" {
 		v.config.Dirs = append(v.config.Dirs, data)
@@ -95,9 +94,11 @@ func (v *Volume) Create(name, data, size, provider string) error {
 
 		mkfsCommand.SetStdin(src)
 	} else if size != "" {
+		mkfsCommand.SetEmptyFileSystem()
 		mkfsCommand.SetFileSystemSize(size)
 	}
 
+	mkfsCommand.SetFileSystemPath(rawPath)
 	mkfsCommand.SetupCommand()
 	err := mkfsCommand.Execute()
 	if err != nil {

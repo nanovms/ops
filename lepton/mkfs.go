@@ -41,9 +41,9 @@ func (m *MkfsCommand) SetupCommand() {
 	}
 }
 
-// SetFileSystemPath add argument that sets file system path
-func (m *MkfsCommand) SetFileSystemPath(path string) {
-	m.args = append(m.args, "-e", path)
+// SetEmptyFileSystem add argument that sets file system as empty
+func (m *MkfsCommand) SetEmptyFileSystem() {
+	m.args = append(m.args, "-e")
 }
 
 // SetFileSystemSize add argument that sets file system size
@@ -61,9 +61,9 @@ func (m *MkfsCommand) SetBoot(boot string) {
 	m.args = append(m.args, "-b", boot)
 }
 
-// SetImageName add argument that sets
-func (m *MkfsCommand) SetImageName(imageName string) {
-	m.args = append(m.args, imageName)
+// SetFileSystemPath add argument that sets file system path
+func (m *MkfsCommand) SetFileSystemPath(fsPath string) {
+	m.args = append(m.args, fsPath)
 }
 
 // SetStdin sets process's standard input

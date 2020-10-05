@@ -368,7 +368,7 @@ func buildImage(c *Config, m *Manifest) error {
 	}
 
 	mkfsCommand.SetBoot(c.Boot)
-	mkfsCommand.SetImageName(c.RunConfig.Imagename)
+	mkfsCommand.SetFileSystemPath(c.RunConfig.Imagename)
 
 	mkfsCommand.SetupCommand()
 	stdin, err := mkfsCommand.GetStdinPipe()
