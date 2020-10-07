@@ -396,7 +396,7 @@ func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
 func (p *AWS) CreateInstance(ctx *Context) error {
 	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
 	if err != nil {
-		return err
+		exitWithError("Invalid zone")
 	}
 
 	imgName := ctx.config.CloudConfig.ImageName
@@ -493,7 +493,15 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 	if len(result.Vpcs) == 0 {
 		fmt.Println("No VPCs found to associate security group with.")
 	}
-	vpcID := aws.StringValue(result.Vpcs[0].VpcId)
+
+	var vpcID string
+	//TODO: This will fail if there is no default VPC. Need to implement feature where user should be able to mention VPC
+	for i, s := range result.Vpcs {
+		isDefault := *s.IsDefault
+		if isDefault == true {
+			vpcID = aws.StringValue(result.Vpcs[i].VpcId)
+		}
+	}
 
 	t := time.Now().UnixNano()
 	s := strconv.FormatInt(t, 10)
@@ -525,7 +533,7 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 
 	// maybe have these ports specified from config.json in near future
 	_, err = svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		GroupName: aws.String(sgName),
+		GroupId: createRes.GroupId,
 		IpPermissions: []*ec2.IpPermission{
 			(&ec2.IpPermission{}).
 				SetIpProtocol("tcp").

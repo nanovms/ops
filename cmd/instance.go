@@ -39,7 +39,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" && (provider == "gcp" || provider == "aws") {
+	if zone != "" && (provider == "gcp" || provider == "aws") {
 		c.CloudConfig.Zone = zone
 	}
 
