@@ -22,12 +22,23 @@ type Provider interface {
 	StartInstance(ctx *Context, instancename string) error
 	GetInstanceLogs(ctx *Context, instancename string, watch bool) error
 
+	VolumeService
+
 	GetStorage() Storage
 }
 
 // Storage is an interface that provider's storage must implement
 type Storage interface {
 	CopyToBucket(config *Config, source string) error
+}
+
+// VolumeService is an interface for volume related operations
+type VolumeService interface {
+	CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error)
+	GetAllVolumes(config *Config) error
+	DeleteVolume(config *Config, name string) error
+	AttachVolume(config *Config, image, name, mount string) error
+	DetachVolume(config *Config, image, name string) error
 }
 
 // Context captures required info for provider operation

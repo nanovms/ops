@@ -11,13 +11,10 @@ import (
 
 func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
-	if name == "" {
-		log.Fatal("name required")
-	}
 	data, _ := cmd.Flags().GetString("data")
 	size, _ := cmd.Flags().GetString("size")
 	config, _ := cmd.Flags().GetString("config")
-	provider, _ := cmd.Flags().GetString("provider")
+	provider, _ := cmd.Flags().GetString("target-cloud")
 	nightly, _ := cmd.Flags().GetBool("nightly")
 
 	conf := unWarpConfig(config)
@@ -35,17 +32,26 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if conf.Mkfs == "" {
 		conf.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
 	}
+	conf.BuildDir = api.LocalVolumeDir
 
-	vol := api.NewVolume(conf)
-	err = vol.Create(name, data, size, provider)
+	var vol api.VolumeService
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	res, err := vol.CreateVolume(conf, name, data, size, provider)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("volume: %s created with UUID %s and label %s\n", res.Name, res.ID, res.Label)
 }
 
 func volumeCreateCommand() *cobra.Command {
-	var data string
-	var size string
+	var data, size string
 	cmdVolumeCreate := &cobra.Command{
 		Use:   "create <volume_name>",
 		Short: "create volume",
@@ -59,14 +65,30 @@ func volumeCreateCommand() *cobra.Command {
 
 func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
-	vol := api.NewVolume(conf)
-	err := vol.GetAll()
+
+	var vol api.VolumeService
+	var err error
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	conf.BuildDir = api.LocalVolumeDir
+
+	err = vol.GetAllVolumes(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
+// TODO might be nice to be able to filter by name/label
+// api.GetVolumes can be implemented to achieve this
 func volumeListCommand() *cobra.Command {
 	cmdVolumeList := &cobra.Command{
 		Use:   "list",
@@ -77,11 +99,25 @@ func volumeListCommand() *cobra.Command {
 }
 
 func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	id := args[0]
+	name := args[0]
 	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
-	vol := api.NewVolume(conf)
-	err := vol.Delete(id)
+
+	var vol api.VolumeService
+	var err error
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	conf.BuildDir = api.LocalVolumeDir
+
+	err = vol.DeleteVolume(conf, name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,7 +125,7 @@ func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 func volumeDeleteCommand() *cobra.Command {
 	cmdVolumeDelete := &cobra.Command{
-		Use:   "delete <volume_id>",
+		Use:   "delete <volume_name:volume_uuid>",
 		Short: "delete volume",
 		Run:   volumeDeleteCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
@@ -99,12 +135,23 @@ func volumeDeleteCommand() *cobra.Command {
 
 func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	image := args[0]
-	id := args[1]
+	name := args[1]
 	mount := args[2]
 	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("provider")
 	conf := unWarpConfig(config)
-	vol := api.NewVolume(conf)
-	err := vol.Attach(image, id, mount)
+
+	var vol api.VolumeService
+	var err error
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = vol.AttachVolume(conf, image, name, mount)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +159,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 
 func volumeAttachCommand() *cobra.Command {
 	cmdVolumeAttach := &cobra.Command{
-		Use:   "attach <image_name> <volume_id> <mount_path>",
+		Use:   "attach <image_name> <volume_name> <mount_path>",
 		Short: "attach volume",
 		Run:   volumeAttachCommandHandler,
 		Args:  cobra.MinimumNArgs(3),
@@ -122,8 +169,7 @@ func volumeAttachCommand() *cobra.Command {
 
 // VolumeCommands handles volumes related operations
 func VolumeCommands() *cobra.Command {
-	var config string
-	var provider string
+	var config, provider string
 	var nightly bool
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
@@ -132,7 +178,7 @@ func VolumeCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdVolume.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
-	cmdVolume.PersistentFlags().StringVarP(&provider, "provider", "p", "", "cloud provider")
+	cmdVolume.PersistentFlags().StringVarP(&provider, "target-cloud", "t", "onprem", "cloud provider")
 	cmdVolume.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdVolume.AddCommand(volumeCreateCommand())
 	cmdVolume.AddCommand(volumeListCommand())

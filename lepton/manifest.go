@@ -56,9 +56,10 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 }
 
 // AddMount adds mount
-func (m *Manifest) AddMount(uuid, path string) {
-	m.children[path] = map[string]interface{}{}
-	m.mounts[uuid] = path
+func (m *Manifest) AddMount(label, path string) {
+	dir := strings.TrimPrefix(path, "/")
+	m.children[dir] = map[string]interface{}{}
+	m.mounts[label] = path
 }
 
 // AddEnvironmentVariable adds environment variables
@@ -397,7 +398,7 @@ func (m *Manifest) String() string {
 		for k, v := range m.mounts {
 			sb.WriteString("    ")
 			sb.WriteString(k)
-			sb.WriteString(":/")
+			sb.WriteRune(':')
 			sb.WriteString(v)
 			sb.WriteRune('\n')
 		}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -109,7 +110,6 @@ func buildFromPackage(packagepath string, c *api.Config) error {
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
-
 	hypervisor := api.HypervisorInstance()
 	if hypervisor == nil {
 		panic(errors.New("No hypervisor found on $PATH"))
@@ -194,6 +194,16 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.ManifestName = manifestName
 	setDefaultImageName(cmd, c)
 
+	mounts, _ := cmd.Flags().GetStringArray("mounts")
+	// borrow BuildDir from config
+	bd := c.BuildDir
+	c.BuildDir = api.LocalVolumeDir
+	err = api.AddMounts(mounts, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.BuildDir = bd
+
 	if !skipbuild {
 		if err = buildFromPackage(expackage, c); err != nil {
 			panic(err)
@@ -222,7 +232,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 // LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var (
-		ports, args                     []string
+		ports, args, mounts             []string
 		force, debugflags, verbose      bool
 		nightly, accel, bridged, local  bool
 		skipbuild                       bool
@@ -248,5 +258,7 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
+	cmdLoadPackage.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "<volume_id/label>:/<mount_path>")
+
 	return cmdLoadPackage
 }

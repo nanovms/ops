@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -171,27 +170,4 @@ func (s *JSONStore) Delete(id string) (NanosVolume, error) {
 		return vol, err
 	}
 	return vol, nil
-}
-
-func buildVolumeManifest(conf *Config, out string) error {
-	m := &Manifest{
-		children:    make(map[string]interface{}),
-		debugFlags:  make(map[string]rune),
-		environment: make(map[string]string),
-	}
-
-	for _, d := range conf.Dirs {
-		err := m.AddRelativeDirectory(d)
-		if err != nil {
-			return err
-		}
-	}
-
-	m.AddEnvironmentVariable("USER", "root")
-	m.AddEnvironmentVariable("PWD", "/")
-	for k, v := range conf.Env {
-		m.AddEnvironmentVariable(k, v)
-	}
-
-	return ioutil.WriteFile(out, []byte(m.String()), 0644)
 }
