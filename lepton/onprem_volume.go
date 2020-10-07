@@ -45,15 +45,14 @@ type NanosVolume struct {
 // CreateVolume creates volume for onprem image
 // creates a volume named <name>:<uuid>
 // where <uuid> is generated on creation
-// also creates a symlink to volume label at <name>:<label>
-// DefaultVolumeLabel will be used when label is not set
+// also creates a symlink to volume label at <name>
 // TODO investigate symlinked volume interaction with image
-func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error) {
+func (op *OnPrem) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	var mnfPath string
 	mkfsPath := config.Mkfs
 	var mkfsCommand = NewMkfsCommand(mkfsPath)
-	mkfsCommand.SetLabel(label)
+	mkfsCommand.SetLabel(name)
 
 	tmp := fmt.Sprintf("%s.raw", name)
 	mnf := fmt.Sprintf("%s.manifest", name)
@@ -92,16 +91,16 @@ func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider
 	if err != nil {
 		fmt.Printf("volume: UUID: failed adding UUID info for volume %s\n", name)
 		fmt.Printf("rename the file to %s%s%s should you want to attach it by UUID\n", name, VolumeDelimiter, uuid)
-		fmt.Printf("symlink the file to %s%s%s should you want to attach it by label\n", name, VolumeDelimiter, label)
+		fmt.Printf("symlink the file to %s should you want to attach it by label\n", name)
 	} else {
-		symlinkVolume(config.BuildDir, name, uuid, label)
+		symlinkVolume(config.BuildDir, name, uuid)
 	}
 
 	cleanUpVolumeManifest(mnfPath)
 	vol = NanosVolume{
 		ID:    uuid,
 		Name:  name,
-		Label: label,
+		Label: name,
 		Data:  data,
 		Path:  rawPath,
 	}
@@ -115,12 +114,11 @@ func (op *OnPrem) GetAllVolumes(config *Config) error {
 		return err
 	}
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"NAME", "UUID", "LABEL", "SIZE", "PATH"})
+	table.SetHeader([]string{"NAME/LABEL", "UUID", "SIZE", "PATH"})
 	for _, vol := range vols {
 		var row []string
 		row = append(row, vol.Name)
 		row = append(row, vol.ID)
-		row = append(row, vol.Label)
 		row = append(row, vol.Size)
 		row = append(row, vol.Path)
 		table.Append(row)
@@ -129,14 +127,29 @@ func (op *OnPrem) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// DeleteVolume deletes nanos-managed volume
-// if label is specified, deletes only the symlink instead
-// TODO delete symlink given actual filename?
+// DeleteVolume deletes nanos-managed volume (filename and symlink)
 func (op *OnPrem) DeleteVolume(config *Config, name string) error {
-	path := path.Join(config.BuildDir, name+".raw")
-	err := os.Remove(path)
+	query := map[string]string{
+		"label": name,
+		"id":    name,
+	}
+
+	volumes, err := GetVolumes(config.BuildDir, query)
 	if err != nil {
 		return err
+	}
+
+	if len(volumes) == 1 {
+		volumePath := path.Join(volumes[0].Path)
+		err := os.Remove(volumePath)
+		if err != nil {
+			return err
+		}
+		symlinkPath := path.Join(config.BuildDir, volumes[0].Name+".raw")
+		err = os.Remove(symlinkPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -147,7 +160,7 @@ func (op *OnPrem) DeleteVolume(config *Config, name string) error {
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
-func (op *OnPrem) AttachVolume(config *Config, image, name, label, mount string) error {
+func (op *OnPrem) AttachVolume(config *Config, image, name, mount string) error {
 	fmt.Println("not implemented")
 	fmt.Println("use <ops run> or <ops load> with --mounts flag instead")
 	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
@@ -156,7 +169,7 @@ func (op *OnPrem) AttachVolume(config *Config, image, name, label, mount string)
 }
 
 // DetachVolume detaches volume
-func (op *OnPrem) DetachVolume(config *Config, image, label string) error {
+func (op *OnPrem) DetachVolume(config *Config, image, name string) error {
 	fmt.Println("not implemented")
 	return nil
 }
@@ -220,12 +233,12 @@ func cleanUpVolumeManifest(file string) error {
 // symlinkVolume creates a symlink to volume that acts as volume label
 // if label of the same name exists for a volume, removes the label from the older volume
 // and assigns it to the newly created volume
-func symlinkVolume(dir, name, uuid, label string) error {
+func symlinkVolume(dir, name, uuid string) error {
 	msg := fmt.Sprintf("volume: label: failed adding label info for volume %s\n", name)
-	msg = fmt.Sprintf("%vsymlink the file to %s%s%s should you want to attach it by label\n", msg, name, VolumeDelimiter, label)
+	msg = fmt.Sprintf("%vsymlink the file to %s should you want to attach it by label\n", msg, name)
 
 	src := path.Join(dir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid))
-	dst := path.Join(dir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, label))
+	dst := path.Join(dir, fmt.Sprintf("%s.raw", name))
 
 	_, err := os.Lstat(dst)
 	if err == nil {
@@ -274,8 +287,8 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 		var id string
 		var label string
 		nl := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
-		if len(nl) == 2 {
-			label = nl[1]
+		if len(nl) == 1 {
+			label = nl[0]
 		}
 		src, err := os.Stat(link)
 		// ignore dangling symlink
@@ -286,9 +299,10 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 		if len(nu) == 2 {
 			id = nu[1]
 		}
+
 		mvols[src.Name()] = NanosVolume{
 			ID:    id,
-			Name:  nu[0],
+			Name:  label,
 			Label: label,
 			Size:  bytes2Human(src.Size()),
 			Path:  path.Join(dir, src.Name()),

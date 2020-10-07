@@ -12,7 +12,6 @@ import (
 func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	data, _ := cmd.Flags().GetString("data")
-	label, _ := cmd.Flags().GetString("label")
 	size, _ := cmd.Flags().GetString("size")
 	config, _ := cmd.Flags().GetString("config")
 	provider, _ := cmd.Flags().GetString("target-cloud")
@@ -44,7 +43,7 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-	res, err := vol.CreateVolume(conf, name, label, data, size, provider)
+	res, err := vol.CreateVolume(conf, name, data, size, provider)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +138,6 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[1]
 	mount := args[2]
 	config, _ := cmd.Flags().GetString("config")
-	label, _ := cmd.Flags().GetString("label")
 	provider, _ := cmd.Flags().GetString("provider")
 	conf := unWarpConfig(config)
 
@@ -153,7 +151,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-	err = vol.AttachVolume(conf, image, name, label, mount)
+	err = vol.AttachVolume(conf, image, name, mount)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -171,7 +169,7 @@ func volumeAttachCommand() *cobra.Command {
 
 // VolumeCommands handles volumes related operations
 func VolumeCommands() *cobra.Command {
-	var config, label, provider string
+	var config, provider string
 	var nightly bool
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
@@ -180,7 +178,6 @@ func VolumeCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdVolume.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
-	cmdVolume.PersistentFlags().StringVarP(&label, "label", "l", api.DefaultVolumeLabel, "volume label")
 	cmdVolume.PersistentFlags().StringVarP(&provider, "target-cloud", "t", "onprem", "cloud provider")
 	cmdVolume.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
 	cmdVolume.AddCommand(volumeCreateCommand())

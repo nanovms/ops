@@ -1,7 +1,7 @@
 package lepton
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (g *GCloud) CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error) {
+func (g *GCloud) CreateVolume(config *Config, name, label, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	return vol, nil
 }
@@ -17,11 +17,11 @@ func (g *GCloud) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (g *GCloud) AttachVolume(config *Config, image, name, label, mount string) error {
+func (g *GCloud) AttachVolume(config *Config, image, name, mount string) error {
 	return nil
 }
 
 // DetachVolume is a stub to satisfy VolumeService interface
-func (g *GCloud) DetachVolume(config *Config, image, label string) error {
+func (g *GCloud) DetachVolume(config *Config, image, name string) error {
 	return nil
 }

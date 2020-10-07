@@ -1,7 +1,7 @@
 package lepton
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error) {
+func (do *DigitalOcean) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	return vol, nil
 }
@@ -17,11 +17,11 @@ func (do *DigitalOcean) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) AttachVolume(config *Config, image, name, label, mount string) error {
+func (do *DigitalOcean) AttachVolume(config *Config, image, name, mount string) error {
 	return nil
 }
 
 // DetachVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) DetachVolume(config *Config, image, label string) error {
+func (do *DigitalOcean) DetachVolume(config *Config, image, name string) error {
 	return nil
 }

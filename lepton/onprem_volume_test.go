@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"testing"
 )
 
@@ -16,7 +15,7 @@ var (
 	testVolume1 = &NanosVolume{
 		ID:    "",
 		Name:  "empty",
-		Label: "default",
+		Label: "empty",
 		Data:  "",
 		Size:  "",
 		Path:  "",
@@ -24,7 +23,7 @@ var (
 	testVolume2 = &NanosVolume{
 		ID:    "",
 		Name:  "noempty",
-		Label: "default",
+		Label: "noempty",
 		Data:  "data",
 		Size:  "",
 		Path:  "",
@@ -54,12 +53,13 @@ func TestOnPremVolume(t *testing.T) {
 	testCreateVolume(t, "volume_1", testVolume1, count)
 
 	testCreateVolume(t, "volume_2", testVolume2, count)
-	testDeleteVolume(t, "volume_1", testVolume1, count)
+	testDeleteVolumeByName(t, "volume_1", testVolume1, count)
+	testDeleteVolumeByUUID(t, "volume_2", testVolume2, count)
 }
 
 func testCreateVolume(t *testing.T, name string, vol *NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("create_%s", name), func(t *testing.T) {
-		res, err := testOP.CreateVolume(testVolumeConfig, vol.Name, vol.Label, vol.Data, vol.Size, "onprem")
+		res, err := testOP.CreateVolume(testVolumeConfig, vol.Name, vol.Data, vol.Size, "onprem")
 		if err != nil {
 			t.Error(err)
 			return
@@ -79,15 +79,27 @@ func testGetVolumes(t *testing.T, name string, count *int) {
 			return
 		}
 		if len(vols) != *count {
-			t.Errorf("expected %d, got %d", count, len(vols))
+			t.Errorf("expected %d, got %d", *count, len(vols))
 		}
 	})
 }
 
-func testDeleteVolume(t *testing.T, name string, vol *NanosVolume, count *int) {
-	t.Run(fmt.Sprintf("delete_%s", name), func(t *testing.T) {
-		file := strings.TrimSuffix(path.Base(vol.Path), path.Ext(vol.Path))
-		err := testOP.DeleteVolume(testVolumeConfig, file)
+func testDeleteVolumeByName(t *testing.T, name string, vol *NanosVolume, count *int) {
+	t.Run(fmt.Sprintf("delete_by_name_%s", name), func(t *testing.T) {
+		err := testOP.DeleteVolume(testVolumeConfig, vol.Name)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*count--
+		// only test GetVolumes if delete is succesful
+		testGetVolumes(t, fmt.Sprintf("get_after_delete_%s", name), count)
+	})
+}
+
+func testDeleteVolumeByUUID(t *testing.T, name string, vol *NanosVolume, count *int) {
+	t.Run(fmt.Sprintf("delete_by_name_%s", name), func(t *testing.T) {
+		err := testOP.DeleteVolume(testVolumeConfig, vol.ID)
 		if err != nil {
 			t.Error(err)
 			return
