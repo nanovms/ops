@@ -11,13 +11,8 @@ func (a *AWS) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume is a stub to satisfy VolumeService interface
-func (a *AWS) UpdateVolume(config *Config, name, label string) error {
-	return nil
-}
-
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (a *AWS) DeleteVolume(config *Config, name, label string) error {
+func (a *AWS) DeleteVolume(config *Config, name string) error {
 	return nil
 }
 

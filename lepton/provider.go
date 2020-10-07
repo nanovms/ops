@@ -36,8 +36,7 @@ type Storage interface {
 type VolumeService interface {
 	CreateVolume(config *Config, name, label, data, size, provider string) (NanosVolume, error)
 	GetAllVolumes(config *Config) error
-	UpdateVolume(config *Config, name, label string) error
-	DeleteVolume(config *Config, name, label string) error
+	DeleteVolume(config *Config, name string) error
 	AttachVolume(config *Config, image, name, label, mount string) error
 	DetachVolume(config *Config, image, label string) error
 }

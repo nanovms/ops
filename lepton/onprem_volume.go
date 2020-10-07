@@ -74,11 +74,12 @@ func (op *OnPrem) CreateVolume(config *Config, name, label, data, size, provider
 		}
 		defer src.Close()
 		mkfsCommand.SetStdin(src)
+	} else {
+		mkfsCommand.SetEmptyFileSystem()
 	}
 
 	mkfsCommand.SetupCommand()
 	err := mkfsCommand.Execute()
-	// fmt.Printf("mkfs %s\n", strings.Join(mkfsCommand.GetArgs(), " "))
 	if err != nil {
 		return vol, errors.Wrap(fmt.Errorf("mkfs %s: %v", strings.Join(mkfsCommand.GetArgs(), " "), err), 1)
 	}
@@ -128,19 +129,10 @@ func (op *OnPrem) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume updates nanos-managed volume label for attach/detach purposes
-func (op *OnPrem) UpdateVolume(config *Config, name, label string) error {
-	nu := strings.Split(name, VolumeDelimiter)
-	if len(nu) != 2 {
-		return fmt.Errorf("expected format <volume_name:volume_uuid>: %s", name)
-	}
-	return symlinkVolume(config.BuildDir, nu[0], nu[1], label)
-}
-
 // DeleteVolume deletes nanos-managed volume
 // if label is specified, deletes only the symlink instead
 // TODO delete symlink given actual filename?
-func (op *OnPrem) DeleteVolume(config *Config, name, label string) error {
+func (op *OnPrem) DeleteVolume(config *Config, name string) error {
 	path := path.Join(config.BuildDir, name+".raw")
 	err := os.Remove(path)
 	if err != nil {
@@ -267,53 +259,66 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 		return vols, err
 	}
 
+	// this scans the directory twice, which can be improved
+	// looking for symlink first
 	for _, info := range fi {
 		if info.IsDir() {
 			continue
 		}
 
-		// checks if volume has been scanned from its symlink
+		link, err := os.Readlink(path.Join(dir, info.Name()))
+		if err != nil {
+			continue
+		}
+
+		var id string
+		var label string
+		nl := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
+		if len(nl) == 2 {
+			label = nl[1]
+		}
+		src, err := os.Stat(link)
+		// ignore dangling symlink
+		if err != nil {
+			continue
+		}
+		nu := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), VolumeDelimiter)
+		if len(nu) == 2 {
+			id = nu[1]
+		}
+		mvols[src.Name()] = NanosVolume{
+			ID:    id,
+			Name:  nu[0],
+			Label: label,
+			Size:  bytes2Human(src.Size()),
+			Path:  path.Join(dir, src.Name()),
+		}
+	}
+	for _, info := range fi {
+		if info.IsDir() {
+			continue
+		}
+
+		link, _ := os.Readlink(path.Join(dir, info.Name()))
+		if link != "" {
+			continue
+		}
+
 		_, ok := mvols[info.Name()]
 		if ok {
 			continue
 		}
 
-		link, err := os.Readlink(path.Join(dir, info.Name()))
-		if err == nil {
-			var id string
-			var label string
-			nl := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
-			if len(nl) == 2 {
-				label = nl[1]
-			}
-			src, err := os.Stat(link)
-			// ignore dangling symlink
-			if err != nil {
-				continue
-			}
-			nu := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), VolumeDelimiter)
-			if len(nu) == 2 {
-				id = nu[1]
-			}
-			mvols[src.Name()] = NanosVolume{
-				ID:    id,
-				Name:  nu[0],
-				Label: label,
-				Size:  bytes2Human(src.Size()),
-				Path:  path.Join(dir, src.Name()),
-			}
-		} else {
-			var id string
-			nu := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
-			if len(nu) == 2 {
-				id = nu[1]
-			}
-			mvols[info.Name()] = NanosVolume{
-				ID:   id,
-				Name: nu[0],
-				Size: bytes2Human(info.Size()),
-				Path: path.Join(dir, info.Name()),
-			}
+		var id string
+		nu := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), VolumeDelimiter)
+		if len(nu) == 2 {
+			id = nu[1]
+		}
+		mvols[info.Name()] = NanosVolume{
+			ID:   id,
+			Name: nu[0],
+			Size: bytes2Human(info.Size()),
+			Path: path.Join(dir, info.Name()),
 		}
 	}
 

@@ -11,13 +11,8 @@ func (v *Vultr) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume is a stub to satisfy VolumeService interface
-func (v *Vultr) UpdateVolume(config *Config, name, label string) error {
-	return nil
-}
-
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (v *Vultr) DeleteVolume(config *Config, name, label string) error {
+func (v *Vultr) DeleteVolume(config *Config, name string) error {
 	return nil
 }
 

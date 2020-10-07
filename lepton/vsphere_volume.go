@@ -11,13 +11,8 @@ func (v *Vsphere) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume is a stub to satisfy VolumeService interface
-func (v *Vsphere) UpdateVolume(config *Config, name, label string) error {
-	return nil
-}
-
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (v *Vsphere) DeleteVolume(config *Config, name, label string) error {
+func (v *Vsphere) DeleteVolume(config *Config, name string) error {
 	return nil
 }
 

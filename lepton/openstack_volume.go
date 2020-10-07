@@ -11,13 +11,8 @@ func (os *OpenStack) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume is a stub to satisfy VolumeService interface
-func (os *OpenStack) UpdateVolume(config *Config, name, label string) error {
-	return nil
-}
-
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (os *OpenStack) DeleteVolume(config *Config, name, label string) error {
+func (os *OpenStack) DeleteVolume(config *Config, name string) error {
 	return nil
 }
 

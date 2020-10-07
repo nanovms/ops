@@ -11,13 +11,8 @@ func (do *DigitalOcean) GetAllVolumes(config *Config) error {
 	return nil
 }
 
-// UpdateVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) UpdateVolume(config *Config, name, label string) error {
-	return nil
-}
-
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) DeleteVolume(config *Config, name, label string) error {
+func (do *DigitalOcean) DeleteVolume(config *Config, name string) error {
 	return nil
 }
 

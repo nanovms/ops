@@ -23,9 +23,9 @@ var (
 	}
 	testVolume2 = &NanosVolume{
 		ID:    "",
-		Name:  "empty",
+		Name:  "noempty",
 		Label: "default",
-		Data:  "",
+		Data:  "data",
 		Size:  "",
 		Path:  "",
 	}
@@ -39,16 +39,21 @@ func TestOnPremVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
+	tmpdata, err := ioutil.TempDir(tmp, testVolume2.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
 	DownloadNightlyImages(testVolumeConfig)
 
 	testVolumeConfig.BuildDir = tmp
+	testVolume2.Data = tmpdata
 	count := new(int)
 	*count = 0
 
 	testGetVolumes(t, "get_volumes_0", count)
 	testCreateVolume(t, "volume_1", testVolume1, count)
+
 	testCreateVolume(t, "volume_2", testVolume2, count)
-	testUpdateVolume(t, "relabel_volume_1", testVolume1, "newlabel")
 	testDeleteVolume(t, "volume_1", testVolume1, count)
 }
 
@@ -79,28 +84,10 @@ func testGetVolumes(t *testing.T, name string, count *int) {
 	})
 }
 
-func testUpdateVolume(t *testing.T, name string, vol *NanosVolume, label string) {
-	t.Run(name, func(t *testing.T) {
-		file := strings.TrimSuffix(path.Base(vol.Path), path.Ext(vol.Path))
-		err := testOP.UpdateVolume(testVolumeConfig, file, label)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		vols, err := GetVolumes(testVolumeConfig.BuildDir, map[string]string{"label": label})
-		if err != nil {
-			t.Error(err)
-		}
-		if len(vols) == 0 {
-			t.Errorf("volume with label %s: expected 1, got 0", label)
-		}
-	})
-}
-
 func testDeleteVolume(t *testing.T, name string, vol *NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("delete_%s", name), func(t *testing.T) {
 		file := strings.TrimSuffix(path.Base(vol.Path), path.Ext(vol.Path))
-		err := testOP.DeleteVolume(testVolumeConfig, file, "")
+		err := testOP.DeleteVolume(testVolumeConfig, file)
 		if err != nil {
 			t.Error(err)
 			return
