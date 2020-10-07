@@ -119,6 +119,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c := unWarpConfig(config)
 
 	c.Args = append(c.Args, cmdargs...)
+
+	//Precedance is given to command line manifest file name.
+	if manifestName == "" && c.ManifestName != "" {
+		manifestName = c.ManifestName
+	}
+
 	c.Program = args[0]
 	curdir, _ := os.Getwd()
 	c.ProgramPath = path.Join(curdir, args[0])
