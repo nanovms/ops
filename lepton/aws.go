@@ -531,14 +531,21 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 	fmt.Printf("Created security group %s with VPC %s.\n",
 		aws.StringValue(createRes.GroupId), vpcID)
 
+	var port int64
+	if len(ctx.config.RunConfig.Ports) != 0 {
+		port = int64(ctx.config.RunConfig.Ports[0])
+	} else {
+		port = 80 //Providing default value in case not provided.
+	}
+
 	// maybe have these ports specified from config.json in near future
 	_, err = svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: createRes.GroupId,
 		IpPermissions: []*ec2.IpPermission{
 			(&ec2.IpPermission{}).
 				SetIpProtocol("tcp").
-				SetFromPort(80).
-				SetToPort(80).
+				SetFromPort(port).
+				SetToPort(port).
 				SetIpRanges([]*ec2.IpRange{
 					{CidrIp: aws.String("0.0.0.0/0")},
 				}),
