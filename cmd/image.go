@@ -389,7 +389,7 @@ func ImageCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdImage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
-	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform [gcp, aws, do, vultr, onprem]")
+	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, do, vultr, onprem]")
 	cmdImage.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for target cloud platform. defaults to GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
