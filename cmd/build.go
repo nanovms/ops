@@ -71,7 +71,7 @@ func BuildCommand() *cobra.Command {
 	cmdBuild.PersistentFlags().StringArrayVarP(&envs, "envs", "e", nil, "env arguments")
 	cmdBuild.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdBuild.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
-	cmdBuild.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "gcp", "cloud platform[gcp, onprem]")
+	cmdBuild.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform[gcp, onprem]")
 	cmdBuild.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	return cmdBuild
 }
