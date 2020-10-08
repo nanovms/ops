@@ -531,25 +531,23 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 	fmt.Printf("Created security group %s with VPC %s.\n",
 		aws.StringValue(createRes.GroupId), vpcID)
 
+	var ec2Permissions = make([]*ec2.IpPermission, len(ctx.config.RunConfig.Ports))
+
+	for i, port := range ctx.config.RunConfig.Ports {
+		var ec2Permission = new(ec2.IpPermission)
+		ec2Permission.SetIpProtocol("tcp")
+		ec2Permission.SetFromPort(int64(port))
+		ec2Permission.SetToPort(int64(port))
+		ec2Permission.SetIpRanges([]*ec2.IpRange{
+			{CidrIp: aws.String("0.0.0.0/0")},
+		})
+		ec2Permissions[i] = ec2Permission
+	}
+
 	// maybe have these ports specified from config.json in near future
 	_, err = svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: createRes.GroupId,
-		IpPermissions: []*ec2.IpPermission{
-			(&ec2.IpPermission{}).
-				SetIpProtocol("tcp").
-				SetFromPort(80).
-				SetToPort(80).
-				SetIpRanges([]*ec2.IpRange{
-					{CidrIp: aws.String("0.0.0.0/0")},
-				}),
-			(&ec2.IpPermission{}).
-				SetIpProtocol("tcp").
-				SetFromPort(443).
-				SetToPort(443).
-				SetIpRanges([]*ec2.IpRange{
-					{CidrIp: aws.String("0.0.0.0/0")},
-				}),
-		},
+		GroupId:       createRes.GroupId,
+		IpPermissions: ec2Permissions,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("Unable to set security group %q ingress, %v", imgName, err)
