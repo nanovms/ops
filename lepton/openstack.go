@@ -352,8 +352,8 @@ func (o *OpenStack) addBootFromVolumeParams(
 	}
 
 	return &bootfromvolume.CreateOptsExt{
-		createOpts,
-		[]bootfromvolume.BlockDevice{blockDevice},
+		CreateOptsBuilder: createOpts,
+		BlockDevice:       []bootfromvolume.BlockDevice{blockDevice},
 	}
 }
 
