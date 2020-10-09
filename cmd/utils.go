@@ -96,7 +96,7 @@ func getCloudProvider(providerName string) (api.Provider, error) {
 
 	switch providerName {
 	case "gcp":
-		provider = &api.GCloud{}
+		provider = api.NewGCloud()
 	case "onprem":
 		provider = &api.OnPrem{}
 	case "aws":

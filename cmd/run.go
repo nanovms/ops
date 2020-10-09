@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
 	"log"
 	"os"
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/go-errors/errors"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
