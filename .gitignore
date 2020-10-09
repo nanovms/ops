@@ -6,3 +6,5 @@ ops.exe
 /Makefile.local
 vendor/
 .idea
+
+config*.json

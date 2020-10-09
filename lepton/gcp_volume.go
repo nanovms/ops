@@ -1,27 +1,186 @@
 package lepton
 
-// CreateVolume is a stub to satisfy VolumeService interface
-func (g *GCloud) CreateVolume(config *Config, name, label, size, provider string) (NanosVolume, error) {
-	var vol NanosVolume
-	return vol, nil
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/olekukonko/tablewriter"
+	compute "google.golang.org/api/compute/v1"
+)
+
+// CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
+func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
+	arch := name + ".tar.gz"
+	ctx := context.Background()
+
+	lv, err := CreateLocalVolume(config, name, data, size, provider)
+	if err != nil {
+		return lv, err
+	}
+
+	link := filepath.Join(filepath.Dir(lv.Path), "disk.raw")
+	if _, err := os.Lstat(link); err == nil {
+		if err := os.Remove(link); err != nil {
+			return lv, fmt.Errorf("failed to unlink: %+v", err)
+		}
+	}
+	err = os.Link(lv.Path, link)
+	if err != nil {
+		return lv, err
+	}
+	archPath := filepath.Join(filepath.Dir(lv.Path), arch)
+	// compress it into a tar.gz file
+	err = createArchive(archPath, []string{link})
+	if err != nil {
+		return lv, err
+	}
+
+	err = g.Storage.CopyToBucket(config, archPath)
+	if err != nil {
+		return lv, err
+	}
+
+	img := &compute.Image{
+		Name: name,
+		RawDisk: &compute.ImageRawDisk{
+			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
+		},
+	}
+	op, err := g.Service.Images.Insert(config.CloudConfig.ProjectID, img).Context(ctx).Do()
+	if err != nil {
+		return lv, err
+	}
+	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return lv, err
+	}
+
+	disk := &compute.Disk{
+		Name:        name,
+		SourceImage: "global/images/" + name,
+		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
+	}
+
+	_, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(ctx).Do()
+	if err != nil {
+		return lv, err
+	}
+	return lv, nil
 }
 
-// GetAllVolumes is a stub to satisfy VolumeService interface
+// GetAllVolumes gets all volumes created in GCP as Compute Engine Disks
 func (g *GCloud) GetAllVolumes(config *Config) error {
+	ctx := context.Background()
+
+	projectID := config.CloudConfig.ProjectID
+	if strings.Compare(projectID, "") == 0 {
+		// projectID = g.ProjectID
+		return errGCloudProjectIDMissing()
+	}
+
+	zone := config.CloudConfig.Zone
+	if strings.Compare(zone, "") == 0 {
+		// zone = g.Zone
+		return errGCloudZoneMissing()
+	}
+
+	dl, err := g.Service.Disks.List(projectID, zone).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "URI", "Created", "Attached"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+	)
+	table.SetRowLine(true)
+
+	for _, d := range dl.Items {
+		var row []string
+		var users []string
+		for _, u := range d.Users {
+			uri := strings.Split(u, "/")
+			users = append(users, uri[len(uri)-1])
+		}
+		row = append(row, d.Name)
+		row = append(row, d.SelfLink)
+		row = append(row, d.CreationTimestamp)
+		row = append(row, strings.Join(users, ";"))
+		table.Append(row)
+	}
+
+	table.Render()
 	return nil
 }
 
-// DeleteVolume is a stub to satisfy VolumeService interface
+// DeleteVolume deletes specific disk and image in GCP
 func (g *GCloud) DeleteVolume(config *Config, name string) error {
+	ctx := context.Background()
+
+	_, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+
+	_, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// AttachVolume is a stub to satisfy VolumeService interface
+// AttachVolume attaches Compute Engine Disk volume to existing instance
 func (g *GCloud) AttachVolume(config *Config, image, name, mount string) error {
+	ctx := context.Background()
+	disk := &compute.AttachedDisk{
+		AutoDelete: false,
+		DeviceName: mount,
+		Source:     fmt.Sprintf("zones/%s/disks/%s", config.CloudConfig.Zone, name),
+	}
+	op, err := g.Service.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// DetachVolume is a stub to satisfy VolumeService interface
-func (g *GCloud) DetachVolume(config *Config, image, name string) error {
+// DetachVolume detaches Compute Engine Disk volume from existing instance
+func (g *GCloud) DetachVolume(config *Config, image, volumeName string) error {
+	var mount string
+	ctx := context.Background()
+	ins, err := g.Service.Instances.Get(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	for _, d := range ins.Disks {
+		name := strings.Split(d.Source, "/")
+		if volumeName == name[len(name)-1] {
+			mount = d.DeviceName
+			break
+		}
+	}
+	if mount == "" {
+		return fmt.Errorf("volume %s not found in %s", volumeName, image)
+	}
+	op, err := g.Service.Instances.DetachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, mount).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return err
+	}
 	return nil
 }

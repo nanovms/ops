@@ -138,7 +138,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[1]
 	mount := args[2]
 	config, _ := cmd.Flags().GetString("config")
-	provider, _ := cmd.Flags().GetString("provider")
+	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
 
 	var vol api.VolumeService
@@ -157,6 +157,29 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
+	image := args[0]
+	name := args[1]
+	config, _ := cmd.Flags().GetString("config")
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	conf := unWarpConfig(config)
+
+	var vol api.VolumeService
+	var err error
+	if provider == "onprem" {
+		vol = &api.OnPrem{}
+	} else {
+		vol, err = getCloudProvider(provider)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = vol.DetachVolume(conf, image, name)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func volumeAttachCommand() *cobra.Command {
 	cmdVolumeAttach := &cobra.Command{
 		Use:   "attach <image_name> <volume_name> <mount_path>",
@@ -165,6 +188,16 @@ func volumeAttachCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(3),
 	}
 	return cmdVolumeAttach
+}
+
+func volumeDetachCommand() *cobra.Command {
+	cmdVolumeDetach := &cobra.Command{
+		Use:   "detach <image_name> <volume_name>",
+		Short: "detach volume",
+		Run:   volumeDetachCommandHandler,
+		Args:  cobra.MinimumNArgs(2),
+	}
+	return cmdVolumeDetach
 }
 
 // VolumeCommands handles volumes related operations
@@ -184,5 +217,6 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.AddCommand(volumeListCommand())
 	cmdVolume.AddCommand(volumeDeleteCommand())
 	cmdVolume.AddCommand(volumeAttachCommand())
+	cmdVolume.AddCommand(volumeDetachCommand())
 	return cmdVolume
 }
