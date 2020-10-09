@@ -317,7 +317,14 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		AdminPass: "TODO",
 	}
 
-	createOpts = o.addBootFromVolumeParams(createOpts, imageID, 1)
+	var volumeSize int
+	if ctx.config.RunConfig.VolumeSizeInGb == 0 {
+		volumeSize = 1
+	} else {
+		volumeSize = ctx.config.RunConfig.VolumeSizeInGb
+	}
+
+	createOpts = o.addBootFromVolumeParams(createOpts, imageID, volumeSize)
 	server, err := servers.Create(client, createOpts).Extract()
 
 	if err != nil {
