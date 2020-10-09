@@ -40,19 +40,20 @@ type ProviderConfig struct {
 
 // RunConfig provides runtime details
 type RunConfig struct {
-	Imagename string // FIXME: fullpath? of image
-	BaseName  string // FIXME: basename of image only
-	Ports     []int
-	GdbPort   int
-	CPUs      int // number of cpus
-	Verbose   bool
-	Memory    string
-	Bridged   bool
-	TapName   string
-	Accel     bool
-	UDP       bool // enable UDP
-	OnPrem    bool // true if in a multi-instance/tenant on-prem env
-	Mounts    []string
+	Imagename      string // FIXME: fullpath? of image
+	BaseName       string // FIXME: basename of image only
+	Ports          []int
+	GdbPort        int
+	CPUs           int // number of cpus
+	Verbose        bool
+	Memory         string
+	Bridged        bool
+	TapName        string
+	Accel          bool
+	UDP            bool // enable UDP
+	OnPrem         bool // true if in a multi-instance/tenant on-prem env
+	Mounts         []string
+	VolumeSizeInGb int //This option is only for openstack.
 }
 
 // RuntimeConfig constructs runtime config

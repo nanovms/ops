@@ -3,6 +3,7 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
 	"os"
 	"strings"
 
@@ -306,22 +307,54 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		fmt.Println(err)
 	}
 
-	fmt.Printf("deploying flavorID %s", flavorID)
+	fmt.Printf("\nDeploying flavorID %s", flavorID)
 
-	server, err := servers.Create(client, servers.CreateOpts{
+	var createOpts servers.CreateOptsBuilder
+	createOpts = &servers.CreateOpts{
 		Name:      imageName,
-		FlavorRef: flavorID,
 		ImageRef:  imageID,
-	}).Extract()
-	if err != nil {
-		fmt.Println(err)
+		FlavorRef: flavorID,
+		AdminPass: "TODO",
 	}
 
-	fmt.Printf("%+v", server)
+	var volumeSize int
+	if ctx.config.RunConfig.VolumeSizeInGb == 0 {
+		volumeSize = 1
+	} else {
+		volumeSize = ctx.config.RunConfig.VolumeSizeInGb
+	}
 
-	fmt.Println("un-implemented")
+	createOpts = o.addBootFromVolumeParams(createOpts, imageID, volumeSize)
+	server, err := servers.Create(client, createOpts).Extract()
 
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	fmt.Printf("\n Instance Created Successfully. ID ---> %s \n", server.ID)
 	return nil
+}
+
+func (o *OpenStack) addBootFromVolumeParams(
+	createOpts servers.CreateOptsBuilder,
+	imageID string,
+	rootDiskSizeGb int,
+) *bootfromvolume.CreateOptsExt {
+	blockDevice := bootfromvolume.BlockDevice{
+		BootIndex:           0,
+		DeleteOnTermination: true,
+		DestinationType:     "volume",
+		SourceType:          bootfromvolume.SourceType("image"),
+		UUID:                imageID,
+	}
+	if rootDiskSizeGb > 0 {
+		blockDevice.VolumeSize = rootDiskSizeGb
+	}
+
+	return &bootfromvolume.CreateOptsExt{
+		CreateOptsBuilder: createOpts,
+		BlockDevice:       []bootfromvolume.BlockDevice{blockDevice},
+	}
 }
 
 // GetInstances return all instances on OpenStack
