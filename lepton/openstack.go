@@ -272,13 +272,18 @@ func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 		panic(err)
 	}
 
+	if name == "" {
+		// setting first flavor as default in case not provided
+		return allFlavors[0].ID, nil
+	}
+
 	for _, flavor := range allFlavors {
 		if flavor.Name == name {
 			return flavor.ID, nil
 		}
 	}
 
-	return "", errors.New("no flavor for flavor flav")
+	return "", errors.New("flavor " + name + " not found")
 }
 
 // CreateInstance - Creates instance on OpenStack.
@@ -300,9 +305,8 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("deploying imageID %s", imageID)
 
-	// "m1.micro" for devstack
-	// "v2-highcpu-1" for vexxhost
-	flavorID, err := o.findFlavorByName("v2-highcpu-1")
+	flavorID, err := o.findFlavorByName(ctx.config.CloudConfig.Flavor)
+
 	if err != nil {
 		fmt.Println(err)
 	}
