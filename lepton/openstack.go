@@ -305,7 +305,8 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("deploying imageID %s", imageID)
 
-	flavorID, err := o.findFlavorByName(ctx.config.RunConfig.flavor)
+	flavorID, err := o.findFlavorByName(ctx.config.CloudConfig.Flavor)
+
 	if err != nil {
 		fmt.Println(err)
 	}

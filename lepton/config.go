@@ -53,8 +53,7 @@ type RunConfig struct {
 	UDP            bool // enable UDP
 	OnPrem         bool // true if in a multi-instance/tenant on-prem env
 	Mounts         []string
-	VolumeSizeInGb int    //This option is only for openstack.
-	flavor         string // This option is only for openstack flavor.
+	VolumeSizeInGb int //This option is only for openstack.
 }
 
 // RuntimeConfig constructs runtime config
