@@ -283,7 +283,7 @@ func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 		}
 	}
 
-	return "", errors.New("Flavor not found.")
+	return "", errors.New("flavor not found")
 }
 
 // CreateInstance - Creates instance on OpenStack.
