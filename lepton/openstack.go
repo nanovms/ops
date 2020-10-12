@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
-	"os"
-	"strings"
-
 	"github.com/olekukonko/tablewriter"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 
@@ -313,9 +314,11 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("\nDeploying flavorID %s", flavorID)
 
+	instanceName := imageName + "-" + strconv.FormatInt(time.Now().Unix(), 10)
+
 	var createOpts servers.CreateOptsBuilder
 	createOpts = &servers.CreateOpts{
-		Name:      imageName,
+		Name:      instanceName,
 		ImageRef:  imageID,
 		FlavorRef: flavorID,
 		AdminPass: "TODO",
@@ -335,7 +338,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		exitWithError(err.Error())
 	}
 
-	fmt.Printf("\n Instance Created Successfully. ID ---> %s \n", server.ID)
+	fmt.Printf("\nInstance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
 	return nil
 }
 
@@ -387,16 +390,22 @@ func (o *OpenStack) GetInstances(ctx *Context) ([]CloudInstance, error) {
 		for _, s := range serverList {
 			// fugly
 			ipv4 := ""
-			z := s.Addresses["public"].([]interface{})
-			for _, v := range z {
-				sz := v.(map[string]interface{})
-				version := sz["version"].(float64)
-				if version == 4 {
-					ipv4 = sz["addr"].(string)
+			// For some instances IP is not assigned.
+			z := s.Addresses["public"]
+			if z != nil {
+				for _, v := range z.([]interface{}) {
+					sz := v.(map[string]interface{})
+					version := sz["version"].(float64)
+					if version == 4 {
+						ipv4 = sz["addr"].(string)
+					}
 				}
+			} else {
+				ipv4 = "NA"
 			}
 
 			cinstance := CloudInstance{
+				ID:        s.ID,
 				Name:      s.Name,
 				PublicIps: []string{ipv4},
 				Status:    s.Status,
@@ -421,8 +430,9 @@ func (o *OpenStack) ListInstances(ctx *Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "IP", "Status", "Created"})
+	table.SetHeader([]string{"ID", "Name", "IP", "Status", "Created"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -432,6 +442,7 @@ func (o *OpenStack) ListInstances(ctx *Context) error {
 	for _, instance := range cinstances {
 		var row []string
 
+		row = append(row, instance.ID)
 		row = append(row, instance.Name)
 		row = append(row, strings.Join(instance.PublicIps, ","))
 		row = append(row, instance.Status)
