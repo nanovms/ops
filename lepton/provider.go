@@ -20,7 +20,8 @@ type Provider interface {
 	DeleteInstance(ctx *Context, instancename string) error
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error
-	GetInstanceLogs(ctx *Context, instancename string, watch bool) error
+	GetInstanceLogs(ctx *Context, instancename string) (string, error)
+	PrintInstanceLogs(ctx *Context, instancename string, watch bool) error
 
 	VolumeService
 

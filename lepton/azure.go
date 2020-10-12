@@ -538,28 +538,32 @@ func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
 		privateIP := ""
 		publicIP := ""
 
-		nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
+		if instance.VirtualMachineProperties != nil {
+			nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
 
-		for i := 0; i < len(nifs); i++ {
-			nicClient := a.getNicClient()
-			nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
-			for x := 0; x < len(ipconfig); x++ {
-				format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
-				privateIP = *format.PrivateIPAddress
-
-				ipClient := a.getIPClient()
-				pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+			for i := 0; i < len(nifs); i++ {
+				nicClient := a.getNicClient()
+				nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
 				if err != nil {
 					fmt.Println(err)
 				}
-				publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
-			}
 
+				if nic.InterfacePropertiesFormat != nil {
+					ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
+					for x := 0; x < len(ipconfig); x++ {
+						format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
+						privateIP = *format.PrivateIPAddress
+
+						ipClient := a.getIPClient()
+						pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+						if err != nil {
+							fmt.Println(err)
+						}
+						publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
+					}
+				}
+
+			}
 		}
 		cinstance.PrivateIps = []string{privateIP}
 		cinstance.PublicIps = []string{publicIP}
@@ -651,8 +655,18 @@ func (a *Azure) StopInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (a *Azure) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := a.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs gets instance related logs
-func (a *Azure) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+func (a *Azure) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 	// this is basically 2 calls
 	// 1) grab the log location
 	// 2) grab it from storage
@@ -700,7 +714,7 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string, watch bool) e
 
 	get, err := blobURL.Download(context.TODO(), 0, 0, azblob.BlobAccessConditions{}, false)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	downloadedData := &bytes.Buffer{}
@@ -708,9 +722,7 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string, watch bool) e
 	downloadedData.ReadFrom(reader)
 	reader.Close()
 
-	fmt.Println(downloadedData.String())
-
-	return nil
+	return downloadedData.String(), nil
 }
 
 // ResizeImage is not supported on azure.

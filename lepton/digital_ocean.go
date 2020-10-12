@@ -173,9 +173,19 @@ func (do *DigitalOcean) StopInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
-// GetInstanceLogs gets instance related logs
-func (do *DigitalOcean) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+// PrintInstanceLogs writes instance logs to console
+func (do *DigitalOcean) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := do.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
 	return nil
+}
+
+// GetInstanceLogs gets instance related logs
+func (do *DigitalOcean) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
+	return "", nil
 }
 
 func (do *DigitalOcean) customizeImage(ctx *Context) (string, error) {

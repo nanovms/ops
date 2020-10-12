@@ -274,7 +274,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 	ctx := api.NewContext(&c, &p)
-	err = p.GetInstanceLogs(ctx, args[0], watch)
+	err = p.PrintInstanceLogs(ctx, args[0], watch)
 	if err != nil {
 		exitWithError(err.Error())
 	}

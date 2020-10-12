@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 // Vultr provides access to the Vultr API.
@@ -379,9 +380,19 @@ func (v *Vultr) StopInstance(ctx *Context, instanceID string) error {
 	return nil
 }
 
-// GetInstanceLogs gets instance related logs
-func (v *Vultr) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+// PrintInstanceLogs writes instance logs to console
+func (v *Vultr) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := v.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
 	return nil
+}
+
+// GetInstanceLogs gets instance related logs
+func (v *Vultr) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
+	return "", nil
 }
 
 func (v *Vultr) customizeImage(ctx *Context) (string, error) {
