@@ -3,14 +3,12 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
+	"github.com/olekukonko/tablewriter"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/olekukonko/tablewriter"
-
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 
