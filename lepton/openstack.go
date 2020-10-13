@@ -348,7 +348,7 @@ func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 		}
 	}
 
-	return "", errors.New("flavor " + name + " not found")
+	return "", errors.New("\nflavor " + name + " not found")
 }
 
 func (o *OpenStack) getComputeClient() (*gophercloud.ServiceClient, error) {
@@ -492,7 +492,34 @@ func (o *OpenStack) ListInstances(ctx *Context) error {
 
 // DeleteInstance deletes instance from OpenStack
 func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
+
+	instances, err := o.GetInstances(ctx)
+
+	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if len(instances) == 0 {
+		exitWithError("No Instance available for deletion")
+	}
+
+	for _, instance := range instances {
+		if instance.Name == instancename {
+			result := servers.Delete(client, instance.ID).ExtractErr()
+
+			if result == nil {
+				fmt.Printf("Deleted instance with ID %s and name %s", instance.ID, instancename)
+			} else {
+				exitWithError(result.Error())
+			}
+
+		}
+	}
+
 	return nil
 }
 
