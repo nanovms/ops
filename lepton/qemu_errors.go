@@ -55,7 +55,8 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 	}
 
 	if errors.As(err, &targetQemuHWAccelNotSupported) {
-		return fmt.Sprintf(WarningColor, "You specified hardware acceleration, but it is not supported\n"), false
+		return fmt.Sprintf(WarningColor, "You specified hardware acceleration, but it is not supported\n"+
+			"Are you running inside a vm? If so disable accel with --accel=false\n"), false
 	}
 
 	return fmt.Sprintf(WarningColor, "Hardware acceleration cannot be used on the current host"), false
