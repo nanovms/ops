@@ -261,8 +261,18 @@ func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (p *OnPrem) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs for onprem instance logs
-func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 
 	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
 	if err != nil {
@@ -270,9 +280,7 @@ func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string, watch bool) 
 		os.Exit(1)
 	}
 
-	fmt.Println(string(body))
-
-	return nil
+	return string(body), nil
 }
 
 // Initialize on prem provider

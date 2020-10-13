@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -746,42 +747,44 @@ func (v *Vsphere) StopInstance(ctx *Context, instancename string) error {
 	return err
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (v *Vsphere) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := v.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs gets instance related logs.
 // govc datastore.tail -n 100 gtest/serial.out
 // logs don't appear until you spin up the instance.
-func (v *Vsphere) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
-
+func (v *Vsphere) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	_, err = f.DefaultHostSystem(context.TODO())
-	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	serialFile := instancename + "/console.log"
-
 	file, err := ds.Open(context.TODO(), serialFile)
 	if err != nil {
-		return err
+		return "", err
 	}
-
 	var reader io.ReadCloser = file
 
 	err = file.Tail(100)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = io.Copy(os.Stdout, reader)
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, reader)
 
 	_ = reader.Close()
 
-	return nil
+	return buf.String(), nil
 }
 
 func (v *Vsphere) customizeImage(ctx *Context) (string, error) {

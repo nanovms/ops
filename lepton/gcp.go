@@ -556,27 +556,35 @@ func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (p *GCloud) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs gets instance related logs
-func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+func (p *GCloud) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 	context := context.TODO()
 
 	cloudConfig := ctx.config.CloudConfig
 	lastPos := int64(0)
-	for {
-		resp, err := p.Service.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
-		if err != nil {
-			return err
-		}
-		if resp.Contents != "" {
-			fmt.Printf("%s", resp.Contents)
-		}
-		if lastPos == resp.Next && !watch {
-			break
-		}
-		lastPos = resp.Next
-		time.Sleep(time.Second)
+
+	resp, err := p.Service.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
+	if err != nil {
+		return "", err
 	}
-	return nil
+	if resp.Contents != "" {
+		return resp.Contents, nil
+	}
+
+	lastPos = resp.Next
+	time.Sleep(time.Second)
+
+	return "", nil
 }
 
 func createArchive(archive string, files []string) error {

@@ -672,8 +672,18 @@ func (p *AWS) DeleteInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (p *AWS) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs gets instance related logs
-func (p *AWS) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+func (p *AWS) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(ctx.config.CloudConfig.Zone)},
 	)
@@ -695,18 +705,17 @@ func (p *AWS) GetInstanceLogs(ctx *Context, instancename string, watch bool) err
 		} else {
 			fmt.Println(err.Error())
 		}
-		return err
+		return "", err
 	}
 
 	data, err := base64.StdEncoding.DecodeString(aws.StringValue(result.Output))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	l := string(data)
-	fmt.Printf(l)
 
-	return nil
+	return l, nil
 }
 
 func (p *AWS) customizeImage(ctx *Context) (string, error) {

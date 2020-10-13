@@ -3,12 +3,14 @@ package lepton
 import (
 	"errors"
 	"fmt"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
-	"github.com/olekukonko/tablewriter"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
+
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 
@@ -545,19 +547,29 @@ func (o *OpenStack) findInstance(name string) (id string, err error) {
 	return sid, errors.New("could not find server")
 }
 
+// PrintInstanceLogs writes instance logs to console
+func (o *OpenStack) PrintInstanceLogs(ctx *Context, instancename string, watch bool) error {
+	l, err := o.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
+}
+
 // GetInstanceLogs gets instance related logs.
-func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string, watch bool) error {
+func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 
 	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	sid, err := o.findInstance(instancename)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	outputOpts := &servers.ShowConsoleOutputOpts{
@@ -565,12 +577,10 @@ func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string, watch boo
 	}
 	output, err := servers.ShowConsoleOutput(client, sid, outputOpts).Extract()
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	fmt.Println(output)
-
-	return nil
+	return output, nil
 }
 
 func (o *OpenStack) customizeImage(ctx *Context) (string, error) {
