@@ -241,6 +241,11 @@ type vultrServer struct {
 	Name      string `json:"label"`
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (v *Vultr) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // GetInstances return all instances on Vultr
 // TODO
 func (v *Vultr) GetInstances(ctx *Context) ([]CloudInstance, error) {

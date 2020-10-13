@@ -24,6 +24,59 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 )
 
+func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.ListOpts) ([]CloudInstance, error) {
+	cinstances := []CloudInstance{}
+
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	pager := servers.List(client, opts)
+
+	err = pager.EachPage(func(page pagination.Page) (bool, error) {
+		serverList, err := servers.ExtractServers(page)
+		if err != nil {
+			fmt.Println(err)
+			return false, err
+		}
+
+		for _, s := range serverList {
+			// fugly
+			ipv4 := ""
+			// For some instances IP is not assigned.
+			z := s.Addresses["public"]
+			if z != nil {
+				for _, v := range z.([]interface{}) {
+					sz := v.(map[string]interface{})
+					version := sz["version"].(float64)
+					if version == 4 {
+						ipv4 = sz["addr"].(string)
+					}
+				}
+			} else {
+				ipv4 = "NA"
+			}
+
+			cinstance := CloudInstance{
+				ID:        s.ID,
+				Name:      s.Name,
+				PublicIps: []string{ipv4},
+				Status:    s.Status,
+				Created:   s.Created.Format("2006-01-02 15:04:05"),
+			}
+
+			cinstances = append(cinstances, cinstance)
+		}
+
+		return true, nil
+	})
+
+	return cinstances, nil
+}
+
 // OpenStack provides access to the OpenStack API.
 type OpenStack struct {
 	Storage  *Datastores
@@ -366,61 +419,28 @@ func (o *OpenStack) addBootFromVolumeParams(
 	}
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (o *OpenStack) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	opts := servers.ListOpts{
+		Name: id,
+	}
+
+	instances, err := getOpenStackInstances(o.provider, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(instances) == 0 {
+		return nil, ErrInstanceNotFound(id)
+	}
+
+	return &instances[0], nil
+}
+
 // GetInstances return all instances on OpenStack
 // TODO
 func (o *OpenStack) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	cinstances := []CloudInstance{}
-
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	opts := servers.ListOpts{}
-
-	pager := servers.List(client, opts)
-
-	err = pager.EachPage(func(page pagination.Page) (bool, error) {
-		serverList, err := servers.ExtractServers(page)
-		if err != nil {
-			fmt.Println(err)
-			return false, err
-		}
-
-		for _, s := range serverList {
-			// fugly
-			ipv4 := ""
-			// For some instances IP is not assigned.
-			z := s.Addresses["public"]
-			if z != nil {
-				for _, v := range z.([]interface{}) {
-					sz := v.(map[string]interface{})
-					version := sz["version"].(float64)
-					if version == 4 {
-						ipv4 = sz["addr"].(string)
-					}
-				}
-			} else {
-				ipv4 = "NA"
-			}
-
-			cinstance := CloudInstance{
-				ID:        s.ID,
-				Name:      s.Name,
-				PublicIps: []string{ipv4},
-				Status:    s.Status,
-				Created:   s.Created.Format("2006-01-02 15:04:05"),
-			}
-
-			cinstances = append(cinstances, cinstance)
-		}
-
-		return true, nil
-	})
-
-	return cinstances, nil
+	return getOpenStackInstances(o.provider, servers.ListOpts{})
 }
 
 // ListInstances lists instances on OpenStack.

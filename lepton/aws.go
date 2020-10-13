@@ -234,19 +234,58 @@ func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
 	return result, nil
 }
 
-func getAWSInstances(region string) *ec2.DescribeInstancesOutput {
+func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
 	compute := ec2.New(svc)
 
-	request := ec2.DescribeInstancesInput{}
+	request := ec2.DescribeInstancesInput{
+		Filters: filter,
+	}
 	result, err := compute.DescribeInstances(&request)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	return result
+	var cinstances []CloudInstance
+
+	for _, reservation := range result.Reservations {
+
+		for i := 0; i < len(reservation.Instances); i++ {
+			instance := reservation.Instances[i]
+
+			instanceName := "unknown"
+			for x := 0; x < len(instance.Tags); x++ {
+				if aws.StringValue(instance.Tags[i].Key) == "Name" {
+					instanceName = aws.StringValue(instance.Tags[i].Value)
+				}
+			}
+
+			var privateIps, publicIps []string
+			for _, ninterface := range instance.NetworkInterfaces {
+				privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
+
+				if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
+					publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
+				}
+			}
+
+			cinstance := CloudInstance{
+				ID:         aws.StringValue(instance.InstanceId),
+				Name:       instanceName,
+				Status:     aws.StringValue(instance.State.Name),
+				Created:    aws.TimeValue(instance.LaunchTime).String(),
+				PublicIps:  publicIps,
+				PrivateIps: privateIps,
+			}
+
+			cinstances = append(cinstances, cinstance)
+		}
+
+	}
+
+	return cinstances
 }
 
 // GetImages return all images on AWS
@@ -557,47 +596,25 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, erro
 	return aws.StringValue(createRes.GroupId), nil
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (p *AWS) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	var filters []*ec2.Filter
+
+	filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{id})})
+
+	instances := getAWSInstances(ctx.config.CloudConfig.Zone, filters)
+
+	if len(instances) == 0 {
+		return nil, ErrInstanceNotFound(id)
+	}
+
+	return &instances[0], nil
+}
+
 // GetInstances return all instances on AWS
 // TODO
 func (p *AWS) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	var cinstances []CloudInstance
-
-	result := getAWSInstances(ctx.config.CloudConfig.Zone)
-
-	for _, reservation := range result.Reservations {
-
-		for i := 0; i < len(reservation.Instances); i++ {
-			instance := reservation.Instances[i]
-
-			instanceName := "unknown"
-			for x := 0; x < len(instance.Tags); x++ {
-				if aws.StringValue(instance.Tags[i].Key) == "Name" {
-					instanceName = aws.StringValue(instance.Tags[i].Value)
-				}
-			}
-
-			var privateIps, publicIps []string
-			for _, ninterface := range instance.NetworkInterfaces {
-				privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
-
-				if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
-					publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
-				}
-			}
-
-			cinstance := CloudInstance{
-				ID:         aws.StringValue(instance.InstanceId),
-				Name:       instanceName,
-				Status:     aws.StringValue(instance.State.Name),
-				Created:    aws.TimeValue(instance.LaunchTime).String(),
-				PublicIps:  publicIps,
-				PrivateIps: privateIps,
-			}
-
-			cinstances = append(cinstances, cinstance)
-		}
-
-	}
+	cinstances := getAWSInstances(ctx.config.CloudConfig.Zone, nil)
 
 	return cinstances, nil
 }

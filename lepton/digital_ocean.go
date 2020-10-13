@@ -147,6 +147,11 @@ func (do *DigitalOcean) CreateInstance(ctx *Context) error {
 	return nil
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (do *DigitalOcean) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	return nil, errors.New("un-implemented")
+}
+
 // GetInstances return all instances on DigitalOcean
 // TODO
 func (do *DigitalOcean) GetInstances(ctx *Context) ([]CloudInstance, error) {

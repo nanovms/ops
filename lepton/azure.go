@@ -517,6 +517,18 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	return nil
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (a *Azure) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	vmClient := a.getVMClient()
+
+	vm, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.convertToCloudInstance(&vm), nil
+}
+
 // GetInstances return all instances on Azure
 // TODO
 func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
@@ -532,46 +544,52 @@ func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	instances := vmlist.Values()
 
 	for _, instance := range instances {
-		cinstance := CloudInstance{
-			Name: *instance.Name,
-		}
-		privateIP := ""
-		publicIP := ""
+		cinstance := a.convertToCloudInstance(&instance)
 
-		if instance.VirtualMachineProperties != nil {
-			nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
-
-			for i := 0; i < len(nifs); i++ {
-				nicClient := a.getNicClient()
-				nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
-				if err != nil {
-					fmt.Println(err)
-				}
-
-				if nic.InterfacePropertiesFormat != nil {
-					ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
-					for x := 0; x < len(ipconfig); x++ {
-						format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
-						privateIP = *format.PrivateIPAddress
-
-						ipClient := a.getIPClient()
-						pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
-						if err != nil {
-							fmt.Println(err)
-						}
-						publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
-					}
-				}
-
-			}
-		}
-		cinstance.PrivateIps = []string{privateIP}
-		cinstance.PublicIps = []string{publicIP}
-
-		cinstances = append(cinstances, cinstance)
+		cinstances = append(cinstances, *cinstance)
 	}
 
 	return cinstances, nil
+}
+
+func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudInstance {
+	cinstance := CloudInstance{
+		Name: *instance.Name,
+	}
+	privateIP := ""
+	publicIP := ""
+
+	if instance.VirtualMachineProperties != nil {
+		nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
+
+		for i := 0; i < len(nifs); i++ {
+			nicClient := a.getNicClient()
+			nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			if nic.InterfacePropertiesFormat != nil {
+				ipconfig := *(*nic.InterfacePropertiesFormat).IPConfigurations
+				for x := 0; x < len(ipconfig); x++ {
+					format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
+					privateIP = *format.PrivateIPAddress
+
+					ipClient := a.getIPClient()
+					pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+					if err != nil {
+						fmt.Println(err)
+					}
+					publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
+				}
+			}
+
+		}
+	}
+	cinstance.PrivateIps = []string{privateIP}
+	cinstance.PublicIps = []string{publicIP}
+
+	return &cinstance
 }
 
 // ListInstances lists instances on Azure

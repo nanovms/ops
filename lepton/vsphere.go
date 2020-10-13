@@ -13,6 +13,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
+	"github.com/vmware/govmomi/property"
 
 	"github.com/vmware/govmomi/govc/host/esxcli"
 	"github.com/vmware/govmomi/object"
@@ -418,6 +419,30 @@ func (v *Vsphere) CreateInstance(ctx *Context) error {
 	return nil
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (v *Vsphere) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	m := view.NewManager(v.client)
+
+	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer cv.Destroy(context.TODO())
+
+	var vms []mo.VirtualMachine
+	err = cv.RetrieveWithFilter(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms, property.Filter{"name": id})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vms) == 0 {
+		return nil, ErrInstanceNotFound(id)
+	}
+
+	return v.convertToCloudInstance(&vms[0]), nil
+}
+
 // GetInstances return all instances on vSphere
 // TODO
 func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
@@ -439,24 +464,30 @@ func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	}
 
 	for _, vm := range vms {
-		cInstance := CloudInstance{
-			Name:   vm.Summary.Config.Name,
-			Status: string(vm.Summary.Runtime.PowerState),
-		}
+		cInstance := v.convertToCloudInstance(&vm)
 
-		if vm.Summary.Runtime.BootTime != nil {
-			cInstance.Created = vm.Summary.Runtime.BootTime.String()
-		}
-
-		if cInstance.Status == "poweredOn" {
-			ip := v.ipFor(vm.Summary.Config.Name)
-			cInstance.PublicIps = []string{ip}
-		}
-
-		cinstances = append(cinstances, cInstance)
+		cinstances = append(cinstances, *cInstance)
 	}
 
 	return cinstances, nil
+}
+
+func (v *Vsphere) convertToCloudInstance(vm *mo.VirtualMachine) *CloudInstance {
+	cInstance := CloudInstance{
+		Name:   vm.Summary.Config.Name,
+		Status: string(vm.Summary.Runtime.PowerState),
+	}
+
+	if vm.Summary.Runtime.BootTime != nil {
+		cInstance.Created = vm.Summary.Runtime.BootTime.String()
+	}
+
+	if cInstance.Status == "poweredOn" {
+		ip := v.ipFor(vm.Summary.Config.Name)
+		cInstance.PublicIps = []string{ip}
+	}
+
+	return &cInstance
 }
 
 // ListInstances lists instances on VSphere.
