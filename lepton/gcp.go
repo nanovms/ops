@@ -455,6 +455,18 @@ func (p *GCloud) ListInstances(ctx *Context) error {
 	return nil
 }
 
+// GetInstanceByID returns the instance with the id passed by argument if it exists
+func (p *GCloud) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
+	req := p.Service.Instances.Get(ctx.config.CloudConfig.ProjectID, ctx.config.CloudConfig.Zone, id)
+
+	instance, err := req.Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return p.convertToCloudInstance(instance), nil
+}
+
 // GetInstances return all instances on GCloud
 func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	context := context.TODO()
@@ -465,29 +477,8 @@ func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
 
 	if err := req.Pages(context, func(page *compute.InstanceList) error {
 		for _, instance := range page.Items {
-			var (
-				privateIps, publicIps []string
-			)
-			for _, ninterface := range instance.NetworkInterfaces {
-				if ninterface.NetworkIP != "" {
-					privateIps = append(privateIps, ninterface.NetworkIP)
-
-				}
-				for _, accessConfig := range ninterface.AccessConfigs {
-					if accessConfig.NatIP != "" {
-						publicIps = append(publicIps, accessConfig.NatIP)
-					}
-				}
-			}
-
-			cinstance := CloudInstance{
-				Name:       instance.Name,
-				Status:     instance.Status,
-				Created:    instance.CreationTimestamp,
-				PublicIps:  publicIps,
-				PrivateIps: privateIps,
-			}
-			cinstances = append(cinstances, cinstance)
+			cinstance := p.convertToCloudInstance(instance)
+			cinstances = append(cinstances, *cinstance)
 		}
 		return nil
 	}); err != nil {
@@ -495,6 +486,31 @@ func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	}
 
 	return cinstances, nil
+}
+
+func (p *GCloud) convertToCloudInstance(instance *compute.Instance) *CloudInstance {
+	var (
+		privateIps, publicIps []string
+	)
+	for _, ninterface := range instance.NetworkInterfaces {
+		if ninterface.NetworkIP != "" {
+			privateIps = append(privateIps, ninterface.NetworkIP)
+
+		}
+		for _, accessConfig := range ninterface.AccessConfigs {
+			if accessConfig.NatIP != "" {
+				publicIps = append(publicIps, accessConfig.NatIP)
+			}
+		}
+	}
+
+	return &CloudInstance{
+		Name:       instance.Name,
+		Status:     instance.Status,
+		Created:    instance.CreationTimestamp,
+		PublicIps:  publicIps,
+		PrivateIps: privateIps,
+	}
 }
 
 // DeleteInstance deletes instance from Gcloud

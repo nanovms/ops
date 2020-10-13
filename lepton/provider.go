@@ -1,5 +1,12 @@
 package lepton
 
+import "fmt"
+
+var (
+	// ErrInstanceNotFound is used when an instance doesn't exist in provider
+	ErrInstanceNotFound = func(id string) error { return fmt.Errorf("Instance with id %v not found", id) }
+)
+
 // Provider is an interface that provider must implement
 type Provider interface {
 	Initialize() error
@@ -17,6 +24,7 @@ type Provider interface {
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	GetInstances(ctx *Context) ([]CloudInstance, error)
+	GetInstanceByID(ctx *Context, id string) (*CloudInstance, error)
 	DeleteInstance(ctx *Context, instancename string) error
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error
