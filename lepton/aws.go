@@ -612,7 +612,6 @@ func (p *AWS) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
 }
 
 // GetInstances return all instances on AWS
-// TODO
 func (p *AWS) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	cinstances := getAWSInstances(ctx.config.CloudConfig.Zone, nil)
 

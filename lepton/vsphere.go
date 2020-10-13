@@ -444,7 +444,6 @@ func (v *Vsphere) GetInstanceByID(ctx *Context, id string) (*CloudInstance, erro
 }
 
 // GetInstances return all instances on vSphere
-// TODO
 func (v *Vsphere) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	var cinstances []CloudInstance
 

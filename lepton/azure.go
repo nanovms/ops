@@ -530,7 +530,6 @@ func (a *Azure) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error)
 }
 
 // GetInstances return all instances on Azure
-// TODO
 func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	var cinstances []CloudInstance
 

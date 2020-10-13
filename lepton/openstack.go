@@ -438,7 +438,6 @@ func (o *OpenStack) GetInstanceByID(ctx *Context, id string) (*CloudInstance, er
 }
 
 // GetInstances return all instances on OpenStack
-// TODO
 func (o *OpenStack) GetInstances(ctx *Context) ([]CloudInstance, error) {
 	return getOpenStackInstances(o.provider, servers.ListOpts{})
 }
