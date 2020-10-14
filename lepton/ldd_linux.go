@@ -39,6 +39,16 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		return nil, err
 	}
 
+	// Check file is a valid ELF
+	isELF, err := isELF(path)
+	if err != nil {
+		return nil, errors.WrapPrefix(err, path, 0)
+	}
+	if !isELF {
+		fmt.Printf(ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
+		os.Exit(1)
+	}
+
 	if _, err := os.Stat(path); err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
@@ -98,4 +108,17 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		}
 	}
 	return deps, nil
+}
+
+// isELF returns true if file is valid ELF
+func isELF(path string) (bool, error) {
+	fd, err := elf.Open(path)
+	if err != nil {
+		if strings.Contains(err.Error(), "bad magic number") {
+			return false, nil
+		}
+		return false, err
+	}
+	fd.Close()
+	return true, nil
 }
