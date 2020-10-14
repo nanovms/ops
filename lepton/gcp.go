@@ -350,7 +350,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 
 	if c.CloudConfig.Flavor == "" {
-		return fmt.Errorf("Flavor not provided in config.CloudConfig")
+		c.CloudConfig.Flavor = "g1-small"
 	}
 
 	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
@@ -408,9 +408,6 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
-		Tags: &compute.Tags{
-			Items: []string{"http-server", "https-server"},
-		},
 	}
 	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
 	if err != nil {
@@ -422,6 +419,30 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
+
+	var ports []string
+	for _, i := range ctx.config.RunConfig.Ports {
+		ports = append(ports, strconv.Itoa(i))
+	}
+
+	rule := &compute.Firewall{
+		Name:        "ops-rule",
+		Description: fmt.Sprintf("Allow %s from anywhere", ctx.config.RunConfig.Ports),
+		Allowed: []*compute.FirewallAllowed{
+			{
+				IPProtocol: "tcp",
+				Ports:      ports,
+			},
+		},
+		SourceRanges: []string{"0.0.0.0/0"},
+	}
+
+	_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+
+	if err != nil {
+		exitWithError("Failed to add Firewall rule")
+	}
+
 	return nil
 }
 
