@@ -109,10 +109,6 @@ func (o *OpenStack) BuildImageWithPackage(ctx *Context, pkgpath string) (string,
 	return o.customizeImage(ctx)
 }
 
-func (o *OpenStack) createImage(key string, bucket string, region string) {
-	fmt.Println("un-implemented")
-}
-
 // Initialize OpenStack related things
 func (o *OpenStack) Initialize() error {
 
@@ -164,22 +160,13 @@ func (o *OpenStack) findImage(name string) (id string, err error) {
 	return "", errors.New("not found")
 }
 
-// CreateImage - Creates image on OpenStack using nanos images
-func (o *OpenStack) CreateImage(ctx *Context) error {
-	c := ctx.config
-	imgName := c.CloudConfig.ImageName
-
-	imgName = strings.ReplaceAll(imgName, "-image", "")
-
-	fmt.Println("creating image:\t" + imgName)
-
-	imageClient, err := openstack.NewImageServiceV2(o.provider, gophercloud.EndpointOpts{
+func (o *OpenStack) getImagesClient() (*gophercloud.ServiceClient, error) {
+	return openstack.NewImageServiceV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
-	if err != nil {
-		fmt.Println(err)
-	}
+}
 
+func (o *OpenStack) createImage(imagesClient *gophercloud.ServiceClient, imgName string) (*images.Image, error) {
 	visibility := images.ImageVisibilityPrivate
 
 	createOpts := images.CreateOpts{
@@ -189,20 +176,42 @@ func (o *OpenStack) CreateImage(ctx *Context) error {
 		Visibility:      &visibility,
 	}
 
-	image, err := images.Create(imageClient, createOpts).Extract()
-	if err != nil {
-		fmt.Println(err)
-	}
+	return images.Create(imagesClient, createOpts).Extract()
+}
 
-	imageData, err := os.Open(localImageDir + "/" + imgName + ".img")
+func (o *OpenStack) uploadImage(imagesClient *gophercloud.ServiceClient, imageID string, imagePath string) error {
+	imageData, err := os.Open(imagePath)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	defer imageData.Close()
 
-	err = imagedata.Upload(imageClient, image.ID, imageData).ExtractErr()
+	return imagedata.Upload(imagesClient, imageID, imageData).ExtractErr()
+}
+
+// CreateImage - Creates image on OpenStack using nanos images
+func (o *OpenStack) CreateImage(ctx *Context) error {
+	c := ctx.config
+	imgName := c.CloudConfig.ImageName
+
+	imgName = strings.ReplaceAll(imgName, "-image", "")
+
+	fmt.Println("creating image:\t" + imgName)
+
+	imagesClient, err := o.getImagesClient()
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	image, err := o.createImage(imagesClient, imgName)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	imagePath := localImageDir + "/" + imgName
+	err = o.uploadImage(imagesClient, image.ID, imagePath)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -276,6 +285,10 @@ func (o *OpenStack) ListImages(ctx *Context) error {
 	return nil
 }
 
+func (o *OpenStack) deleteImage(imagesClient *gophercloud.ServiceClient, imageID string) error {
+	return images.Delete(imagesClient, imageID).ExtractErr()
+}
+
 // DeleteImage deletes image from OpenStack
 func (o *OpenStack) DeleteImage(ctx *Context, imagename string) error {
 	imageID, err := o.findImage(imagename)
@@ -284,9 +297,7 @@ func (o *OpenStack) DeleteImage(ctx *Context, imagename string) error {
 		return err
 	}
 
-	imageClient, err := openstack.NewImageServiceV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	imageClient, err := o.getImagesClient()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -307,9 +318,7 @@ func (o *OpenStack) SyncImage(config *Config, target Provider, image string) err
 }
 
 func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	client, err := o.getComputeClient()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -342,11 +351,15 @@ func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 	return "", errors.New("flavor " + name + " not found")
 }
 
-// CreateInstance - Creates instance on OpenStack.
-func (o *OpenStack) CreateInstance(ctx *Context) error {
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
+func (o *OpenStack) getComputeClient() (*gophercloud.ServiceClient, error) {
+	return openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
+}
+
+// CreateInstance - Creates instance on OpenStack.
+func (o *OpenStack) CreateInstance(ctx *Context) error {
+	client, err := o.getComputeClient()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -485,19 +498,17 @@ func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
 
 // StartInstance starts an instance in OpenStack.
 func (o *OpenStack) StartInstance(ctx *Context, instancename string) error {
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	client, err := o.getComputeClient()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	sid, err := o.findInstance(instancename)
+	server, err := o.findInstance(instancename)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	err = startstop.Start(client, sid).ExtractErr()
+	err = startstop.Start(client, server.ID).ExtractErr()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -507,19 +518,17 @@ func (o *OpenStack) StartInstance(ctx *Context, instancename string) error {
 
 // StopInstance stops an instance from OpenStack
 func (o *OpenStack) StopInstance(ctx *Context, instancename string) error {
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	client, err := o.getComputeClient()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	sid, err := o.findInstance(instancename)
+	server, err := o.findInstance(instancename)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	err = startstop.Stop(client, sid).ExtractErr()
+	err = startstop.Stop(client, server.ID).ExtractErr()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -527,11 +536,10 @@ func (o *OpenStack) StopInstance(ctx *Context, instancename string) error {
 	return nil
 }
 
-func (o *OpenStack) findInstance(name string) (id string, err error) {
+func (o *OpenStack) findInstance(name string) (volume *servers.Server, err error) {
+	var server *servers.Server
 
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	client, err := o.getComputeClient()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -539,8 +547,6 @@ func (o *OpenStack) findInstance(name string) (id string, err error) {
 	opts := servers.ListOpts{}
 
 	pager := servers.List(client, opts)
-
-	sid := ""
 
 	err = pager.EachPage(func(page pagination.Page) (bool, error) {
 		serverList, err := servers.ExtractServers(page)
@@ -551,7 +557,7 @@ func (o *OpenStack) findInstance(name string) (id string, err error) {
 
 		for _, s := range serverList {
 			if s.Name == name {
-				sid = s.ID
+				server = &s
 				return true, nil
 			}
 		}
@@ -559,11 +565,11 @@ func (o *OpenStack) findInstance(name string) (id string, err error) {
 		return true, nil
 	})
 
-	if sid != "" {
-		return sid, nil
+	if server != nil {
+		return server, nil
 	}
 
-	return sid, errors.New("could not find server")
+	return nil, errors.New("could not find server")
 }
 
 // PrintInstanceLogs writes instance logs to console
@@ -579,14 +585,12 @@ func (o *OpenStack) PrintInstanceLogs(ctx *Context, instancename string, watch b
 // GetInstanceLogs gets instance related logs.
 func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string) (string, error) {
 
-	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	client, err := o.getComputeClient()
 	if err != nil {
 		return "", err
 	}
 
-	sid, err := o.findInstance(instancename)
+	server, err := o.findInstance(instancename)
 	if err != nil {
 		return "", err
 	}
@@ -594,7 +598,7 @@ func (o *OpenStack) GetInstanceLogs(ctx *Context, instancename string) (string, 
 	outputOpts := &servers.ShowConsoleOutputOpts{
 		Length: 100,
 	}
-	output, err := servers.ShowConsoleOutput(client, sid, outputOpts).Extract()
+	output, err := servers.ShowConsoleOutput(client, server.ID, outputOpts).Extract()
 	if err != nil {
 		return "", err
 	}
