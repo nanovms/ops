@@ -483,10 +483,14 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		return err
 	}
 
+	if ctx.config.CloudConfig.Flavor == "" {
+		ctx.config.CloudConfig.Flavor = "t2.micro"
+	}
+
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
-		InstanceType: aws.String("t2.micro"),
+		InstanceType: aws.String(ctx.config.CloudConfig.Flavor),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		SecurityGroupIds: []*string{
