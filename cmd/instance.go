@@ -90,7 +90,7 @@ func instanceCreateCommand() *cobra.Command {
 
 	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "g1-small", "flavor name for GCP")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "", "flavor name for cloud provider")
 
 	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
 	return cmdInstanceCreate
