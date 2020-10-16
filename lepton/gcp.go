@@ -426,8 +426,8 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 
 	rule := &compute.Firewall{
-		Name:        "ops-rule",
-		Description: fmt.Sprintf("Allow %s from anywhere", ctx.config.RunConfig.Ports),
+		Name:        "ops-rule-" + instanceName,
+		Description: fmt.Sprintf("Allow %s from anywhere", arrayToString(ctx.config.RunConfig.Ports, "[]")),
 		Allowed: []*compute.FirewallAllowed{
 			{
 				IPProtocol: "tcp",
