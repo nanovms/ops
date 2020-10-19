@@ -244,8 +244,9 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 		Filters: filter,
 	}
 	result, err := compute.DescribeInstances(&request)
+
 	if err != nil {
-		fmt.Println(err)
+		exitWithError("invalid region")
 	}
 
 	var cinstances []CloudInstance
