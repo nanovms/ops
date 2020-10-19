@@ -3,6 +3,7 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"math"
 	"os"
 	"strconv"
@@ -209,8 +210,19 @@ func (o *OpenStack) AttachVolume(config *Config, image, name, mount string) erro
 	}
 
 	_, err = volumeattach.Create(computeClient, server.ID, createOpts).Extract()
+
 	if err != nil {
 		return err
+	}
+
+	rebootOpts := servers.RebootOpts{
+		Type: servers.SoftReboot,
+	}
+
+	errReboot := servers.Reboot(computeClient, server.ID, rebootOpts).ExtractErr()
+
+	if errReboot != nil {
+		exitWithError("Failed to soft reboot instance.")
 	}
 
 	return nil
