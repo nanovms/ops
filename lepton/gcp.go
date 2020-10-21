@@ -533,7 +533,7 @@ func (p *GCloud) createDNSZone(ctx *Context, aRecordIP string) error {
 		Name:    aRecordName,
 		Type:    "A",
 		Rrdatas: []string{aRecordIP},
-		Ttl:     21600,
+		Ttl:     int64(TTLDefault),
 	}
 
 	_, err = dnsService.Changes.Create(ctx.config.CloudConfig.ProjectID, zoneName, &dns.Change{
