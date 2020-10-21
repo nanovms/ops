@@ -353,9 +353,9 @@ func (p *AWS) ListImages(ctx *Context) error {
 }
 
 // StartInstance stops instance from AWS by ami name
-func (p *AWS) StartInstance(ctx *Context, instanceId string) error {
+func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
 
-	if instanceId == "" {
+	if instanceID == "" {
 		exitWithError("Enter Instance ID")
 	}
 
@@ -371,7 +371,7 @@ func (p *AWS) StartInstance(ctx *Context, instanceId string) error {
 
 	input := &ec2.StartInstancesInput{
 		InstanceIds: []*string{
-			aws.String(instanceId),
+			aws.String(instanceID),
 		},
 	}
 
@@ -397,9 +397,9 @@ func (p *AWS) StartInstance(ctx *Context, instanceId string) error {
 }
 
 // StopInstance stops instance from AWS by ami name
-func (p *AWS) StopInstance(ctx *Context, instanceId string) error {
+func (p *AWS) StopInstance(ctx *Context, instanceID string) error {
 
-	if instanceId == "" {
+	if instanceID == "" {
 		exitWithError("Enter InstanceID")
 	}
 
@@ -415,7 +415,7 @@ func (p *AWS) StopInstance(ctx *Context, instanceId string) error {
 
 	input := &ec2.StopInstancesInput{
 		InstanceIds: []*string{
-			aws.String(instanceId),
+			aws.String(instanceID),
 		},
 	}
 
