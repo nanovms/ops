@@ -434,7 +434,7 @@ func (p *AWS) StopInstance(ctx *Context, instanceId string) error {
 	}
 
 	if result.StoppingInstances[0].InstanceId != nil {
-		fmt.Printf("Stopped instance %s", result.StoppingInstances[0].InstanceId)
+		fmt.Printf("Stopped instance %s", *result.StoppingInstances[0].InstanceId)
 	}
 
 	return nil
