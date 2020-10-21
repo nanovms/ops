@@ -639,7 +639,7 @@ func (p *AWS) createDNSZone(ctx *Context, aRecordIP string) error {
 								Value: aws.String(aRecordIP),
 							},
 						},
-						TTL:  aws.Int64(60),
+						TTL:  aws.Int64(int64(TTLDefault)),
 						Type: aws.String("A"),
 					},
 				},

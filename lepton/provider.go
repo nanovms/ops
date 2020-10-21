@@ -7,6 +7,11 @@ var (
 	ErrInstanceNotFound = func(id string) error { return fmt.Errorf("Instance with id %v not found", id) }
 )
 
+var (
+	// TTLDefault is the default ttl value used to create DNS records
+	TTLDefault = 300
+)
+
 // Provider is an interface that provider must implement
 type Provider interface {
 	Initialize() error
