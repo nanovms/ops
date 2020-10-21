@@ -408,6 +408,9 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
+		Tags: &compute.Tags{
+			Items: []string{instanceName},
+		},
 	}
 	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
 	if err != nil {
@@ -427,13 +430,14 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 	rule := &compute.Firewall{
 		Name:        "ops-rule-" + instanceName,
-		Description: fmt.Sprintf("Allow %s from anywhere", arrayToString(ctx.config.RunConfig.Ports, "[]")),
+		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
 		Allowed: []*compute.FirewallAllowed{
 			{
 				IPProtocol: "tcp",
 				Ports:      ports,
 			},
 		},
+		TargetTags:   []string{instanceName},
 		SourceRanges: []string{"0.0.0.0/0"},
 	}
 
