@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/route53"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -234,6 +235,33 @@ func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
 	return result, nil
 }
 
+func formalizeAWSInstance(instance *ec2.Instance) *CloudInstance {
+	instanceName := "unknown"
+	for x := 0; x < len(instance.Tags); x++ {
+		if aws.StringValue(instance.Tags[x].Key) == "Name" {
+			instanceName = aws.StringValue(instance.Tags[x].Value)
+		}
+	}
+
+	var privateIps, publicIps []string
+	for _, ninterface := range instance.NetworkInterfaces {
+		privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
+
+		if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
+			publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
+		}
+	}
+
+	return &CloudInstance{
+		ID:         aws.StringValue(instance.InstanceId),
+		Name:       instanceName,
+		Status:     aws.StringValue(instance.State.Name),
+		Created:    aws.TimeValue(instance.LaunchTime).String(),
+		PublicIps:  publicIps,
+		PrivateIps: privateIps,
+	}
+}
+
 func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
@@ -256,32 +284,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 		for i := 0; i < len(reservation.Instances); i++ {
 			instance := reservation.Instances[i]
 
-			instanceName := "unknown"
-			for x := 0; x < len(instance.Tags); x++ {
-				if aws.StringValue(instance.Tags[i].Key) == "Name" {
-					instanceName = aws.StringValue(instance.Tags[i].Value)
-				}
-			}
-
-			var privateIps, publicIps []string
-			for _, ninterface := range instance.NetworkInterfaces {
-				privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
-
-				if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
-					publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
-				}
-			}
-
-			cinstance := CloudInstance{
-				ID:         aws.StringValue(instance.InstanceId),
-				Name:       instanceName,
-				Status:     aws.StringValue(instance.State.Name),
-				Created:    aws.TimeValue(instance.LaunchTime).String(),
-				PublicIps:  publicIps,
-				PrivateIps: privateIps,
-			}
-
-			cinstances = append(cinstances, cinstance)
+			cinstances = append(cinstances, *formalizeAWSInstance(instance))
 		}
 
 	}
@@ -584,18 +587,147 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 
 	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
 
+	tagInstanceName := imgName + "-" + strconv.Itoa(int(time.Now().Unix()))
+
 	// Add name tag to the created instance
 	_, err = svc.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{runResult.Instances[0].InstanceId},
 		Tags: []*ec2.Tag{
 			{
 				Key:   aws.String("Name"),
-				Value: aws.String(imgName),
+				Value: aws.String(tagInstanceName),
 			},
 		},
 	})
 	if err != nil {
 		fmt.Println("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
+		return err
+	}
+
+	// create dns zones/records to associate DNS record to instance IP
+	if ctx.config.RunConfig.DomainName != "" {
+		pollCount := 60
+		for pollCount > 0 {
+			fmt.Printf(".")
+			time.Sleep(2 * time.Second)
+
+			instance, err := p.GetInstanceByID(ctx, tagInstanceName)
+			if err != nil {
+				pollCount--
+				continue
+			}
+
+			if len(instance.PublicIps) != 0 {
+				err := p.createDNSZone(ctx, instance.PublicIps[0])
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("\nOperation timed out. No of tries %d", pollCount)
+	}
+
+	return nil
+}
+
+func (p *AWS) createDNSZone(ctx *Context, aRecordIP string) error {
+	domainName := ctx.config.RunConfig.DomainName
+	if err := isDomainValid(domainName); err != nil {
+		return err
+	}
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(ctx.config.CloudConfig.Zone)},
+	)
+	if err != nil {
+		return err
+	}
+
+	dnsService := route53.New(sess)
+
+	domainParts := strings.Split(domainName, ".")
+
+	// example:
+	// domainParts := []string{"test","example","com"}
+	zoneName := domainParts[len(domainParts)-2]                 // example
+	dnsName := zoneName + "." + domainParts[len(domainParts)-1] // example.com
+	aRecordName := domainName + "."                             // test.example.com
+
+	// Create managed zone with the zone name if it does not exist
+	var zoneID string
+	hostedZones, err := dnsService.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
+	if err == nil && hostedZones.HostedZones == nil {
+		reference := strconv.Itoa(int(time.Now().Unix()))
+
+		createHostedZoneInput := &route53.CreateHostedZoneInput{
+			CallerReference: &reference,
+			Name:            &dnsName,
+		}
+
+		hostedZone, err := dnsService.CreateHostedZone(createHostedZoneInput)
+		if err != nil {
+			return err
+		}
+
+		zoneID = *hostedZone.HostedZone.Id
+	} else if err != nil {
+		return err
+	} else {
+		zoneID = *hostedZones.HostedZones[0].Id
+	}
+
+	// Delete managed zone record with same domain name if it exists
+	records, err := dnsService.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{HostedZoneId: &zoneID})
+	if err != nil {
+		return err
+	}
+
+	for _, record := range records.ResourceRecordSets {
+		if *record.Name == aRecordName {
+			input := &route53.ChangeResourceRecordSetsInput{
+				ChangeBatch: &route53.ChangeBatch{
+					Changes: []*route53.Change{
+						{
+							Action:            aws.String("DELETE"),
+							ResourceRecordSet: record,
+						},
+					},
+				},
+				HostedZoneId: aws.String(zoneID),
+			}
+
+			_, err = dnsService.ChangeResourceRecordSets(input)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Create DNS record with instance IP
+	input := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
+				{
+					Action: aws.String("CREATE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(aRecordName),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String(aRecordIP),
+							},
+						},
+						TTL:  aws.Int64(60),
+						Type: aws.String("A"),
+					},
+				},
+			},
+		},
+		HostedZoneId: aws.String(zoneID),
+	}
+
+	_, err = dnsService.ChangeResourceRecordSets(input)
+	if err != nil {
 		return err
 	}
 
