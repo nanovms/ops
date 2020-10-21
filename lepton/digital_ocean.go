@@ -2,16 +2,21 @@ package lepton
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/digitalocean/godo"
+	"github.com/olekukonko/tablewriter"
 )
 
 // DigitalOcean provides access to the DigitalOcean API.
 type DigitalOcean struct {
 	Storage *Spaces
+	Client  *godo.Client
 }
 
 // BuildImage to be upload on DO
@@ -65,8 +70,10 @@ func (do *DigitalOcean) createImage(key string, bucket string, region string) {
 	fmt.Println("response Body:", string(body))
 }
 
-// Initialize GCP related things
+// Initialize DigialOcean related things
 func (do *DigitalOcean) Initialize() error {
+	doToken := os.Getenv("TOKEN")
+	do.Client = godo.NewFromToken(doToken)
 	return nil
 }
 
@@ -96,33 +103,27 @@ func (do *DigitalOcean) GetImages(ctx *Context) ([]CloudImage, error) {
 	return nil, errors.New("un-implemented")
 }
 
-// ListImages lists images on Digital Ocean
+// ListImages lists images on Digital Ocean.
+// TODO: Separate printing from Listing images for easier testing.
 func (do *DigitalOcean) ListImages(ctx *Context) error {
-
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://api.digitalocean.com/v2/images?page=1&per_page=1", nil)
+	opt := &godo.ListOptions{}
+	list, _, err := do.Client.Images.List(context.TODO(), opt)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
-	token := os.Getenv("TOKEN")
+	// print list of images in table
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetRowLine(true)
 
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	for _, image := range list {
+		var row []string
+		row = append(row, image.Name)
+		row = append(row, image.Status)
+		row = append(row, image.Created)
+		table.Append(row)
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	fmt.Println(body)
-
+	table.Render()
 	return nil
 }
 
