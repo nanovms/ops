@@ -68,6 +68,9 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	initDefaultRunConfigs(c, ports)
 
+	domainname, _ := cmd.Flags().GetString("domainname")
+	c.RunConfig.DomainName = domainname
+
 	p, err := getCloudProvider(provider)
 	if err != nil {
 		exitWithError(err.Error())
@@ -80,7 +83,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceCreateCommand() *cobra.Command {
-	var imageName, config, flavor string
+	var imageName, config, flavor, domainname string
 
 	var cmdInstanceCreate = &cobra.Command{
 		Use:   "create",
@@ -91,6 +94,7 @@ func instanceCreateCommand() *cobra.Command {
 	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
 	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "", "flavor name for cloud provider")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&domainname, "domainname", "d", "", "domain name for instance")
 
 	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
 	return cmdInstanceCreate
