@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/dns/v1"
 )
 
 var (
@@ -423,28 +424,123 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
 
-	var ports []string
-	for _, i := range ctx.config.RunConfig.Ports {
-		ports = append(ports, strconv.Itoa(i))
+	// create dns zones/records to associate DNS record to instance IP
+	if c.RunConfig.DomainName != "" {
+		instance, err := computeService.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
+		if err != nil {
+			return err
+		}
+
+		cinstance := p.convertToCloudInstance(instance)
+
+		if len(cinstance.PublicIps) != 0 {
+			err := p.createDNSZone(ctx, cinstance.PublicIps[0])
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	rule := &compute.Firewall{
-		Name:        "ops-rule-" + instanceName,
-		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
-		Allowed: []*compute.FirewallAllowed{
-			{
-				IPProtocol: "tcp",
-				Ports:      ports,
+	// create firewall rules to expose instance ports
+	if len(ctx.config.RunConfig.Ports) != 0 {
+		var ports []string
+		for _, i := range ctx.config.RunConfig.Ports {
+			ports = append(ports, strconv.Itoa(i))
+		}
+
+		rule := &compute.Firewall{
+			Name:        "ops-rule-" + instanceName,
+			Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
+			Allowed: []*compute.FirewallAllowed{
+				{
+					IPProtocol: "tcp",
+					Ports:      ports,
+				},
 			},
-		},
-		TargetTags:   []string{instanceName},
-		SourceRanges: []string{"0.0.0.0/0"},
+			TargetTags:   []string{instanceName},
+			SourceRanges: []string{"0.0.0.0/0"},
+		}
+
+		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+
+		if err != nil {
+			exitWithError("Failed to add Firewall rule")
+		}
 	}
 
-	_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+	return nil
+}
 
+func (p *GCloud) createDNSZone(ctx *Context, aRecordIP string) error {
+	domainName := ctx.config.RunConfig.DomainName
+	if err := isDomainValid(domainName); err != nil {
+		return err
+	}
+
+	context := context.TODO()
+	_, err := google.FindDefaultCredentials(context)
 	if err != nil {
-		exitWithError("Failed to add Firewall rule")
+		return err
+	}
+
+	dnsService, err := dns.NewService(context)
+	if err != nil {
+		return err
+	}
+
+	domainParts := strings.Split(domainName, ".")
+
+	// example:
+	// domainParts := []string{"test","example","com"}
+	zoneName := domainParts[len(domainParts)-2]                       // example
+	dnsName := zoneName + "." + domainParts[len(domainParts)-1] + "." // example.com.
+	aRecordName := domainName + "."                                   // test.example.com.
+
+	// Create managed zone with the zone name if it does not exist
+	zone, err := dnsService.ManagedZones.Get(ctx.config.CloudConfig.ProjectID, zoneName).Do()
+	if err != nil || zone == nil {
+		managedZone := &dns.ManagedZone{
+			Name:        zoneName,
+			Description: zoneName,
+			DnsName:     dnsName,
+		}
+
+		_, err = dnsService.ManagedZones.Create(ctx.config.CloudConfig.ProjectID, managedZone).Do()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Delete managed zone record with same domain name if it exists
+	recordsResponse, err := dnsService.ResourceRecordSets.List(ctx.config.CloudConfig.ProjectID, zoneName).Do()
+	if err != nil {
+		return err
+	}
+
+	for _, record := range recordsResponse.Rrsets {
+		if record.Name == aRecordName {
+			_, err = dnsService.Changes.Create(ctx.config.CloudConfig.ProjectID, zoneName, &dns.Change{
+				Deletions: []*dns.ResourceRecordSet{record},
+			}).Do()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Create DNS record with instance IP
+	resource := &dns.ResourceRecordSet{
+		Name:    aRecordName,
+		Type:    "A",
+		Rrdatas: []string{aRecordIP},
+		Ttl:     21600,
+	}
+
+	_, err = dnsService.Changes.Create(ctx.config.CloudConfig.ProjectID, zoneName, &dns.Change{
+		Additions: []*dns.ResourceRecordSet{resource},
+	}).Do()
+	if err != nil {
+		return err
 	}
 
 	return nil
