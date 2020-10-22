@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -66,6 +68,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		return nic, fmt.Errorf("cannot get nic create or update future response: %v", err)
 	}
 
+	fmt.Printf("\nCreated NIC for instance")
 	return future.Result(nicClient)
 }
 
@@ -103,6 +106,7 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 		return ip, fmt.Errorf("cannot get public ip address create or update future response: %v", err)
 	}
 
+	fmt.Printf("\nCreated Public IP for instance")
 	return future.Result(ipClient)
 }
 
@@ -145,6 +149,7 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 		return vnet, fmt.Errorf("cannot get the vnet create or update future response: %v", err)
 	}
 
+	fmt.Printf("\nCreated Virtual Network")
 	return future.Result(vnetClient)
 }
 
@@ -254,6 +259,7 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		return subnet, fmt.Errorf("cannot get the subnet create or update future response: %v", err)
 	}
 
+	fmt.Printf("\nCreated subnet with security group")
 	return future.Result(subnetsClient)
 }
 
@@ -274,8 +280,29 @@ func (a *Azure) getNsgClient() network.SecurityGroupsClient {
 
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
-func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string) (nsg network.SecurityGroup, err error) {
+func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg network.SecurityGroup, err error) {
 	nsgClient := a.getNsgClient()
+
+	securityRules := make([]network.SecurityRule, len(c.RunConfig.Ports))
+
+	for i, port := range c.RunConfig.Ports {
+
+		var rule = network.SecurityRule{
+			Name: to.StringPtr("allow_" + strconv.Itoa(port)),
+			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+				Protocol:                 network.SecurityRuleProtocolTCP,
+				SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
+				SourcePortRange:          to.StringPtr("1-65535"),
+				DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
+				DestinationPortRange:     to.StringPtr(strconv.Itoa(port)),
+				Access:                   network.SecurityRuleAccessAllow,
+				Direction:                network.SecurityRuleDirectionInbound,
+				Priority:                 to.Int32Ptr(rand.Int31n(1000-100) + 100), //Generating number between 100 - 1000
+			},
+		}
+		securityRules[i] = rule
+	}
+
 	future, err := nsgClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -283,21 +310,7 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 		network.SecurityGroup{
 			Location: to.StringPtr(location),
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-				SecurityRules: &[]network.SecurityRule{
-					{
-						Name: to.StringPtr("allow_https"),
-						SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-							Protocol:                 network.SecurityRuleProtocolTCP,
-							SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
-							SourcePortRange:          to.StringPtr("1-65535"),
-							DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
-							DestinationPortRange:     to.StringPtr("443"),
-							Access:                   network.SecurityRuleAccessAllow,
-							Direction:                network.SecurityRuleDirectionInbound,
-							Priority:                 to.Int32Ptr(200),
-						},
-					},
-				},
+				SecurityRules: &securityRules,
 			},
 		},
 	)
@@ -311,6 +324,7 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 		return nsg, fmt.Errorf("cannot get nsg create or update future response: %v", err)
 	}
 
+	fmt.Printf("\nCreated security group")
 	return future.Result(nsgClient)
 }
 

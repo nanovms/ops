@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -387,7 +389,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	debug := false
 
-	vmName := ctx.config.CloudConfig.ImageName
+	vmName := ctx.config.CloudConfig.ImageName + strconv.FormatInt(time.Now().Unix(), 10)
 	fmt.Printf("spinning up:\t%s\n", vmName)
 
 	// create virtual network
@@ -401,7 +403,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 
 	// create nsg
-	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName)
+	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -457,7 +459,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
-						ID: to.StringPtr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/images/" + vmName),
+						ID: to.StringPtr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/images/" + ctx.config.CloudConfig.ImageName),
 					},
 				},
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
@@ -626,24 +628,33 @@ func (a *Azure) ListInstances(ctx *Context) error {
 
 // DeleteInstance deletes instance from Azure
 func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
+
+	vmClient := a.getVMClient()
+	fmt.Printf("\nStarted deleting Instance")
+	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
+
+	if err != nil {
+		exitWithError("\nUnable to delete instance")
+	}
+
+	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
+	if err != nil {
+		fmt.Printf("\ncannot delete vm future response: %v\n", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Printf("\nInstance deletion completed")
 	return nil
 }
 
 // StartInstance starts an instance in Azure
 func (a *Azure) StartInstance(ctx *Context, instancename string) error {
-	fmt.Println("un-implemented")
 
 	vmClient := a.getVMClient()
-	future, err := vmClient.Start(context.TODO(), a.groupName, instancename)
+	fmt.Printf("Starting instance %s", instancename)
+	_, err := vmClient.Start(context.TODO(), a.groupName, instancename)
 	if err != nil {
 		fmt.Printf("cannot start vm: %v\n", err.Error())
-		os.Exit(1)
-	}
-
-	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
-	if err != nil {
-		fmt.Printf("cannot get the vm start future response: %v\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -656,19 +667,13 @@ func (a *Azure) StopInstance(ctx *Context, instancename string) error {
 	vmClient := a.getVMClient()
 	// skipShutdown parameter is optional, we are taking its default
 	// value here
-	future, err := vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
+	fmt.Printf("Stopping instance %s", instancename)
+	_, err := vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
 	if err != nil {
 		fmt.Printf("cannot power off vm: %v\n", err.Error())
 		os.Exit(1)
 	}
 
-	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
-	if err != nil {
-		fmt.Printf("cannot get the vm power off future response: %v\n", err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Println("un-implemented")
 	return nil
 }
 
