@@ -77,10 +77,11 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 
 // GCloud contains all operations for GCP
 type GCloud struct {
-	Storage   *GCPStorage
-	Service   *compute.Service
-	ProjectID string
-	Zone      string
+	Storage    *GCPStorage
+	Service    *compute.Service
+	ProjectID  string
+	Zone       string
+	dnsService *dns.Service
 }
 
 // NewGCloud returns an instance of GCloud
@@ -203,6 +204,11 @@ func (p *GCloud) Initialize() error {
 	}
 
 	p.Service = computeService
+
+	p.dnsService, err = p.getDNSService()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -434,7 +440,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		cinstance := p.convertToCloudInstance(instance)
 
 		if len(cinstance.PublicIps) != 0 {
-			err := p.createDNSZone(ctx, cinstance.PublicIps[0])
+			err := CreateDNSRecord(ctx.config, cinstance.PublicIps[0], p)
 			if err != nil {
 				return err
 			}
@@ -471,55 +477,36 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	return nil
 }
 
-func (p *GCloud) createDNSZone(ctx *Context, aRecordIP string) error {
-	domainName := ctx.config.RunConfig.DomainName
-	if err := isDomainValid(domainName); err != nil {
-		return err
-	}
-
-	context := context.TODO()
-	_, err := google.FindDefaultCredentials(context)
-	if err != nil {
-		return err
-	}
-
-	dnsService, err := dns.NewService(context)
-	if err != nil {
-		return err
-	}
-
-	domainParts := strings.Split(domainName, ".")
-
-	// example:
-	// domainParts := []string{"test","example","com"}
-	zoneName := domainParts[len(domainParts)-2]                       // example
-	dnsName := zoneName + "." + domainParts[len(domainParts)-1] + "." // example.com.
-	aRecordName := domainName + "."                                   // test.example.com.
-
-	// Create managed zone with the zone name if it does not exist
-	zone, err := dnsService.ManagedZones.Get(ctx.config.CloudConfig.ProjectID, zoneName).Do()
+// FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
+func (p *GCloud) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+	zoneName := strings.Split(dnsName, ".")[0]
+	zone, err := p.dnsService.ManagedZones.Get(config.CloudConfig.ProjectID, zoneName).Do()
 	if err != nil || zone == nil {
 		managedZone := &dns.ManagedZone{
 			Name:        zoneName,
 			Description: zoneName,
-			DnsName:     dnsName,
+			DnsName:     dnsName + ".",
 		}
 
-		_, err = dnsService.ManagedZones.Create(ctx.config.CloudConfig.ProjectID, managedZone).Do()
+		_, err = p.dnsService.ManagedZones.Create(config.CloudConfig.ProjectID, managedZone).Do()
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	// Delete managed zone record with same domain name if it exists
-	recordsResponse, err := dnsService.ResourceRecordSets.List(ctx.config.CloudConfig.ProjectID, zoneName).Do()
+	return zoneName, nil
+}
+
+// DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
+func (p *GCloud) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+	recordsResponse, err := p.dnsService.ResourceRecordSets.List(config.CloudConfig.ProjectID, zoneID).Do()
 	if err != nil {
 		return err
 	}
 
 	for _, record := range recordsResponse.Rrsets {
-		if record.Name == aRecordName {
-			_, err = dnsService.Changes.Create(ctx.config.CloudConfig.ProjectID, zoneName, &dns.Change{
+		if record.Name == recordName && record.Type == "A" {
+			_, err = p.dnsService.Changes.Create(config.CloudConfig.ProjectID, zoneID, &dns.Change{
 				Deletions: []*dns.ResourceRecordSet{record},
 			}).Do()
 			if err != nil {
@@ -528,22 +515,40 @@ func (p *GCloud) createDNSZone(ctx *Context, aRecordIP string) error {
 		}
 	}
 
-	// Create DNS record with instance IP
+	return nil
+}
+
+// CreateZoneRecord creates a record in a DNS zone
+func (p *GCloud) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
 	resource := &dns.ResourceRecordSet{
-		Name:    aRecordName,
-		Type:    "A",
-		Rrdatas: []string{aRecordIP},
-		Ttl:     int64(TTLDefault),
+		Name:    record.Name,
+		Type:    record.Type,
+		Rrdatas: []string{record.IP},
+		Ttl:     int64(record.TTL),
 	}
 
-	_, err = dnsService.Changes.Create(ctx.config.CloudConfig.ProjectID, zoneName, &dns.Change{
+	_, err := p.dnsService.Changes.Create(config.CloudConfig.ProjectID, zoneID, &dns.Change{
 		Additions: []*dns.ResourceRecordSet{resource},
 	}).Do()
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (p *GCloud) getDNSService() (*dns.Service, error) {
+	context := context.TODO()
+	_, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return nil, err
+	}
+
+	dnsService, err := dns.NewService(context)
+	if err != nil {
+		return nil, err
+	}
+
+	return dnsService, nil
 }
 
 // ListInstances lists instances on Gcloud

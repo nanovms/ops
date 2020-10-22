@@ -22,7 +22,8 @@ import (
 
 // AWS contains all operations for AWS
 type AWS struct {
-	Storage *S3
+	Storage    *S3
+	dnsService *route53.Route53
 }
 
 // BuildImage to be upload on AWS
@@ -49,7 +50,25 @@ func (p *AWS) BuildImageWithPackage(ctx *Context, pkgpath string) (string, error
 // Initialize AWS related things
 func (p *AWS) Initialize() error {
 	p.Storage = &S3{}
+
 	return nil
+}
+
+func (p *AWS) getDNSService(config *Config) (*route53.Route53, error) {
+	if p.dnsService != nil {
+		return p.dnsService, nil
+	}
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(config.CloudConfig.Zone)},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	p.dnsService = route53.New(sess)
+
+	return p.dnsService, nil
 }
 
 // CreateImage - Creates image on AWS using nanos images
@@ -618,7 +637,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 			}
 
 			if len(instance.PublicIps) != 0 {
-				err := p.createDNSZone(ctx, instance.PublicIps[0])
+				err := CreateDNSRecord(ctx.config, instance.PublicIps[0], p)
 				if err != nil {
 					return err
 				}
@@ -631,30 +650,13 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	return nil
 }
 
-func (p *AWS) createDNSZone(ctx *Context, aRecordIP string) error {
-	domainName := ctx.config.RunConfig.DomainName
-	if err := isDomainValid(domainName); err != nil {
-		return err
-	}
-
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.config.CloudConfig.Zone)},
-	)
+// FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
+func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+	dnsService, err := p.getDNSService(config)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	dnsService := route53.New(sess)
-
-	domainParts := strings.Split(domainName, ".")
-
-	// example:
-	// domainParts := []string{"test","example","com"}
-	zoneName := domainParts[len(domainParts)-2]                 // example
-	dnsName := zoneName + "." + domainParts[len(domainParts)-1] // example.com
-	aRecordName := domainName + "."                             // test.example.com
-
-	// Create managed zone with the zone name if it does not exist
 	var zoneID string
 	hostedZones, err := dnsService.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
 	if err == nil && hostedZones.HostedZones == nil {
@@ -667,24 +669,33 @@ func (p *AWS) createDNSZone(ctx *Context, aRecordIP string) error {
 
 		hostedZone, err := dnsService.CreateHostedZone(createHostedZoneInput)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		zoneID = *hostedZone.HostedZone.Id
 	} else if err != nil {
-		return err
+		return "", err
 	} else {
 		zoneID = *hostedZones.HostedZones[0].Id
 	}
 
-	// Delete managed zone record with same domain name if it exists
+	return zoneID, nil
+}
+
+// DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
+func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+	dnsService, err := p.getDNSService(config)
+	if err != nil {
+		return err
+	}
+
 	records, err := dnsService.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{HostedZoneId: &zoneID})
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records.ResourceRecordSets {
-		if *record.Name == aRecordName {
+		if *record.Name == recordName && *record.Type == "A" {
 			input := &route53.ChangeResourceRecordSetsInput{
 				ChangeBatch: &route53.ChangeBatch{
 					Changes: []*route53.Change{
@@ -704,21 +715,30 @@ func (p *AWS) createDNSZone(ctx *Context, aRecordIP string) error {
 		}
 	}
 
-	// Create DNS record with instance IP
+	return nil
+}
+
+// CreateZoneRecord creates a record in a DNS zone
+func (p *AWS) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+	dnsService, err := p.getDNSService(config)
+	if err != nil {
+		return err
+	}
+
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch: &route53.ChangeBatch{
 			Changes: []*route53.Change{
 				{
 					Action: aws.String("CREATE"),
 					ResourceRecordSet: &route53.ResourceRecordSet{
-						Name: aws.String(aRecordName),
+						Name: aws.String(record.Name),
 						ResourceRecords: []*route53.ResourceRecord{
 							{
-								Value: aws.String(aRecordIP),
+								Value: aws.String(record.IP),
 							},
 						},
-						TTL:  aws.Int64(int64(TTLDefault)),
-						Type: aws.String("A"),
+						TTL:  aws.Int64(int64(record.TTL)),
+						Type: aws.String(record.Type),
 					},
 				},
 			},
