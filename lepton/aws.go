@@ -353,12 +353,90 @@ func (p *AWS) ListImages(ctx *Context) error {
 }
 
 // StartInstance stops instance from AWS by ami name
-func (p *AWS) StartInstance(ctx *Context, imagename string) error {
+func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
+
+	if instanceID == "" {
+		exitWithError("Enter Instance ID")
+	}
+
+	svc, err := session.NewSession(&aws.Config{
+		Region: aws.String(ctx.config.CloudConfig.Zone)},
+	)
+
+	compute := ec2.New(svc)
+
+	if err != nil {
+		exitWithError("Invalid region")
+	}
+
+	input := &ec2.StartInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceID),
+		},
+	}
+
+	result, err := compute.StartInstances(input)
+
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				exitWithError(aerr.Message())
+			}
+		} else {
+			exitWithError(aerr.Message())
+		}
+
+	}
+
+	if result.StartingInstances[0].InstanceId != nil {
+		fmt.Printf("Started instance : %s\n", *result.StartingInstances[0].InstanceId)
+	}
+
 	return nil
 }
 
 // StopInstance stops instance from AWS by ami name
-func (p *AWS) StopInstance(ctx *Context, imagename string) error {
+func (p *AWS) StopInstance(ctx *Context, instanceID string) error {
+
+	if instanceID == "" {
+		exitWithError("Enter InstanceID")
+	}
+
+	svc, err := session.NewSession(&aws.Config{
+		Region: aws.String(ctx.config.CloudConfig.Zone)},
+	)
+
+	compute := ec2.New(svc)
+
+	if err != nil {
+		exitWithError("Invalid region")
+	}
+
+	input := &ec2.StopInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceID),
+		},
+	}
+
+	result, err := compute.StopInstances(input)
+
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				exitWithError(aerr.Message())
+			}
+		} else {
+			exitWithError(aerr.Message())
+		}
+
+	}
+
+	if result.StoppingInstances[0].InstanceId != nil {
+		fmt.Printf("Stopped instance %s", *result.StoppingInstances[0].InstanceId)
+	}
+
 	return nil
 }
 
