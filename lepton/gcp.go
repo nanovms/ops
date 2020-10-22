@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/dns/v1"
 )
 
 var (
@@ -76,10 +77,11 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 
 // GCloud contains all operations for GCP
 type GCloud struct {
-	Storage   *GCPStorage
-	Service   *compute.Service
-	ProjectID string
-	Zone      string
+	Storage    *GCPStorage
+	Service    *compute.Service
+	ProjectID  string
+	Zone       string
+	dnsService *dns.Service
 }
 
 // NewGCloud returns an instance of GCloud
@@ -202,6 +204,11 @@ func (p *GCloud) Initialize() error {
 	}
 
 	p.Service = computeService
+
+	p.dnsService, err = p.getDNSService()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -423,31 +430,125 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
 
-	var ports []string
-	for _, i := range ctx.config.RunConfig.Ports {
-		ports = append(ports, strconv.Itoa(i))
+	// create dns zones/records to associate DNS record to instance IP
+	if c.RunConfig.DomainName != "" {
+		instance, err := computeService.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
+		if err != nil {
+			return err
+		}
+
+		cinstance := p.convertToCloudInstance(instance)
+
+		if len(cinstance.PublicIps) != 0 {
+			err := CreateDNSRecord(ctx.config, cinstance.PublicIps[0], p)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	rule := &compute.Firewall{
-		Name:        "ops-rule-" + instanceName,
-		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
-		Allowed: []*compute.FirewallAllowed{
-			{
-				IPProtocol: "tcp",
-				Ports:      ports,
+	// create firewall rules to expose instance ports
+	if len(ctx.config.RunConfig.Ports) != 0 {
+		var ports []string
+		for _, i := range ctx.config.RunConfig.Ports {
+			ports = append(ports, strconv.Itoa(i))
+		}
+
+		rule := &compute.Firewall{
+			Name:        "ops-rule-" + instanceName,
+			Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
+			Allowed: []*compute.FirewallAllowed{
+				{
+					IPProtocol: "tcp",
+					Ports:      ports,
+				},
 			},
-		},
-		TargetTags:   []string{instanceName},
-		SourceRanges: []string{"0.0.0.0/0"},
-	}
+			TargetTags:   []string{instanceName},
+			SourceRanges: []string{"0.0.0.0/0"},
+		}
 
-	_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
 
-	if err != nil {
-		exitWithError("Failed to add Firewall rule")
+		if err != nil {
+			exitWithError("Failed to add Firewall rule")
+		}
 	}
 
 	return nil
+}
+
+// FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
+func (p *GCloud) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+	zoneName := strings.Split(dnsName, ".")[0]
+	zone, err := p.dnsService.ManagedZones.Get(config.CloudConfig.ProjectID, zoneName).Do()
+	if err != nil || zone == nil {
+		managedZone := &dns.ManagedZone{
+			Name:        zoneName,
+			Description: zoneName,
+			DnsName:     dnsName + ".",
+		}
+
+		_, err = p.dnsService.ManagedZones.Create(config.CloudConfig.ProjectID, managedZone).Do()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return zoneName, nil
+}
+
+// DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
+func (p *GCloud) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+	recordsResponse, err := p.dnsService.ResourceRecordSets.List(config.CloudConfig.ProjectID, zoneID).Do()
+	if err != nil {
+		return err
+	}
+
+	for _, record := range recordsResponse.Rrsets {
+		if record.Name == recordName && record.Type == "A" {
+			_, err = p.dnsService.Changes.Create(config.CloudConfig.ProjectID, zoneID, &dns.Change{
+				Deletions: []*dns.ResourceRecordSet{record},
+			}).Do()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// CreateZoneRecord creates a record in a DNS zone
+func (p *GCloud) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+	resource := &dns.ResourceRecordSet{
+		Name:    record.Name,
+		Type:    record.Type,
+		Rrdatas: []string{record.IP},
+		Ttl:     int64(record.TTL),
+	}
+
+	_, err := p.dnsService.Changes.Create(config.CloudConfig.ProjectID, zoneID, &dns.Change{
+		Additions: []*dns.ResourceRecordSet{resource},
+	}).Do()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *GCloud) getDNSService() (*dns.Service, error) {
+	context := context.TODO()
+	_, err := google.FindDefaultCredentials(context)
+	if err != nil {
+		return nil, err
+	}
+
+	dnsService, err := dns.NewService(context)
+	if err != nil {
+		return nil, err
+	}
+
+	return dnsService, nil
 }
 
 // ListInstances lists instances on Gcloud
