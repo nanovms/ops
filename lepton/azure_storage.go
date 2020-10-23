@@ -201,10 +201,10 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 func (az *AzureStorage) DeleteFromBucket(config *Config, key string) error {
 
 	fmt.Printf("Started deleting image from container")
-	blobUrl := getBlobURL(containerName, key)
+	blobURL := getBlobURL(containerName, key)
 
 	ctx := context.Background()
-	_, err := blobUrl.Delete(ctx, azblob.DeleteSnapshotsOptionNone, azblob.BlobAccessConditions{})
+	_, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionNone, azblob.BlobAccessConditions{})
 
 	if err != nil {
 		return err

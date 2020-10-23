@@ -443,7 +443,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	sshKeyData = fakepubkey
 	nctx := context.TODO()
 
-	fmt.Println("creating the vm - this can take a few minutes - you can ctrl-c this after a bit")
+	fmt.Println("\ncreating the vm - this can take a few minutes - you can ctrl-c this after a bit")
 	fmt.Println("there is a known issue that prevents the deploy from ever being 'done'")
 
 	vmClient := a.getVMClient()

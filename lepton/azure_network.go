@@ -297,7 +297,7 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 				DestinationPortRange:     to.StringPtr(strconv.Itoa(port)),
 				Access:                   network.SecurityRuleAccessAllow,
 				Direction:                network.SecurityRuleDirectionInbound,
-				Priority:                 to.Int32Ptr(rand.Int31n(1000-100) + 100), //Generating number between 100 - 1000
+				Priority:                 to.Int32Ptr(rand.Int31n(200-100) + 100), //Generating number between 100 - 200
 			},
 		}
 		securityRules[i] = rule
