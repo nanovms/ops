@@ -127,8 +127,8 @@ func (a *Azure) getVMExtensionsClient() compute.VirtualMachineExtensionsClient {
 	return extClient
 }
 
-func (a *Azure) getLocation(ctx *Context) string {
-	c := ctx.config
+func (a *Azure) getLocation(config *Config) string {
+	c := config
 	location := c.CloudConfig.Zone
 	if location == "" {
 		location = a.locationDefault
@@ -258,7 +258,7 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 	bucket := c.CloudConfig.BucketName
 
-	region := a.getLocation(ctx)
+	region := a.getLocation(ctx.config)
 	container := "quickstart-nanos"
 	disk := c.CloudConfig.ImageName + ".vhd"
 
@@ -383,7 +383,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 		fmt.Println("AZURE_STORAGE_ACCOUNT should be set otherwise logs can not be retrieved.")
 		os.Exit(1)
 	}
-	location := a.getLocation(ctx)
+	location := a.getLocation(ctx.config)
 
 	debug := false
 
@@ -513,6 +513,13 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 
 	fmt.Printf("%+v\n", vm)
+
+	if ctx.config.RunConfig.DomainName != "" {
+		err = CreateDNSRecord(ctx.config, *ip.IPAddress, a)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
