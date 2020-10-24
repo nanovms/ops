@@ -3,10 +3,13 @@ package lepton
 import (
 	"context"
 	"fmt"
-	"github.com/digitalocean/godo"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
+	"testing"
+
+	"github.com/digitalocean/godo"
 )
 
 var (
@@ -19,10 +22,7 @@ var (
 	server *httptest.Server
 )
 
-// Tests for ListImages using Golang examples.
-// This tests the printed output to the console.
-// More info at: https://golang.org/pkg/testing/#hdr-Examples
-func Example_do_ListImages() {
+func TestDoGetImages(t *testing.T) {
 	setup()
 	defer teardown()
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
@@ -49,18 +49,17 @@ func Example_do_ListImages() {
 	do := &DigitalOcean{
 		Client: client,
 	}
-	err := do.ListImages(&Context{})
+	images, err := do.GetImages(&Context{})
 	if err != nil {
-		println(err.Error())
+		t.Error(err)
 	}
-	// Output:
-	// +-------+--------+----------------------+
-	// | NAME  | STATUS |       CREATED        |
-	// +-------+--------+----------------------+
-	// | test1 | test   | 2020-09-04T06:50:46Z |
-	// +-------+--------+----------------------+
-	// | test2 | test   | 2020-09-04T06:50:46Z |
-	// +-------+--------+----------------------+
+	expectedResult := []CloudImage{
+		{ID: "1", Name: "test1", Status: "test", Created: "2020-09-04T06:50:46Z"},
+		{ID: "2", Name: "test2", Status: "test", Created: "2020-09-04T06:50:46Z"},
+	}
+	if !reflect.DeepEqual(images, expectedResult) {
+		t.Fail()
+	}
 }
 
 func setup() {
