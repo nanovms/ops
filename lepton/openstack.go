@@ -56,16 +56,17 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 						ipv4 = sz["addr"].(string)
 					}
 				}
-			} else {
-				ipv4 = "NA"
 			}
 
 			cinstance := CloudInstance{
-				ID:        s.ID,
-				Name:      s.Name,
-				PublicIps: []string{ipv4},
-				Status:    s.Status,
-				Created:   s.Created.Format("2006-01-02 15:04:05"),
+				ID:      s.ID,
+				Name:    s.Name,
+				Status:  s.Status,
+				Created: s.Created.Format("2006-01-02 15:04:05"),
+			}
+
+			if ipv4 != "" {
+				cinstance.PublicIps = []string{ipv4}
 			}
 
 			cinstances = append(cinstances, cinstance)
@@ -407,6 +408,29 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 	}
 
 	fmt.Printf("\nInstance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
+
+	if ctx.config.RunConfig.DomainName != "" {
+		pollCount := 60
+		for pollCount > 0 {
+			fmt.Printf(".")
+			time.Sleep(2 * time.Second)
+
+			instance, err := o.GetInstanceByID(ctx, server.Name)
+			if err != nil || len(instance.PublicIps) == 0 {
+				pollCount--
+				continue
+			}
+
+			if len(instance.PublicIps) != 0 {
+				err := CreateDNSRecord(ctx.config, instance.PublicIps[0], o)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
+
 	return nil
 }
 
