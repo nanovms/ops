@@ -34,7 +34,7 @@ func (o *OpenStack) FindOrCreateZoneIDByName(config *Config, dnsName string) (st
 	if len(allZones) == 0 {
 		createOpts := zones.CreateOpts{
 			Name:  dnsName + ".",
-			Email: "",
+			Email: "admin@" + dnsName,
 		}
 		zone, err := zones.Create(dnsClient, createOpts).Extract()
 		if err != nil {
