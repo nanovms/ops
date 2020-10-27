@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/olekukonko/tablewriter"
 	compute "google.golang.org/api/compute/v1"
 )
 
@@ -72,52 +72,46 @@ func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string)
 }
 
 // GetAllVolumes gets all volumes created in GCP as Compute Engine Disks
-func (g *GCloud) GetAllVolumes(config *Config) error {
+func (g *GCloud) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	var volumes []NanosVolume
 	ctx := context.Background()
 
 	projectID := config.CloudConfig.ProjectID
 	if strings.Compare(projectID, "") == 0 {
-		// projectID = g.ProjectID
-		return errGCloudProjectIDMissing()
+		return nil, errGCloudProjectIDMissing()
 	}
 
 	zone := config.CloudConfig.Zone
 	if strings.Compare(zone, "") == 0 {
-		// zone = g.Zone
-		return errGCloudZoneMissing()
+		return nil, errGCloudZoneMissing()
 	}
 
 	dl, err := g.Service.Disks.List(projectID, zone).Context(ctx).Do()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "URI", "Created", "Attached"})
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-	)
-	table.SetRowLine(true)
-
 	for _, d := range dl.Items {
-		var row []string
 		var users []string
 		for _, u := range d.Users {
 			uri := strings.Split(u, "/")
 			users = append(users, uri[len(uri)-1])
 		}
-		row = append(row, d.Name)
-		row = append(row, d.SelfLink)
-		row = append(row, d.CreationTimestamp)
-		row = append(row, strings.Join(users, ";"))
-		table.Append(row)
+
+		vol := NanosVolume{
+			ID:         strconv.Itoa(int(d.Id)),
+			Name:       d.Name,
+			Status:     d.Status,
+			Size:       strconv.Itoa(int(d.SizeGb)),
+			Path:       d.SelfLink,
+			CreatedAt:  d.CreationTimestamp,
+			AttachedTo: strings.Join(users, ";"),
+		}
+
+		volumes = append(volumes, vol)
 	}
 
-	table.Render()
-	return nil
+	return &volumes, nil
 }
 
 // DeleteVolume deletes specific disk and image in GCP

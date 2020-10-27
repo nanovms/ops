@@ -3,16 +3,17 @@ package lepton
 import (
 	"errors"
 	"fmt"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"math"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/volumeattach"
-	"github.com/olekukonko/tablewriter"
 )
 
 func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
@@ -77,52 +78,45 @@ func (o *OpenStack) CreateVolume(config *Config, name, data, size, provider stri
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (o *OpenStack) GetAllVolumes(config *Config) error {
+func (o *OpenStack) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	var vols []NanosVolume
+
 	client, err := o.getVolumesClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	allPages, err := volumes.List(client, volumes.ListOpts{}).AllPages()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	volumes, err := volumes.ExtractVolumes(allPages)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created", "Attached"})
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-	)
-	table.SetRowLine(true)
 
 	for _, volume := range volumes {
-		var row []string
+		var name string
+		var attachments []string
 
-		if volume.Name != "" {
-			row = append(row, volume.Name)
-		} else {
-			row = append(row, volume.ID)
-		}
-		row = append(row, volume.Status)
-		row = append(row, volume.CreatedAt.String())
-		if len(volume.Attachments) != 0 {
-			row = append(row, volume.Attachments[0].HostName)
+		for _, att := range volume.Attachments {
+			attachments = append(attachments, att.HostName)
 		}
 
-		table.Append(row)
+		vol := NanosVolume{
+			ID:         volume.ID,
+			Name:       name,
+			Status:     volume.Status,
+			CreatedAt:  volume.CreatedAt.String(),
+			AttachedTo: strings.Join(attachments, ";"),
+			Size:       strconv.Itoa(volume.Size),
+		}
+
+		vols = append(vols, vol)
 	}
 
-	table.Render()
-
-	return nil
+	return &vols, nil
 }
 
 func (o *OpenStack) getVolumeByName(volumesClient *gophercloud.ServiceClient, name string) (*volumes.Volume, error) {

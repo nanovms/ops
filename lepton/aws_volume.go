@@ -7,8 +7,8 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (a *AWS) GetAllVolumes(config *Config) error {
-	return nil
+func (a *AWS) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	return nil, nil
 }
 
 // DeleteVolume is a stub to satisfy VolumeService interface

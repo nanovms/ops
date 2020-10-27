@@ -7,8 +7,8 @@ func (v *Vultr) CreateVolume(config *Config, name, data, size, provider string) 
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (v *Vultr) GetAllVolumes(config *Config) error {
-	return nil
+func (v *Vultr) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	return nil, nil
 }
 
 // DeleteVolume is a stub to satisfy VolumeService interface

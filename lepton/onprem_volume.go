@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/olekukonko/tablewriter"
 )
 
 var (
@@ -31,40 +30,19 @@ var (
 	errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
 )
 
-// NanosVolume information for nanos-managed volume
-type NanosVolume struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Label      string `json:"label"`
-	Data       string `json:"data"`
-	Size       string `json:"size"`
-	Path       string `json:"path"`
-	AttachedTo string `json:"attached_to"`
-}
-
 // CreateVolume creates volume for onprem image
 func (op *OnPrem) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	return CreateLocalVolume(config, name, data, size, provider)
 }
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes
-func (op *OnPrem) GetAllVolumes(config *Config) error {
+func (op *OnPrem) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 	vols, err := GetVolumes(config.BuildDir, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"NAME/LABEL", "UUID", "SIZE", "PATH"})
-	for _, vol := range vols {
-		var row []string
-		row = append(row, vol.Name)
-		row = append(row, vol.ID)
-		row = append(row, vol.Size)
-		row = append(row, vol.Path)
-		table.Append(row)
-	}
-	table.Render()
-	return nil
+
+	return &vols, nil
 }
 
 // DeleteVolume deletes nanos-managed volume (filename and symlink)
