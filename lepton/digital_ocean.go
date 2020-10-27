@@ -2,16 +2,22 @@ package lepton
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
+
+	"github.com/digitalocean/godo"
+	"github.com/olekukonko/tablewriter"
 )
 
 // DigitalOcean provides access to the DigitalOcean API.
 type DigitalOcean struct {
 	Storage *Spaces
+	Client  *godo.Client
 }
 
 // BuildImage to be upload on DO
@@ -65,8 +71,10 @@ func (do *DigitalOcean) createImage(key string, bucket string, region string) {
 	fmt.Println("response Body:", string(body))
 }
 
-// Initialize GCP related things
+// Initialize DigialOcean related things
 func (do *DigitalOcean) Initialize() error {
+	doToken := os.Getenv("TOKEN")
+	do.Client = godo.NewFromToken(doToken)
 	return nil
 }
 
@@ -93,36 +101,38 @@ func (do *DigitalOcean) CreateImage(ctx *Context) error {
 
 // GetImages return all images on DigitalOcean
 func (do *DigitalOcean) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
+	opt := &godo.ListOptions{}
+	list, _, err := do.Client.Images.List(context.TODO(), opt)
+	if err != nil {
+		return nil, err
+	}
+	images := make([]CloudImage, len(list))
+	for i, doImage := range list {
+		images[i].ID = fmt.Sprintf("%d", doImage.ID)
+		images[i].Name = doImage.Name
+		images[i].Status = doImage.Status
+		images[i].Created = doImage.Created
+	}
+	return images, nil
 }
 
-// ListImages lists images on Digital Ocean
+// ListImages lists images on Digital Ocean.
 func (do *DigitalOcean) ListImages(ctx *Context) error {
-
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://api.digitalocean.com/v2/images?page=1&per_page=1", nil)
+	images, err := do.GetImages(ctx)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
-	token := os.Getenv("TOKEN")
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetRowLine(true)
+	for _, image := range images {
+		var row []string
+		row = append(row, image.Name)
+		row = append(row, image.Status)
+		row = append(row, image.Created)
+		table.Append(row)
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	fmt.Println(body)
-
+	table.Render()
 	return nil
 }
 
@@ -155,12 +165,60 @@ func (do *DigitalOcean) GetInstanceByID(ctx *Context, id string) (*CloudInstance
 // GetInstances return all instances on DigitalOcean
 // TODO
 func (do *DigitalOcean) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	opt := &godo.ListOptions{}
+	list, _, err := do.Client.Droplets.List(context.TODO(), opt)
+	if err != nil {
+		return nil, err
+	}
+	cinstances := make([]CloudInstance, len(list))
+	for i, droplet := range list {
+		privateIPV4, _ := droplet.PrivateIPv4()
+		publicIPV4, _ := droplet.PublicIPv4()
+		publicIPV6, _ := droplet.PublicIPv6()
+		cinstances[i] = CloudInstance{
+			ID:         fmt.Sprintf("%d", droplet.ID),
+			Name:       droplet.Name,
+			Status:     droplet.Status,
+			Created:    droplet.Created,
+			PrivateIps: []string{privateIPV4},
+			PublicIps:  []string{publicIPV4, publicIPV6},
+		}
+	}
+
+	return cinstances, nil
 }
 
 // ListInstances lists instances on DO
 func (do *DigitalOcean) ListInstances(ctx *Context) error {
+	instances, err := do.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
+	// print list of images in table
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	table.SetRowLine(true)
+	for _, instance := range instances {
+		var rows []string
+		rows = append(rows, instance.Name)
+		rows = append(rows, instance.ID)
+		rows = append(rows, instance.Status)
+		rows = append(rows, instance.Created)
+		rows = append(rows, strings.Join(instance.PrivateIps, ","))
+		rows = append(rows, strings.Join(instance.PublicIps, ","))
+
+		table.Append(rows)
+	}
+	table.Render()
 	return nil
+
 }
 
 // DeleteInstance deletes instance from DO
