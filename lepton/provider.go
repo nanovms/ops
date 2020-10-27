@@ -52,7 +52,7 @@ type Storage interface {
 // VolumeService is an interface for volume related operations
 type VolumeService interface {
 	CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error)
-	GetAllVolumes(config *Config) error
+	GetAllVolumes(config *Config) (*[]NanosVolume, error)
 	DeleteVolume(config *Config, name string) error
 	AttachVolume(config *Config, image, name, mount string) error
 	DetachVolume(config *Config, image, name string) error

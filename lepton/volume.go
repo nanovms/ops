@@ -7,7 +7,21 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/olekukonko/tablewriter"
 )
+
+// NanosVolume information for nanos-managed volume
+type NanosVolume struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Label      string `json:"label"`
+	Data       string `json:"data"`
+	Size       string `json:"size"`
+	Path       string `json:"path"`
+	AttachedTo string `json:"attached_to"`
+	CreatedAt  string `json:"created_at"`
+	Status     string `json:"status"`
+}
 
 // CreateLocalVolume creates volume on ops directoy
 // creates a volume named <name>:<uuid>
@@ -72,4 +86,34 @@ func CreateLocalVolume(config *Config, name, data, size, provider string) (Nanos
 		Path:  rawPath,
 	}
 	return vol, nil
+}
+
+// PrintVolumesList writes into console a table with volumes details
+func PrintVolumesList(volumes *[]NanosVolume) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"UUID", "Name", "Status", "Size (GB)", "Location", "Created", "Attached"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+	)
+	table.SetRowLine(true)
+
+	for _, vol := range *volumes {
+		var row []string
+		row = append(row, vol.ID)
+		row = append(row, vol.Name)
+		row = append(row, vol.Status)
+		row = append(row, vol.Size)
+		row = append(row, vol.Path)
+		row = append(row, vol.CreatedAt)
+		row = append(row, vol.AttachedTo)
+		table.Append(row)
+	}
+
+	table.Render()
 }

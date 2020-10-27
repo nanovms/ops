@@ -7,8 +7,8 @@ func (do *DigitalOcean) CreateVolume(config *Config, name, data, size, provider 
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) GetAllVolumes(config *Config) error {
-	return nil
+func (do *DigitalOcean) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	return nil, nil
 }
 
 // DeleteVolume is a stub to satisfy VolumeService interface

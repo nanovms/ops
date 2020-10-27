@@ -7,8 +7,8 @@ func (a *Azure) CreateVolume(config *Config, name, data, size, provider string) 
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (a *Azure) GetAllVolumes(config *Config) error {
-	return nil
+func (a *Azure) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+	return nil, nil
 }
 
 // DeleteVolume is a stub to satisfy VolumeService interface

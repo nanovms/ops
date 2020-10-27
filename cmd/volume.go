@@ -81,10 +81,12 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 
 	conf.BuildDir = api.LocalVolumeDir
 
-	err = vol.GetAllVolumes(conf)
+	volumes, err := vol.GetAllVolumes(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	api.PrintVolumesList(volumes)
 }
 
 // TODO might be nice to be able to filter by name/label
