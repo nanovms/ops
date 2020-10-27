@@ -323,6 +323,17 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
+	if c.CloudConfig.Platform == "azure" || provider == "azure" {
+		azure := p.(*api.Azure)
+
+		err = azure.Storage.DeleteFromBucket(c, args[0]+".vhd")
+		if err != nil {
+			exitWithError(err.Error())
+		} else {
+			fmt.Printf("\nImage %s deleted successfully", args[0])
+		}
+	}
 }
 
 func imageDeleteCommand() *cobra.Command {

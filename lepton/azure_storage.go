@@ -28,7 +28,8 @@ type qemuInfo struct {
 }
 
 const (
-	onemb = 1048576
+	onemb         = 1048576
+	containerName = "quickstart-nanos"
 )
 
 func roundup(x, y uint32) uint32 {
@@ -143,30 +144,15 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 		fmt.Println(err)
 	}
 
-	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-	if len(accountName) == 0 || len(accountKey) == 0 {
-		log.Fatal("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
-	}
-
-	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-	if err != nil {
-		log.Fatal("Invalid credentials with error: " + err.Error())
-	}
-	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
-
-	containerName := "quickstart-nanos"
-
-	URL, _ := url.Parse(
-		fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, containerName))
-
-	containerURL := azblob.NewContainerURL(*URL, p)
-
-	// we can skip over this if it already exists
-	fmt.Printf("Creating a container named %s\n", containerName)
 	ctx := context.Background()
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		fmt.Println(err)
+	containerURL := getContainerURL(containerName)
+
+	if !containerExists(containerURL) {
+		fmt.Printf("Creating a container named %s\n", containerName)
+		_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	blobURL := containerURL.NewPageBlobURL(config.CloudConfig.ImageName + ".vhd")
@@ -214,7 +200,53 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 // DeleteFromBucket deletes key from config's bucket
 func (az *AzureStorage) DeleteFromBucket(config *Config, key string) error {
 
-	fmt.Println("un-implemented")
+	fmt.Printf("Started deleting image from container")
+	blobURL := getBlobURL(containerName, key)
+
+	ctx := context.Background()
+	_, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionNone, azblob.BlobAccessConditions{})
+
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+//Exists() function not available in sdk. So for now this is a work around
+func containerExists(containerURL azblob.ContainerURL) bool {
+	_, err := containerURL.GetProperties(context.Background(), azblob.LeaseAccessConditions{})
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// return AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_ACCESS_KEY
+func getContainerURL(containerName string) azblob.ContainerURL {
+	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+	if len(accountName) == 0 || len(accountKey) == 0 {
+		exitWithError("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
+	}
+
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		exitWithError("Invalid credentials with error: " + err.Error())
+	}
+	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
+
+	URL, _ := url.Parse(
+		fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, containerName))
+
+	containerURL := azblob.NewContainerURL(*URL, p)
+
+	return containerURL
+}
+
+func getBlobURL(container string, blobname string) azblob.BlobURL {
+
+	containerURL := getContainerURL(container)
+
+	return containerURL.NewBlobURL(blobname)
+
 }
