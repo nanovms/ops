@@ -64,6 +64,7 @@ type RunConfig struct {
 	VPC            string
 	Subnet         string
 	Tags           []Tag
+	Debug          bool
 }
 
 // RuntimeConfig constructs runtime config
