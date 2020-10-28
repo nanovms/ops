@@ -3,6 +3,7 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 )
 
 type errCustom struct {
@@ -37,27 +38,27 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 		targetQemuHWAccelNotSupported        *errQemuHWAccelNotSupported
 	)
 	if errors.As(err, &targetErrQemuHWAccelDisabledInConfig) {
-		return fmt.Sprintf(WarningColor, "You have disabled hardware acceleration\n"), false
+		return fmt.Sprintf(utils.WarningColor, "You have disabled hardware acceleration\n"), false
 	}
 	if errors.As(err, &targetErrQemuNotInstalled) {
-		return fmt.Sprintf(WarningColor, "Cannot find QEMU (looks like it is not installed)\n"+
+		return fmt.Sprintf(utils.WarningColor, "Cannot find QEMU (looks like it is not installed)\n"+
 			"Please install QEMU using your package manager and re-run current command\n"), true
 	}
 	if errors.As(err, &targetErrQemuCannotExecute) {
-		return fmt.Sprintf(WarningColor, "QEMU installed, but cannot be executed\n"+
+		return fmt.Sprintf(utils.WarningColor, "QEMU installed, but cannot be executed\n"+
 			"Please check current user rights\n"), true
 	}
 
 	if errors.As(err, &targetQemuHWAccelNoUserRights) {
-		return fmt.Sprintf(WarningColor, "You don't have rights for using hardware acceleration\n"+
+		return fmt.Sprintf(utils.WarningColor, "You don't have rights for using hardware acceleration\n"+
 			"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n"+
 			"You'll need to re-login for this to take affect\n"), false
 	}
 
 	if errors.As(err, &targetQemuHWAccelNotSupported) {
-		return fmt.Sprintf(WarningColor, "You specified hardware acceleration, but it is not supported\n"+
+		return fmt.Sprintf(utils.WarningColor, "You specified hardware acceleration, but it is not supported\n"+
 			"Are you running inside a vm? If so disable accel with --accel=false\n"), false
 	}
 
-	return fmt.Sprintf(WarningColor, "Hardware acceleration cannot be used on the current host"), false
+	return fmt.Sprintf(utils.WarningColor, "Hardware acceleration cannot be used on the current host"), false
 }

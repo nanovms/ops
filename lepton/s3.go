@@ -43,7 +43,7 @@ func (s *S3) CopyToBucket(config *Config, archPath string) error {
 		return err
 	}
 
-	fmt.Printf("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
+	fmt.Printf("\nSuccessfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
 
 	return nil
 }

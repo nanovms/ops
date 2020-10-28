@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"strings"
 )
 
@@ -76,7 +77,7 @@ type DNSService interface {
 // CreateDNSRecord does the necessary operations to create a DNS record without issues in an cloud provider
 func CreateDNSRecord(config *Config, aRecordIP string, dnsService DNSService) error {
 	domainName := config.RunConfig.DomainName
-	if err := isDomainValid(domainName); err != nil {
+	if err := utils.IsDomainValid(domainName); err != nil {
 		return err
 	}
 

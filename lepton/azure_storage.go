@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"io"
 	"log"
 	"net/url"
@@ -226,12 +227,12 @@ func containerExists(containerURL azblob.ContainerURL) bool {
 func getContainerURL(containerName string) azblob.ContainerURL {
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
-		exitWithError("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
+		utils.ExitWithError("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
 	}
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		exitWithError("Invalid credentials with error: " + err.Error())
+		utils.ExitWithError("Invalid credentials with error: " + err.Error())
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 

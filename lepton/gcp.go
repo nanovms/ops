@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/briandowns/spinner"
+	"github.com/nanovms/ops/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -37,10 +39,10 @@ type GCloudOperation struct {
 func checkGCCredentialsProvided() error {
 	creds, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !ok {
-		return fmt.Errorf(ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+		return fmt.Errorf(utils.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
 	}
 	if _, err := os.Stat(creds); os.IsNotExist(err) {
-		return fmt.Errorf(ErrorColor, fmt.Sprintf("error: File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist.", creds))
+		return fmt.Errorf(utils.ErrorColor, fmt.Sprintf("error: File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist.", creds))
 	}
 	return nil
 }
@@ -229,6 +231,10 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		},
 	}
 
+	fmt.Println("Started creating image in GCP")
+	spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+	spin.Start()
+
 	op, err := p.Service.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()
 	if err != nil {
 		return fmt.Errorf("error:%+v", err)
@@ -239,6 +245,8 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		return err
 	}
 	fmt.Printf("Image creation succeeded %s.\n", c.CloudConfig.ImageName)
+
+	spin.Stop()
 	return nil
 }
 
@@ -456,7 +464,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 		rule := &compute.Firewall{
 			Name:        "ops-rule-" + instanceName,
-			Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
+			Description: fmt.Sprintf("Allow traffic to %v ports %s", utils.ArrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
 			Allowed: []*compute.FirewallAllowed{
 				{
 					IPProtocol: "tcp",
@@ -470,7 +478,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
 
 		if err != nil {
-			exitWithError("Failed to add Firewall rule")
+			utils.ExitWithError("Failed to add Firewall rule")
 		}
 	}
 

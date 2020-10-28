@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -394,7 +395,7 @@ func (q *qemu) setAccel(rconfig *RunConfig) {
 			os.Exit(1)
 		}
 		if isAdded {
-			fmt.Printf(WarningColor, "Anyway, we will try to enable hardware acceleration\n")
+			fmt.Printf(utils.WarningColor, "Anyway, we will try to enable hardware acceleration\n")
 		}
 	}
 }

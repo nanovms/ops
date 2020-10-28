@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"io"
 	"io/ioutil"
 	"log"
@@ -491,7 +492,7 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 
 	// Optionally create a progress reporter and pass it to be used alongside our writer
 	if showProgress {
-		counter := NewWriteCounter(fsize)
+		counter := utils.NewWriteCounter(fsize)
 		counter.Start()
 		_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
 		counter.Finish()

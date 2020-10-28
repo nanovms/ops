@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/briandowns/spinner"
+	"github.com/nanovms/ops/utils"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -266,6 +268,10 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 	uri := "https://" + bucket + ".blob.core.windows.net/" + container + "/" + disk
 
+	fmt.Println("Started creating image in Azure")
+	spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+	spin.Start()
+
 	imageParams := compute.Image{
 		Location: to.StringPtr(region),
 		ImageProperties: &compute.ImageProperties{
@@ -286,6 +292,8 @@ func (a *Azure) CreateImage(ctx *Context) error {
 	}
 
 	fmt.Printf("%+v", res)
+
+	spin.Stop()
 
 	return nil
 }
@@ -641,7 +649,7 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
 
 	if err != nil {
-		exitWithError("\nUnable to delete instance")
+		utils.ExitWithError("\nUnable to delete instance")
 	}
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)

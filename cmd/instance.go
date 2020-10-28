@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -10,13 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func exitWithError(errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
-	os.Exit(1)
-}
-
 func exitForCmd(cmd *cobra.Command, errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
+	fmt.Println(fmt.Sprintf(utils.ErrorColor, errs))
 	cmd.Help()
 	os.Exit(1)
 }
@@ -73,12 +69,12 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	ctx := api.NewContext(c, &p)
 	err = p.CreateInstance(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -105,7 +101,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c := *api.NewConfig()
 
@@ -124,7 +120,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(&c, &p)
 	err = p.ListInstances(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -141,7 +137,7 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c := *api.NewConfig()
 
@@ -161,7 +157,7 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(&c, &p)
 	err = p.DeleteInstance(ctx, args[0])
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -169,7 +165,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c := *api.NewConfig()
 
@@ -189,7 +185,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(&c, &p)
 	err = p.StartInstance(ctx, args[0])
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -197,7 +193,7 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c := *api.NewConfig()
 
@@ -217,7 +213,7 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(&c, &p)
 	err = p.StopInstance(ctx, args[0])
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -256,7 +252,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c := *api.NewConfig()
 
@@ -280,7 +276,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(&c, &p)
 	err = p.PrintInstanceLogs(ctx, args[0], watch)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 

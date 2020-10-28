@@ -3,6 +3,7 @@ package lepton
 import (
 	"archive/tar"
 	"crypto/sha256"
+	"github.com/nanovms/ops/utils"
 
 	"compress/gzip"
 	"encoding/json"
@@ -94,7 +95,7 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	res, err := http.Head(remoteURL)
 	if err != nil {
 		if err, ok := err.(net.Error); ok {
-			fmt.Printf(WarningColor, "missing internet?, using local manifest.\n")
+			fmt.Printf(utils.WarningColor, "missing internet?, using local manifest.\n")
 		} else {
 			panic(err)
 		}

@@ -3,6 +3,7 @@ package lepton
 import (
 	"bytes"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -176,19 +177,12 @@ func updateLocalRelease(version string) error {
 // LatestReleaseVersion give latest stable release for nanos
 var LatestReleaseVersion = getLatestRelVersion()
 
-const (
-	// WarningColor used in warning texts
-	WarningColor = "\033[1;33m%s\033[0m"
-	// ErrorColor used in error texts
-	ErrorColor = "\033[1;31m%s\033[0m"
-)
-
 func getLatestRelVersion() string {
 	resp, err := http.Get(releaseBaseURL + "latest.txt")
 	if err != nil {
-		fmt.Printf(WarningColor, "version lookup failed, using local.\n")
+		fmt.Printf(utils.WarningColor, "version lookup failed, using local.\n")
 		if LocalReleaseVersion == "0.0" {
-			fmt.Printf(ErrorColor, "No local build found.")
+			fmt.Printf(utils.ErrorColor, "No local build found.")
 			os.Exit(1)
 		}
 		return LocalReleaseVersion

@@ -1,4 +1,4 @@
-package lepton
+package utils
 
 import (
 	"fmt"
@@ -7,20 +7,27 @@ import (
 	"unicode/utf8"
 )
 
-func exitWithError(errs string) {
+const (
+	// WarningColor used in warning texts
+	WarningColor = "\033[1;33m%s\033[0m"
+	// ErrorColor used in error texts
+	ErrorColor = "\033[1;31m%s\033[0m"
+)
+
+func ExitWithError(errs string) {
 	fmt.Println(fmt.Sprintf(ErrorColor, errs))
 	os.Exit(1)
 }
 
-func arrayToString(a []int, delim string) string {
+func ArrayToString(a []int, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }
 
-// isDomainValid returns an error if the domain name is not valid
+// IsDomainValid returns an error if the domain name is not valid
 // See https://tools.ietf.org/html/rfc1034#section-3.5 and
 // https://tools.ietf.org/html/rfc1123#section-2.
 // code extracted from https://gist.github.com/chmike/d4126a3247a6d9a70922fc0e8b4f4013
-func isDomainValid(name string) error {
+func IsDomainValid(name string) error {
 	switch {
 	case len(name) == 0:
 		return fmt.Errorf("domain: empty")

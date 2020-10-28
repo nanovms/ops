@@ -3,6 +3,8 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/briandowns/spinner"
+	"github.com/nanovms/ops/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -170,12 +172,16 @@ func (o *OpenStack) getImagesClient() (*gophercloud.ServiceClient, error) {
 func (o *OpenStack) createImage(imagesClient *gophercloud.ServiceClient, imgName string) (*images.Image, error) {
 	visibility := images.ImageVisibilityPrivate
 
+	spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+	spin.Start()
+	fmt.Printf("Started creating image")
 	createOpts := images.CreateOpts{
 		Name:            imgName,
 		DiskFormat:      "raw",
 		ContainerFormat: "bare",
 		Visibility:      &visibility,
 	}
+	spin.Stop()
 
 	return images.Create(imagesClient, createOpts).Extract()
 }
@@ -404,7 +410,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 	server, err := servers.Create(client, createOpts).Extract()
 
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	fmt.Printf("\nInstance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
@@ -528,7 +534,7 @@ func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
 	}
 
 	if len(instances) == 0 {
-		exitWithError("No Instance available for deletion")
+		utils.ExitWithError("No Instance available for deletion")
 	}
 
 	for _, instance := range instances {
@@ -538,7 +544,7 @@ func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
 			if result == nil {
 				fmt.Printf("Deleted instance with ID %s and name %s", instance.ID, instancename)
 			} else {
-				exitWithError(result.Error())
+				utils.ExitWithError(result.Error())
 			}
 
 		}

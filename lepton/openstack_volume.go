@@ -3,6 +3,7 @@ package lepton
 import (
 	"errors"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"math"
 	"os"
 	"strconv"
@@ -216,7 +217,7 @@ func (o *OpenStack) AttachVolume(config *Config, image, name, mount string) erro
 	errReboot := servers.Reboot(computeClient, server.ID, rebootOpts).ExtractErr()
 
 	if errReboot != nil {
-		exitWithError("Failed to soft reboot instance.")
+		utils.ExitWithError("Failed to soft reboot instance.")
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"os"
 	"strings"
 
@@ -41,7 +42,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	ctx := api.NewContext(c, &p)

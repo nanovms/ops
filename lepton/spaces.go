@@ -76,7 +76,7 @@ func (s *Spaces) CopyToBucket(config *Config, archPath string) error {
 
 	fmt.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 
-	fmt.Printf("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
+	fmt.Printf("\nSuccessfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
 
 	return nil
 }

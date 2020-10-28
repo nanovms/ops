@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"debug/elf"
 	"fmt"
+	"github.com/nanovms/ops/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,7 +46,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		return nil, errors.WrapPrefix(err, path, 0)
 	}
 	if !isELF {
-		fmt.Printf(ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
+		fmt.Printf(utils.ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
 		os.Exit(1)
 	}
 

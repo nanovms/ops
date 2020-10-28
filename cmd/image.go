@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/briandowns/spinner"
+	"github.com/nanovms/ops/utils"
 	"os"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
@@ -36,15 +39,15 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
-		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
+		utils.ExitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
 	}
 
 	if c.CloudConfig.Platform == "gcp" && len(c.CloudConfig.ProjectID) == 0 {
-		exitWithError("Please specify a cloud projectid in config")
+		utils.ExitWithError("Please specify a cloud projectid in config")
 	}
 
 	if len(c.CloudConfig.BucketName) == 0 {
-		exitWithError("Please specify a cloud bucket in config")
+		utils.ExitWithError("Please specify a cloud bucket in config")
 	}
 
 	if len(pkg) > 0 {
@@ -55,7 +58,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		} else if len(c.Args) != 0 {
 			c.Program = c.Args[0]
 		} else {
-			exitWithError("Please mention program to run")
+			utils.ExitWithError("Please mention program to run")
 		}
 	}
 
@@ -65,13 +68,13 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	c.BuildDir = api.LocalVolumeDir
 	err = api.AddMounts(mounts, c)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	c.BuildDir = bd
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 	ctx := api.NewContext(c, &p)
 
@@ -82,7 +85,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		// load the package manifest
 		manifest := path.Join(expackage, "package.manifest")
 		if _, err := os.Stat(manifest); err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		pkgConfig := unWarpConfig(manifest)
@@ -100,19 +103,19 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	if c.CloudConfig.Platform == "vultr" {
 		do := p.(*api.Vultr)
 		err = do.Storage.CopyToBucket(c, keypath)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = do.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("do image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -120,14 +123,19 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	if c.CloudConfig.Platform == "do" {
 		do := p.(*api.DigitalOcean)
+		spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+		spin.Start()
+		fmt.Printf("Started uploading image to bucket")
 		err = do.Storage.CopyToBucket(c, keypath)
+		spin.Stop()
+
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = do.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("do image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -135,14 +143,18 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	if c.CloudConfig.Platform == "gcp" {
 		gcloud := p.(*api.GCloud)
+		spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+		spin.Start()
+		fmt.Printf("Started uploading image to bucket")
 		err = gcloud.Storage.CopyToBucket(c, keypath)
+		spin.Stop()
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = gcloud.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("gcp image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -154,14 +166,19 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		// verify we can even use the vm importer
 		api.VerifyRole(ctx, c.CloudConfig.BucketName)
 
+		fmt.Println("Started uploading image to bucket")
+		spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+		spin.Start()
+
 		err = aws.Storage.CopyToBucket(c, keypath)
+		spin.Stop()
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = aws.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("aws image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -169,14 +186,20 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	if c.CloudConfig.Platform == "vsphere" {
 		vsphere := p.(*api.Vsphere)
+
+		fmt.Println("Started uploading image to bucket")
+		spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+		spin.Start()
+
 		err = vsphere.Storage.CopyToBucket(c, keypath)
+		spin.Stop()
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = vsphere.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("vsphere image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -187,7 +210,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 		err = os.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("openstack image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -196,14 +219,19 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if c.CloudConfig.Platform == "azure" {
 		azure := p.(*api.Azure)
 
+		fmt.Println("Started uploading image to bucket")
+		spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+		spin.Start()
+
 		err = azure.Storage.CopyToBucket(c, keypath)
+		spin.Stop()
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		}
 
 		err = azure.CreateImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("azure image '%s' created...\n", c.CloudConfig.ImageName)
 		}
@@ -240,7 +268,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	var c *api.Config
@@ -255,7 +283,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
 	err = p.ResizeImage(ctx, args[0], args[1])
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -282,14 +310,14 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	ctx := api.NewContext(c, &p)
 
 	err = p.ListImages(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 
@@ -306,7 +334,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	p, err := getCloudProvider(provider)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	var c *api.Config
@@ -321,7 +349,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 	err = p.DeleteImage(ctx, args[0])
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	if c.CloudConfig.Platform == "azure" || provider == "azure" {
@@ -329,7 +357,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 		err = azure.Storage.DeleteFromBucket(c, args[0]+".vhd")
 		if err != nil {
-			exitWithError(err.Error())
+			utils.ExitWithError(err.Error())
 		} else {
 			fmt.Printf("\nImage %s deleted successfully", args[0])
 		}
@@ -351,17 +379,17 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	// TODO only accepts onprem for now, implement for other source providers later
 	source, _ := cmd.Flags().GetString("source-cloud")
 	if source != "onprem" {
-		exitWithError(source + " sync not yet implemented")
+		utils.ExitWithError(source + " sync not yet implemented")
 	}
 	src, err := getCloudProvider(source)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	target, _ := cmd.Flags().GetString("target-cloud")
 	tar, err := getCloudProvider(target)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 
 	config, _ := cmd.Flags().GetString("config")
@@ -374,7 +402,7 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 
 	err = src.SyncImage(conf, tar, image)
 	if err != nil {
-		exitWithError(err.Error())
+		utils.ExitWithError(err.Error())
 	}
 }
 

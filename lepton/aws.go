@@ -3,6 +3,8 @@ package lepton
 import (
 	"encoding/base64"
 	"errors"
+	"github.com/briandowns/spinner"
+	"github.com/nanovms/ops/utils"
 
 	"fmt"
 	"os"
@@ -92,6 +94,9 @@ func (p *AWS) CreateImage(ctx *Context) error {
 
 	bucket := c.CloudConfig.BucketName
 	key := c.CloudConfig.ImageName
+
+	spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond) // Build our new spinner
+	spin.Start()
 
 	input := &ec2.ImportSnapshotInput{
 		Description: aws.String("NanoVMs test"),
@@ -224,6 +229,8 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		},
 	})
 
+	spin.Stop()
+
 	return nil
 }
 
@@ -293,7 +300,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 	result, err := compute.DescribeInstances(&request)
 
 	if err != nil {
-		exitWithError("invalid region")
+		utils.ExitWithError("invalid region")
 	}
 
 	var cinstances []CloudInstance
@@ -378,7 +385,7 @@ func (p *AWS) ListImages(ctx *Context) error {
 func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
 
 	if instanceID == "" {
-		exitWithError("Enter Instance ID")
+		utils.ExitWithError("Enter Instance ID")
 	}
 
 	svc, err := session.NewSession(&aws.Config{
@@ -388,7 +395,7 @@ func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
 	compute := ec2.New(svc)
 
 	if err != nil {
-		exitWithError("Invalid region")
+		utils.ExitWithError("Invalid region")
 	}
 
 	input := &ec2.StartInstancesInput{
@@ -403,10 +410,10 @@ func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				exitWithError(aerr.Message())
+				utils.ExitWithError(aerr.Message())
 			}
 		} else {
-			exitWithError(aerr.Message())
+			utils.ExitWithError(aerr.Message())
 		}
 
 	}
@@ -422,7 +429,7 @@ func (p *AWS) StartInstance(ctx *Context, instanceID string) error {
 func (p *AWS) StopInstance(ctx *Context, instanceID string) error {
 
 	if instanceID == "" {
-		exitWithError("Enter InstanceID")
+		utils.ExitWithError("Enter InstanceID")
 	}
 
 	svc, err := session.NewSession(&aws.Config{
@@ -432,7 +439,7 @@ func (p *AWS) StopInstance(ctx *Context, instanceID string) error {
 	compute := ec2.New(svc)
 
 	if err != nil {
-		exitWithError("Invalid region")
+		utils.ExitWithError("Invalid region")
 	}
 
 	input := &ec2.StopInstancesInput{
@@ -447,10 +454,10 @@ func (p *AWS) StopInstance(ctx *Context, instanceID string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				exitWithError(aerr.Message())
+				utils.ExitWithError(aerr.Message())
 			}
 		} else {
-			exitWithError(aerr.Message())
+			utils.ExitWithError(aerr.Message())
 		}
 
 	}
@@ -536,7 +543,7 @@ func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
 func (p *AWS) CreateInstance(ctx *Context) error {
 	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
 	if err != nil {
-		exitWithError("Invalid zone")
+		utils.ExitWithError("Invalid zone")
 	}
 
 	imgName := ctx.config.CloudConfig.ImageName
