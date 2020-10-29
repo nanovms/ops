@@ -38,6 +38,12 @@ type ProviderConfig struct {
 	Flavor     string `cloud:"flavor"`
 }
 
+// Tag is used as property on creating instances
+type Tag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // RunConfig provides runtime details
 type RunConfig struct {
 	Imagename      string // FIXME: fullpath? of image
@@ -57,6 +63,7 @@ type RunConfig struct {
 	VolumeSizeInGb int //This option is only for openstack.
 	VPC            string
 	Subnet         string
+	Tags           []Tag
 }
 
 // RuntimeConfig constructs runtime config
