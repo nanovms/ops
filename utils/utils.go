@@ -14,7 +14,7 @@ const (
 	ErrorColor = "\033[1;31m%s\033[0m"
 )
 
-//ExistWithError exits with os code 1 and prints in color format
+//ExitWithError Prints message on CLI and exits with os code 1
 func ExitWithError(errs string) {
 	fmt.Println(fmt.Sprintf(ErrorColor, errs))
 	os.Exit(1)
