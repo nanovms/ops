@@ -579,7 +579,17 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 
 	// create security group - could take a potential 'RemotePort' from
 	// config.json in future
-	sg, err := p.CreateSG(ctx, svc, imgName)
+	vpc, err := p.GetVPC(ctx, svc)
+	if err != nil {
+		return err
+	}
+
+	sg, err := p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
+	if err != nil {
+		return err
+	}
+
+	subnet, err := p.GetSubnet(ctx, svc, *vpc.VpcId)
 	if err != nil {
 		return err
 	}
@@ -594,6 +604,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		InstanceType: aws.String(ctx.config.CloudConfig.Flavor),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
+		SubnetId:     aws.String(*subnet.SubnetId),
 		SecurityGroupIds: []*string{
 			aws.String(sg),
 		},
@@ -650,29 +661,90 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	return nil
 }
 
-// CreateSG - Create security group
-// for now just use default vpc
-func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string) (string, error) {
+// GetSubnet returns a subnet with the context subnet name or the default subnet of vpc passed by argument
+func (p *AWS) GetSubnet(ctx *Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, error) {
+	subnetName := ctx.config.RunConfig.Subnet
+	var filters []*ec2.Filter
 
-	// grab first default vpc
-	result, err := svc.DescribeVpcs(nil)
+	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
+
+	if subnetName != "" {
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
+	}
+
+	input := &ec2.DescribeSubnetsInput{
+		Filters: filters,
+	}
+
+	result, err := svc.DescribeSubnets(input)
 	if err != nil {
-		fmt.Printf("Unable to describe VPCs, %v\n", err)
-		return "", err
-	}
-	if len(result.Vpcs) == 0 {
-		fmt.Println("No VPCs found to associate security group with.")
+		fmt.Printf("Unable to describe subnets, %v\n", err)
+		return nil, err
 	}
 
-	var vpcID string
-	//TODO: This will fail if there is no default VPC. Need to implement feature where user should be able to mention VPC
-	for i, s := range result.Vpcs {
-		isDefault := *s.IsDefault
-		if isDefault == true {
-			vpcID = aws.StringValue(result.Vpcs[i].VpcId)
+	if len(result.Subnets) == 0 && subnetName != "" {
+		return nil, fmt.Errorf("No Subnets with name '%v' found to associate security group with", subnetName)
+	} else if len(result.Subnets) == 0 {
+		return nil, errors.New("No Subnets found to associate security group with")
+	}
+
+	if subnetName != "" {
+		for _, subnet := range result.Subnets {
+			if *subnet.DefaultForAz == true {
+				return subnet, nil
+			}
 		}
 	}
 
+	return result.Subnets[0], nil
+}
+
+// GetVPC returns a vpc with the context vpc name or the default vpc
+func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
+	vpcName := ctx.config.RunConfig.VPC
+	var vpc *ec2.Vpc
+	var input *ec2.DescribeVpcsInput
+	if vpcName != "" {
+		var filters []*ec2.Filter
+
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
+		input = &ec2.DescribeVpcsInput{
+			Filters: filters,
+		}
+	}
+
+	result, err := svc.DescribeVpcs(input)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to describe VPCs, %v", err)
+	}
+	if len(result.Vpcs) == 0 && vpcName != "" {
+		return nil, fmt.Errorf("No VPCs with name '%v' found to associate security group with", vpcName)
+	} else if len(result.Vpcs) == 0 {
+		return nil, errors.New("No VPCs found to associate security group with")
+	}
+
+	if vpcName != "" {
+		vpc = result.Vpcs[0]
+	} else {
+		// select default vpc
+		for i, s := range result.Vpcs {
+			isDefault := *s.IsDefault
+			if isDefault == true {
+				vpc = result.Vpcs[i]
+			}
+		}
+
+		// if there is no default VPC select the first vpc of the list
+		if vpc == nil {
+			vpc = result.Vpcs[0]
+		}
+	}
+
+	return vpc, nil
+}
+
+// CreateSG - Create security group
+func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string, vpcID string) (string, error) {
 	t := time.Now().UnixNano()
 	s := strconv.FormatInt(t, 10)
 

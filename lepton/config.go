@@ -55,6 +55,8 @@ type RunConfig struct {
 	OnPrem         bool // true if in a multi-instance/tenant on-prem env
 	Mounts         []string
 	VolumeSizeInGb int //This option is only for openstack.
+	VPC            string
+	Subnet         string
 }
 
 // RuntimeConfig constructs runtime config
