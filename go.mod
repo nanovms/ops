@@ -21,7 +21,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
-	github.com/schollz/progressbar/v2 v2.13.2
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31

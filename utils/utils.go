@@ -14,11 +14,13 @@ const (
 	ErrorColor = "\033[1;31m%s\033[0m"
 )
 
+//ExistWithError exits with os code 1 and prints in color format
 func ExitWithError(errs string) {
 	fmt.Println(fmt.Sprintf(ErrorColor, errs))
 	os.Exit(1)
 }
 
+//ArrayToString converts int array to string
 func ArrayToString(a []int, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }

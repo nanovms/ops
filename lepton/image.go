@@ -2,7 +2,7 @@ package lepton
 
 import (
 	"fmt"
-	"github.com/nanovms/ops/utils"
+	"github.com/briandowns/spinner"
 	"io"
 	"io/ioutil"
 	"log"
@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -471,6 +470,8 @@ func DownloadFileWithProgress(filepath string, url string, timeout int) error {
 // DownloadFile downloads file using URL
 func DownloadFile(filepath string, url string, timeout int, showProgress bool) error {
 	fmt.Println("Downloading..", url)
+	spin := spinner.New(spinner.CharSets[43], 100*time.Millisecond)
+	spin.Start()
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err
@@ -488,17 +489,7 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 	}
 	defer resp.Body.Close()
 
-	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
-
-	// Optionally create a progress reporter and pass it to be used alongside our writer
-	if showProgress {
-		counter := utils.NewWriteCounter(fsize)
-		counter.Start()
-		_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
-		counter.Finish()
-	} else {
-		_, err = io.Copy(out, resp.Body)
-	}
+	_, err = io.Copy(out, resp.Body)
 
 	if err != nil {
 		return err
@@ -508,6 +499,7 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 	if err != nil {
 		return err
 	}
+	spin.Stop()
 	return nil
 }
 
