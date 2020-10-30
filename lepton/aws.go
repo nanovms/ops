@@ -620,14 +620,20 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	tagInstanceName := imgName + "-" + strconv.Itoa(int(time.Now().Unix()))
 
 	// Add name tag to the created instance
+	tags := []*ec2.Tag{
+		{
+			Key:   aws.String("Name"),
+			Value: aws.String(tagInstanceName),
+		},
+	}
+
+	for _, tag := range ctx.config.RunConfig.Tags {
+		tags = append(tags, &ec2.Tag{Key: aws.String(tag.Key), Value: aws.String(tag.Value)})
+	}
+
 	_, err = svc.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{runResult.Instances[0].InstanceId},
-		Tags: []*ec2.Tag{
-			{
-				Key:   aws.String("Name"),
-				Value: aws.String(tagInstanceName),
-			},
-		},
+		Tags:      tags,
 	})
 	if err != nil {
 		fmt.Println("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
