@@ -604,7 +604,7 @@ func (p *GCloud) StartInstance(ctx *Context, instancename string) error {
 
 }
 
-// StopInstance deletes instance from GCloud
+// StopInstance stops instance
 func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
 	context := context.TODO()
 
@@ -621,6 +621,26 @@ func (p *GCloud) StopInstance(ctx *Context, instancename string) error {
 	}
 
 	fmt.Printf("Instance stop succeeded %s.\n", instancename)
+	return nil
+}
+
+// ResetInstance resets instance
+func (p *GCloud) ResetInstance(ctx *Context, instancename string) error {
+	context := context.TODO()
+
+	cloudConfig := ctx.config.CloudConfig
+	op, err := p.Service.Instances.Reset(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance reseting started. Monitoring operation %s.\n", op.Name)
+	err = p.pollOperation(context, cloudConfig.ProjectID, p.Service, *op)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Instance reseting succeeded %s.\n", instancename)
 	return nil
 }
 

@@ -147,6 +147,12 @@ func (g *GCloud) AttachVolume(config *Config, image, name, mount string) error {
 	if err != nil {
 		return err
 	}
+
+	err = g.ResetInstance(NewContext(config, nil), image)
+	if err != nil {
+		return fmt.Errorf("error reseting instance %v", image)
+	}
+
 	return nil
 }
 
@@ -176,5 +182,11 @@ func (g *GCloud) DetachVolume(config *Config, image, volumeName string) error {
 	if err != nil {
 		return err
 	}
+
+	err = g.ResetInstance(NewContext(config, nil), image)
+	if err != nil {
+		return fmt.Errorf("error reseting instance %v", image)
+	}
+
 	return nil
 }
