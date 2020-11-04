@@ -46,6 +46,7 @@ type Azure struct {
 	clientSecret    string
 	locationDefault string
 	groupName       string
+	storageAccount  string
 }
 
 // Environment returns an `azure.Environment{...}` for the current
@@ -248,6 +249,11 @@ func (a *Azure) Initialize() error {
 		a.groupName = groupName
 	}
 
+	storageAccount := os.Getenv("AZURE_STORAGE_ACCOUNT")
+	if storageAccount != "" {
+		a.storageAccount = storageAccount
+	}
+
 	return nil
 }
 
@@ -298,7 +304,7 @@ func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
 
 	images, err := imagesClient.List(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	imgs := images.Values()
