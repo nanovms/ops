@@ -160,6 +160,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if debug {
 		c.RunConfig.Debug = true
 
+		c.Debugflags = append(c.Debugflags, "noaslr")
+
 		elfFile, err := api.GetElfFileInfo(c.ProgramPath)
 		if err != nil {
 			log.Fatal(err)
@@ -172,10 +174,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		if !api.HasDebuggingSymbols(elfFile) {
 			log.Fatalf("Program %s must be compiled with debugging symbols", c.ProgramPath)
 		}
-	}
-
-	if trace || debug {
-		c.Debugflags = append(c.Debugflags, "noaslr")
 	}
 
 	c.RunConfig.GdbPort = gdbport
