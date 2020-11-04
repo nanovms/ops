@@ -285,12 +285,19 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 
 	securityRules := make([]network.SecurityRule, len(c.RunConfig.Ports))
 
+	var communicationProtocol network.SecurityRuleProtocol
+	if c.RunConfig.UDP {
+		communicationProtocol = network.SecurityRuleProtocolUDP
+	} else {
+		communicationProtocol = network.SecurityRuleProtocolTCP
+	}
+
 	for i, port := range c.RunConfig.Ports {
 
 		var rule = network.SecurityRule{
 			Name: to.StringPtr("allow_" + strconv.Itoa(port)),
 			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Protocol:                 network.SecurityRuleProtocolTCP,
+				Protocol:                 communicationProtocol,
 				SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
 				SourcePortRange:          to.StringPtr("1-65535"),
 				DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
