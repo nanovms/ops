@@ -51,19 +51,22 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
-	ports := []int{}
-	port, err := cmd.Flags().GetStringArray("port")
+	portsFlag, err := cmd.Flags().GetStringArray("port")
+	if err != nil {
+		panic(err)
+	}
+	ports, err := api.SliceAtoi(portsFlag)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, p := range port {
-		i, err := strconv.Atoi(p)
-		if err != nil {
-			panic(err)
-		}
-
-		ports = append(ports, i)
+	udpPortsFlag, err := cmd.Flags().GetStringArray("udp")
+	if err != nil {
+		panic(err)
+	}
+	c.RunConfig.UDPPorts, err = api.SliceAtoi(udpPortsFlag)
+	if err != nil {
+		panic(err)
 	}
 
 	initDefaultRunConfigs(c, ports)
@@ -300,6 +303,7 @@ func instanceLogsCommand() *cobra.Command {
 func InstanceCommands() *cobra.Command {
 	var targetCloud, projectID, zone string
 	var ports []string
+	var udpPorts []string
 
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
@@ -309,6 +313,7 @@ func InstanceCommands() *cobra.Command {
 	}
 
 	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
+	cmdInstance.PersistentFlags().StringArrayVarP(&udpPorts, "udp", "", nil, "udp ports to forward")
 	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure]")
 	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
 	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")

@@ -749,6 +749,18 @@ func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	return vpc, nil
 }
 
+func (p AWS) buildFirewallRule(protocol string, port int) *ec2.IpPermission {
+	var ec2Permission = new(ec2.IpPermission)
+	ec2Permission.SetIpProtocol(protocol)
+	ec2Permission.SetFromPort(int64(port))
+	ec2Permission.SetToPort(int64(port))
+	ec2Permission.SetIpRanges([]*ec2.IpRange{
+		{CidrIp: aws.String("0.0.0.0/0")},
+	})
+
+	return ec2Permission
+}
+
 // CreateSG - Create security group
 func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string, vpcID string) (string, error) {
 	t := time.Now().UnixNano()
@@ -779,21 +791,16 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string, vpcID string)
 	fmt.Printf("Created security group %s with VPC %s.\n",
 		aws.StringValue(createRes.GroupId), vpcID)
 
-	var ec2Permissions = make([]*ec2.IpPermission, len(ctx.config.RunConfig.Ports))
+	var ec2Permissions []*ec2.IpPermission
 
-	for i, port := range ctx.config.RunConfig.Ports {
-		var ec2Permission = new(ec2.IpPermission)
-		if ctx.config.RunConfig.UDP {
-			ec2Permission.SetIpProtocol("udp")
-		} else {
-			ec2Permission.SetIpProtocol("tcp")
-		}
-		ec2Permission.SetFromPort(int64(port))
-		ec2Permission.SetToPort(int64(port))
-		ec2Permission.SetIpRanges([]*ec2.IpRange{
-			{CidrIp: aws.String("0.0.0.0/0")},
-		})
-		ec2Permissions[i] = ec2Permission
+	for _, port := range ctx.config.RunConfig.Ports {
+		rule := p.buildFirewallRule("tcp", port)
+		ec2Permissions = append(ec2Permissions, rule)
+	}
+
+	for _, port := range ctx.config.RunConfig.UDPPorts {
+		rule := p.buildFirewallRule("udp", port)
+		ec2Permissions = append(ec2Permissions, rule)
 	}
 
 	// maybe have these ports specified from config.json in near future
