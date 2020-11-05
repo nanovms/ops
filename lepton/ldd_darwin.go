@@ -10,6 +10,41 @@ import (
 	"github.com/go-errors/errors"
 )
 
+// GetElfFileInfo returns an object with elf information of the path program
+func GetElfFileInfo(path string) (*elf.File, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	efd, err := elf.NewFile(fd)
+	if err != nil {
+		return nil, err
+	}
+	return efd, nil
+}
+
+// HasDebuggingSymbols checks whether elf file has debugging symbols
+func HasDebuggingSymbols(efd *elf.File) bool {
+	for _, phdr := range efd.Sections {
+		if strings.Compare(phdr.Name, ".debug_info") == 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsDynamicLinked checks whether elf file was linked dynamically
+func IsDynamicLinked(efd *elf.File) bool {
+	for _, phdr := range efd.Progs {
+		if phdr.Type == elf.PT_DYNAMIC {
+			return true
+		}
+	}
+
+	return false
+}
+
 func expandVars(origin string, s string) string {
 	return strings.Replace(s, "$ORIGIN", origin, -1)
 }
