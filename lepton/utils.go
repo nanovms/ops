@@ -3,6 +3,7 @@ package lepton
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -69,4 +70,17 @@ func isDomainValid(name string) error {
 		return fmt.Errorf("domain: top level domain '%s' at offset %d begins with a digit", name[l:], l)
 	}
 	return nil
+}
+
+// SliceAtoi converts slice of strings to a slice of integers
+func SliceAtoi(sa []string) ([]int, error) {
+	si := make([]int, 0, len(sa))
+	for _, a := range sa {
+		i, err := strconv.Atoi(a)
+		if err != nil {
+			return si, err
+		}
+		si = append(si, i)
+	}
+	return si, nil
 }

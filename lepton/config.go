@@ -58,6 +58,7 @@ type RunConfig struct {
 	TapName        string
 	Accel          bool
 	UDP            bool // enable UDP
+	UDPPorts       []int
 	OnPrem         bool // true if in a multi-instance/tenant on-prem env
 	Mounts         []string
 	VolumeSizeInGb int //This option is only for openstack.

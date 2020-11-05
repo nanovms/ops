@@ -278,29 +278,38 @@ func (a *Azure) getNsgClient() network.SecurityGroupsClient {
 	return nsgClient
 }
 
+func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port int) network.SecurityRule {
+	portStr := strconv.Itoa(port)
+	return network.SecurityRule{
+		Name: to.StringPtr("allow_" + portStr),
+		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+			Protocol:                 protocol,
+			SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
+			SourcePortRange:          to.StringPtr("1-65535"),
+			DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
+			DestinationPortRange:     to.StringPtr(portStr),
+			Access:                   network.SecurityRuleAccessAllow,
+			Direction:                network.SecurityRuleDirectionInbound,
+			Priority:                 to.Int32Ptr(rand.Int31n(200-100) + 100), //Generating number between 100 - 200
+		},
+	}
+}
+
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
 func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg network.SecurityGroup, err error) {
 	nsgClient := a.getNsgClient()
 
-	securityRules := make([]network.SecurityRule, len(c.RunConfig.Ports))
+	var securityRules []network.SecurityRule
 
-	for i, port := range c.RunConfig.Ports {
+	for _, port := range c.RunConfig.Ports {
+		var rule = a.buildFirewallRule(network.SecurityRuleProtocolTCP, port)
+		securityRules = append(securityRules, rule)
+	}
 
-		var rule = network.SecurityRule{
-			Name: to.StringPtr("allow_" + strconv.Itoa(port)),
-			SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-				Protocol:                 network.SecurityRuleProtocolTCP,
-				SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
-				SourcePortRange:          to.StringPtr("1-65535"),
-				DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
-				DestinationPortRange:     to.StringPtr(strconv.Itoa(port)),
-				Access:                   network.SecurityRuleAccessAllow,
-				Direction:                network.SecurityRuleDirectionInbound,
-				Priority:                 to.Int32Ptr(rand.Int31n(200-100) + 100), //Generating number between 100 - 200
-			},
-		}
-		securityRules[i] = rule
+	for _, port := range c.RunConfig.UDPPorts {
+		var rule = a.buildFirewallRule(network.SecurityRuleProtocolUDP, port)
+		securityRules = append(securityRules, rule)
 	}
 
 	future, err := nsgClient.CreateOrUpdate(
