@@ -505,6 +505,17 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)
 		q.addOption("-gdb", gdbProtoStr)
 	}
+
+	if rconfig.Debug {
+		gdbPort := "1234"
+		if rconfig.GdbPort != 0 {
+			gdbPort = strconv.Itoa(rconfig.GdbPort)
+		}
+
+		q.addOption("-s", "-S")
+		fmt.Printf("Waiting for gdb connection. Connect to qemu through \"(gdb) target remote localhost:%s\"\n", gdbPort)
+		fmt.Println("See further instructions in https://nanovms.gitbook.io/ops/debugging")
+	}
 }
 
 func (q *qemu) isInstalled() bool {

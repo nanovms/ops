@@ -12,22 +12,39 @@ import (
 	"github.com/go-errors/errors"
 )
 
-func isDynamicLinked(path string) (bool, error) {
+// GetElfFileInfo returns an object with elf information of the path program
+func GetElfFileInfo(path string) (*elf.File, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	efd, err := elf.NewFile(fd)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	for _, phdr := range efd.Progs {
-		if phdr.Type == elf.PT_DYNAMIC {
-			return true, nil
+	return efd, nil
+}
+
+// HasDebuggingSymbols checks whether elf file has debugging symbols
+func HasDebuggingSymbols(efd *elf.File) bool {
+	for _, phdr := range efd.Sections {
+		if strings.Compare(phdr.Name, ".debug_info") == 0 {
+			return true
 		}
 	}
 
-	return false, nil
+	return false
+}
+
+// IsDynamicLinked checks whether elf file was linked dynamically
+func IsDynamicLinked(efd *elf.File) bool {
+	for _, phdr := range efd.Progs {
+		if phdr.Type == elf.PT_DYNAMIC {
+			return true
+		}
+	}
+
+	return false
 }
 
 // works only on linux, need to
@@ -56,7 +73,10 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	// TODO:move away from LD_TRACE_LOADED_OBJECTS
 	dir, _ := os.Getwd()
 	var deps []string
-	if ok, _ := isDynamicLinked(path); ok {
+
+	elfFile, err := GetElfFileInfo(path)
+
+	if err == nil && IsDynamicLinked(elfFile) {
 		env := os.Environ()
 		env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
 		cmd := exec.Command(path)

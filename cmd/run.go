@@ -41,7 +41,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	debugflags, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
+	debug, err := strconv.ParseBool(cmd.Flag("debug").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
+	trace, err := strconv.ParseBool(cmd.Flag("trace").Value.String())
 	if err != nil {
 		panic(err)
 	}
@@ -81,9 +86,14 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	accel, err := cmd.Flags().GetBool("accel")
-	if err != nil {
-		panic(err)
+	var accel bool
+	if debug {
+		accel = false
+	} else {
+		accel, err = cmd.Flags().GetBool("accel")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	manifestName, err := cmd.Flags().GetString("manifest-name")
@@ -141,8 +151,29 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if debugflags {
+	c.Debugflags = []string{}
+
+	if trace {
 		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	}
+
+	if debug {
+		c.RunConfig.Debug = true
+
+		c.Debugflags = append(c.Debugflags, "noaslr")
+
+		elfFile, err := api.GetElfFileInfo(c.ProgramPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if api.IsDynamicLinked(elfFile) {
+			log.Fatalf("Program %s must be linked statically", c.ProgramPath)
+		}
+
+		if !api.HasDebuggingSymbols(elfFile) {
+			log.Fatalf("Program %s must be compiled with debugging symbols", c.ProgramPath)
+		}
 	}
 
 	c.RunConfig.GdbPort = gdbport
@@ -211,7 +242,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 func RunCommand() *cobra.Command {
 	var ports []string
 	var force bool
-	var debugflags bool
+	var debug bool
+	var trace bool
 	var gdbport int
 	var smp int
 	var noTrace []string
@@ -239,7 +271,8 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to forward")
 	cmdRun.PersistentFlags().BoolVarP(&force, "force", "f", false, "update images")
 	cmdRun.PersistentFlags().BoolVarP(&nightly, "nightly", "n", false, "nightly build")
-	cmdRun.PersistentFlags().BoolVarP(&debugflags, "debug", "d", false, "enable all debug flags")
+	cmdRun.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable interactive debugger")
+	cmdRun.PersistentFlags().BoolVarP(&trace, "trace", "", false, "enable required flags to trace")
 	cmdRun.PersistentFlags().IntVarP(&gdbport, "gdbport", "g", 0, "qemu TCP port used for GDB interface")
 	cmdRun.PersistentFlags().StringArrayVarP(&noTrace, "no-trace", "", nil, "do not trace syscall")
 	cmdRun.PersistentFlags().StringArrayVarP(&args, "args", "a", nil, "command line arguments")
