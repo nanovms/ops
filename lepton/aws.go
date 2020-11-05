@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ebs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/route53"
 
@@ -22,8 +23,9 @@ import (
 
 // AWS contains all operations for AWS
 type AWS struct {
-	Storage    *S3
-	dnsService *route53.Route53
+	Storage       *S3
+	dnsService    *route53.Route53
+	volumeService *ebs.EBS
 }
 
 // BuildImage to be upload on AWS
@@ -59,9 +61,7 @@ func (p *AWS) getDNSService(config *Config) (*route53.Route53, error) {
 		return p.dnsService, nil
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.CloudConfig.Zone)},
-	)
+	sess, err := p.getAWSSession(config)
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +79,10 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	// 2) create a snapshot
 	// 3) create an image
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.config.CloudConfig.Zone)},
-	)
+	compute, err := p.getEc2Service(ctx.config)
 	if err != nil {
 		return err
 	}
-
-	compute := ec2.New(sess)
 
 	c := ctx.config
 
@@ -110,68 +106,20 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		return err
 	}
 
-	taskFilter := &ec2.DescribeImportSnapshotTasksInput{
-		ImportTaskIds: []*string{res.ImportTaskId},
-	}
-
-	describeOutput, err := compute.DescribeImportSnapshotTasks(taskFilter)
+	snapshotID, err := p.waitSnapshotToBeReady(c, res.ImportTaskId)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("waiting for snapshot - can take like 5min.... ")
-
-	waitStartTime := time.Now()
-
-	ct := aws.BackgroundContext()
-	w := request.Waiter{
-		Name:        "DescribeImportSnapshotTasks",
-		Delay:       request.ConstantWaiterDelay(15 * time.Second),
-		MaxAttempts: 60,
-		Acceptors: []request.WaiterAcceptor{
-			{
-				State:    request.SuccessWaiterState,
-				Matcher:  request.PathAllWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "completed",
-			},
-			{
-				State:    request.FailureWaiterState,
-				Matcher:  request.PathAnyWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "deleted",
-			},
-			{
-				State:    request.FailureWaiterState,
-				Matcher:  request.PathAnyWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "deleting",
-			},
-		},
-		NewRequest: func(opts []request.Option) (*request.Request, error) {
-			req, _ := compute.DescribeImportSnapshotTasksRequest(taskFilter)
-			req.SetContext(ct)
-			req.ApplyOptions(opts...)
-			return req, nil
-		},
-	}
-	w.WaitWithContext(ct)
-
-	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
 	// delete the tmp s3 image
 	err = p.Storage.DeleteFromBucket(c, key)
-
-	describeOutput, err = compute.DescribeImportSnapshotTasks(taskFilter)
 	if err != nil {
 		return err
 	}
 
-	snapshotID := describeOutput.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId
-
 	// tag the volume
 	_, err = compute.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{describeOutput.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId},
+		Resources: []*string{snapshotID},
 		Tags: []*ec2.Tag{
 			{
 				Key:   aws.String("Name"),
@@ -970,4 +918,87 @@ func (p *AWS) getArchiveName(ctx *Context) string {
 // GetStorage returns storage interface for cloud provider
 func (p *AWS) GetStorage() Storage {
 	return p.Storage
+}
+
+func (p *AWS) getAWSSession(config *Config) (*session.Session, error) {
+	return session.NewSession(
+		&aws.Config{
+			Region: aws.String(config.CloudConfig.Zone)},
+	)
+}
+
+func (p *AWS) getEc2Service(config *Config) (*ec2.EC2, error) {
+	svc, err := session.NewSession(&aws.Config{
+		Region: aws.String(config.CloudConfig.Zone)},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return ec2.New(svc), nil
+}
+
+func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*string, error) {
+	compute, err := p.getEc2Service(config)
+	if err != nil {
+		return nil, err
+	}
+
+	taskFilter := &ec2.DescribeImportSnapshotTasksInput{
+		ImportTaskIds: []*string{importTaskID},
+	}
+
+	_, err = compute.DescribeImportSnapshotTasks(taskFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("waiting for snapshot - can take like 5min.... ")
+
+	waitStartTime := time.Now()
+
+	ct := aws.BackgroundContext()
+	w := request.Waiter{
+		Name:        "DescribeImportSnapshotTasks",
+		Delay:       request.ConstantWaiterDelay(15 * time.Second),
+		MaxAttempts: 60,
+		Acceptors: []request.WaiterAcceptor{
+			{
+				State:    request.SuccessWaiterState,
+				Matcher:  request.PathAllWaiterMatch,
+				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
+				Expected: "completed",
+			},
+			{
+				State:    request.FailureWaiterState,
+				Matcher:  request.PathAnyWaiterMatch,
+				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
+				Expected: "deleted",
+			},
+			{
+				State:    request.FailureWaiterState,
+				Matcher:  request.PathAnyWaiterMatch,
+				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
+				Expected: "deleting",
+			},
+		},
+		NewRequest: func(opts []request.Option) (*request.Request, error) {
+			req, _ := compute.DescribeImportSnapshotTasksRequest(taskFilter)
+			req.SetContext(ct)
+			req.ApplyOptions(opts...)
+			return req, nil
+		},
+	}
+	w.WaitWithContext(ct)
+
+	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
+
+	describeOutput, err := compute.DescribeImportSnapshotTasks(taskFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotID := describeOutput.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId
+
+	return snapshotID, nil
 }
