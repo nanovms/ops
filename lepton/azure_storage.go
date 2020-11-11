@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
@@ -102,17 +102,12 @@ func (az *AzureStorage) resizeImage(basePath string, newPath string, resizeSz ui
 }
 
 // CopyToBucket copies archive to bucket
-func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
+func (az *AzureStorage) CopyToBucket(config *Config, imgPath string) error {
 
-	// not sure why this is necessary - afaik only gcp does the tarball
-	// uploads
-	base := config.CloudConfig.ImageName + ".img"
-	opshome := GetOpsHome()
-	imgpath := path.Join(opshome, "images", base)
-	imgpath = strings.ReplaceAll(imgpath, "-image", "")
+	base := filepath.Base(imgPath)
 
 	// get virtual size
-	vs := az.virtualSize(imgpath)
+	vs := az.virtualSize(imgPath)
 	rs := az.resizeLength(vs)
 
 	debug := false
@@ -125,7 +120,7 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 	newpath = strings.ReplaceAll(newpath, "-image", "")
 
 	// resize
-	az.resizeImage(imgpath, newpath, rs)
+	az.resizeImage(imgPath, newpath, rs)
 
 	// convert
 	vhdPath := "/tmp/" + config.CloudConfig.ImageName + ".vhd"
