@@ -153,6 +153,8 @@ func (a *Azure) AttachVolume(config *Config, image, name, mount string) error {
 		return fmt.Errorf("cannot update vm: %v", err)
 	}
 
+	fmt.Println("attaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
+
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
 		return fmt.Errorf("cannot get the vm create or update future response: %v", err)
@@ -183,6 +185,8 @@ func (a *Azure) DetachVolume(config *Config, image, name string) error {
 	if err != nil {
 		return fmt.Errorf("cannot update vm: %v", err)
 	}
+
+	fmt.Println("detaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
