@@ -3,6 +3,7 @@ package lepton
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,6 +57,10 @@ func dirUnix() (string, error) {
 		homeEnv = "home"
 	}
 
+	if home, err := os.UserHomeDir(); err == nil {
+		return home, nil
+	}
+
 	// First prefer the HOME environmental variable
 	if home := os.Getenv(homeEnv); home != "" {
 		return home, nil
@@ -78,7 +83,7 @@ func dirUnix() (string, error) {
 		cmd.Stdout = &stdout
 		if err := cmd.Run(); err != nil {
 			// If the error is ErrNotFound, we ignore it. Otherwise, return it.
-			if err != exec.ErrNotFound {
+			if !strings.Contains(err.Error(), exec.ErrNotFound.Error()) {
 				return "", err
 			}
 		} else {
@@ -96,8 +101,15 @@ func dirUnix() (string, error) {
 	stdout.Reset()
 	cmd := exec.Command("sh", "-c", "cd && pwd")
 	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Run(); !strings.Contains(err.Error(), exec.ErrNotFound.Error()) {
 		return "", err
+	}
+
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		return path, nil
 	}
 
 	result := strings.TrimSpace(stdout.String())
