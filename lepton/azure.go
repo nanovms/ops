@@ -191,7 +191,8 @@ func (a *Azure) customizeImage(ctx *Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return archPath, nil
+
+	return imagePath, nil
 }
 
 // BuildImage to be upload on Azure

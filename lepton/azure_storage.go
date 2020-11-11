@@ -102,12 +102,12 @@ func (az *AzureStorage) resizeImage(basePath string, newPath string, resizeSz ui
 }
 
 // CopyToBucket copies archive to bucket
-func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
+func (az *AzureStorage) CopyToBucket(config *Config, imgPath string) error {
 
-	base := filepath.Base(archPath)
+	base := filepath.Base(imgPath)
 
 	// get virtual size
-	vs := az.virtualSize(archPath)
+	vs := az.virtualSize(imgPath)
 	rs := az.resizeLength(vs)
 
 	debug := false
@@ -120,7 +120,7 @@ func (az *AzureStorage) CopyToBucket(config *Config, archPath string) error {
 	newpath = strings.ReplaceAll(newpath, "-image", "")
 
 	// resize
-	az.resizeImage(archPath, newpath, rs)
+	az.resizeImage(imgPath, newpath, rs)
 
 	// convert
 	vhdPath := "/tmp/" + config.CloudConfig.ImageName + ".vhd"
