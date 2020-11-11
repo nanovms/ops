@@ -194,7 +194,22 @@ func (v *Vsphere) AttachVolume(config *Config, image, name, mount string) error 
 
 	disk := devices.CreateDisk(controller, ds.Reference(), ds.Path("volumes/"+name))
 
-	return vm.AddDevice(context.TODO(), disk)
+	err = vm.AddDevice(context.TODO(), disk)
+	if err != nil {
+		return err
+	}
+
+	task, err := vm.Reset(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	_, err = task.WaitForResult(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DetachVolume detaches a volume from an instance
@@ -235,6 +250,16 @@ func (v *Vsphere) DetachVolume(config *Config, image, name string) error {
 	}
 
 	err = vm.RemoveDevice(context.TODO(), true, device)
+	if err != nil {
+		return err
+	}
+
+	task, err := vm.Reset(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	_, err = task.WaitForResult(context.TODO())
 	if err != nil {
 		return err
 	}
