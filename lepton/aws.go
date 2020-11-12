@@ -532,9 +532,20 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	sg, err := p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
-	if err != nil {
-		return err
+	var sg string
+
+	if ctx.config.RunConfig.SecurityGroup != "" && ctx.config.RunConfig.VPC != "" {
+		err = p.CheckValidSecurityGroup(ctx, svc)
+		if err != nil {
+			return err
+		}
+
+		sg = ctx.config.RunConfig.SecurityGroup
+	} else {
+		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
+		if err != nil {
+			return err
+		}
 	}
 
 	subnet, err := p.GetSubnet(ctx, svc, *vpc.VpcId)
@@ -610,6 +621,31 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 			return nil
 		}
 		return fmt.Errorf("\nOperation timed out. No of tries %d", pollCount)
+	}
+
+	return nil
+}
+
+// CheckValidSecurityGroup checks whether the configuration security group exists and has the configuration VPC assigned
+func (p *AWS) CheckValidSecurityGroup(ctx *Context, svc *ec2.EC2) error {
+	sg := ctx.config.RunConfig.SecurityGroup
+	vpc := ctx.config.RunConfig.VPC
+
+	input := &ec2.DescribeSecurityGroupsInput{
+		GroupIds: []*string{
+			aws.String(sg),
+		},
+	}
+
+	result, err := svc.DescribeSecurityGroups(input)
+	if err != nil {
+		return fmt.Errorf("get security group with id '%s': %s", sg, err.Error())
+	}
+
+	if len(result.SecurityGroups) == 1 && *result.SecurityGroups[0].VpcId != vpc {
+		return fmt.Errorf("vpc mismatch: expected '%s' to have vpc '%s', got '%s'", sg, ctx.config.RunConfig.VPC, *result.SecurityGroups[0].VpcId)
+	} else if len(result.SecurityGroups) == 0 {
+		return fmt.Errorf("security group '%s' not found", sg)
 	}
 
 	return nil

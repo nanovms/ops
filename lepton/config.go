@@ -63,6 +63,7 @@ type RunConfig struct {
 	Mounts         []string
 	VolumeSizeInGb int //This option is only for openstack.
 	VPC            string
+	SecurityGroup  string
 	Subnet         string
 	Tags           []Tag
 	Debug          bool
