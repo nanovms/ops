@@ -18,6 +18,8 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	nightly, _ := cmd.Flags().GetBool("nightly")
 
 	conf := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
+
 	conf.NightlyBuild = nightly
 	var err error
 	var version string
@@ -67,6 +69,7 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
 	var vol api.VolumeService
 	var err error
@@ -142,6 +145,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
 	var vol api.VolumeService
 	var err error
@@ -165,6 +169,7 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
 	var vol api.VolumeService
 	var err error

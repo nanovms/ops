@@ -128,6 +128,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	c := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	c.Args = append(c.Args, cmdargs...)
 

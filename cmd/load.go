@@ -180,6 +180,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
 	c := unWarpConfig(config)
 	c.Args = append(c.Args, cmdargs...)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	if debugflags {
 		pkgConfig.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}

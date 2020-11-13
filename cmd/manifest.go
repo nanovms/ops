@@ -27,6 +27,8 @@ func printManifestHandler(cmd *cobra.Command, args []string) {
 	config = strings.TrimSpace(config)
 
 	c := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+
 	c.Program = args[0]
 	c.NightlyBuild = nightly
 	prepareImages(c)

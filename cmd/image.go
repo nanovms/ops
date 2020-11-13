@@ -26,6 +26,8 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	c := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+
 	// override config from command line
 	if len(provider) > 0 {
 		c.CloudConfig.Platform = provider
@@ -245,6 +247,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
 	var c *api.Config
 	c = api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
@@ -274,6 +277,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 
 	var c *api.Config
 	c = api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
@@ -311,6 +315,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 	var c *api.Config
 	c = api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
@@ -366,6 +371,7 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 
 	config, _ := cmd.Flags().GetString("config")
 	conf := unWarpConfig(config)
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {

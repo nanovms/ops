@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -116,13 +117,34 @@ func CreateDNSRecord(config *Config, aRecordIP string, dnsService DNSService) er
 type Context struct {
 	config   *Config
 	provider *Provider
+	logger   *Logger
 }
 
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *Config, provider *Provider) *Context {
+
+	logger := NewLogger(os.Stdout)
+
+	if c.RunConfig.Debug {
+		logger.SetDebug(true)
+	}
+
+	if c.RunConfig.ShowWarnings {
+		logger.SetWarn(true)
+	}
+
+	if c.RunConfig.ShowErrors {
+		logger.SetError(true)
+	}
+
+	if c.RunConfig.Verbose {
+		logger.SetInfo(true)
+	}
+
 	return &Context{
 		config:   c,
 		provider: provider,
+		logger:   logger,
 	}
 }
