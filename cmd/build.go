@@ -25,6 +25,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.Program = args[0]
 	c.TargetRoot = targetRoot
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	if len(cmdenvs) > 0 {
 		if len(c.Env) == 0 {

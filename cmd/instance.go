@@ -32,6 +32,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	} else {
 		c = api.NewConfig()
 	}
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" && provider == "gcp" {
@@ -110,7 +111,8 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	c := *api.NewConfig()
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" && provider == "gcp" {
@@ -124,7 +126,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(&c, &p)
+	ctx := api.NewContext(c, &p)
 	err = p.ListInstances(ctx)
 	if err != nil {
 		exitWithError(err.Error())
@@ -146,7 +148,8 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	c := *api.NewConfig()
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -161,7 +164,7 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(&c, &p)
+	ctx := api.NewContext(c, &p)
 	err = p.DeleteInstance(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
@@ -174,7 +177,8 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	c := *api.NewConfig()
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -189,7 +193,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(&c, &p)
+	ctx := api.NewContext(c, &p)
 	err = p.StartInstance(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
@@ -202,7 +206,8 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	c := *api.NewConfig()
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 
@@ -217,7 +222,7 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(&c, &p)
+	ctx := api.NewContext(c, &p)
 	err = p.StopInstance(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
@@ -261,7 +266,8 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	c := *api.NewConfig()
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	if projectID == "" && provider == "gcp" {
@@ -280,7 +286,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(&c, &p)
+	ctx := api.NewContext(c, &p)
 	err = p.PrintInstanceLogs(ctx, args[0], watch)
 	if err != nil {
 		exitWithError(err.Error())

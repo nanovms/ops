@@ -67,6 +67,8 @@ type RunConfig struct {
 	Subnet         string
 	Tags           []Tag
 	Debug          bool
+	ShowWarnings   bool
+	ShowErrors     bool
 }
 
 // RuntimeConfig constructs runtime config

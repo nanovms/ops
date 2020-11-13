@@ -23,6 +23,7 @@ require (
 	github.com/schollz/progressbar/v2 v2.13.2
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.3
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vishvananda/netlink v1.0.0
 	github.com/vishvananda/netns v0.0.0-20190625233234-7109fa855b0f // indirect
