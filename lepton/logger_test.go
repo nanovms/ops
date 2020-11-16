@@ -8,14 +8,7 @@ import (
 )
 
 const (
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorBlue   = "\033[34m"
-	colorPurple = "\033[35m"
-	colorCyan   = "\033[36m"
-	colorWhite  = "\033[37m"
-	newline     = "\n"
+	newline = "\n"
 )
 
 func TestLogger(t *testing.T) {
@@ -56,7 +49,7 @@ func TestLogger(t *testing.T) {
 		logger.Info("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := colorBlue + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Blue() + "test 1,2,3" + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -85,7 +78,7 @@ func TestLogger(t *testing.T) {
 		logger.Warn("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := colorYellow + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Yellow() + "test 1,2,3" + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -114,7 +107,7 @@ func TestLogger(t *testing.T) {
 		logger.Error("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := colorRed + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Red() + "test 1,2,3" + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -143,7 +136,7 @@ func TestLogger(t *testing.T) {
 		logger.Debug("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := colorPurple + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Cyan() + "test 1,2,3" + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
