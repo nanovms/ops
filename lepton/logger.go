@@ -5,16 +5,6 @@ import (
 	"io"
 )
 
-const (
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorBlue   = "\033[34m"
-	colorPurple = "\033[35m"
-	colorCyan   = "\033[36m"
-	colorWhite  = "\033[37m"
-)
-
 // Logger filters and prints messages to a destination
 type Logger struct {
 	output io.Writer
@@ -57,27 +47,27 @@ func (l *Logger) Log(message string, a ...interface{}) {
 // Info checks info level is activated to write the message
 func (l *Logger) Info(message string, a ...interface{}) {
 	if l.info == true {
-		l.Log(string(colorBlue)+message, a...)
+		l.Log(ConsoleColors.Blue()+message, a...)
 	}
 }
 
 // Warn checks warn level is activated to write the message
 func (l *Logger) Warn(message string, a ...interface{}) {
 	if l.warn == true {
-		l.Log(string(colorYellow)+message, a...)
+		l.Log(ConsoleColors.Yellow()+message, a...)
 	}
 }
 
 // Error checks error level is activated to write the message
 func (l *Logger) Error(message string, a ...interface{}) {
 	if l.err == true {
-		l.Log(string(colorRed)+message, a...)
+		l.Log(ConsoleColors.Red()+message, a...)
 	}
 }
 
 // Debug checks debug level is activated to write the message
 func (l *Logger) Debug(message string, a ...interface{}) {
 	if l.debug == true {
-		l.Log(string(colorPurple)+message, a...)
+		l.Log(ConsoleColors.Cyan()+message, a...)
 	}
 }
