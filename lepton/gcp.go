@@ -449,32 +449,48 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 	// create firewall rules to expose instance ports
 	if len(ctx.config.RunConfig.Ports) != 0 {
-		var ports []string
-		for _, i := range ctx.config.RunConfig.Ports {
-			ports = append(ports, strconv.Itoa(i))
-		}
-
-		rule := &compute.Firewall{
-			Name:        "ops-rule-" + instanceName,
-			Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ctx.config.RunConfig.Ports, "[]"), instanceName),
-			Allowed: []*compute.FirewallAllowed{
-				{
-					IPProtocol: "tcp",
-					Ports:      ports,
-				},
-			},
-			TargetTags:   []string{instanceName},
-			SourceRanges: []string{"0.0.0.0/0"},
-		}
+		rule := p.buildFirewallRule("tcp", ctx.config.RunConfig.Ports, instanceName)
 
 		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
 
 		if err != nil {
-			exitWithError("Failed to add Firewall rule")
+			ctx.logger.Error("%v", err)
+			return errors.New("Failed to add Firewall rule")
+		}
+	}
+
+	if len(ctx.config.RunConfig.UDPPorts) != 0 {
+		rule := p.buildFirewallRule("udp", ctx.config.RunConfig.UDPPorts, instanceName)
+
+		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+
+		if err != nil {
+			ctx.logger.Error("%v", err)
+			return errors.New("Failed to add Firewall rule")
 		}
 	}
 
 	return nil
+}
+
+func (p *GCloud) buildFirewallRule(protocol string, ports []int, tag string) *compute.Firewall {
+	var portsStr []string
+	for _, i := range ports {
+		portsStr = append(portsStr, strconv.Itoa(i))
+	}
+
+	return &compute.Firewall{
+		Name:        fmt.Sprintf("ops-%s-rule-%s", protocol, tag),
+		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ports, "[]"), tag),
+		Allowed: []*compute.FirewallAllowed{
+			{
+				IPProtocol: protocol,
+				Ports:      portsStr,
+			},
+		},
+		TargetTags:   []string{tag},
+		SourceRanges: []string{"0.0.0.0/0"},
+	}
 }
 
 // ListInstances lists instances on Gcloud
