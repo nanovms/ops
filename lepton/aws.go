@@ -659,7 +659,7 @@ func (p *AWS) GetSubnet(ctx *Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, 
 	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
 
 	if subnetName != "" {
-		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("subnet-id"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
 	}
 
 	input := &ec2.DescribeSubnetsInput{
@@ -697,7 +697,7 @@ func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	if vpcName != "" {
 		var filters []*ec2.Filter
 
-		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
 		input = &ec2.DescribeVpcsInput{
 			Filters: filters,
 		}
