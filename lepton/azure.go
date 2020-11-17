@@ -19,6 +19,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 
 	"github.com/olekukonko/tablewriter"
@@ -608,9 +609,7 @@ func (a *Azure) GetInstances(ctx *Context) (cinstances []CloudInstance, err erro
 	return
 }
 
-func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudInstance {
-	ipClient := a.getIPClient()
-
+func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine, nicClient *network.InterfacesClient, ipClient *network.PublicIPAddressesClient) (*CloudInstance, error) {
 	cinstance := CloudInstance{
 		Name: *instance.Name,
 	}
