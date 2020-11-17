@@ -423,7 +423,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Info("creating virtual network with id %s\n", vmName)
 	vnet, err := a.CreateVirtualNetwork(context.TODO(), location, vmName)
 	if err != nil {
-		ctx.logger.Log("error creating virtual network: %v\n", err)
+		ctx.logger.Error("error creating virtual network: %v\n", err)
 		return errors.New("error creating virtual network")
 	}
 
@@ -431,7 +431,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Info("creating network security group with id %s\n", vmName)
 	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
 	if err != nil {
-		ctx.logger.Log("error creating network security group: %v", err)
+		ctx.logger.Error("error creating network security group: %v", err)
 		return errors.New("error creating network security group")
 	}
 
@@ -439,7 +439,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Info("creating subnet with id %s\n", vmName)
 	_, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
 	if err != nil {
-		ctx.logger.Log("error creating subnet: %v\n", err)
+		ctx.logger.Error("error creating subnet: %v\n", err)
 		return errors.New("error creating subnet")
 
 	}
@@ -448,7 +448,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Info("creating public ip with id %s\n", vmName)
 	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
-		ctx.logger.Log("error creating public ip: %v\n", err)
+		ctx.logger.Error("error creating public ip: %v\n", err)
 		return errors.New("error creating public ip")
 	}
 
@@ -457,7 +457,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Info("creating network interface controller with id %s\n", vmName)
 	nic, err := a.CreateNIC(context.TODO(), location, vmName, vmName, vmName, vmName, vmName)
 	if err != nil {
-		ctx.logger.Log("error creating network interface controller: %v\n", err)
+		ctx.logger.Error("error creating network interface controller: %v\n", err)
 		return errors.New("error creating network interface controller")
 	}
 
