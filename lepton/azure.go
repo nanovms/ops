@@ -568,6 +568,8 @@ func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
 }
 
 func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudInstance {
+	ipClient := a.getIPClient()
+
 	cinstance := CloudInstance{
 		Name: *instance.Name,
 	}
@@ -589,18 +591,18 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudI
 				for x := 0; x < len(ipconfig); x++ {
 					format := *ipconfig[x].InterfaceIPConfigurationPropertiesFormat
 					privateIP = *format.PrivateIPAddress
-
-					ipClient := a.getIPClient()
-					pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
-					if err != nil {
-						fmt.Println(err)
-					}
-					publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
 				}
 			}
 
 		}
 	}
+
+	pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
+	if err != nil {
+		fmt.Println(err)
+	}
+	publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
+
 	cinstance.PrivateIps = []string{privateIP}
 	cinstance.PublicIps = []string{publicIP}
 
@@ -631,7 +633,7 @@ func (a *Azure) ListInstances(ctx *Context) error {
 		rows = append(rows, "")
 		rows = append(rows, "")
 		rows = append(rows, strings.Join(instance.PrivateIps, ","))
-		rows = append(rows, strings.Join(instance.PrivateIps, ","))
+		rows = append(rows, strings.Join(instance.PublicIps, ","))
 		table.Append(rows)
 	}
 
