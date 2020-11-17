@@ -11,6 +11,7 @@ func GetRootCommand() *cobra.Command {
 	// persist flags transversal to every command
 	rootCmd.PersistentFlags().Bool("show-warnings", false, "display warning messages")
 	rootCmd.PersistentFlags().Bool("show-errors", false, "display error messages")
+	rootCmd.PersistentFlags().Bool("debug", false, "display debug messages")
 
 	rootCmd.AddCommand(RunCommand())
 	rootCmd.AddCommand(NetCommands())

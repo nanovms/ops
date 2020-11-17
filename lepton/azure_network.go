@@ -2,21 +2,37 @@ package lepton
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
-func (a *Azure) getNicClient() network.InterfacesClient {
+func getAzureDefaultTags() map[string]*string {
+	return map[string]*string{
+		"CreatedBy": to.StringPtr("ops"),
+	}
+}
+
+func getAzureResourceNameFromID(id string) string {
+	idParts := strings.Split(id, "/")
+	return idParts[len(idParts)-1]
+}
+
+func (a *Azure) getNicClient() (*network.InterfacesClient, error) {
 	nicClient := network.NewInterfacesClient(a.subID)
-	auth, _ := a.GetResourceManagementAuthorizer()
+	auth, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	nicClient.Authorizer = auth
 	nicClient.AddToUserAgent(userAgent)
-	return nicClient
+	return &nicClient, nil
 }
 
 // CreateNIC creates a new network interface. The Network Security Group
@@ -47,6 +63,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 				},
 			},
 		},
+		Tags: getAzureDefaultTags(),
 	}
 
 	if nsgName != "" {
@@ -57,7 +74,10 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		nicParams.NetworkSecurityGroup = &nsg
 	}
 
-	nicClient := a.getNicClient()
+	nicClient, err := a.getNicClient()
+	if err != nil {
+		return
+	}
 	future, err := nicClient.CreateOrUpdate(ctx, a.groupName, nicName, nicParams)
 	if err != nil {
 		return nic, fmt.Errorf("cannot create nic: %v", err)
@@ -69,20 +89,157 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 	}
 
 	fmt.Printf("\nCreated NIC for instance")
-	return future.Result(nicClient)
+	nic, err = future.Result(*nicClient)
+	return
 }
 
-func (a *Azure) getIPClient() network.PublicIPAddressesClient {
+// DeleteNIC deletes network interface controller
+func (a *Azure) DeleteNIC(ctx *Context, nic *network.Interface) error {
+	logger := ctx.logger
+
+	nicClient, err := a.getNicClient()
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Deleting %s...", *nic.ID)
+	nicName := getAzureResourceNameFromID(*nic.ID)
+	nicDeleteTask, err := nicClient.Delete(context.TODO(), a.groupName, nicName)
+	if err != nil {
+		logger.Error("error deleting network interface controller: %v", err)
+		return errors.New("error deleting network interface controller")
+	}
+
+	err = nicDeleteTask.WaitForCompletionRef(context.TODO(), nicClient.Client)
+	if err != nil {
+		logger.Error("error waiting for network interface controller deleting: %v", err)
+		return errors.New("error waiting for network interface controller deleting")
+	}
+
+	return nil
+}
+
+// DeletePublicIPs deletes array of ip configurations
+func (a *Azure) DeletePublicIPs(ctx *Context, ips *[]network.InterfaceIPConfiguration) error {
+	logger := ctx.logger
+
+	ipClient, err := a.getIPClient()
+	if err != nil {
+		return err
+	}
+
+	for _, ip := range *ips {
+		if ip.PublicIPAddress.ID != nil {
+			ipID := getAzureResourceNameFromID(*ip.PublicIPAddress.ID)
+
+			logger.Info("Deleting %s...", *ip.PublicIPAddress.ID)
+			deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
+			if err != nil {
+				logger.Error("error deleting ip: %v", err)
+				return errors.New("error deleting ip")
+			}
+
+			err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
+			if err != nil {
+				logger.Error("error waiting for ip deletion: %v", err)
+				return errors.New("error waiting for ip deletion")
+			}
+		}
+	}
+
+	return nil
+}
+
+// DeleteNetworkSecurityGroup deletes virtual networks and subnets associated with the security group and the security group itself
+func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string) error {
+	logger := ctx.logger
+
+	nsgClient, err := a.getNsgClient()
+	if err != nil {
+		return err
+	}
+	subnetsClient, err := a.getSubnetsClient()
+	if err != nil {
+		return err
+	}
+	vnetClient, err := a.getVnetClient()
+	if err != nil {
+		return err
+	}
+
+	securityGroupName := getAzureResourceNameFromID(securityGroupID)
+	securityGroup, err := nsgClient.Get(context.TODO(), a.groupName, securityGroupName, "")
+	if err != nil {
+		logger.Error("error getting network security group: %v", err)
+		return errors.New("error getting network security group")
+	}
+
+	if securityGroup.Subnets != nil {
+		for _, subnet := range *securityGroup.Subnets {
+			if subnet.ID != nil {
+				logger.Info("Deleting %s...", *subnet.ID)
+				subnetName := getAzureResourceNameFromID(*subnet.ID)
+				subnetDeleteTask, err := subnetsClient.Delete(context.TODO(), a.groupName, subnetName, subnetName)
+				if err != nil {
+					logger.Error("error deleting subnet: %v", err)
+					return errors.New("error deleting subnet")
+				}
+
+				err = subnetDeleteTask.WaitForCompletionRef(context.TODO(), subnetsClient.Client)
+				if err != nil {
+					logger.Error("error waiting for subnet deletion: %v", err)
+					return errors.New("error waiting for subnet deletion")
+				}
+
+				logger.Info("Deleting virtualNetworks/%s", subnetName)
+				vnDeleteTask, err := vnetClient.Delete(context.TODO(), a.groupName, subnetName)
+				if err != nil {
+					logger.Error("error deleting virtual network: %v", err)
+					return errors.New("error deleting virtual network")
+				}
+
+				err = vnDeleteTask.WaitForCompletionRef(context.TODO(), vnetClient.Client)
+				if err != nil {
+					logger.Error("error waiting for virtual network deletion: %v", err)
+					return errors.New("error waiting for virtual network deletion")
+				}
+			}
+		}
+	}
+
+	logger.Info("Deleting %s...", *securityGroup.ID)
+	nsgTask, err := nsgClient.Delete(context.TODO(), a.groupName, *securityGroup.Name)
+	if err != nil {
+		logger.Error("error deleting security group: %v", err)
+		return errors.New("error deleting security group")
+	}
+
+	err = nsgTask.WaitForCompletionRef(context.TODO(), nsgClient.Client)
+	if err != nil {
+		logger.Error("error waiting for security group deletion: %v", err)
+		return errors.New("error waiting for security group deletion")
+	}
+
+	return nil
+}
+
+func (a *Azure) getIPClient() (*network.PublicIPAddressesClient, error) {
 	ipClient := network.NewPublicIPAddressesClient(a.subID)
-	auth, _ := a.GetResourceManagementAuthorizer()
+	auth, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	ipClient.Authorizer = auth
 	ipClient.AddToUserAgent(userAgent)
-	return ipClient
+	return &ipClient, nil
 }
 
 // CreatePublicIP creates a new public IP
 func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string) (ip network.PublicIPAddress, err error) {
-	ipClient := a.getIPClient()
+	ipClient, err := a.getIPClient()
+	if err != nil {
+		return
+	}
 	future, err := ipClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -94,6 +251,7 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 				PublicIPAddressVersion:   network.IPv4,
 				PublicIPAllocationMethod: network.Static,
 			},
+			Tags: getAzureDefaultTags(),
 		},
 	)
 
@@ -107,26 +265,39 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 	}
 
 	fmt.Printf("\nCreated Public IP for instance")
-	return future.Result(ipClient)
+	ip, err = future.Result(*ipClient)
+
+	return
 }
 
 // GetPublicIP returns an existing public IP
-func (a *Azure) GetPublicIP(ctx context.Context, ipName string) (network.PublicIPAddress, error) {
-	ipClient := a.getIPClient()
-	return ipClient.Get(ctx, a.groupName, ipName, "")
+func (a *Azure) GetPublicIP(ctx context.Context, ipName string) (ip network.PublicIPAddress, err error) {
+	ipClient, err := a.getIPClient()
+	if err != nil {
+		return
+	}
+	ip, err = ipClient.Get(ctx, a.groupName, ipName, "")
+	return
 }
 
-func (a *Azure) getVnetClient() network.VirtualNetworksClient {
+func (a *Azure) getVnetClient() (*network.VirtualNetworksClient, error) {
 	vnetClient := network.NewVirtualNetworksClient(a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
+	authr, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
+
 	vnetClient.Authorizer = authr
 	vnetClient.AddToUserAgent(userAgent)
-	return vnetClient
+	return &vnetClient, nil
 }
 
 // CreateVirtualNetwork creates a virtual network
-func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string) (vnet network.VirtualNetwork, err error) {
-	vnetClient := a.getVnetClient()
+func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string) (vnet *network.VirtualNetwork, err error) {
+	vnetClient, err := a.getVnetClient()
+	if err != nil {
+		return nil, err
+	}
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -138,6 +309,7 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 					AddressPrefixes: &[]string{"10.0.0.0/8"},
 				},
 			},
+			Tags: getAzureDefaultTags(),
 		})
 
 	if err != nil {
@@ -150,13 +322,19 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 	}
 
 	fmt.Printf("\nCreated Virtual Network")
-	return future.Result(vnetClient)
+	vn, err := future.Result(*vnetClient)
+
+	return &vn, err
 }
 
 // CreateVirtualNetworkAndSubnets creates a virtual network with two
 // subnets
-func (a *Azure) CreateVirtualNetworkAndSubnets(ctx context.Context, location string, vnetName, subnet1Name, subnet2Name string) (vnet network.VirtualNetwork, err error) {
-	vnetClient := a.getVnetClient()
+func (a *Azure) CreateVirtualNetworkAndSubnets(ctx context.Context, location string, vnetName, subnet1Name, subnet2Name string) (vnet *network.VirtualNetwork, err error) {
+	vnetClient, err := a.getVnetClient()
+	if err != nil {
+		return nil, err
+	}
+
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -193,20 +371,28 @@ func (a *Azure) CreateVirtualNetworkAndSubnets(ctx context.Context, location str
 		return vnet, fmt.Errorf("cannot get the vnet create or update future response: %v", err)
 	}
 
-	return future.Result(vnetClient)
+	vn, err := future.Result(*vnetClient)
+
+	return &vn, err
 }
 
-func (a *Azure) getSubnetsClient() network.SubnetsClient {
+func (a *Azure) getSubnetsClient() (*network.SubnetsClient, error) {
 	subnetsClient := network.NewSubnetsClient(a.subID)
-	auth, _ := a.GetResourceManagementAuthorizer()
+	auth, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	subnetsClient.Authorizer = auth
 	subnetsClient.AddToUserAgent(userAgent)
-	return subnetsClient
+	return &subnetsClient, nil
 }
 
 // CreateVirtualNetworkSubnet creates a subnet in an existing vnet
-func (a *Azure) CreateVirtualNetworkSubnet(ctx context.Context, vnetName, subnetName string) (subnet network.Subnet, err error) {
-	subnetsClient := a.getSubnetsClient()
+func (a *Azure) CreateVirtualNetworkSubnet(ctx context.Context, vnetName, subnetName string) (subnet *network.Subnet, err error) {
+	subnetsClient, err := a.getSubnetsClient()
+	if err != nil {
+		return nil, err
+	}
 
 	future, err := subnetsClient.CreateOrUpdate(
 		ctx,
@@ -227,18 +413,24 @@ func (a *Azure) CreateVirtualNetworkSubnet(ctx context.Context, vnetName, subnet
 		return subnet, fmt.Errorf("cannot get the subnet create or update future response: %v", err)
 	}
 
-	return future.Result(subnetsClient)
+	sc, err := future.Result(*subnetsClient)
+
+	return &sc, err
 }
 
 // CreateSubnetWithNetworkSecurityGroup create a subnet referencing a
 // network security group
-func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string) (subnet network.Subnet, err error) {
+func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string) (subnet *network.Subnet, err error) {
 	nsg, err := a.GetNetworkSecurityGroup(ctx, nsgName)
 	if err != nil {
 		return subnet, fmt.Errorf("cannot get nsg: %v", err)
 	}
 
-	subnetsClient := a.getSubnetsClient()
+	subnetsClient, err := a.getSubnetsClient()
+	if err != nil {
+		return nil, err
+	}
+
 	future, err := subnetsClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -260,22 +452,32 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 	}
 
 	fmt.Printf("\nCreated subnet with security group")
-	return future.Result(subnetsClient)
+	sc, err := future.Result(*subnetsClient)
+
+	return &sc, err
 }
 
 // GetVirtualNetworkSubnet returns an existing subnet from a virtual
 // network
-func (a *Azure) GetVirtualNetworkSubnet(ctx context.Context, vnetName string, subnetName string) (network.Subnet, error) {
-	subnetsClient := a.getSubnetsClient()
-	return subnetsClient.Get(ctx, a.groupName, vnetName, subnetName, "")
+func (a *Azure) GetVirtualNetworkSubnet(ctx context.Context, vnetName string, subnetName string) (subnet network.Subnet, err error) {
+	subnetsClient, err := a.getSubnetsClient()
+	if err != nil {
+		return
+	}
+
+	subnet, err = subnetsClient.Get(ctx, a.groupName, vnetName, subnetName, "")
+	return
 }
 
-func (a *Azure) getNsgClient() network.SecurityGroupsClient {
+func (a *Azure) getNsgClient() (*network.SecurityGroupsClient, error) {
 	nsgClient := network.NewSecurityGroupsClient(a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
+	authr, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	nsgClient.Authorizer = authr
 	nsgClient.AddToUserAgent(userAgent)
-	return nsgClient
+	return &nsgClient, nil
 }
 
 func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port int) network.SecurityRule {
@@ -298,7 +500,10 @@ func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port int
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
 func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg network.SecurityGroup, err error) {
-	nsgClient := a.getNsgClient()
+	nsgClient, err := a.getNsgClient()
+	if err != nil {
+		return
+	}
 
 	var securityRules []network.SecurityRule
 
@@ -321,6 +526,7 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 				SecurityRules: &securityRules,
 			},
+			Tags: getAzureDefaultTags(),
 		},
 	)
 
@@ -334,13 +540,18 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 	}
 
 	fmt.Printf("\nCreated security group")
-	return future.Result(nsgClient)
+	nsg, err = future.Result(*nsgClient)
+	return
 }
 
 // CreateSimpleNetworkSecurityGroup creates a new network security
 // group, without rules (rules can be set later)
 func (a *Azure) CreateSimpleNetworkSecurityGroup(ctx context.Context, location string, nsgName string) (nsg network.SecurityGroup, err error) {
-	nsgClient := a.getNsgClient()
+	nsgClient, err := a.getNsgClient()
+	if err != nil {
+		return
+	}
+
 	future, err := nsgClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -359,11 +570,17 @@ func (a *Azure) CreateSimpleNetworkSecurityGroup(ctx context.Context, location s
 		return nsg, fmt.Errorf("cannot get nsg create or update future response: %v", err)
 	}
 
-	return future.Result(nsgClient)
+	nsg, err = future.Result(*nsgClient)
+	return
 }
 
 // GetNetworkSecurityGroup returns an existing network security group
-func (a *Azure) GetNetworkSecurityGroup(ctx context.Context, nsgName string) (network.SecurityGroup, error) {
-	nsgClient := a.getNsgClient()
-	return nsgClient.Get(ctx, a.groupName, nsgName, "")
+func (a *Azure) GetNetworkSecurityGroup(ctx context.Context, nsgName string) (sg network.SecurityGroup, err error) {
+	nsgClient, err := a.getNsgClient()
+	if err != nil {
+		return
+	}
+
+	sg, err = nsgClient.Get(ctx, a.groupName, nsgName, "")
+	return
 }

@@ -128,6 +128,9 @@ func NewContext(c *Config, provider *Provider) *Context {
 
 	if c.RunConfig.Debug {
 		logger.SetDebug(true)
+		logger.SetError(true)
+		logger.SetWarn(true)
+		logger.SetInfo(true)
 	}
 
 	if c.RunConfig.ShowWarnings {

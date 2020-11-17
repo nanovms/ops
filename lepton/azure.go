@@ -3,12 +3,14 @@ package lepton
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -69,17 +71,16 @@ func (a *Azure) getAuthorizerForResource(resource string) (autorest.Authorizer, 
 	var authr autorest.Authorizer
 	var err error
 
-	oauthConfig, err := adal.NewOAuthConfig(
-		a.Environment().ActiveDirectoryEndpoint, a.tenantID)
+	oauthConfig, err := adal.NewOAuthConfig(a.Environment().ActiveDirectoryEndpoint, a.tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := adal.NewServicePrincipalToken(
-		*oauthConfig, a.clientID, a.clientSecret, resource)
+	token, err := adal.NewServicePrincipalToken(*oauthConfig, a.clientID, a.clientSecret, resource)
 	if err != nil {
 		return nil, err
 	}
+
 	authr = autorest.NewBearerAuthorizer(token)
 
 	return authr, err
@@ -95,7 +96,6 @@ func (a *Azure) GetResourceManagementAuthorizer() (autorest.Authorizer, error) {
 	var err error
 
 	authr, err = a.getAuthorizerForResource(a.Environment().ResourceManagerEndpoint)
-
 	if err == nil {
 		// cache
 		armAuthorizer = authr
@@ -106,20 +106,26 @@ func (a *Azure) GetResourceManagementAuthorizer() (autorest.Authorizer, error) {
 	return armAuthorizer, err
 }
 
-func (a *Azure) getImagesClient() compute.ImagesClient {
+func (a *Azure) getImagesClient() (*compute.ImagesClient, error) {
 	vmClient := compute.NewImagesClientWithBaseURI(compute.DefaultBaseURI, a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
+	authr, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	vmClient.Authorizer = authr
 	vmClient.AddToUserAgent(userAgent)
-	return vmClient
+	return &vmClient, nil
 }
 
-func (a *Azure) getVMClient() compute.VirtualMachinesClient {
+func (a *Azure) getVMClient() (*compute.VirtualMachinesClient, error) {
 	vmClient := compute.NewVirtualMachinesClient(a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
+	authr, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	vmClient.Authorizer = authr
 	vmClient.AddToUserAgent(userAgent)
-	return vmClient
+	return &vmClient, nil
 }
 
 func (a *Azure) getVMExtensionsClient() compute.VirtualMachineExtensionsClient {
@@ -144,14 +150,21 @@ func (a *Azure) getLocation(config *Config) string {
 }
 
 // GetVM gets the specified VM info
-func (a *Azure) GetVM(ctx context.Context, vmName string) (compute.VirtualMachine, error) {
-	vmClient := a.getVMClient()
-	return vmClient.Get(ctx, a.groupName, vmName, compute.InstanceView)
+func (a *Azure) GetVM(ctx context.Context, vmName string) (vm compute.VirtualMachine, err error) {
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return
+	}
+	vm, err = vmClient.Get(ctx, a.groupName, vmName, compute.InstanceView)
+	return
 }
 
 // RestartVM restarts the selected VM
 func (a *Azure) RestartVM(ctx context.Context, vmName string) (osr autorest.Response, err error) {
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return
+	}
 	future, err := vmClient.Restart(ctx, a.groupName, vmName)
 	if err != nil {
 		return osr, fmt.Errorf("cannot restart vm: %v", err)
@@ -162,7 +175,7 @@ func (a *Azure) RestartVM(ctx context.Context, vmName string) (osr autorest.Resp
 		return osr, fmt.Errorf("cannot get the vm restart future response: %v", err)
 	}
 
-	return future.Result(vmClient)
+	return future.Result(*vmClient)
 }
 
 func (a *Azure) getArchiveName(ctx *Context) string {
@@ -232,27 +245,27 @@ func (a *Azure) Initialize() error {
 
 	tenantID := os.Getenv("AZURE_TENANT_ID")
 	if tenantID != "" {
-		a.tenantID = tenantID
+		a.tenantID = strings.TrimSpace(tenantID)
 	}
 
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	if clientID != "" {
-		a.clientID = clientID
+		a.clientID = strings.TrimSpace(clientID)
 	}
 
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	if clientSecret != "" {
-		a.clientSecret = clientSecret
+		a.clientSecret = strings.TrimSpace(clientSecret)
 	}
 
 	groupName := os.Getenv("AZURE_BASE_GROUP_NAME")
 	if groupName != "" {
-		a.groupName = groupName
+		a.groupName = strings.TrimSpace(groupName)
 	}
 
 	storageAccount := os.Getenv("AZURE_STORAGE_ACCOUNT")
 	if storageAccount != "" {
-		a.storageAccount = storageAccount
+		a.storageAccount = strings.TrimSpace(storageAccount)
 	}
 
 	return nil
@@ -260,7 +273,10 @@ func (a *Azure) Initialize() error {
 
 // CreateImage - Creates image on Azure using nanos images
 func (a *Azure) CreateImage(ctx *Context) error {
-	imagesClient := a.getImagesClient()
+	imagesClient, err := a.getImagesClient()
+	if err != nil {
+		return err
+	}
 
 	c := ctx.config
 	imgName := c.CloudConfig.ImageName
@@ -301,7 +317,10 @@ func (a *Azure) CreateImage(ctx *Context) error {
 func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
 	var cimages []CloudImage
 
-	imagesClient := a.getImagesClient()
+	imagesClient, err := a.getImagesClient()
+	if err != nil {
+		return nil, err
+	}
 
 	images, err := imagesClient.List(context.TODO())
 	if err != nil {
@@ -353,7 +372,10 @@ func (a *Azure) ListImages(ctx *Context) error {
 
 // DeleteImage deletes image from Azure
 func (a *Azure) DeleteImage(ctx *Context, imagename string) error {
-	imagesClient := a.getImagesClient()
+	imagesClient, err := a.getImagesClient()
+	if err != nil {
+		return err
+	}
 
 	fut, err := imagesClient.Delete(context.TODO(), a.groupName, imagename)
 	if err != nil {
@@ -386,7 +408,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	c := ctx.config
 	bucket := c.CloudConfig.BucketName
 	if bucket == "" {
-		bucket = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		bucket = a.storageAccount
 	}
 	if bucket == "" {
 		fmt.Println("AZURE_STORAGE_ACCOUNT should be set otherwise logs can not be retrieved.")
@@ -394,66 +416,62 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 	location := a.getLocation(ctx.config)
 
-	debug := false
-
 	vmName := ctx.config.CloudConfig.ImageName + strconv.FormatInt(time.Now().Unix(), 10)
-	fmt.Printf("spinning up:\t%s\n", vmName)
+	ctx.logger.Log("spinning up:\t%s\n", vmName)
 
 	// create virtual network
+	ctx.logger.Info("creating virtual network with id %s\n", vmName)
 	vnet, err := a.CreateVirtualNetwork(context.TODO(), location, vmName)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	if debug {
-		fmt.Printf("%+v\n", vnet)
+		ctx.logger.Log("error creating virtual network: %v\n", err)
+		return errors.New("error creating virtual network")
 	}
 
 	// create nsg
+	ctx.logger.Info("creating network security group with id %s\n", vmName)
 	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	if debug {
-		fmt.Printf("%+v\n", nsg)
+		ctx.logger.Log("error creating network security group: %v", err)
+		return errors.New("error creating network security group")
 	}
 
 	// create subnet
-	subnet, err := a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), vmName, vmName, "10.0.0.0/24", vmName)
+	ctx.logger.Info("creating subnet with id %s\n", vmName)
+	_, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
 	if err != nil {
-		fmt.Println(err)
-	}
+		ctx.logger.Log("error creating subnet: %v\n", err)
+		return errors.New("error creating subnet")
 
-	if debug {
-		fmt.Printf("%+v\n", subnet)
 	}
 
 	// create ip
+	ctx.logger.Info("creating public ip with id %s\n", vmName)
 	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	if debug {
-		fmt.Printf("%+v\n", ip)
+		ctx.logger.Log("error creating public ip: %v\n", err)
+		return errors.New("error creating public ip")
 	}
 
 	// create nic
 	// pass vnet, subnet, ip, nicname
+	ctx.logger.Info("creating network interface controller with id %s\n", vmName)
 	nic, err := a.CreateNIC(context.TODO(), location, vmName, vmName, vmName, vmName, vmName)
 	if err != nil {
-		fmt.Println(err)
+		ctx.logger.Log("error creating network interface controller: %v\n", err)
+		return errors.New("error creating network interface controller")
 	}
 
 	var sshKeyData string
 	sshKeyData = fakepubkey
 	nctx := context.TODO()
 
-	fmt.Println("\ncreating the vm - this can take a few minutes - you can ctrl-c this after a bit")
-	fmt.Println("there is a known issue that prevents the deploy from ever being 'done'")
+	ctx.logger.Log("creating the vm - this can take a few minutes - you can ctrl-c this after a bit")
+	ctx.logger.Log("there is a known issue that prevents the deploy from ever being 'done'")
 
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return err
+	}
 	future, err := vmClient.CreateOrUpdate(
 		nctx,
 		a.groupName,
@@ -516,7 +534,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 		os.Exit(1)
 	}
 
-	vm, err := future.Result(vmClient)
+	vm, err := future.Result(*vmClient)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -534,37 +552,60 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 }
 
 // GetInstanceByID returns the instance with the id passed by argument if it exists
-func (a *Azure) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
-	vmClient := a.getVMClient()
+func (a *Azure) GetInstanceByID(ctx *Context, id string) (vm *CloudInstance, err error) {
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return
+	}
+	nicClient, err := a.getNicClient()
+	if err != nil {
+		return
+	}
+	ipClient, err := a.getIPClient()
+	if err != nil {
+		return
+	}
 
-	vm, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
+	result, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
 	if err != nil {
 		return nil, err
 	}
 
-	return a.convertToCloudInstance(&vm), nil
+	return a.convertToCloudInstance(&result, nicClient, ipClient)
 }
 
 // GetInstances return all instances on Azure
-func (a *Azure) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	var cinstances []CloudInstance
-
-	vmClient := a.getVMClient()
+func (a *Azure) GetInstances(ctx *Context) (cinstances []CloudInstance, err error) {
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return
+	}
+	nicClient, err := a.getNicClient()
+	if err != nil {
+		return
+	}
+	ipClient, err := a.getIPClient()
+	if err != nil {
+		return
+	}
 
 	vmlist, err := vmClient.List(context.TODO(), a.groupName)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 
 	instances := vmlist.Values()
 
 	for _, instance := range instances {
-		cinstance := a.convertToCloudInstance(&instance)
+		cinstance, err := a.convertToCloudInstance(&instance, nicClient, ipClient)
+		if err != nil {
+			return nil, err
+		}
 
 		cinstances = append(cinstances, *cinstance)
 	}
 
-	return cinstances, nil
+	return
 }
 
 func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudInstance {
@@ -580,10 +621,9 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudI
 		nifs := *((*(*instance.VirtualMachineProperties).NetworkProfile).NetworkInterfaces)
 
 		for i := 0; i < len(nifs); i++ {
-			nicClient := a.getNicClient()
 			nic, err := nicClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
 			if err != nil {
-				fmt.Println(err)
+				return nil, err
 			}
 
 			if nic.InterfacePropertiesFormat != nil {
@@ -593,7 +633,6 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudI
 					privateIP = *format.PrivateIPAddress
 				}
 			}
-
 		}
 	}
 
@@ -606,7 +645,7 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine) *CloudI
 	cinstance.PrivateIps = []string{privateIP}
 	cinstance.PublicIps = []string{publicIP}
 
-	return &cinstance
+	return &cinstance, nil
 }
 
 // ListInstances lists instances on Azure
@@ -645,33 +684,111 @@ func (a *Azure) ListInstances(ctx *Context) error {
 // DeleteInstance deletes instance from Azure
 func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 
-	vmClient := a.getVMClient()
-	fmt.Printf("\nStarted deleting Instance")
-	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
-
+	vmClient, err := a.getVMClient()
 	if err != nil {
-		exitWithError("\nUnable to delete instance")
+		return err
+	}
+
+	ctx.logger.Info("Getting vm with ID %s...", instancename)
+	vm, err := a.GetVM(context.TODO(), instancename)
+	if err != nil {
+		return err
+	}
+
+	ctx.logger.Info("Deleting vm with ID %s...", instancename)
+	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
+	if err != nil {
+		ctx.logger.Error("Unable to delete instance: %v", err)
+		return errors.New("Unable to delete instance")
 	}
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
-		fmt.Printf("\ncannot delete vm future response: %v\n", err.Error())
-		os.Exit(1)
+		ctx.logger.Error("error waiting for vm deletion: %v", err)
+		return errors.New("error waiting for vm deletion")
 	}
 
-	fmt.Printf("\nInstance deletion completed")
+	nicClient, err := a.getNicClient()
+	if err != nil {
+		return err
+	}
+
+	for _, nicReference := range *vm.NetworkProfile.NetworkInterfaces {
+		nicID := getAzureResourceNameFromID(*nicReference.ID)
+
+		nic, err := nicClient.Get(context.TODO(), a.groupName, nicID, "")
+		if err != nil {
+			ctx.logger.Error("Not able to get nic with ID %v: %v", nicID, err)
+			return errors.New("Not able to get nic")
+		}
+		for tagName, tagValue := range nic.Tags {
+			if tagName == "CreatedBy" && *tagValue == "ops" {
+				err = a.DeleteNIC(ctx, &nic)
+				if err != nil {
+					return err
+				}
+
+				// delete public ips and network security group concurrently
+				fatalErrors := make(chan error)
+				wgDone := make(chan bool)
+
+				var wg sync.WaitGroup
+				wg.Add(2)
+
+				go func() {
+					err = a.DeletePublicIPs(ctx, nic.IPConfigurations)
+					if err != nil {
+						fatalErrors <- err
+					}
+
+					wg.Done()
+				}()
+
+				go func() {
+					if nic.NetworkSecurityGroup != nil {
+						err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
+						if err != nil {
+							fatalErrors <- err
+						}
+					}
+
+					wg.Done()
+				}()
+
+				go func() {
+					wg.Wait()
+					close(wgDone)
+				}()
+
+				select {
+				case <-wgDone:
+					break
+				case err := <-fatalErrors:
+					close(fatalErrors)
+					return err
+				}
+
+			}
+		}
+	}
+
+	ctx.logger.Log("Instance deletion completed")
 	return nil
 }
 
 // StartInstance starts an instance in Azure
 func (a *Azure) StartInstance(ctx *Context, instancename string) error {
 
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return err
+	}
+
 	fmt.Printf("Starting instance %s", instancename)
-	_, err := vmClient.Start(context.TODO(), a.groupName, instancename)
+	_, err = vmClient.Start(context.TODO(), a.groupName, instancename)
 	if err != nil {
 		fmt.Printf("cannot start vm: %v\n", err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	return nil
@@ -680,14 +797,17 @@ func (a *Azure) StartInstance(ctx *Context, instancename string) error {
 // StopInstance deletes instance from Azure
 func (a *Azure) StopInstance(ctx *Context, instancename string) error {
 
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return err
+	}
 	// skipShutdown parameter is optional, we are taking its default
 	// value here
 	fmt.Printf("Stopping instance %s", instancename)
-	_, err := vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
+	_, err = vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
 	if err != nil {
 		fmt.Printf("cannot power off vm: %v\n", err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	return nil
@@ -727,7 +847,11 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string) (string, erro
 
 	vmName := instancename
 
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return "", err
+	}
+
 	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceView)
 	if err != nil {
 		fmt.Println(err)
