@@ -14,7 +14,10 @@ import (
 func (a *Azure) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 
-	disksClient := a.getDisksClient()
+	disksClient, err := a.getDisksClient()
+	if err != nil {
+		return vol, err
+	}
 
 	location := a.getLocation(config)
 
@@ -70,7 +73,10 @@ func (a *Azure) CreateVolume(config *Config, name, data, size, provider string) 
 func (a *Azure) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 	vols := &[]NanosVolume{}
 
-	volumesService := a.getDisksClient()
+	volumesService, err := a.getDisksClient()
+	if err != nil {
+		return nil, err
+	}
 
 	azureDisksPage, err := volumesService.List(context.TODO())
 	if err != nil {
@@ -112,9 +118,12 @@ func (a *Azure) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 
 // DeleteVolume deletes an existing volume
 func (a *Azure) DeleteVolume(config *Config, name string) error {
-	volumesService := a.getDisksClient()
+	volumesService, err := a.getDisksClient()
+	if err != nil {
+		return err
+	}
 
-	_, err := volumesService.Delete(context.TODO(), a.groupName, name)
+	_, err = volumesService.Delete(context.TODO(), a.groupName, name)
 	if err != nil {
 		return err
 	}
@@ -124,13 +133,20 @@ func (a *Azure) DeleteVolume(config *Config, name string) error {
 
 // AttachVolume attaches a volume to an instance
 func (a *Azure) AttachVolume(config *Config, image, name, mount string) error {
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return err
+	}
+
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {
 		return err
 	}
 
-	disksClient := a.getDisksClient()
+	disksClient, err := a.getDisksClient()
+	if err != nil {
+		return err
+	}
 
 	disk, err := disksClient.Get(context.TODO(), a.groupName, name)
 	if err != nil {
@@ -165,7 +181,11 @@ func (a *Azure) AttachVolume(config *Config, image, name, mount string) error {
 
 // DetachVolume detachs a volume from an instance
 func (a *Azure) DetachVolume(config *Config, image, name string) error {
-	vmClient := a.getVMClient()
+	vmClient, err := a.getVMClient()
+	if err != nil {
+		return err
+	}
+
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {
 		return err
@@ -196,10 +216,13 @@ func (a *Azure) DetachVolume(config *Config, image, name string) error {
 	return nil
 }
 
-func (a *Azure) getDisksClient() compute.DisksClient {
+func (a *Azure) getDisksClient() (*compute.DisksClient, error) {
 	vmClient := compute.NewDisksClientWithBaseURI(compute.DefaultBaseURI, a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
+	authr, err := a.GetResourceManagementAuthorizer()
+	if err != nil {
+		return nil, err
+	}
 	vmClient.Authorizer = authr
 	vmClient.AddToUserAgent(userAgent)
-	return vmClient
+	return &vmClient, nil
 }
