@@ -9,5 +9,5 @@ import (
 func AppendGlobalCmdFlagsToConfig(cmdFlags *pflag.FlagSet, config *lepton.Config) {
 	config.RunConfig.ShowWarnings, _ = cmdFlags.GetBool("show-warnings")
 	config.RunConfig.ShowErrors, _ = cmdFlags.GetBool("show-errors")
-	config.RunConfig.Debug, _ = cmdFlags.GetBool("debug")
+	config.RunConfig.ShowDebug, _ = cmdFlags.GetBool("show-debug")
 }

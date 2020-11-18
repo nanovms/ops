@@ -69,6 +69,7 @@ type RunConfig struct {
 	Debug          bool
 	ShowWarnings   bool
 	ShowErrors     bool
+	ShowDebug      bool
 }
 
 // RuntimeConfig constructs runtime config
