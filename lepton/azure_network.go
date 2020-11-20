@@ -56,7 +56,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 				{
 					Name: to.StringPtr("ipConfig1"),
 					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						Subnet:                    &subnet,
+						Subnet:                    subnet,
 						PrivateIPAllocationMethod: network.Dynamic,
 						PublicIPAddress:           &ip,
 					},
@@ -71,7 +71,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		if err != nil {
 			log.Fatalf("failed to get nsg: %v", err)
 		}
-		nicParams.NetworkSecurityGroup = &nsg
+		nicParams.NetworkSecurityGroup = nsg
 	}
 
 	nicClient, err := a.getNicClient()
@@ -88,7 +88,6 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		return nic, fmt.Errorf("cannot get nic create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated NIC for instance")
 	nic, err = future.Result(*nicClient)
 	return
 }
@@ -264,9 +263,7 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 		return ip, fmt.Errorf("cannot get public ip address create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated Public IP for instance")
 	ip, err = future.Result(*ipClient)
-
 	return
 }
 
@@ -290,6 +287,18 @@ func (a *Azure) getVnetClient() (*network.VirtualNetworksClient, error) {
 	vnetClient.Authorizer = authr
 	vnetClient.AddToUserAgent(userAgent)
 	return &vnetClient, nil
+}
+
+// GetVPC finds the virtual network by id
+func (a *Azure) GetVPC(vnetName string) (vnet *network.VirtualNetwork, err error) {
+	vnetClient, err := a.getVnetClient()
+	if err != nil {
+		return
+	}
+
+	result, err := vnetClient.Get(context.TODO(), a.groupName, vnetName, "")
+	vnet = &result
+	return
 }
 
 // CreateVirtualNetwork creates a virtual network
@@ -439,7 +448,7 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 				AddressPrefix:        to.StringPtr(addressPrefix),
-				NetworkSecurityGroup: &nsg,
+				NetworkSecurityGroup: nsg,
 			},
 		})
 	if err != nil {
@@ -459,13 +468,14 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 
 // GetVirtualNetworkSubnet returns an existing subnet from a virtual
 // network
-func (a *Azure) GetVirtualNetworkSubnet(ctx context.Context, vnetName string, subnetName string) (subnet network.Subnet, err error) {
+func (a *Azure) GetVirtualNetworkSubnet(ctx context.Context, vnetName string, subnetName string) (subnet *network.Subnet, err error) {
 	subnetsClient, err := a.getSubnetsClient()
 	if err != nil {
 		return
 	}
 
-	subnet, err = subnetsClient.Get(ctx, a.groupName, vnetName, subnetName, "")
+	result, err := subnetsClient.Get(ctx, a.groupName, vnetName, subnetName, "")
+	subnet = &result
 	return
 }
 
@@ -499,7 +509,7 @@ func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port int
 
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
-func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg network.SecurityGroup, err error) {
+func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg *network.SecurityGroup, err error) {
 	nsgClient, err := a.getNsgClient()
 	if err != nil {
 		return
@@ -539,8 +549,7 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 		return nsg, fmt.Errorf("cannot get nsg create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated security group")
-	nsg, err = future.Result(*nsgClient)
+	*nsg, err = future.Result(*nsgClient)
 	return
 }
 
@@ -575,12 +584,13 @@ func (a *Azure) CreateSimpleNetworkSecurityGroup(ctx context.Context, location s
 }
 
 // GetNetworkSecurityGroup returns an existing network security group
-func (a *Azure) GetNetworkSecurityGroup(ctx context.Context, nsgName string) (sg network.SecurityGroup, err error) {
+func (a *Azure) GetNetworkSecurityGroup(ctx context.Context, nsgName string) (sg *network.SecurityGroup, err error) {
 	nsgClient, err := a.getNsgClient()
 	if err != nil {
 		return
 	}
 
-	sg, err = nsgClient.Get(ctx, a.groupName, nsgName, "")
+	result, err := nsgClient.Get(ctx, a.groupName, nsgName, "")
+	sg = &result
 	return
 }
