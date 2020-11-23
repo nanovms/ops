@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -333,9 +334,30 @@ func (m *Manifest) String() string {
 	sb.WriteString("(\n")
 
 	// write boot fs
+	var klibsExist bool
+
 	if len(m.boot) > 0 {
 		sb.WriteString("boot:(children:(\n")
 		toString(&m.boot, &sb, 4)
+
+		// include every klib present in ops klib directory
+		klibsPath := GetOpsHome() + "/klib"
+		if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
+			klibs, err := ioutil.ReadDir(GetOpsHome() + "/klib")
+			if err == nil && len(klibs) > 0 {
+				klibsExist = true
+
+				sb.WriteString("\tklib:(children:(\n")
+
+				for _, klib := range klibs {
+					klibName := klib.Name()
+					sb.WriteString(fmt.Sprintf("\t%s:(contents:(host:%s))\n", klibName, klibsPath+"/"+klibName))
+				}
+
+				sb.WriteString("\t))\n")
+			}
+		}
+
 		sb.WriteString("))\n")
 	}
 
@@ -349,6 +371,11 @@ func (m *Manifest) String() string {
 		sb.WriteString("program:")
 		sb.WriteString(m.program)
 		sb.WriteRune('\n')
+	}
+
+	//
+	if klibsExist {
+		sb.WriteString("klibs:bootfs\n")
 	}
 
 	// arguments
