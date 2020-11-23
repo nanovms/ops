@@ -421,44 +421,74 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	ctx.logger.Log("spinning up:\t%s\n", vmName)
 
 	// create virtual network
-	ctx.logger.Info("creating virtual network with id %s\n", vmName)
-	vnet, err := a.CreateVirtualNetwork(context.TODO(), location, vmName)
-	if err != nil {
-		ctx.logger.Error("error creating virtual network: %v\n", err)
-		return errors.New("error creating virtual network")
+	var vnet *network.VirtualNetwork
+	var err error
+	configVPC := ctx.config.RunConfig.VPC
+	if configVPC != "" {
+		vnet, err = a.GetVPC(configVPC)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return fmt.Errorf("error getting virtual network with id %s", configVPC)
+		}
+	} else {
+		ctx.logger.Info("creating virtual network with id %s\n", vmName)
+		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return errors.New("error creating virtual network")
+		}
 	}
 
 	// create nsg
-	ctx.logger.Info("creating network security group with id %s\n", vmName)
-	nsg, err := a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
-	if err != nil {
-		ctx.logger.Error("error creating network security group: %v", err)
-		return errors.New("error creating network security group")
+	var nsg *network.SecurityGroup
+	configSecurityGroup := ctx.config.RunConfig.SecurityGroup
+	if configSecurityGroup != "" {
+		nsg, err = a.GetNetworkSecurityGroup(context.TODO(), configSecurityGroup)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return errors.New("error getting security group")
+		}
+	} else {
+		ctx.logger.Info("creating network security group with id %s\n", vmName)
+		nsg, err = a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return errors.New("error creating network security group")
+		}
 	}
 
 	// create subnet
-	ctx.logger.Info("creating subnet with id %s\n", vmName)
-	_, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
-	if err != nil {
-		ctx.logger.Error("error creating subnet: %v\n", err)
-		return errors.New("error creating subnet")
-
+	var subnet *network.Subnet
+	configSubnet := ctx.config.RunConfig.Subnet
+	if configSubnet != "" {
+		subnet, err = a.GetVirtualNetworkSubnet(context.TODO(), *vnet.Name, configSubnet)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return errors.New("error getting subnet")
+		}
+	} else {
+		ctx.logger.Info("creating subnet with id %s\n", vmName)
+		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
+		if err != nil {
+			ctx.logger.Error(err.Error())
+			return errors.New("error creating subnet")
+		}
 	}
 
 	// create ip
 	ctx.logger.Info("creating public ip with id %s\n", vmName)
 	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
-		ctx.logger.Error("error creating public ip: %v\n", err)
+		ctx.logger.Error(err.Error())
 		return errors.New("error creating public ip")
 	}
 
 	// create nic
 	// pass vnet, subnet, ip, nicname
 	ctx.logger.Info("creating network interface controller with id %s\n", vmName)
-	nic, err := a.CreateNIC(context.TODO(), location, vmName, vmName, vmName, vmName, vmName)
+	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName)
 	if err != nil {
-		ctx.logger.Error("error creating network interface controller: %v\n", err)
+		ctx.logger.Error(err.Error())
 		return errors.New("error creating network interface controller")
 	}
 
