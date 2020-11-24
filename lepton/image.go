@@ -223,6 +223,7 @@ func addFromConfig(m *Manifest, c *Config) error {
 	addDNSConfig(m, c)
 	addHostName(m, c)
 	addPasswd(m, c)
+	m.klibs = c.RunConfig.Klibs
 
 	for _, f := range c.Files {
 		err := m.AddFile(f, f)

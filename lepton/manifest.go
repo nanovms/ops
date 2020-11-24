@@ -28,6 +28,7 @@ type Manifest struct {
 	environment map[string]string
 	targetRoot  string
 	mounts      map[string]string
+	klibs       []string
 }
 
 // NewManifest init
@@ -333,9 +334,32 @@ func (m *Manifest) String() string {
 	sb.WriteString("(\n")
 
 	// write boot fs
+
 	if len(m.boot) > 0 {
 		sb.WriteString("boot:(children:(\n")
 		toString(&m.boot, &sb, 4)
+
+		// include klibs specified in configuration if present in ops klib directory
+		if len(m.klibs) > 0 {
+			klibs := map[string]interface{}{}
+			klibsPath := GetOpsHome() + "/klib"
+			if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
+
+				sb.WriteString("    klib:(children:(\n")
+
+				for _, klibName := range m.klibs {
+					klibPath := klibsPath + "/" + klibName
+
+					if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
+						klibs[klibName] = klibPath
+					}
+				}
+				toString(&klibs, &sb, 6)
+
+				sb.WriteString("    ))\n")
+			}
+		}
+
 		sb.WriteString("))\n")
 	}
 
@@ -349,6 +373,11 @@ func (m *Manifest) String() string {
 		sb.WriteString("program:")
 		sb.WriteString(m.program)
 		sb.WriteRune('\n')
+	}
+
+	//
+	if len(m.klibs) > 0 {
+		sb.WriteString("klibs:bootfs\n")
 	}
 
 	// arguments
