@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,6 +28,7 @@ type Manifest struct {
 	environment map[string]string
 	targetRoot  string
 	mounts      map[string]string
+	klibs       []string
 }
 
 // NewManifest init
@@ -334,27 +334,29 @@ func (m *Manifest) String() string {
 	sb.WriteString("(\n")
 
 	// write boot fs
-	var klibsExist bool
 
 	if len(m.boot) > 0 {
 		sb.WriteString("boot:(children:(\n")
 		toString(&m.boot, &sb, 4)
 
-		// include every klib present in ops klib directory
-		klibsPath := GetOpsHome() + "/klib"
-		if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
-			klibs, err := ioutil.ReadDir(GetOpsHome() + "/klib")
-			if err == nil && len(klibs) > 0 {
-				klibsExist = true
+		// include klibs specified in configuration if present in ops klib directory
+		if len(m.klibs) > 0 {
+			klibs := map[string]interface{}{}
+			klibsPath := GetOpsHome() + "/klib"
+			if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
 
-				sb.WriteString("\tklib:(children:(\n")
+				sb.WriteString("    klib:(children:(\n")
 
-				for _, klib := range klibs {
-					klibName := klib.Name()
-					sb.WriteString(fmt.Sprintf("\t%s:(contents:(host:%s))\n", klibName, klibsPath+"/"+klibName))
+				for _, klibName := range m.klibs {
+					klibPath := klibsPath + "/" + klibName
+
+					if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
+						klibs[klibName] = klibPath
+					}
 				}
+				toString(&klibs, &sb, 6)
 
-				sb.WriteString("\t))\n")
+				sb.WriteString("    ))\n")
 			}
 		}
 
@@ -374,7 +376,7 @@ func (m *Manifest) String() string {
 	}
 
 	//
-	if klibsExist {
+	if len(m.klibs) > 0 {
 		sb.WriteString("klibs:bootfs\n")
 	}
 

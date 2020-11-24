@@ -70,6 +70,7 @@ type RunConfig struct {
 	ShowWarnings   bool
 	ShowErrors     bool
 	ShowDebug      bool
+	Klibs          []string
 }
 
 // RuntimeConfig constructs runtime config
