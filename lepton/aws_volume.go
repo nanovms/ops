@@ -67,16 +67,17 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 		return vol, err
 	}
 
-	// Create volume from snapshot
+	// Create tags to assign to the volume
+	tags, _ := parseToAWSTags(config.RunConfig.Tags, name)
 
+	// Create volume from snapshot
 	createVolumeInput := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(config.CloudConfig.Zone + "c"),
 		SnapshotId:       snapshotID,
 		TagSpecifications: []*ec2.TagSpecification{
 			{
-				Tags: []*ec2.Tag{
-					{Key: aws.String("Name"), Value: aws.String(name)},
-				},
+				ResourceType: aws.String("volume"),
+				Tags:         tags,
 			},
 		},
 	}

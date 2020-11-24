@@ -480,6 +480,30 @@ func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
 	return nil
 }
 
+// parseToAWSTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overriden if there is a tag with key name
+func parseToAWSTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
+	tags := []*ec2.Tag{}
+	var nameSpecified bool
+	name := defaultName
+
+	for _, tag := range configTags {
+		tags = append(tags, &ec2.Tag{Key: aws.String(tag.Key), Value: aws.String(tag.Value)})
+		if tag.Key == "Name" {
+			nameSpecified = true
+			name = tag.Value
+		}
+	}
+
+	if !nameSpecified {
+		tags = append(tags, &ec2.Tag{
+			Key:   aws.String("Name"),
+			Value: aws.String(name),
+		})
+	}
+
+	return tags, name
+}
+
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *Context) error {
 	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
@@ -557,6 +581,9 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		ctx.config.CloudConfig.Flavor = "t2.micro"
 	}
 
+	// Create tags to assign to the instance
+	tags, tagInstanceName := parseToAWSTags(ctx.config.RunConfig.Tags, imgName+"-"+strconv.Itoa(int(time.Now().Unix())))
+
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
@@ -567,6 +594,10 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		SecurityGroupIds: []*string{
 			aws.String(sg),
 		},
+		TagSpecifications: []*ec2.TagSpecification{
+			{ResourceType: aws.String("instance"), Tags: tags},
+			{ResourceType: aws.String("volume"), Tags: tags},
+		},
 	})
 
 	if err != nil {
@@ -575,29 +606,6 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	}
 
 	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
-
-	tagInstanceName := imgName + "-" + strconv.Itoa(int(time.Now().Unix()))
-
-	// Add name tag to the created instance
-	tags := []*ec2.Tag{
-		{
-			Key:   aws.String("Name"),
-			Value: aws.String(tagInstanceName),
-		},
-	}
-
-	for _, tag := range ctx.config.RunConfig.Tags {
-		tags = append(tags, &ec2.Tag{Key: aws.String(tag.Key), Value: aws.String(tag.Value)})
-	}
-
-	_, err = svc.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{runResult.Instances[0].InstanceId},
-		Tags:      tags,
-	})
-	if err != nil {
-		fmt.Println("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
-		return err
-	}
 
 	// create dns zones/records to associate DNS record to instance IP
 	if ctx.config.RunConfig.DomainName != "" {
