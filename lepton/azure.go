@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -503,6 +502,13 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	if err != nil {
 		return err
 	}
+
+	var flavor compute.VirtualMachineSizeTypes
+	flavor = compute.VirtualMachineSizeTypes(ctx.config.CloudConfig.Flavor)
+	if flavor == "" {
+		flavor = compute.VirtualMachineSizeTypesStandardA1V2
+	}
+
 	future, err := vmClient.CreateOrUpdate(
 		nctx,
 		a.groupName,
@@ -511,7 +517,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 			Location: to.StringPtr(location),
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
-					VMSize: compute.VirtualMachineSizeTypesStandardA1V2,
+					VMSize: flavor,
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
@@ -727,13 +733,13 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 	ctx.logger.Info("Deleting vm with ID %s...", instancename)
 	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
 	if err != nil {
-		ctx.logger.Error("Unable to delete instance: %v", err)
+		ctx.logger.Error(err.Error())
 		return errors.New("Unable to delete instance")
 	}
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
-		ctx.logger.Error("error waiting for vm deletion: %v", err)
+		ctx.logger.Error(err.Error())
 		return errors.New("error waiting for vm deletion")
 	}
 
@@ -757,44 +763,16 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 					return err
 				}
 
-				// delete public ips and network security group concurrently
-				fatalErrors := make(chan error)
-				wgDone := make(chan bool)
-
-				var wg sync.WaitGroup
-				wg.Add(2)
-
-				go func() {
-					err = a.DeletePublicIPs(ctx, nic.IPConfigurations)
-					if err != nil {
-						fatalErrors <- err
-					}
-
-					wg.Done()
-				}()
-
-				go func() {
-					if nic.NetworkSecurityGroup != nil {
-						err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
-						if err != nil {
-							fatalErrors <- err
-						}
-					}
-
-					wg.Done()
-				}()
-
-				go func() {
-					wg.Wait()
-					close(wgDone)
-				}()
-
-				select {
-				case <-wgDone:
-					break
-				case err := <-fatalErrors:
-					close(fatalErrors)
+				err = a.DeletePublicIPs(ctx, nic.IPConfigurations)
+				if err != nil {
 					return err
+				}
+
+				if nic.NetworkSecurityGroup != nil {
+					err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
+					if err != nil {
+						return err
+					}
 				}
 
 			}
@@ -816,8 +794,8 @@ func (a *Azure) StartInstance(ctx *Context, instancename string) error {
 	fmt.Printf("Starting instance %s", instancename)
 	_, err = vmClient.Start(context.TODO(), a.groupName, instancename)
 	if err != nil {
-		fmt.Printf("cannot start vm: %v\n", err.Error())
-		return err
+		ctx.logger.Error(err.Error())
+		return errors.New("failed starting virtual machine")
 	}
 
 	return nil
