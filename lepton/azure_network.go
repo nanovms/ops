@@ -105,13 +105,13 @@ func (a *Azure) DeleteNIC(ctx *Context, nic *network.Interface) error {
 	nicName := getAzureResourceNameFromID(*nic.ID)
 	nicDeleteTask, err := nicClient.Delete(context.TODO(), a.groupName, nicName)
 	if err != nil {
-		logger.Error("error deleting network interface controller: %v", err)
+		logger.Error(err.Error())
 		return errors.New("error deleting network interface controller")
 	}
 
 	err = nicDeleteTask.WaitForCompletionRef(context.TODO(), nicClient.Client)
 	if err != nil {
-		logger.Error("error waiting for network interface controller deleting: %v", err)
+		logger.Error(err.Error())
 		return errors.New("error waiting for network interface controller deleting")
 	}
 
@@ -134,13 +134,13 @@ func (a *Azure) DeletePublicIPs(ctx *Context, ips *[]network.InterfaceIPConfigur
 			logger.Info("Deleting %s...", *ip.PublicIPAddress.ID)
 			deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
 			if err != nil {
-				logger.Error("error deleting ip: %v", err)
+				logger.Error(err.Error())
 				return errors.New("error deleting ip")
 			}
 
 			err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
 			if err != nil {
-				logger.Error("error waiting for ip deletion: %v", err)
+				logger.Error(err.Error())
 				return errors.New("error waiting for ip deletion")
 			}
 		}
@@ -169,7 +169,7 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string)
 	securityGroupName := getAzureResourceNameFromID(securityGroupID)
 	securityGroup, err := nsgClient.Get(context.TODO(), a.groupName, securityGroupName, "")
 	if err != nil {
-		logger.Error("error getting network security group: %v", err)
+		logger.Error(err.Error())
 		return errors.New("error getting network security group")
 	}
 
@@ -180,26 +180,26 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string)
 				subnetName := getAzureResourceNameFromID(*subnet.ID)
 				subnetDeleteTask, err := subnetsClient.Delete(context.TODO(), a.groupName, subnetName, subnetName)
 				if err != nil {
-					logger.Error("error deleting subnet: %v", err)
+					logger.Error(err.Error())
 					return errors.New("error deleting subnet")
 				}
 
 				err = subnetDeleteTask.WaitForCompletionRef(context.TODO(), subnetsClient.Client)
 				if err != nil {
-					logger.Error("error waiting for subnet deletion: %v", err)
+					logger.Error(err.Error())
 					return errors.New("error waiting for subnet deletion")
 				}
 
 				logger.Info("Deleting virtualNetworks/%s", subnetName)
 				vnDeleteTask, err := vnetClient.Delete(context.TODO(), a.groupName, subnetName)
 				if err != nil {
-					logger.Error("error deleting virtual network: %v", err)
+					logger.Error(err.Error())
 					return errors.New("error deleting virtual network")
 				}
 
 				err = vnDeleteTask.WaitForCompletionRef(context.TODO(), vnetClient.Client)
 				if err != nil {
-					logger.Error("error waiting for virtual network deletion: %v", err)
+					logger.Error(err.Error())
 					return errors.New("error waiting for virtual network deletion")
 				}
 			}
@@ -209,13 +209,13 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string)
 	logger.Info("Deleting %s...", *securityGroup.ID)
 	nsgTask, err := nsgClient.Delete(context.TODO(), a.groupName, *securityGroup.Name)
 	if err != nil {
-		logger.Error("error deleting security group: %v", err)
+		logger.Error(err.Error())
 		return errors.New("error deleting security group")
 	}
 
 	err = nsgTask.WaitForCompletionRef(context.TODO(), nsgClient.Client)
 	if err != nil {
-		logger.Error("error waiting for security group deletion: %v", err)
+		logger.Error(err.Error())
 		return errors.New("error waiting for security group deletion")
 	}
 
@@ -549,7 +549,8 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 		return nsg, fmt.Errorf("cannot get nsg create or update future response: %v", err)
 	}
 
-	*nsg, err = future.Result(*nsgClient)
+	nsgValue, err := future.Result(*nsgClient)
+	nsg = &nsgValue
 	return
 }
 
