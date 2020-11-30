@@ -35,7 +35,12 @@ type Package struct {
 
 // DownloadPackage downloads package by name
 func DownloadPackage(name string) (string, error) {
-	if _, ok := (*GetPackageList())[name]; !ok {
+	packages, err := GetPackageList()
+	if err != nil {
+		return "", nil
+	}
+
+	if _, ok := (*packages)[name]; !ok {
 		return "", fmt.Errorf("package %q does not exist", name)
 	}
 
@@ -51,29 +56,63 @@ func DownloadPackage(name string) (string, error) {
 }
 
 // GetPackageList provides list of packages
-func GetPackageList() *map[string]Package {
+func GetPackageList() (*map[string]Package, error) {
 	var err error
 
 	packageManifest := GetPackageManifestFile()
 	stat, err := os.Stat(packageManifest)
 	if os.IsNotExist(err) || PackageManifestChanged(stat, PackageManifestURL) {
 		if err = DownloadFile(packageManifest, PackageManifestURL, 10, false); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
 	var packages PackageList
 	data, err := ioutil.ReadFile(packageManifest)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	err = json.Unmarshal(data, &packages.list)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
-	return &packages.list
+	return &packages.list, nil
+}
+
+// GetLocalPackageList provides list of local packages
+func GetLocalPackageList() (*map[string]Package, error) {
+	packages := map[string]Package{}
+
+	localPackagesDir := GetOpsHome() + "/local_packages"
+
+	localPackages, err := ioutil.ReadDir(localPackagesDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pkg := range localPackages {
+		pkgName := pkg.Name()
+
+		// ignore packages compressed
+		if !strings.Contains(pkgName, "tar.gz") {
+			data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName))
+			if err != nil {
+				return nil, err
+			}
+
+			var pkg Package
+			err = json.Unmarshal(data, &pkg)
+			if err != nil {
+				return nil, err
+			}
+
+			packages[pkgName] = pkg
+		}
+	}
+
+	return &packages, nil
 }
 
 func getPackageCache() string {
@@ -136,9 +175,12 @@ func ExtractPackage(archive string, dest string) {
 		fname := filepath.Base(archive)
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
 
-		list := *GetPackageList()
+		list, err := GetPackageList()
+		if err != nil {
+			panic(err)
+		}
 
-		if list[fname].SHA256 != sha {
+		if (*list)[fname].SHA256 != sha {
 			fmt.Println("This package doesn't match what is in the manifest.")
 			os.Exit(1)
 		}
