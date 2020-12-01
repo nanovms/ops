@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +17,18 @@ import (
 )
 
 func cmdListPackages(cmd *cobra.Command, args []string) {
-	packages := api.GetPackageList()
+	var packages *map[string]api.Package
+	var err error
+	local, _ := cmd.Flags().GetBool("local")
+
+	if local {
+		packages, err = api.GetLocalPackageList()
+	} else {
+		packages, err = api.GetPackageList()
+	}
+	if err != nil {
+		log.Panicf("failed getting packages: %s", err)
+	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
@@ -162,6 +174,7 @@ func PackageCommands() *cobra.Command {
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
+	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdGetPackage)
 	cmdPkg.AddCommand(cmdPackageContents)
