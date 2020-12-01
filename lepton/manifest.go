@@ -283,8 +283,8 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 		os.Exit(1)
 	}
 
-	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
-		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
+	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && pathtest != hostpath {
+		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, pathtest, hostpath)
 	}
 
 	_, err := lookupFile(m.targetRoot, hostpath)

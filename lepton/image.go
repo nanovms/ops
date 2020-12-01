@@ -281,6 +281,8 @@ func addFromConfig(m *Manifest, c *Config) error {
 func BuildManifest(c *Config) (*Manifest, error) {
 	m := NewManifest(c.TargetRoot)
 
+	addDefaultFiles(m, c)
+
 	err := addFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -294,7 +296,6 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
-	addDefaultFiles(m, c)
 	return m, nil
 }
 
