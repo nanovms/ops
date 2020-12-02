@@ -13,12 +13,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
-func getAzureDefaultTags() map[string]*string {
-	return map[string]*string{
-		"CreatedBy": to.StringPtr("ops"),
-	}
-}
-
 func getAzureResourceNameFromID(id string) string {
 	idParts := strings.Split(id, "/")
 	return idParts[len(idParts)-1]

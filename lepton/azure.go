@@ -51,6 +51,18 @@ type Azure struct {
 	storageAccount  string
 }
 
+func getAzureDefaultTags() map[string]*string {
+	return map[string]*string{
+		"CreatedBy": to.StringPtr("ops"),
+	}
+}
+
+func hasOpsTags(tags map[string]*string) bool {
+	val, ok := tags["CreatedBy"]
+
+	return ok && *val == "ops"
+}
+
 // Environment returns an `azure.Environment{...}` for the current
 // cloud.
 func (a *Azure) Environment() *azure.Environment {
@@ -291,6 +303,7 @@ func (a *Azure) CreateImage(ctx *Context) error {
 
 	imageParams := compute.Image{
 		Location: to.StringPtr(region),
+		Tags:     getAzureDefaultTags(),
 		ImageProperties: &compute.ImageProperties{
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
@@ -303,12 +316,12 @@ func (a *Azure) CreateImage(ctx *Context) error {
 		},
 	}
 
-	res, err := imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
+	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
 		fmt.Println(err)
+	} else {
+		fmt.Println("Image created")
 	}
-
-	fmt.Printf("%+v", res)
 
 	return nil
 }
@@ -330,12 +343,14 @@ func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
 	imgs := images.Values()
 
 	for _, image := range imgs {
-		cImage := CloudImage{
-			Name:   *image.Name,
-			Status: *(*image.ImageProperties).ProvisioningState,
-		}
+		if hasOpsTags(image.Tags) {
+			cImage := CloudImage{
+				Name:   *image.Name,
+				Status: *(*image.ImageProperties).ProvisioningState,
+			}
 
-		cimages = append(cimages, cImage)
+			cimages = append(cimages, cImage)
+		}
 	}
 
 	return cimages, nil
@@ -495,8 +510,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	sshKeyData = fakepubkey
 	nctx := context.TODO()
 
-	ctx.logger.Log("creating the vm - this can take a few minutes - you can ctrl-c this after a bit")
-	ctx.logger.Log("there is a known issue that prevents the deploy from ever being 'done'")
+	ctx.logger.Log("creating the vm - this can take a few minutes")
 
 	vmClient, err := a.getVMClient()
 	if err != nil {
@@ -515,6 +529,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 		vmName,
 		compute.VirtualMachine{
 			Location: to.StringPtr(location),
+			Tags:     getAzureDefaultTags(),
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
 					VMSize: flavor,
@@ -634,12 +649,14 @@ func (a *Azure) GetInstances(ctx *Context) (cinstances []CloudInstance, err erro
 	instances := vmlist.Values()
 
 	for _, instance := range instances {
-		cinstance, err := a.convertToCloudInstance(&instance, nicClient, ipClient)
-		if err != nil {
-			return nil, err
-		}
+		if hasOpsTags(instance.Tags) {
+			cinstance, err := a.convertToCloudInstance(&instance, nicClient, ipClient)
+			if err != nil {
+				return nil, err
+			}
 
-		cinstances = append(cinstances, *cinstance)
+			cinstances = append(cinstances, *cinstance)
+		}
 	}
 
 	return
