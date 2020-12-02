@@ -34,6 +34,14 @@ type GCloudOperation struct {
 	operationType string
 }
 
+func parseToGCPTags(tags []Tag) map[string]string {
+	labels := map[string]string{}
+	for _, tag := range tags {
+		labels[tag.Key] = tag.Value
+	}
+	return labels
+}
+
 func checkGCCredentialsProvided() error {
 	creds, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !ok {
@@ -223,7 +231,8 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 		c.CloudConfig.BucketName, p.getArchiveName(ctx))
 
 	rb := &compute.Image{
-		Name: c.CloudConfig.ImageName,
+		Name:   c.CloudConfig.ImageName,
+		Labels: parseToGCPTags(ctx.config.RunConfig.Tags),
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,
 		},
@@ -352,7 +361,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 
 	if c.CloudConfig.ProjectID == "" {
-		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.", creds.ProjectID)
+		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.\n", creds.ProjectID)
 		c.CloudConfig.ProjectID = creds.ProjectID
 	}
 
@@ -381,6 +390,11 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		c.CloudConfig.ImageName)
 
 	serialTrue := "true"
+
+	labels := map[string]string{}
+	for _, tag := range ctx.config.RunConfig.Tags {
+		labels[tag.Key] = tag.Value
+	}
 
 	rb := &compute.Instance{
 		Name:        instanceName,
@@ -415,6 +429,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
+		Labels: parseToGCPTags(ctx.config.RunConfig.Tags),
 		Tags: &compute.Tags{
 			Items: []string{instanceName},
 		},
