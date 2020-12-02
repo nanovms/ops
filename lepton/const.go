@@ -227,6 +227,18 @@ func getReleaseLocalFolder(version string) string {
 	return path.Join(GetOpsHome(), version)
 }
 
+func getLastReleaseLocalFolder() string {
+	return getReleaseLocalFolder(getLatestRelVersion())
+}
+
+func getKlibsDir(nightly bool) string {
+	if nightly {
+		return nightlyLocalFolder() + "/klibs"
+	}
+
+	return getLastReleaseLocalFolder() + "/klibs"
+}
+
 const (
 	commonArchive = "https://storage.googleapis.com/nanos/common/common.tar.gz"
 	libDNS        = "/lib/x86_64-linux-gnu/libnss_dns.so.2"

@@ -29,6 +29,7 @@ type Manifest struct {
 	targetRoot  string
 	mounts      map[string]string
 	klibs       []string
+	nightly     bool
 }
 
 // NewManifest init
@@ -342,7 +343,7 @@ func (m *Manifest) String() string {
 		// include klibs specified in configuration if present in ops klib directory
 		if len(m.klibs) > 0 {
 			klibs := map[string]interface{}{}
-			klibsPath := GetOpsHome() + "/klib"
+			klibsPath := getKlibsDir(m.nightly)
 			if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
 
 				sb.WriteString("    klib:(children:(\n")
@@ -352,11 +353,15 @@ func (m *Manifest) String() string {
 
 					if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
 						klibs[klibName] = klibPath
+					} else {
+						fmt.Printf("Klib %s not found in directory %s\n", klibName, klibsPath)
 					}
 				}
 				toString(&klibs, &sb, 6)
 
 				sb.WriteString("    ))\n")
+			} else {
+				fmt.Printf("Klibs directory with path %s not found\n", klibsPath)
 			}
 		}
 
