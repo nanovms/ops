@@ -1005,7 +1005,7 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 	w := request.Waiter{
 		Name:        "DescribeImportSnapshotTasks",
 		Delay:       request.ConstantWaiterDelay(15 * time.Second),
-		MaxAttempts: 60,
+		MaxAttempts: 120,
 		Acceptors: []request.WaiterAcceptor{
 			{
 				State:    request.SuccessWaiterState,
