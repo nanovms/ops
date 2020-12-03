@@ -101,6 +101,7 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		},
 	}
 
+	ctx.logger.Info("Importing snapshot from s3 image file")
 	res, err := compute.ImportSnapshot(input)
 	if err != nil {
 		return err
@@ -112,20 +113,19 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	}
 
 	// delete the tmp s3 image
+	ctx.logger.Info("Deleting s3 image file")
 	err = p.Storage.DeleteFromBucket(c, key)
 	if err != nil {
 		return err
 	}
 
 	// tag the volume
+	tags, _ := buildAwsTags(c.RunConfig.Tags, key)
+
+	ctx.logger.Log("Tagging snapshot")
 	_, err = compute.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{snapshotID},
-		Tags: []*ec2.Tag{
-			{
-				Key:   aws.String("Name"),
-				Value: aws.String(key),
-			},
-		},
+		Tags:      tags,
 	})
 	if err != nil {
 		return err
@@ -156,20 +156,17 @@ func (p *AWS) CreateImage(ctx *Context) error {
 		EnaSupport:         aws.Bool(false),
 	}
 
+	ctx.logger.Info("Registering image")
 	resreg, err := compute.RegisterImage(rinput)
 	if err != nil {
 		return err
 	}
 
 	// Add name tag to the created ami
+	ctx.logger.Info("Tagging image")
 	_, err = compute.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{resreg.ImageId},
-		Tags: []*ec2.Tag{
-			{
-				Key:   aws.String("Name"),
-				Value: aws.String(key),
-			},
-		},
+		Tags:      tags,
 	})
 
 	return nil
@@ -181,10 +178,13 @@ func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
 	)
 	compute := ec2.New(svc)
 
+	filters := []*ec2.Filter{{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})}}
+
 	input := &ec2.DescribeImagesInput{
 		Owners: []*string{
 			aws.String("self"),
 		},
+		Filters: filters,
 	}
 
 	result, err := compute.DescribeImages(input)
@@ -234,6 +234,8 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 		Region: aws.String(region)},
 	)
 	compute := ec2.New(svc)
+
+	filter = append(filter, &ec2.Filter{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})})
 
 	request := ec2.DescribeInstancesInput{
 		Filters: filter,
@@ -480,8 +482,8 @@ func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
 	return nil
 }
 
-// parseToAWSTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overriden if there is a tag with key name
-func parseToAWSTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
+// buildAwsTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overriden if there is a tag with key name
+func buildAwsTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
 	tags := []*ec2.Tag{}
 	var nameSpecified bool
 	name := defaultName
@@ -500,6 +502,11 @@ func parseToAWSTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
 			Value: aws.String(name),
 		})
 	}
+
+	tags = append(tags, &ec2.Tag{
+		Key:   aws.String("CreatedBy"),
+		Value: aws.String("ops"),
+	})
 
 	return tags, name
 }
@@ -582,7 +589,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	}
 
 	// Create tags to assign to the instance
-	tags, tagInstanceName := parseToAWSTags(ctx.config.RunConfig.Tags, ctx.config.RunConfig.InstanceName)
+	tags, tagInstanceName := buildAwsTags(ctx.config.RunConfig.Tags, ctx.config.RunConfig.InstanceName)
 
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{

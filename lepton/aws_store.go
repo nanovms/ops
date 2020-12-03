@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -32,6 +33,9 @@ func (s *S3) CopyToBucket(config *Config, archPath string) error {
 	if err != nil {
 		return err
 	}
+
+	fileStats, _ := file.Stat()
+	fmt.Println("Uploading image with", fmt.Sprintf("%fMB", float64(fileStats.Size())/math.Pow(10, 6)))
 
 	uploader := s3manager.NewUploader(sess)
 	_, err = uploader.Upload(&s3manager.UploadInput{
