@@ -379,6 +379,11 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		return err
 	}
 
+	nic, err := p.getNIC(ctx, computeService)
+	if err != nil {
+		return err
+	}
+
 	machineType := fmt.Sprintf("zones/%s/machineTypes/%s", c.CloudConfig.Zone, c.CloudConfig.Flavor)
 	instanceName := fmt.Sprintf("%v-%v",
 		filepath.Base(c.CloudConfig.ImageName),
@@ -409,18 +414,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
-		NetworkInterfaces: []*compute.NetworkInterface{
-			{
-				Name: "eth0",
-				AccessConfigs: []*compute.AccessConfig{
-					{
-						NetworkTier: "PREMIUM",
-						Type:        "ONE_TO_ONE_NAT",
-						Name:        "External NAT",
-					},
-				},
-			},
-		},
+		NetworkInterfaces: nic,
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{
 				{
@@ -486,26 +480,6 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 
 	return nil
-}
-
-func (p *GCloud) buildFirewallRule(protocol string, ports []int, tag string) *compute.Firewall {
-	var portsStr []string
-	for _, i := range ports {
-		portsStr = append(portsStr, strconv.Itoa(i))
-	}
-
-	return &compute.Firewall{
-		Name:        fmt.Sprintf("ops-%s-rule-%s", protocol, tag),
-		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ports, "[]"), tag),
-		Allowed: []*compute.FirewallAllowed{
-			{
-				IPProtocol: protocol,
-				Ports:      portsStr,
-			},
-		},
-		TargetTags:   []string{tag},
-		SourceRanges: []string{"0.0.0.0/0"},
-	}
 }
 
 // ListInstances lists instances on Gcloud
