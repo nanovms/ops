@@ -1033,7 +1033,11 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 			return req, nil
 		},
 	}
-	w.WaitWithContext(ct)
+	err = w.WaitWithContext(ct)
+	if err != nil {
+		fmt.Printf("import timed out after %f minutes\n", time.Since(waitStartTime).Minutes())
+		return nil, err
+	}
 
 	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
