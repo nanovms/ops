@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -383,7 +382,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("\nDeploying flavorID %s", flavorID)
 
-	instanceName := imageName + "-" + strconv.FormatInt(time.Now().Unix(), 10)
+	instanceName := ctx.config.RunConfig.InstanceName
 
 	var createOpts servers.CreateOptsBuilder
 	createOpts = &servers.CreateOpts{

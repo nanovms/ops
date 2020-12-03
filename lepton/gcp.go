@@ -380,10 +380,6 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	}
 
 	machineType := fmt.Sprintf("zones/%s/machineTypes/%s", c.CloudConfig.Zone, c.CloudConfig.Flavor)
-	instanceName := fmt.Sprintf("%v-%v",
-		filepath.Base(c.CloudConfig.ImageName),
-		strconv.FormatInt(time.Now().Unix(), 10),
-	)
 
 	imageName := fmt.Sprintf("projects/%v/global/images/%v",
 		c.CloudConfig.ProjectID,
@@ -395,6 +391,8 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	for _, tag := range ctx.config.RunConfig.Tags {
 		labels[tag.Key] = tag.Value
 	}
+
+	instanceName := c.RunConfig.InstanceName
 
 	rb := &compute.Instance{
 		Name:        instanceName,

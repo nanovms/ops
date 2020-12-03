@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
@@ -52,6 +54,15 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	imagename, _ := cmd.Flags().GetString("imagename")
 	c.CloudConfig.ImageName = imagename
 
+	if len(args) > 0 {
+		c.RunConfig.InstanceName = args[0]
+	} else if c.RunConfig.InstanceName == "" {
+		c.RunConfig.InstanceName = fmt.Sprintf("%v-%v",
+			filepath.Base(c.CloudConfig.ImageName),
+			strconv.FormatInt(time.Now().Unix(), 10),
+		)
+	}
+
 	portsFlag, err := cmd.Flags().GetStringArray("port")
 	if err != nil {
 		panic(err)
@@ -90,7 +101,7 @@ func instanceCreateCommand() *cobra.Command {
 	var imageName, config, flavor, domainname string
 
 	var cmdInstanceCreate = &cobra.Command{
-		Use:   "create",
+		Use:   "create <instance_name>",
 		Short: "create nanos instance",
 		Run:   instanceCreateCommandHandler,
 	}

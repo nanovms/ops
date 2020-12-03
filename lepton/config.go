@@ -71,6 +71,7 @@ type RunConfig struct {
 	ShowErrors     bool
 	ShowDebug      bool
 	Klibs          []string
+	InstanceName   string
 }
 
 // RuntimeConfig constructs runtime config
