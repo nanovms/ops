@@ -8,9 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -409,13 +407,6 @@ func (a *Azure) SyncImage(config *Config, target Provider, image string) error {
 }
 
 // CreateInstance - Creates instance on azure Platform
-//
-// this is kind of a pita
-// you have to create the following:
-// {vnet, nsg, subnet, ip, nic} before creating the vm
-//
-// unfortunately this is going to take some serious re-factoring later
-// on w/these massive assumptions being put into place
 func (a *Azure) CreateInstance(ctx *Context) error {
 	username := "fake"
 	password := "fake"
@@ -431,7 +422,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 	location := a.getLocation(ctx.config)
 
-	vmName := ctx.config.CloudConfig.ImageName + strconv.FormatInt(time.Now().Unix(), 10)
+	vmName := ctx.config.RunConfig.InstanceName
 	ctx.logger.Log("spinning up:\t%s\n", vmName)
 
 	// create virtual network

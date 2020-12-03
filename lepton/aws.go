@@ -582,7 +582,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	}
 
 	// Create tags to assign to the instance
-	tags, tagInstanceName := parseToAWSTags(ctx.config.RunConfig.Tags, imgName+"-"+strconv.Itoa(int(time.Now().Unix())))
+	tags, tagInstanceName := parseToAWSTags(ctx.config.RunConfig.Tags, ctx.config.RunConfig.InstanceName)
 
 	// Specify the details of the instance that you want to create.
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
