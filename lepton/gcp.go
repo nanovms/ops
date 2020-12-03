@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,11 +33,14 @@ type GCloudOperation struct {
 	operationType string
 }
 
-func parseToGCPTags(tags []Tag) map[string]string {
+func buildGcpTags(tags []Tag) map[string]string {
 	labels := map[string]string{}
 	for _, tag := range tags {
 		labels[tag.Key] = tag.Value
 	}
+
+	labels["createdby"] = "ops"
+
 	return labels
 }
 
@@ -232,7 +234,7 @@ func (p *GCloud) CreateImage(ctx *Context) error {
 
 	rb := &compute.Image{
 		Name:   c.CloudConfig.ImageName,
-		Labels: parseToGCPTags(ctx.config.RunConfig.Tags),
+		Labels: buildGcpTags(ctx.config.RunConfig.Tags),
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,
 		},
@@ -272,13 +274,15 @@ func (p *GCloud) GetImages(ctx *Context) ([]CloudImage, error) {
 	req := computeService.Images.List(creds.ProjectID)
 	err = req.Pages(context, func(page *compute.ImageList) error {
 		for _, image := range page.Items {
-			ci := CloudImage{
-				Name:    image.Name,
-				Status:  fmt.Sprintf("%v", image.Status),
-				Created: image.CreationTimestamp,
-			}
+			if val, ok := image.Labels["createdby"]; ok && val == "ops" {
+				ci := CloudImage{
+					Name:    image.Name,
+					Status:  fmt.Sprintf("%v", image.Status),
+					Created: image.CreationTimestamp,
+				}
 
-			images = append(images, ci)
+				images = append(images, ci)
+			}
 		}
 		return nil
 	})
@@ -421,7 +425,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
-		Labels: parseToGCPTags(ctx.config.RunConfig.Tags),
+		Labels: buildGcpTags(ctx.config.RunConfig.Tags),
 		Tags: &compute.Tags{
 			Items: []string{instanceName},
 		},
@@ -532,8 +536,10 @@ func (p *GCloud) GetInstances(ctx *Context) ([]CloudInstance, error) {
 
 	if err := req.Pages(context, func(page *compute.InstanceList) error {
 		for _, instance := range page.Items {
-			cinstance := p.convertToCloudInstance(instance)
-			cinstances = append(cinstances, *cinstance)
+			if val, ok := instance.Labels["createdby"]; ok && val == "ops" {
+				cinstance := p.convertToCloudInstance(instance)
+				cinstances = append(cinstances, *cinstance)
+			}
 		}
 		return nil
 	}); err != nil {

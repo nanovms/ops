@@ -68,7 +68,7 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 	}
 
 	// Create tags to assign to the volume
-	tags, _ := parseToAWSTags(config.RunConfig.Tags, name)
+	tags, _ := buildAwsTags(config.RunConfig.Tags, name)
 
 	// Create volume from snapshot
 	createVolumeInput := &ec2.CreateVolumeInput{

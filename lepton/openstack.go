@@ -23,6 +23,10 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 )
 
+func getOpenstackOpsTags() []string {
+	return []string{"CreatedBy:ops"}
+}
+
 func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.ListOpts) ([]CloudInstance, error) {
 	cinstances := []CloudInstance{}
 
@@ -43,32 +47,34 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 		}
 
 		for _, s := range serverList {
-			// fugly
-			ipv4 := ""
-			// For some instances IP is not assigned.
-			z := s.Addresses["public"]
-			if z != nil {
-				for _, v := range z.([]interface{}) {
-					sz := v.(map[string]interface{})
-					version := sz["version"].(float64)
-					if version == 4 {
-						ipv4 = sz["addr"].(string)
+			if val, ok := s.Metadata["CreatedBy"]; ok && val == "ops" {
+				// fugly
+				ipv4 := ""
+				// For some instances IP is not assigned.
+				z := s.Addresses["public"]
+				if z != nil {
+					for _, v := range z.([]interface{}) {
+						sz := v.(map[string]interface{})
+						version := sz["version"].(float64)
+						if version == 4 {
+							ipv4 = sz["addr"].(string)
+						}
 					}
 				}
-			}
 
-			cinstance := CloudInstance{
-				ID:      s.ID,
-				Name:    s.Name,
-				Status:  s.Status,
-				Created: s.Created.Format("2006-01-02 15:04:05"),
-			}
+				cinstance := CloudInstance{
+					ID:      s.ID,
+					Name:    s.Name,
+					Status:  s.Status,
+					Created: s.Created.Format("2006-01-02 15:04:05"),
+				}
 
-			if ipv4 != "" {
-				cinstance.PublicIps = []string{ipv4}
-			}
+				if ipv4 != "" {
+					cinstance.PublicIps = []string{ipv4}
+				}
 
-			cinstances = append(cinstances, cinstance)
+				cinstances = append(cinstances, cinstance)
+			}
 		}
 
 		return true, nil
@@ -174,6 +180,7 @@ func (o *OpenStack) createImage(imagesClient *gophercloud.ServiceClient, imgName
 		DiskFormat:      "raw",
 		ContainerFormat: "bare",
 		Visibility:      &visibility,
+		Tags:            getOpenstackOpsTags(),
 	}
 
 	return images.Create(imagesClient, createOpts).Extract()
@@ -228,7 +235,9 @@ func (o *OpenStack) GetImages(ctx *Context) ([]CloudImage, error) {
 		fmt.Println(err)
 	}
 
-	listOpts := images.ListOpts{}
+	listOpts := images.ListOpts{
+		Tags: getOpenstackOpsTags(),
+	}
 
 	allPages, err := images.List(imageClient, listOpts).AllPages()
 	if err != nil {
@@ -390,6 +399,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		ImageRef:  imageID,
 		FlavorRef: flavorID,
 		AdminPass: "TODO",
+		Metadata:  map[string]string{"CreatedBy": "ops"},
 	}
 
 	var volumeSize int
