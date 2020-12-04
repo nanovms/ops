@@ -12,15 +12,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func exitWithError(errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
-	os.Exit(1)
+// InstanceCommands provides instance related commands
+func InstanceCommands() *cobra.Command {
+	var targetCloud, projectID, zone string
+	var ports []string
+	var udpPorts []string
+
+	var cmdInstance = &cobra.Command{
+		Use:       "instance",
+		Short:     "manage nanos instances",
+		ValidArgs: []string{"create", "list", "delete", "stop", "start", "logs"},
+		Args:      cobra.OnlyValidArgs,
+	}
+
+	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
+	cmdInstance.PersistentFlags().StringArrayVarP(&udpPorts, "udp", "", nil, "udp ports to forward")
+	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure]")
+	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
+	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
+	cmdInstance.AddCommand(instanceCreateCommand())
+	cmdInstance.AddCommand(instanceListCommand())
+	cmdInstance.AddCommand(instanceDeleteCommand())
+	cmdInstance.AddCommand(instanceStopCommand())
+	cmdInstance.AddCommand(instanceStartCommand())
+	cmdInstance.AddCommand(instanceLogsCommand())
+
+	return cmdInstance
 }
 
-func exitForCmd(cmd *cobra.Command, errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
-	cmd.Help()
-	os.Exit(1)
+// Create Instance
+
+func instanceCreateCommand() *cobra.Command {
+	var imageName, config, flavor, domainname string
+
+	var cmdInstanceCreate = &cobra.Command{
+		Use:   "create <instance_name>",
+		Short: "create nanos instance",
+		Run:   instanceCreateCommandHandler,
+	}
+
+	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "", "flavor name for cloud provider")
+	cmdInstanceCreate.PersistentFlags().StringVarP(&domainname, "domainname", "d", "", "domain name for instance")
+
+	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
+	return cmdInstanceCreate
 }
 
 func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
@@ -37,22 +74,30 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" && provider == "gcp" {
+	zone, _ := cmd.Flags().GetString("zone")
+	flavor, _ := cmd.Flags().GetString("flavor")
+	imagename, _ := cmd.Flags().GetString("imagename")
+	domainname, _ := cmd.Flags().GetString("domainname")
+
+	if projectID != "" {
 		c.CloudConfig.ProjectID = projectID
 	}
 
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone != "" && (provider == "gcp" || provider == "aws") {
+	if zone != "" {
 		c.CloudConfig.Zone = zone
 	}
 
-	flavor, _ := cmd.Flags().GetString("flavor")
 	if flavor != "" {
 		c.CloudConfig.Flavor = flavor
 	}
 
-	imagename, _ := cmd.Flags().GetString("imagename")
-	c.CloudConfig.ImageName = imagename
+	if imagename != "" {
+		c.CloudConfig.ImageName = imagename
+	}
+
+	if domainname != "" {
+		c.RunConfig.DomainName = domainname
+	}
 
 	if len(args) > 0 {
 		c.RunConfig.InstanceName = args[0]
@@ -83,66 +128,18 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	initDefaultRunConfigs(c, ports)
 
-	domainname, _ := cmd.Flags().GetString("domainname")
-	c.RunConfig.DomainName = domainname
-
-	p, err := getCloudProvider(provider)
+	p, ctx, err := getProviderAndContext(c, provider)
 	if err != nil {
-		exitWithError(err.Error())
+		exitForCmd(cmd, err.Error())
 	}
-	ctx := api.NewContext(c, &p)
+
 	err = p.CreateInstance(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 }
 
-func instanceCreateCommand() *cobra.Command {
-	var imageName, config, flavor, domainname string
-
-	var cmdInstanceCreate = &cobra.Command{
-		Use:   "create <instance_name>",
-		Short: "create nanos instance",
-		Run:   instanceCreateCommandHandler,
-	}
-
-	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "", "flavor name for cloud provider")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&domainname, "domainname", "d", "", "domain name for instance")
-
-	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
-	return cmdInstanceCreate
-}
-
-func instanceListCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
-
-	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" && provider == "gcp" {
-		exitForCmd(cmd, "projectid argument missing")
-	}
-
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" && (provider == "gcp" || provider == "aws") {
-		exitForCmd(cmd, "zone argument missing")
-	}
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(c, &p)
-	err = p.ListInstances(ctx)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-}
+// List Instances
 
 func instanceListCommand() *cobra.Command {
 	var cmdInstanceList = &cobra.Command{
@@ -153,92 +150,35 @@ func instanceListCommand() *cobra.Command {
 	return cmdInstanceList
 }
 
-func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
+func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
+
 	c := api.NewConfig()
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
-
-	if projectID == "" && provider == "gcp" {
-		exitForCmd(cmd, "projectid argument missing")
-	}
-
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" && (provider == "gcp" || provider == "aws") {
-		exitForCmd(cmd, "zone argument missing")
+
+	if projectID != "" {
+		c.CloudConfig.ProjectID = projectID
 	}
 
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(c, &p)
-	err = p.DeleteInstance(ctx, args[0])
+	if zone != "" {
+		c.CloudConfig.Zone = zone
+	}
+
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.ListInstances(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 }
 
-func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
-
-	projectID, _ := cmd.Flags().GetString("projectid")
-
-	if projectID == "" && provider == "gcp" {
-		exitForCmd(cmd, "projectid argument missing")
-	}
-
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" && (provider == "gcp" || provider == "aws") {
-		exitForCmd(cmd, "zone argument missing")
-	}
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(c, &p)
-	err = p.StartInstance(ctx, args[0])
-	if err != nil {
-		exitWithError(err.Error())
-	}
-}
-
-func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
-
-	projectID, _ := cmd.Flags().GetString("projectid")
-
-	if projectID == "" && provider == "gcp" {
-		exitForCmd(cmd, "projectid argument missing")
-	}
-
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" {
-		exitForCmd(cmd, "zone argument missing")
-	}
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(c, &p)
-	err = p.StopInstance(ctx, args[0])
-	if err != nil {
-		exitWithError(err.Error())
-	}
-}
+// Delete Instance
 
 func instanceDeleteCommand() *cobra.Command {
 	var cmdInstanceDelete = &cobra.Command{
@@ -250,15 +190,30 @@ func instanceDeleteCommand() *cobra.Command {
 	return cmdInstanceDelete
 }
 
-func instanceStopCommand() *cobra.Command {
-	var cmdInstanceStop = &cobra.Command{
-		Use:   "stop <instance_name>",
-		Short: "stop instance on provider",
-		Run:   instanceStopCommandHandler,
-		Args:  cobra.MinimumNArgs(1),
+func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
+
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+
+	projectID, _ := cmd.Flags().GetString("projectid")
+	zone, _ := cmd.Flags().GetString("zone")
+
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
+
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
 	}
-	return cmdInstanceStop
+
+	err = p.DeleteInstance(ctx, args[0])
+	if err != nil {
+		exitWithError(err.Error())
+	}
 }
+
+// Start Instance
 
 func instanceStartCommand() *cobra.Command {
 	var cmdInstanceStart = &cobra.Command{
@@ -270,39 +225,65 @@ func instanceStartCommand() *cobra.Command {
 	return cmdInstanceStart
 }
 
-func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
+func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
 	c := api.NewConfig()
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
-	if projectID == "" && provider == "gcp" {
-		exitForCmd(cmd, "projectid argument missing")
-	}
-
 	zone, _ := cmd.Flags().GetString("zone")
-	if zone == "" && (provider == "gcp" || provider == "aws") {
-		exitForCmd(cmd, "zone argument missing")
-	}
-
-	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
-	if err != nil {
-		panic(err)
-	}
 
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
-	ctx := api.NewContext(c, &p)
-	err = p.PrintInstanceLogs(ctx, args[0], watch)
+
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.StartInstance(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
 	}
 }
+
+// Stop Instance
+
+func instanceStopCommand() *cobra.Command {
+	var cmdInstanceStop = &cobra.Command{
+		Use:   "stop <instance_name>",
+		Short: "stop instance on provider",
+		Run:   instanceStopCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdInstanceStop
+}
+
+func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
+
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+
+	projectID, _ := cmd.Flags().GetString("projectid")
+	zone, _ := cmd.Flags().GetString("zone")
+
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
+
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.StopInstance(ctx, args[0])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+// Instance logs
 
 func instanceLogsCommand() *cobra.Command {
 	var watch bool
@@ -316,30 +297,30 @@ func instanceLogsCommand() *cobra.Command {
 	return cmdLogsCommand
 }
 
-// InstanceCommands provided instance related commands
-func InstanceCommands() *cobra.Command {
-	var targetCloud, projectID, zone string
-	var ports []string
-	var udpPorts []string
+func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
+	provider, _ := cmd.Flags().GetString("target-cloud")
 
-	var cmdInstance = &cobra.Command{
-		Use:       "instance",
-		Short:     "manage nanos instances",
-		ValidArgs: []string{"create", "list", "delete", "stop", "start", "logs"},
-		Args:      cobra.OnlyValidArgs,
+	c := api.NewConfig()
+	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+
+	projectID, _ := cmd.Flags().GetString("projectid")
+	zone, _ := cmd.Flags().GetString("zone")
+
+	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
+	if err != nil {
+		panic(err)
 	}
 
-	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
-	cmdInstance.PersistentFlags().StringArrayVarP(&udpPorts, "udp", "", nil, "udp ports to forward")
-	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure]")
-	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
-	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
-	cmdInstance.AddCommand(instanceCreateCommand())
-	cmdInstance.AddCommand(instanceListCommand())
-	cmdInstance.AddCommand(instanceDeleteCommand())
-	cmdInstance.AddCommand(instanceStopCommand())
-	cmdInstance.AddCommand(instanceStartCommand())
-	cmdInstance.AddCommand(instanceLogsCommand())
+	c.CloudConfig.ProjectID = projectID
+	c.CloudConfig.Zone = zone
 
-	return cmdInstance
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.PrintInstanceLogs(ctx, args[0], watch)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 }

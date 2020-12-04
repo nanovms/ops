@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ebs"
@@ -26,6 +27,8 @@ type AWS struct {
 	Storage       *S3
 	dnsService    *route53.Route53
 	volumeService *ebs.EBS
+	session       *session.Session
+	ec2           *ec2.EC2
 }
 
 // BuildImage to be upload on AWS
@@ -50,25 +53,36 @@ func (p *AWS) BuildImageWithPackage(ctx *Context, pkgpath string) (string, error
 }
 
 // Initialize AWS related things
-func (p *AWS) Initialize() error {
+func (p *AWS) Initialize(config *ProviderConfig) error {
 	p.Storage = &S3{}
 
-	return nil
-}
-
-func (p *AWS) getDNSService(config *Config) (*route53.Route53, error) {
-	if p.dnsService != nil {
-		return p.dnsService, nil
+	if config.Zone == "" {
+		return fmt.Errorf("Zone missing")
 	}
 
-	sess, err := p.getAWSSession(config)
+	creds := credentials.NewEnvCredentials()
+
+	_, err := creds.Get()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	p.dnsService = route53.New(sess)
+	session, err := session.NewSession(
+		&aws.Config{
+			Region: aws.String(config.Zone),
+		},
+	)
+	if err != nil {
+		return err
+	}
 
-	return p.dnsService, nil
+	// initialize aws services
+	p.session = session
+	p.dnsService = route53.New(session)
+	p.ec2 = ec2.New(session)
+	p.volumeService = ebs.New(session)
+
+	return nil
 }
 
 // CreateImage - Creates image on AWS using nanos images
@@ -78,11 +92,6 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	// 1) upload the image
 	// 2) create a snapshot
 	// 3) create an image
-
-	compute, err := p.getEc2Service(ctx.config)
-	if err != nil {
-		return err
-	}
 
 	c := ctx.config
 
@@ -102,7 +111,7 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	}
 
 	ctx.logger.Info("Importing snapshot from s3 image file")
-	res, err := compute.ImportSnapshot(input)
+	res, err := p.ec2.ImportSnapshot(input)
 	if err != nil {
 		return err
 	}
@@ -123,7 +132,7 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	tags, _ := buildAwsTags(c.RunConfig.Tags, key)
 
 	ctx.logger.Log("Tagging snapshot")
-	_, err = compute.CreateTags(&ec2.CreateTagsInput{
+	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{snapshotID},
 		Tags:      tags,
 	})
@@ -157,14 +166,14 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	}
 
 	ctx.logger.Info("Registering image")
-	resreg, err := compute.RegisterImage(rinput)
+	resreg, err := p.ec2.RegisterImage(rinput)
 	if err != nil {
 		return err
 	}
 
 	// Add name tag to the created ami
 	ctx.logger.Info("Tagging image")
-	_, err = compute.CreateTags(&ec2.CreateTagsInput{
+	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{resreg.ImageId},
 		Tags:      tags,
 	})
@@ -172,12 +181,7 @@ func (p *AWS) CreateImage(ctx *Context) error {
 	return nil
 }
 
-func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
-	)
-	compute := ec2.New(svc)
-
+func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
 	filters := []*ec2.Filter{{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})}}
 
 	input := &ec2.DescribeImagesInput{
@@ -187,7 +191,7 @@ func getAWSImages(region string) (*ec2.DescribeImagesOutput, error) {
 		Filters: filters,
 	}
 
-	result, err := compute.DescribeImages(input)
+	result, err := ec2Service.DescribeImages(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -241,9 +245,9 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 		Filters: filter,
 	}
 	result, err := compute.DescribeInstances(&request)
-
 	if err != nil {
-		exitWithError("invalid region")
+		fmt.Println(err)
+		exitWithError("failed getting instances")
 	}
 
 	var cinstances []CloudInstance
@@ -265,7 +269,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []CloudInstance {
 func (p *AWS) GetImages(ctx *Context) ([]CloudImage, error) {
 	var cimages []CloudImage
 
-	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	result, err := getAWSImages(p.ec2)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +517,7 @@ func buildAwsTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
 
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *Context) error {
-	result, err := getAWSImages(ctx.config.CloudConfig.Zone)
+	result, err := getAWSImages(p.ec2)
 	if err != nil {
 		exitWithError("Invalid zone")
 	}
@@ -971,35 +975,12 @@ func (p *AWS) GetStorage() Storage {
 	return p.Storage
 }
 
-func (p *AWS) getAWSSession(config *Config) (*session.Session, error) {
-	return session.NewSession(
-		&aws.Config{
-			Region: aws.String(config.CloudConfig.Zone)},
-	)
-}
-
-func (p *AWS) getEc2Service(config *Config) (*ec2.EC2, error) {
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.CloudConfig.Zone)},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return ec2.New(svc), nil
-}
-
 func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*string, error) {
-	compute, err := p.getEc2Service(config)
-	if err != nil {
-		return nil, err
-	}
-
 	taskFilter := &ec2.DescribeImportSnapshotTasksInput{
 		ImportTaskIds: []*string{importTaskID},
 	}
 
-	_, err = compute.DescribeImportSnapshotTasks(taskFilter)
+	_, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -1034,7 +1015,7 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 			},
 		},
 		NewRequest: func(opts []request.Option) (*request.Request, error) {
-			req, _ := compute.DescribeImportSnapshotTasksRequest(taskFilter)
+			req, _ := p.ec2.DescribeImportSnapshotTasksRequest(taskFilter)
 			req.SetContext(ct)
 			req.ApplyOptions(opts...)
 			return req, nil
@@ -1048,7 +1029,7 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 
 	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
-	describeOutput, err := compute.DescribeImportSnapshotTasks(taskFilter)
+	describeOutput, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
 	if err != nil {
 		return nil, err
 	}

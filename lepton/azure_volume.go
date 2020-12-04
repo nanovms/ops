@@ -11,7 +11,9 @@ import (
 )
 
 // CreateVolume uploads the volume raw file and creates a disk from it
-func (a *Azure) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
+func (a *Azure) CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error) {
+	config := ctx.config
+
 	var vol NanosVolume
 
 	disksClient, err := a.getDisksClient()
@@ -70,7 +72,7 @@ func (a *Azure) CreateVolume(config *Config, name, data, size, provider string) 
 }
 
 // GetAllVolumes returns all volumes in NanosVolume format
-func (a *Azure) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+func (a *Azure) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
 	vols := &[]NanosVolume{}
 
 	volumesService, err := a.getDisksClient()
@@ -117,7 +119,7 @@ func (a *Azure) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 }
 
 // DeleteVolume deletes an existing volume
-func (a *Azure) DeleteVolume(config *Config, name string) error {
+func (a *Azure) DeleteVolume(ctx *Context, name string) error {
 	volumesService, err := a.getDisksClient()
 	if err != nil {
 		return err
@@ -132,11 +134,8 @@ func (a *Azure) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *Azure) AttachVolume(config *Config, image, name, mount string) error {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+func (a *Azure) AttachVolume(ctx *Context, image, name, mount string) error {
+	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {
@@ -180,11 +179,8 @@ func (a *Azure) AttachVolume(config *Config, image, name, mount string) error {
 }
 
 // DetachVolume detachs a volume from an instance
-func (a *Azure) DetachVolume(config *Config, image, name string) error {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+func (a *Azure) DetachVolume(ctx *Context, image, name string) error {
+	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {

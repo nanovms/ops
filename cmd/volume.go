@@ -36,16 +36,12 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	conf.BuildDir = api.LocalVolumeDir
 
-	var vol api.VolumeService
-	if provider == "onprem" {
-		vol = &api.OnPrem{}
-	} else {
-		vol, err = getCloudProvider(provider)
-		if err != nil {
-			log.Fatal(err)
-		}
+	p, ctx, err := getProviderAndContext(conf, provider)
+	if err != nil {
+		log.Fatal(err)
 	}
-	res, err := vol.CreateVolume(conf, name, data, size, provider)
+
+	res, err := p.CreateVolume(ctx, name, data, size, provider)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,20 +67,14 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 	conf := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
-	var vol api.VolumeService
-	var err error
-	if provider == "onprem" {
-		vol = &api.OnPrem{}
-	} else {
-		vol, err = getCloudProvider(provider)
-		if err != nil {
-			log.Fatal(err)
-		}
+	p, ctx, err := getProviderAndContext(conf, provider)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	conf.BuildDir = api.LocalVolumeDir
 
-	volumes, err := vol.GetAllVolumes(conf)
+	volumes, err := p.GetAllVolumes(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,20 +99,14 @@ func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	conf := unWarpConfig(config)
 
-	var vol api.VolumeService
-	var err error
-	if provider == "onprem" {
-		vol = &api.OnPrem{}
-	} else {
-		vol, err = getCloudProvider(provider)
-		if err != nil {
-			log.Fatal(err)
-		}
+	p, ctx, err := getProviderAndContext(conf, provider)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	conf.BuildDir = api.LocalVolumeDir
 
-	err = vol.DeleteVolume(conf, name)
+	err = p.DeleteVolume(ctx, name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,17 +131,12 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	conf := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
-	var vol api.VolumeService
-	var err error
-	if provider == "onprem" {
-		vol = &api.OnPrem{}
-	} else {
-		vol, err = getCloudProvider(provider)
-		if err != nil {
-			log.Fatal(err)
-		}
+	p, ctx, err := getProviderAndContext(conf, provider)
+	if err != nil {
+		log.Fatal(err)
 	}
-	err = vol.AttachVolume(conf, image, name, mount)
+
+	err = p.AttachVolume(ctx, image, name, mount)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -168,20 +147,16 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[1]
 	config, _ := cmd.Flags().GetString("config")
 	provider, _ := cmd.Flags().GetString("target-cloud")
+
 	conf := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), conf)
 
-	var vol api.VolumeService
-	var err error
-	if provider == "onprem" {
-		vol = &api.OnPrem{}
-	} else {
-		vol, err = getCloudProvider(provider)
-		if err != nil {
-			log.Fatal(err)
-		}
+	p, ctx, err := getProviderAndContext(conf, provider)
+	if err != nil {
+		log.Fatal(err)
 	}
-	err = vol.DetachVolume(conf, image, name)
+
+	err = p.DetachVolume(ctx, image, name)
 	if err != nil {
 		log.Fatal(err)
 	}

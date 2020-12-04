@@ -289,7 +289,7 @@ func (p *OnPrem) GetInstanceLogs(ctx *Context, instancename string) (string, err
 }
 
 // Initialize on prem provider
-func (p *OnPrem) Initialize() error {
+func (p *OnPrem) Initialize(config *ProviderConfig) error {
 	return nil
 }
 

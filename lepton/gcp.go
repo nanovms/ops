@@ -196,8 +196,16 @@ func (p *GCloud) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 }
 
 // Initialize GCP related things
-func (p *GCloud) Initialize() error {
+func (p *GCloud) Initialize(config *ProviderConfig) error {
 	p.Storage = &GCPStorage{}
+
+	if config.ProjectID == "" {
+		return fmt.Errorf("ProjectID missing")
+	}
+
+	if config.Zone == "" {
+		return fmt.Errorf("Zone missing")
+	}
 
 	if err := checkGCCredentialsProvided(); err != nil {
 		return err

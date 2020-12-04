@@ -72,7 +72,7 @@ func (do *DigitalOcean) createImage(key string, bucket string, region string) {
 }
 
 // Initialize DigialOcean related things
-func (do *DigitalOcean) Initialize() error {
+func (do *DigitalOcean) Initialize(config *ProviderConfig) error {
 	doToken := os.Getenv("TOKEN")
 	do.Client = godo.NewFromToken(doToken)
 	return nil

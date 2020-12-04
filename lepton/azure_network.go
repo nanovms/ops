@@ -18,15 +18,11 @@ func getAzureResourceNameFromID(id string) string {
 	return idParts[len(idParts)-1]
 }
 
-func (a *Azure) getNicClient() (*network.InterfacesClient, error) {
+func (a *Azure) getNicClient() *network.InterfacesClient {
 	nicClient := network.NewInterfacesClient(a.subID)
-	auth, err := a.GetResourceManagementAuthorizer()
-	if err != nil {
-		return nil, err
-	}
-	nicClient.Authorizer = auth
+	nicClient.Authorizer = *a.authorizer
 	nicClient.AddToUserAgent(userAgent)
-	return &nicClient, nil
+	return &nicClient
 }
 
 // CreateNIC creates a new network interface. The Network Security Group
@@ -68,10 +64,8 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		nicParams.NetworkSecurityGroup = nsg
 	}
 
-	nicClient, err := a.getNicClient()
-	if err != nil {
-		return
-	}
+	nicClient := a.getNicClient()
+
 	future, err := nicClient.CreateOrUpdate(ctx, a.groupName, nicName, nicParams)
 	if err != nil {
 		return nic, fmt.Errorf("cannot create nic: %v", err)
@@ -90,10 +84,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 func (a *Azure) DeleteNIC(ctx *Context, nic *network.Interface) error {
 	logger := ctx.logger
 
-	nicClient, err := a.getNicClient()
-	if err != nil {
-		return err
-	}
+	nicClient := a.getNicClient()
 
 	logger.Info("Deleting %s...", *nic.ID)
 	nicName := getAzureResourceNameFromID(*nic.ID)
@@ -116,10 +107,7 @@ func (a *Azure) DeleteNIC(ctx *Context, nic *network.Interface) error {
 func (a *Azure) DeletePublicIPs(ctx *Context, ips *[]network.InterfaceIPConfiguration) error {
 	logger := ctx.logger
 
-	ipClient, err := a.getIPClient()
-	if err != nil {
-		return err
-	}
+	ipClient := a.getIPClient()
 
 	for _, ip := range *ips {
 		if ip.PublicIPAddress.ID != nil {
@@ -216,23 +204,17 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string)
 	return nil
 }
 
-func (a *Azure) getIPClient() (*network.PublicIPAddressesClient, error) {
+func (a *Azure) getIPClient() *network.PublicIPAddressesClient {
 	ipClient := network.NewPublicIPAddressesClient(a.subID)
-	auth, err := a.GetResourceManagementAuthorizer()
-	if err != nil {
-		return nil, err
-	}
-	ipClient.Authorizer = auth
+	ipClient.Authorizer = *a.authorizer
 	ipClient.AddToUserAgent(userAgent)
-	return &ipClient, nil
+	return &ipClient
 }
 
 // CreatePublicIP creates a new public IP
 func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string) (ip network.PublicIPAddress, err error) {
-	ipClient, err := a.getIPClient()
-	if err != nil {
-		return
-	}
+	ipClient := a.getIPClient()
+
 	future, err := ipClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -263,10 +245,8 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 
 // GetPublicIP returns an existing public IP
 func (a *Azure) GetPublicIP(ctx context.Context, ipName string) (ip network.PublicIPAddress, err error) {
-	ipClient, err := a.getIPClient()
-	if err != nil {
-		return
-	}
+	ipClient := a.getIPClient()
+
 	ip, err = ipClient.Get(ctx, a.groupName, ipName, "")
 	return
 }

@@ -68,7 +68,7 @@ func (v *Vsphere) createImage(key string, bucket string, region string) {
 }
 
 // Initialize Vsphere related things
-func (v *Vsphere) Initialize() error {
+func (v *Vsphere) Initialize(config *ProviderConfig) error {
 	u, err := v.getCredentials()
 	if err != nil {
 		return err

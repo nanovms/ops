@@ -116,17 +116,17 @@ func (o *OpenStack) BuildImageWithPackage(ctx *Context, pkgpath string) (string,
 }
 
 // Initialize OpenStack related things
-func (o *OpenStack) Initialize() error {
+func (o *OpenStack) Initialize(config *ProviderConfig) error {
 
 	opts, err := openstack.AuthOptionsFromEnv()
 
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	o.provider, err = openstack.AuthenticatedClient(opts)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	return nil

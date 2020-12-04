@@ -23,7 +23,7 @@ func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
 }
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
+func (o *OpenStack) CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 
 	imagesClient, err := o.getImagesClient()
@@ -36,7 +36,7 @@ func (o *OpenStack) CreateVolume(config *Config, name, data, size, provider stri
 		return vol, err
 	}
 
-	vol, err = CreateLocalVolume(config, name, data, size, provider)
+	vol, err = CreateLocalVolume(ctx.config, name, data, size, provider)
 	if err != nil {
 		return vol, err
 	}
@@ -78,7 +78,7 @@ func (o *OpenStack) CreateVolume(config *Config, name, data, size, provider stri
 }
 
 // GetAllVolumes is a stub to satisfy VolumeService interface
-func (o *OpenStack) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+func (o *OpenStack) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
 	var vols []NanosVolume
 
 	client, err := o.getVolumesClient()
@@ -138,7 +138,7 @@ func (o *OpenStack) getVolumeByName(volumesClient *gophercloud.ServiceClient, na
 }
 
 // DeleteVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) DeleteVolume(config *Config, name string) error {
+func (o *OpenStack) DeleteVolume(ctx *Context, name string) error {
 	volumesClient, err := o.getVolumesClient()
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (o *OpenStack) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) AttachVolume(config *Config, image, name, mount string) error {
+func (o *OpenStack) AttachVolume(ctx *Context, image, name, mount string) error {
 	computeClient, err := o.getComputeClient()
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (o *OpenStack) AttachVolume(config *Config, image, name, mount string) erro
 }
 
 // DetachVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) DetachVolume(config *Config, image, name string) error {
+func (o *OpenStack) DetachVolume(ctx *Context, image, name string) error {
 	computeClient, err := o.getComputeClient()
 	if err != nil {
 		return err

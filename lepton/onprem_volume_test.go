@@ -31,6 +31,14 @@ var (
 	testOP = &OnPrem{}
 )
 
+func NewTestContext(c *Config) *Context {
+	return &Context{
+		config:   testVolumeConfig,
+		provider: nil,
+		logger:   NewLogger(ioutil.Discard),
+	}
+}
+
 func TestOnPremVolume(t *testing.T) {
 	// set up here since linter/vet complains about using testing.Main
 	tmp, err := ioutil.TempDir("/tmp", "test-ops-*")
@@ -59,7 +67,7 @@ func TestOnPremVolume(t *testing.T) {
 
 func testCreateVolume(t *testing.T, name string, vol *NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("create_%s", name), func(t *testing.T) {
-		res, err := testOP.CreateVolume(testVolumeConfig, vol.Name, vol.Data, vol.Size, "onprem")
+		res, err := testOP.CreateVolume(NewTestContext(testVolumeConfig), vol.Name, vol.Data, vol.Size, "onprem")
 		if err != nil {
 			t.Error(err)
 			return
@@ -86,7 +94,7 @@ func testGetVolumes(t *testing.T, name string, count *int) {
 
 func testDeleteVolumeByName(t *testing.T, name string, vol *NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("delete_by_name_%s", name), func(t *testing.T) {
-		err := testOP.DeleteVolume(testVolumeConfig, vol.Name)
+		err := testOP.DeleteVolume(NewTestContext(testVolumeConfig), vol.Name)
 		if err != nil {
 			t.Error(err)
 			return
@@ -99,7 +107,7 @@ func testDeleteVolumeByName(t *testing.T, name string, vol *NanosVolume, count *
 
 func testDeleteVolumeByUUID(t *testing.T, name string, vol *NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("delete_by_name_%s", name), func(t *testing.T) {
-		err := testOP.DeleteVolume(testVolumeConfig, vol.ID)
+		err := testOP.DeleteVolume(NewTestContext(testVolumeConfig), vol.ID)
 		if err != nil {
 			t.Error(err)
 			return
