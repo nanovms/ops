@@ -135,10 +135,7 @@ func (a *Azure) DeleteVolume(ctx *Context, name string) error {
 
 // AttachVolume attaches a volume to an instance
 func (a *Azure) AttachVolume(ctx *Context, image, name, mount string) error {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {
@@ -183,10 +180,7 @@ func (a *Azure) AttachVolume(ctx *Context, image, name, mount string) error {
 
 // DetachVolume detachs a volume from an instance
 func (a *Azure) DetachVolume(ctx *Context, image, name string) error {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
 	if err != nil {

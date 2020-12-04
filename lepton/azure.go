@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -47,6 +48,8 @@ type Azure struct {
 	locationDefault string
 	groupName       string
 	storageAccount  string
+
+	authorizer *autorest.Authorizer
 }
 
 func getAzureDefaultTags() map[string]*string {
@@ -55,7 +58,7 @@ func getAzureDefaultTags() map[string]*string {
 	}
 }
 
-func hasOpsTags(tags map[string]*string) bool {
+func hasAzureOpsTags(tags map[string]*string) bool {
 	val, ok := tags["CreatedBy"]
 
 	return ok && *val == "ops"
@@ -116,32 +119,23 @@ func (a *Azure) GetResourceManagementAuthorizer() (autorest.Authorizer, error) {
 	return armAuthorizer, err
 }
 
-func (a *Azure) getImagesClient() (*compute.ImagesClient, error) {
+func (a *Azure) getImagesClient() *compute.ImagesClient {
 	vmClient := compute.NewImagesClientWithBaseURI(compute.DefaultBaseURI, a.subID)
-	authr, err := a.GetResourceManagementAuthorizer()
-	if err != nil {
-		return nil, err
-	}
-	vmClient.Authorizer = authr
+	vmClient.Authorizer = *a.authorizer
 	vmClient.AddToUserAgent(userAgent)
-	return &vmClient, nil
+	return &vmClient
 }
 
-func (a *Azure) getVMClient() (*compute.VirtualMachinesClient, error) {
+func (a *Azure) getVMClient() *compute.VirtualMachinesClient {
 	vmClient := compute.NewVirtualMachinesClient(a.subID)
-	authr, err := a.GetResourceManagementAuthorizer()
-	if err != nil {
-		return nil, err
-	}
-	vmClient.Authorizer = authr
+	vmClient.Authorizer = *a.authorizer
 	vmClient.AddToUserAgent(userAgent)
-	return &vmClient, nil
+	return &vmClient
 }
 
 func (a *Azure) getVMExtensionsClient() compute.VirtualMachineExtensionsClient {
 	extClient := compute.NewVirtualMachineExtensionsClient(a.subID)
-	authr, _ := a.GetResourceManagementAuthorizer()
-	extClient.Authorizer = authr
+	extClient.Authorizer = *a.authorizer
 	extClient.AddToUserAgent(userAgent)
 	return extClient
 }
@@ -161,20 +155,16 @@ func (a *Azure) getLocation(config *Config) string {
 
 // GetVM gets the specified VM info
 func (a *Azure) GetVM(ctx context.Context, vmName string) (vm compute.VirtualMachine, err error) {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return
-	}
+	vmClient := a.getVMClient()
+
 	vm, err = vmClient.Get(ctx, a.groupName, vmName, compute.InstanceView)
 	return
 }
 
 // RestartVM restarts the selected VM
 func (a *Azure) RestartVM(ctx context.Context, vmName string) (osr autorest.Response, err error) {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return
-	}
+	vmClient := a.getVMClient()
+
 	future, err := vmClient.Restart(ctx, a.groupName, vmName)
 	if err != nil {
 		return osr, fmt.Errorf("cannot restart vm: %v", err)
@@ -246,6 +236,8 @@ func (a *Azure) Initialize(config *ProviderConfig) error {
 	subID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subID != "" {
 		a.subID = subID
+	} else {
+		return fmt.Errorf("Set AZURE_SUBSCRIPTION_ID")
 	}
 
 	locationDefault := os.Getenv("AZURE_LOCATION_DEFAULT")
@@ -253,24 +245,32 @@ func (a *Azure) Initialize(config *ProviderConfig) error {
 		a.locationDefault = locationDefault
 	}
 
-	tenantID := os.Getenv("AZURE_TENANT_ID")
-	if tenantID != "" {
-		a.tenantID = strings.TrimSpace(tenantID)
-	}
-
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	if clientID != "" {
 		a.clientID = strings.TrimSpace(clientID)
+	} else {
+		return fmt.Errorf("Set AZURE_CLIENT_ID")
 	}
 
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	if clientSecret != "" {
 		a.clientSecret = strings.TrimSpace(clientSecret)
+	} else {
+		return fmt.Errorf("Set AZURE_CLIENT_SECRET")
+	}
+
+	tenantID := os.Getenv("AZURE_TENANT_ID")
+	if tenantID != "" {
+		a.tenantID = strings.TrimSpace(tenantID)
+	} else {
+		return fmt.Errorf("Set AZURE_TENANT_ID")
 	}
 
 	groupName := os.Getenv("AZURE_BASE_GROUP_NAME")
 	if groupName != "" {
 		a.groupName = strings.TrimSpace(groupName)
+	} else {
+		return fmt.Errorf("Set AZURE_BASE_GROUP_NAME")
 	}
 
 	storageAccount := os.Getenv("AZURE_STORAGE_ACCOUNT")
@@ -278,15 +278,19 @@ func (a *Azure) Initialize(config *ProviderConfig) error {
 		a.storageAccount = strings.TrimSpace(storageAccount)
 	}
 
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		return err
+	}
+
+	a.authorizer = &authorizer
+
 	return nil
 }
 
 // CreateImage - Creates image on Azure using nanos images
 func (a *Azure) CreateImage(ctx *Context) error {
-	imagesClient, err := a.getImagesClient()
-	if err != nil {
-		return err
-	}
+	imagesClient := a.getImagesClient()
 
 	c := ctx.config
 	imgName := c.CloudConfig.ImageName
@@ -314,7 +318,7 @@ func (a *Azure) CreateImage(ctx *Context) error {
 		},
 	}
 
-	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
+	_, err := imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -328,10 +332,7 @@ func (a *Azure) CreateImage(ctx *Context) error {
 func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
 	var cimages []CloudImage
 
-	imagesClient, err := a.getImagesClient()
-	if err != nil {
-		return nil, err
-	}
+	imagesClient := a.getImagesClient()
 
 	images, err := imagesClient.List(context.TODO())
 	if err != nil {
@@ -341,7 +342,7 @@ func (a *Azure) GetImages(ctx *Context) ([]CloudImage, error) {
 	imgs := images.Values()
 
 	for _, image := range imgs {
-		if hasOpsTags(image.Tags) {
+		if hasAzureOpsTags(image.Tags) {
 			cImage := CloudImage{
 				Name:   *image.Name,
 				Status: *(*image.ImageProperties).ProvisioningState,
@@ -385,10 +386,7 @@ func (a *Azure) ListImages(ctx *Context) error {
 
 // DeleteImage deletes image from Azure
 func (a *Azure) DeleteImage(ctx *Context, imagename string) error {
-	imagesClient, err := a.getImagesClient()
-	if err != nil {
-		return err
-	}
+	imagesClient := a.getImagesClient()
 
 	fut, err := imagesClient.Delete(context.TODO(), a.groupName, imagename)
 	if err != nil {
@@ -503,10 +501,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	ctx.logger.Log("creating the vm - this can take a few minutes")
 
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 
 	var flavor compute.VirtualMachineSizeTypes
 	flavor = compute.VirtualMachineSizeTypes(ctx.config.CloudConfig.Flavor)
@@ -596,18 +591,10 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 // GetInstanceByID returns the instance with the id passed by argument if it exists
 func (a *Azure) GetInstanceByID(ctx *Context, id string) (vm *CloudInstance, err error) {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return
-	}
-	nicClient, err := a.getNicClient()
-	if err != nil {
-		return
-	}
-	ipClient, err := a.getIPClient()
-	if err != nil {
-		return
-	}
+	vmClient := a.getVMClient()
+
+	nicClient := a.getNicClient()
+	ipClient := a.getIPClient()
 
 	result, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
 	if err != nil {
@@ -619,18 +606,9 @@ func (a *Azure) GetInstanceByID(ctx *Context, id string) (vm *CloudInstance, err
 
 // GetInstances return all instances on Azure
 func (a *Azure) GetInstances(ctx *Context) (cinstances []CloudInstance, err error) {
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return
-	}
-	nicClient, err := a.getNicClient()
-	if err != nil {
-		return
-	}
-	ipClient, err := a.getIPClient()
-	if err != nil {
-		return
-	}
+	vmClient := a.getVMClient()
+	nicClient := a.getNicClient()
+	ipClient := a.getIPClient()
 
 	vmlist, err := vmClient.List(context.TODO(), a.groupName)
 	if err != nil {
@@ -640,7 +618,7 @@ func (a *Azure) GetInstances(ctx *Context) (cinstances []CloudInstance, err erro
 	instances := vmlist.Values()
 
 	for _, instance := range instances {
-		if hasOpsTags(instance.Tags) {
+		if hasAzureOpsTags(instance.Tags) {
 			cinstance, err := a.convertToCloudInstance(&instance, nicClient, ipClient)
 			if err != nil {
 				return nil, err
@@ -727,10 +705,7 @@ func (a *Azure) ListInstances(ctx *Context) error {
 // DeleteInstance deletes instance from Azure
 func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 
 	ctx.logger.Info("Getting vm with ID %s...", instancename)
 	vm, err := a.GetVM(context.TODO(), instancename)
@@ -751,10 +726,7 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 		return errors.New("error waiting for vm deletion")
 	}
 
-	nicClient, err := a.getNicClient()
-	if err != nil {
-		return err
-	}
+	nicClient := a.getNicClient()
 
 	for _, nicReference := range *vm.NetworkProfile.NetworkInterfaces {
 		nicID := getAzureResourceNameFromID(*nicReference.ID)
@@ -794,13 +766,10 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 // StartInstance starts an instance in Azure
 func (a *Azure) StartInstance(ctx *Context, instancename string) error {
 
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 
 	fmt.Printf("Starting instance %s", instancename)
-	_, err = vmClient.Start(context.TODO(), a.groupName, instancename)
+	_, err := vmClient.Start(context.TODO(), a.groupName, instancename)
 	if err != nil {
 		ctx.logger.Error(err.Error())
 		return errors.New("failed starting virtual machine")
@@ -812,14 +781,11 @@ func (a *Azure) StartInstance(ctx *Context, instancename string) error {
 // StopInstance deletes instance from Azure
 func (a *Azure) StopInstance(ctx *Context, instancename string) error {
 
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return err
-	}
+	vmClient := a.getVMClient()
 	// skipShutdown parameter is optional, we are taking its default
 	// value here
 	fmt.Printf("Stopping instance %s", instancename)
-	_, err = vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
+	_, err := vmClient.PowerOff(context.TODO(), a.groupName, instancename, nil)
 	if err != nil {
 		fmt.Printf("cannot power off vm: %v\n", err.Error())
 		return err
@@ -862,10 +828,7 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string) (string, erro
 
 	vmName := instancename
 
-	vmClient, err := a.getVMClient()
-	if err != nil {
-		return "", err
-	}
+	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceView)
 	if err != nil {
