@@ -18,7 +18,7 @@ var (
 
 // Provider is an interface that provider must implement
 type Provider interface {
-	Initialize() error
+	Initialize(config *ProviderConfig) error
 
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
@@ -52,11 +52,11 @@ type Storage interface {
 
 // VolumeService is an interface for volume related operations
 type VolumeService interface {
-	CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error)
-	GetAllVolumes(config *Config) (*[]NanosVolume, error)
-	DeleteVolume(config *Config, name string) error
-	AttachVolume(config *Config, image, name, mount string) error
-	DetachVolume(config *Config, image, name string) error
+	CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error)
+	GetAllVolumes(ctx *Context) (*[]NanosVolume, error)
+	DeleteVolume(ctx *Context, name string) error
+	AttachVolume(ctx *Context, image, name, mount string) error
+	DetachVolume(ctx *Context, image, name string) error
 }
 
 // DNSRecord is ops representation of a dns record

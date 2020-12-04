@@ -31,13 +31,13 @@ var (
 )
 
 // CreateVolume creates volume for onprem image
-func (op *OnPrem) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
-	return CreateLocalVolume(config, name, data, size, provider)
+func (op *OnPrem) CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error) {
+	return CreateLocalVolume(ctx.config, name, data, size, provider)
 }
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes
-func (op *OnPrem) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
-	vols, err := GetVolumes(config.BuildDir, nil)
+func (op *OnPrem) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
+	vols, err := GetVolumes(ctx.config.BuildDir, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +46,15 @@ func (op *OnPrem) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 }
 
 // DeleteVolume deletes nanos-managed volume (filename and symlink)
-func (op *OnPrem) DeleteVolume(config *Config, name string) error {
+func (op *OnPrem) DeleteVolume(ctx *Context, name string) error {
 	query := map[string]string{
 		"label": name,
 		"id":    name,
 	}
 
-	volumes, err := GetVolumes(config.BuildDir, query)
+	buildDir := ctx.config.BuildDir
+
+	volumes, err := GetVolumes(buildDir, query)
 	if err != nil {
 		return err
 	}
@@ -63,7 +65,7 @@ func (op *OnPrem) DeleteVolume(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
-		symlinkPath := path.Join(config.BuildDir, volumes[0].Name+".raw")
+		symlinkPath := path.Join(buildDir, volumes[0].Name+".raw")
 		err = os.Remove(symlinkPath)
 		if err != nil {
 			return err
@@ -78,7 +80,7 @@ func (op *OnPrem) DeleteVolume(config *Config, name string) error {
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
-func (op *OnPrem) AttachVolume(config *Config, image, name, mount string) error {
+func (op *OnPrem) AttachVolume(ctx *Context, image, name, mount string) error {
 	fmt.Println("not implemented")
 	fmt.Println("use <ops run> or <ops load> with --mounts flag instead")
 	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
@@ -87,7 +89,7 @@ func (op *OnPrem) AttachVolume(config *Config, image, name, mount string) error 
 }
 
 // DetachVolume detaches volume
-func (op *OnPrem) DetachVolume(config *Config, image, name string) error {
+func (op *OnPrem) DetachVolume(ctx *Context, image, name string) error {
 	fmt.Println("not implemented")
 	return nil
 }

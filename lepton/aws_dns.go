@@ -10,13 +10,8 @@ import (
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
 func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
-	dnsService, err := p.getDNSService(config)
-	if err != nil {
-		return "", err
-	}
-
 	var zoneID string
-	hostedZones, err := dnsService.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
+	hostedZones, err := p.dnsService.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
 	if err == nil && hostedZones.HostedZones == nil {
 		reference := strconv.Itoa(int(time.Now().Unix()))
 
@@ -25,7 +20,7 @@ func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, 
 			Name:            &dnsName,
 		}
 
-		hostedZone, err := dnsService.CreateHostedZone(createHostedZoneInput)
+		hostedZone, err := p.dnsService.CreateHostedZone(createHostedZoneInput)
 		if err != nil {
 			return "", err
 		}
@@ -42,12 +37,7 @@ func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, 
 
 // DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
 func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
-	dnsService, err := p.getDNSService(config)
-	if err != nil {
-		return err
-	}
-
-	records, err := dnsService.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{HostedZoneId: &zoneID})
+	records, err := p.dnsService.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{HostedZoneId: &zoneID})
 	if err != nil {
 		return err
 	}
@@ -66,7 +56,7 @@ func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName
 				HostedZoneId: aws.String(zoneID),
 			}
 
-			_, err = dnsService.ChangeResourceRecordSets(input)
+			_, err = p.dnsService.ChangeResourceRecordSets(input)
 			if err != nil {
 				return err
 			}
@@ -78,11 +68,6 @@ func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName
 
 // CreateZoneRecord creates a record in a DNS zone
 func (p *AWS) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
-	dnsService, err := p.getDNSService(config)
-	if err != nil {
-		return err
-	}
-
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch: &route53.ChangeBatch{
 			Changes: []*route53.Change{
@@ -104,7 +89,7 @@ func (p *AWS) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord)
 		HostedZoneId: aws.String(zoneID),
 	}
 
-	_, err = dnsService.ChangeResourceRecordSets(input)
+	_, err := p.dnsService.ChangeResourceRecordSets(input)
 	if err != nil {
 		return err
 	}

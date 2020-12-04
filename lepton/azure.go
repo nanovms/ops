@@ -240,7 +240,7 @@ func (a *Azure) BuildImageWithPackage(ctx *Context, pkgpath string) (string, err
 }
 
 // Initialize Azure related things
-func (a *Azure) Initialize() error {
+func (a *Azure) Initialize(config *ProviderConfig) error {
 	a.Storage = &AzureStorage{}
 
 	subID := os.Getenv("AZURE_SUBSCRIPTION_ID")

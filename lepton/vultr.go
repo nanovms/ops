@@ -88,7 +88,7 @@ func (v *Vultr) destroyImage(snapshotid string) {
 }
 
 // Initialize GCP related things
-func (v *Vultr) Initialize() error {
+func (v *Vultr) Initialize(config *ProviderConfig) error {
 	return nil
 }
 

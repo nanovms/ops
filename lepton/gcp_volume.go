@@ -12,9 +12,10 @@ import (
 )
 
 // CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
-func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
+func (g *GCloud) CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error) {
+	config := ctx.config
+
 	arch := name + ".tar.gz"
-	ctx := context.Background()
 
 	lv, err := CreateLocalVolume(config, name, data, size, provider)
 	if err != nil {
@@ -49,11 +50,11 @@ func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string)
 			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
 		},
 	}
-	op, err := g.Service.Images.Insert(config.CloudConfig.ProjectID, img).Context(ctx).Do()
+	op, err := g.Service.Images.Insert(config.CloudConfig.ProjectID, img).Context(context.TODO()).Do()
 	if err != nil {
 		return lv, err
 	}
-	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return lv, err
 	}
@@ -64,7 +65,7 @@ func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string)
 		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
 	}
 
-	_, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(ctx).Do()
+	_, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
 	if err != nil {
 		return lv, err
 	}
@@ -72,9 +73,10 @@ func (g *GCloud) CreateVolume(config *Config, name, data, size, provider string)
 }
 
 // GetAllVolumes gets all volumes created in GCP as Compute Engine Disks
-func (g *GCloud) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+func (g *GCloud) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
+	config := ctx.config
+
 	var volumes []NanosVolume
-	ctx := context.Background()
 
 	projectID := config.CloudConfig.ProjectID
 	if strings.Compare(projectID, "") == 0 {
@@ -86,7 +88,7 @@ func (g *GCloud) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 		return nil, errGCloudZoneMissing()
 	}
 
-	dl, err := g.Service.Disks.List(projectID, zone).Context(ctx).Do()
+	dl, err := g.Service.Disks.List(projectID, zone).Context(context.TODO()).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -115,15 +117,15 @@ func (g *GCloud) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 }
 
 // DeleteVolume deletes specific disk and image in GCP
-func (g *GCloud) DeleteVolume(config *Config, name string) error {
-	ctx := context.Background()
+func (g *GCloud) DeleteVolume(ctx *Context, name string) error {
+	config := ctx.config
 
-	_, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(ctx).Do()
+	_, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
 
-	_, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(ctx).Do()
+	_, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
@@ -132,18 +134,19 @@ func (g *GCloud) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume attaches Compute Engine Disk volume to existing instance
-func (g *GCloud) AttachVolume(config *Config, image, name, mount string) error {
-	ctx := context.Background()
+func (g *GCloud) AttachVolume(ctx *Context, image, name, mount string) error {
+	config := ctx.config
+
 	disk := &compute.AttachedDisk{
 		AutoDelete: false,
 		DeviceName: mount,
 		Source:     fmt.Sprintf("zones/%s/disks/%s", config.CloudConfig.Zone, name),
 	}
-	op, err := g.Service.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(ctx).Do()
+	op, err := g.Service.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
-	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return err
 	}
@@ -157,10 +160,12 @@ func (g *GCloud) AttachVolume(config *Config, image, name, mount string) error {
 }
 
 // DetachVolume detaches Compute Engine Disk volume from existing instance
-func (g *GCloud) DetachVolume(config *Config, image, volumeName string) error {
+func (g *GCloud) DetachVolume(ctx *Context, image, volumeName string) error {
+	config := ctx.config
+
 	var mount string
-	ctx := context.Background()
-	ins, err := g.Service.Instances.Get(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image).Context(ctx).Do()
+
+	ins, err := g.Service.Instances.Get(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
@@ -174,11 +179,11 @@ func (g *GCloud) DetachVolume(config *Config, image, volumeName string) error {
 	if mount == "" {
 		return fmt.Errorf("volume %s not found in %s", volumeName, image)
 	}
-	op, err := g.Service.Instances.DetachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, mount).Context(ctx).Do()
+	op, err := g.Service.Instances.DetachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, mount).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
-	err = g.pollOperation(ctx, config.CloudConfig.ProjectID, g.Service, *op)
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return err
 	}

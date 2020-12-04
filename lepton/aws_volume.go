@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ebs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -15,13 +14,10 @@ var (
 )
 
 // CreateVolume creates a snapshot and use it to create a volume
-func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
-	var vol NanosVolume
+func (a *AWS) CreateVolume(ctx *Context, name, data, size, provider string) (NanosVolume, error) {
+	config := ctx.config
 
-	compute, err := a.getEc2Service(config)
-	if err != nil {
-		return vol, err
-	}
+	var vol NanosVolume
 
 	// Create volume
 	localVolume, err := CreateLocalVolume(config, name, data, size, provider)
@@ -51,7 +47,7 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 		},
 	}
 
-	res, err := compute.ImportSnapshot(input)
+	res, err := a.ec2.ImportSnapshot(input)
 	if err != nil {
 		return vol, fmt.Errorf("import snapshot: %v", err)
 	}
@@ -81,7 +77,7 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 			},
 		},
 	}
-	_, err = compute.CreateVolume(createVolumeInput)
+	_, err = a.ec2.CreateVolume(createVolumeInput)
 	if err != nil {
 		return vol, fmt.Errorf("create aws volume: %v", err)
 	}
@@ -90,16 +86,11 @@ func (a *AWS) CreateVolume(config *Config, name, data, size, provider string) (N
 }
 
 // GetAllVolumes finds and returns all volumes
-func (a *AWS) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
+func (a *AWS) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
 	vols := &[]NanosVolume{}
 
-	compute, err := a.getEc2Service(config)
-	if err != nil {
-		return nil, err
-	}
-
 	input := &ec2.DescribeVolumesInput{}
-	output, err := compute.DescribeVolumes(input)
+	output, err := a.ec2.DescribeVolumes(input)
 	if err != nil {
 		return nil, err
 	}
@@ -135,16 +126,11 @@ func (a *AWS) GetAllVolumes(config *Config) (*[]NanosVolume, error) {
 }
 
 // DeleteVolume deletes a volume
-func (a *AWS) DeleteVolume(config *Config, name string) error {
-	compute, err := a.getEc2Service(config)
-	if err != nil {
-		return err
-	}
-
+func (a *AWS) DeleteVolume(ctx *Context, name string) error {
 	input := &ec2.DeleteVolumeInput{
 		VolumeId: aws.String(name),
 	}
-	_, err = compute.DeleteVolume(input)
+	_, err := a.ec2.DeleteVolume(input)
 	if err != nil {
 		return err
 	}
@@ -153,18 +139,13 @@ func (a *AWS) DeleteVolume(config *Config, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *AWS) AttachVolume(config *Config, image, name, mount string) error {
-	compute, err := a.getEc2Service(config)
-	if err != nil {
-		return err
-	}
-
+func (a *AWS) AttachVolume(ctx *Context, image, name, mount string) error {
 	input := &ec2.AttachVolumeInput{
 		Device:     aws.String("/dev/sdf"),
 		InstanceId: aws.String(image),
 		VolumeId:   aws.String(name),
 	}
-	_, err = compute.AttachVolume(input)
+	_, err := a.ec2.AttachVolume(input)
 	if err != nil {
 		return err
 	}
@@ -173,36 +154,16 @@ func (a *AWS) AttachVolume(config *Config, image, name, mount string) error {
 }
 
 // DetachVolume detachs a volume from an instance
-func (a *AWS) DetachVolume(config *Config, image, name string) error {
-	compute, err := a.getEc2Service(config)
-	if err != nil {
-		return err
-	}
-
+func (a *AWS) DetachVolume(ctx *Context, image, name string) error {
 	input := &ec2.DetachVolumeInput{
 		Device:     aws.String("/dev/sdf"),
 		InstanceId: aws.String(image),
 		VolumeId:   aws.String(name),
 	}
-	_, err = compute.DetachVolume(input)
+	_, err := a.ec2.DetachVolume(input)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (a *AWS) getVolumeService(config *Config) (*ebs.EBS, error) {
-	if a.volumeService != nil {
-		return a.volumeService, nil
-	}
-
-	sess, err := a.getAWSSession(config)
-	if err != nil {
-		return nil, err
-	}
-
-	a.volumeService = ebs.New(sess)
-
-	return a.volumeService, nil
 }

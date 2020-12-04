@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 
@@ -40,12 +39,11 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	setDefaultImageName(cmd, c)
 
-	p, err := getCloudProvider(provider)
+	p, ctx, err := getProviderAndContext(c, provider)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
-	ctx := api.NewContext(c, &p)
 	prepareImages(c)
 	if _, err := p.BuildImage(ctx); err != nil {
 		fmt.Println(err)

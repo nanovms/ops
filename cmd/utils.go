@@ -14,6 +14,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func exitWithError(errs string) {
+	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
+	os.Exit(1)
+}
+
+func exitForCmd(cmd *cobra.Command, errs string) {
+	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
+	cmd.Help()
+	os.Exit(1)
+}
+
 // unWarpConfig parses lepton config file from file
 func unWarpConfig(file string) *api.Config {
 	var c api.Config
@@ -91,7 +102,7 @@ func setDefaultImageName(cmd *cobra.Command, c *api.Config) {
 }
 
 // TODO : use factory or DI
-func getCloudProvider(providerName string) (api.Provider, error) {
+func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Provider, error) {
 	var provider api.Provider
 
 	switch providerName {
@@ -115,8 +126,19 @@ func getCloudProvider(providerName string) (api.Provider, error) {
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
 
-	err := provider.Initialize()
+	err := provider.Initialize(config)
 	return provider, err
+}
+
+func getProviderAndContext(c *api.Config, providerName string) (api.Provider, *api.Context, error) {
+	p, err := getCloudProvider(providerName, &c.CloudConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ctx := api.NewContext(c, &p)
+
+	return p, ctx, nil
 }
 
 func initDefaultRunConfigs(c *api.Config, ports []int) {

@@ -71,7 +71,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	c.BuildDir = bd
 
-	p, err := getCloudProvider(provider)
+	p, err := getCloudProvider(provider, &c.CloudConfig)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -239,12 +239,6 @@ func imageCreateCommand() *cobra.Command {
 // only targets local images today
 func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
-	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
 	var c *api.Config
 	c = api.NewConfig()
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
@@ -254,6 +248,11 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
+	provider, _ := cmd.Flags().GetString("target-cloud")
+	p, err := getCloudProvider(provider, &c.CloudConfig)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 	ctx := api.NewContext(c, &p)
 
 	err = p.ResizeImage(ctx, args[0], args[1])
@@ -284,7 +283,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
-	p, err := getCloudProvider(provider)
+	p, err := getCloudProvider(provider, &c.CloudConfig)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -308,10 +307,6 @@ func imageListCommand() *cobra.Command {
 
 func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider)
-	if err != nil {
-		exitWithError(err.Error())
-	}
 
 	var c *api.Config
 	c = api.NewConfig()
@@ -322,7 +317,10 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
-	ctx := api.NewContext(c, &p)
+	p, ctx, err := getProviderAndContext(c, provider)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	err = p.DeleteImage(ctx, args[0])
 	if err != nil {
@@ -358,16 +356,6 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	if source != "onprem" {
 		exitWithError(source + " sync not yet implemented")
 	}
-	src, err := getCloudProvider(source)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
-	target, _ := cmd.Flags().GetString("target-cloud")
-	tar, err := getCloudProvider(target)
-	if err != nil {
-		exitWithError(err.Error())
-	}
 
 	config, _ := cmd.Flags().GetString("config")
 	conf := unWarpConfig(config)
@@ -376,6 +364,17 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	zone, _ := cmd.Flags().GetString("zone")
 	if zone != "" {
 		conf.CloudConfig.Zone = zone
+	}
+
+	src, err := getCloudProvider(source, &conf.CloudConfig)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	target, _ := cmd.Flags().GetString("target-cloud")
+	tar, err := getCloudProvider(target, &conf.CloudConfig)
+	if err != nil {
+		exitWithError(err.Error())
 	}
 
 	err = src.SyncImage(conf, tar, image)
