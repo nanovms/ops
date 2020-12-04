@@ -304,7 +304,7 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 		return vnet, fmt.Errorf("cannot get the vnet create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated Virtual Network")
+	fmt.Printf("\nCreated Virtual Network\n")
 	vn, err := future.Result(*vnetClient)
 
 	return &vn, err

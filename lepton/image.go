@@ -201,6 +201,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	// Add files from package
 	addFilesFromPackage(packagepath, m)
 
+	m.nightly = c.NightlyBuild
 	m.program = c.Program
 	err := addFromConfig(m, c)
 	if err != nil {
@@ -287,6 +288,8 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
+
+	m.nightly = c.NightlyBuild
 	m.AddUserProgram(c.Program)
 
 	deps, err := getSharedLibs(c.TargetRoot, c.Program)
