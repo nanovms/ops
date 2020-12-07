@@ -49,7 +49,7 @@ func TestLogger(t *testing.T) {
 		logger.Info("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := lepton.ConsoleColors.Blue() + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Blue() + "test 1,2,3" + lepton.ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -78,7 +78,7 @@ func TestLogger(t *testing.T) {
 		logger.Warn("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := lepton.ConsoleColors.Yellow() + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Yellow() + "test 1,2,3" + lepton.ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -107,7 +107,7 @@ func TestLogger(t *testing.T) {
 		logger.Error("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := lepton.ConsoleColors.Red() + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Red() + "test 1,2,3" + lepton.ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -136,7 +136,7 @@ func TestLogger(t *testing.T) {
 		logger.Debug("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := lepton.ConsoleColors.Cyan() + "test 1,2,3" + newline
+		want := lepton.ConsoleColors.Cyan() + "test 1,2,3" + lepton.ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)

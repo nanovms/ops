@@ -726,6 +726,9 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 		return errors.New("error waiting for vm deletion")
 	}
 
+	ctx.logger.Log("Instance deleted")
+	ctx.logger.Log("Deleting resources related with instance")
+
 	nicClient := a.getNicClient()
 
 	for _, nicReference := range *vm.NetworkProfile.NetworkInterfaces {
@@ -733,28 +736,28 @@ func (a *Azure) DeleteInstance(ctx *Context, instancename string) error {
 
 		nic, err := nicClient.Get(context.TODO(), a.groupName, nicID, "")
 		if err != nil {
-			ctx.logger.Error("Not able to get nic with ID %v: %v", nicID, err)
-			return errors.New("Not able to get nic")
+			ctx.logger.Error(err.Error())
+			return errors.New("failed getting nic")
 		}
-		for tagName, tagValue := range nic.Tags {
-			if tagName == "CreatedBy" && *tagValue == "ops" {
-				err = a.DeleteNIC(ctx, &nic)
+
+		if hasAzureOpsTags(nic.Tags) {
+			err = a.DeleteNIC(ctx, &nic)
+			if err != nil {
+				ctx.logger.Warn(err.Error())
+			}
+
+			for _, ipConfiguration := range *nic.IPConfigurations {
+				err := a.DeleteIP(ctx, &ipConfiguration)
 				if err != nil {
-					return err
+					ctx.logger.Warn(err.Error())
 				}
+			}
 
-				err = a.DeletePublicIPs(ctx, nic.IPConfigurations)
+			if nic.NetworkSecurityGroup != nil {
+				err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
 				if err != nil {
-					return err
+					ctx.logger.Warn(err.Error())
 				}
-
-				if nic.NetworkSecurityGroup != nil {
-					err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
-					if err != nil {
-						return err
-					}
-				}
-
 			}
 		}
 	}

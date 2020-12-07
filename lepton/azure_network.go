@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -15,6 +16,18 @@ import (
 func getAzureResourceNameFromID(id string) string {
 	idParts := strings.Split(id, "/")
 	return idParts[len(idParts)-1]
+}
+
+func getAzureVirtualNetworkFromID(id string) string {
+	r, _ := regexp.Compile("virtualNetworks/(.*)/subnets")
+
+	match := r.FindStringSubmatch(id)
+
+	if len(match) > 0 {
+		return match[1]
+	}
+
+	return ""
 }
 
 func (a *Azure) getNicClient() *network.InterfacesClient {
@@ -102,47 +115,40 @@ func (a *Azure) DeleteNIC(ctx *Context, nic *network.Interface) error {
 	return nil
 }
 
-// DeletePublicIPs deletes array of ip configurations
-func (a *Azure) DeletePublicIPs(ctx *Context, ips *[]network.InterfaceIPConfiguration) error {
+// DeleteIP deletes a ip configuration and tries deleting subnetwork associated
+func (a *Azure) DeleteIP(ctx *Context, ipConfiguration *network.InterfaceIPConfiguration) error {
 	logger := ctx.logger
+
+	ipID := getAzureResourceNameFromID(*ipConfiguration.PublicIPAddress.ID)
 
 	ipClient := a.getIPClient()
 
-	for _, ip := range *ips {
-		if ip.PublicIPAddress.ID != nil {
-			ipID := getAzureResourceNameFromID(*ip.PublicIPAddress.ID)
+	logger.Info("Deleting public IP %s...", ipID)
+	deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
+	if err != nil {
+		logger.Error(err.Error())
+		return errors.New("failed deleting ip")
+	}
 
-			logger.Info("Deleting %s...", *ip.PublicIPAddress.ID)
-			deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
-			if err != nil {
-				logger.Error(err.Error())
-				return errors.New("error deleting ip")
-			}
+	err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
+	if err != nil {
+		logger.Error(err.Error())
+		return errors.New("failed waiting for ip deletion")
+	}
 
-			err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
-			if err != nil {
-				logger.Error(err.Error())
-				return errors.New("error waiting for ip deletion")
-			}
-		}
+	err = a.DeleteSubnetwork(ctx, *ipConfiguration.Subnet.ID)
+	if err != nil {
+		return fmt.Errorf("failed deleting subnetwork %s: %s", *ipConfiguration.Subnet.ID, err.Error())
 	}
 
 	return nil
 }
 
-// DeleteNetworkSecurityGroup deletes virtual networks and subnets associated with the security group and the security group itself
+// DeleteNetworkSecurityGroup deletes the security group
 func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string) error {
 	logger := ctx.logger
 
 	nsgClient, err := a.getNsgClient()
-	if err != nil {
-		return err
-	}
-	subnetsClient, err := a.getSubnetsClient()
-	if err != nil {
-		return err
-	}
-	vnetClient, err := a.getVnetClient()
 	if err != nil {
 		return err
 	}
@@ -154,50 +160,85 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *Context, securityGroupID string)
 		return errors.New("error getting network security group")
 	}
 
-	if securityGroup.Subnets != nil {
-		for _, subnet := range *securityGroup.Subnets {
-			if subnet.ID != nil {
-				logger.Info("Deleting %s...", *subnet.ID)
-				subnetName := getAzureResourceNameFromID(*subnet.ID)
-				subnetDeleteTask, err := subnetsClient.Delete(context.TODO(), a.groupName, subnetName, subnetName)
-				if err != nil {
-					logger.Error(err.Error())
-					return errors.New("error deleting subnet")
-				}
+	if !hasAzureOpsTags(securityGroup.Tags) {
+		return errors.New("security group not created by ops")
+	} else if securityGroup.Subnets != nil && len(*securityGroup.Subnets) != 0 {
+		return errors.New("existing subnetworks are using this security group")
+	} else {
+		logger.Info("Deleting %s...", *securityGroup.ID)
+		nsgTask, err := nsgClient.Delete(context.TODO(), a.groupName, *securityGroup.Name)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("failed deleting security group")
+		}
 
-				err = subnetDeleteTask.WaitForCompletionRef(context.TODO(), subnetsClient.Client)
-				if err != nil {
-					logger.Error(err.Error())
-					return errors.New("error waiting for subnet deletion")
-				}
-
-				logger.Info("Deleting virtualNetworks/%s", subnetName)
-				vnDeleteTask, err := vnetClient.Delete(context.TODO(), a.groupName, subnetName)
-				if err != nil {
-					logger.Error(err.Error())
-					return errors.New("error deleting virtual network")
-				}
-
-				err = vnDeleteTask.WaitForCompletionRef(context.TODO(), vnetClient.Client)
-				if err != nil {
-					logger.Error(err.Error())
-					return errors.New("error waiting for virtual network deletion")
-				}
-			}
+		err = nsgTask.WaitForCompletionRef(context.TODO(), nsgClient.Client)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("failed waiting for security group deletion")
 		}
 	}
 
-	logger.Info("Deleting %s...", *securityGroup.ID)
-	nsgTask, err := nsgClient.Delete(context.TODO(), a.groupName, *securityGroup.Name)
+	return nil
+}
+
+// DeleteSubnetwork deletes subnetwork if there is no other device using it
+// Also deletes virtual network if the deleted subnetwork was the only one associated under it
+func (a *Azure) DeleteSubnetwork(ctx *Context, subnetID string) error {
+	logger := ctx.logger
+
+	subnetsClient, err := a.getSubnetsClient()
 	if err != nil {
-		logger.Error(err.Error())
-		return errors.New("error deleting security group")
+		return err
+	}
+	vnetClient, err := a.getVnetClient()
+	if err != nil {
+		return err
 	}
 
-	err = nsgTask.WaitForCompletionRef(context.TODO(), nsgClient.Client)
+	subnetName := getAzureResourceNameFromID(subnetID)
+	vnName := getAzureVirtualNetworkFromID(subnetID)
+
+	subnet, err := subnetsClient.Get(context.TODO(), a.groupName, vnName, subnetName, "")
 	if err != nil {
-		logger.Error(err.Error())
-		return errors.New("error waiting for security group deletion")
+		ctx.logger.Error(err.Error())
+		return fmt.Errorf("failed getting subnet")
+	}
+
+	virtualNetwork, err := vnetClient.Get(context.TODO(), a.groupName, vnName, "")
+	if err != nil {
+		ctx.logger.Error(err.Error())
+		return errors.New("failed getting virtual network")
+	}
+
+	if hasAzureOpsTags(virtualNetwork.Tags) && (subnet.IPConfigurations == nil || len(*subnet.IPConfigurations) == 0) {
+		logger.Info("Deleting %s...", *subnet.ID)
+		subnetDeleteTask, err := subnetsClient.Delete(context.TODO(), a.groupName, subnetName, subnetName)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("error deleting subnet")
+		}
+
+		err = subnetDeleteTask.WaitForCompletionRef(context.TODO(), subnetsClient.Client)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("error waiting for subnet deletion")
+		}
+
+		logger.Info("Deleting virtualNetworks/%s", vnName)
+		vnDeleteTask, err := vnetClient.Delete(context.TODO(), a.groupName, vnName)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("error deleting virtual network")
+		}
+
+		err = vnDeleteTask.WaitForCompletionRef(context.TODO(), vnetClient.Client)
+		if err != nil {
+			logger.Error(err.Error())
+			return errors.New("error waiting for virtual network deletion")
+		}
+	} else {
+		return errors.New("Other devices are connected to the same subnet")
 	}
 
 	return nil
