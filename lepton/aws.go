@@ -527,30 +527,33 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	ami := ""
 	var last time.Time
 	layout := "2006-01-02T15:04:05.000Z"
+	var image *ec2.Image
 
 	for i := 0; i < len(result.Images); i++ {
-		n := ""
 		if result.Images[i].Tags != nil {
-			n = aws.StringValue(result.Images[i].Tags[0].Value)
-		}
-
-		if n != "" && n == imgName {
-			ami = aws.StringValue(result.Images[i].ImageId)
-
-			ntime := aws.StringValue(result.Images[i].CreationDate)
-			t, err := time.Parse(layout, ntime)
-			if err != nil {
-				return err
-			}
-
-			if last.Before(t) {
-				last = t
+			for _, tag := range result.Images[i].Tags {
+				if *tag.Key == "Name" && *tag.Value == imgName {
+					image = result.Images[i]
+					break
+				}
 			}
 		}
 	}
 
-	if ami == "" {
+	if image == nil {
 		return errors.New("can't find ami")
+	}
+
+	ami = aws.StringValue(image.ImageId)
+
+	ntime := aws.StringValue(image.CreationDate)
+	t, err := time.Parse(layout, ntime)
+	if err != nil {
+		return err
+	}
+
+	if last.Before(t) {
+		last = t
 	}
 
 	sess, err := session.NewSession(&aws.Config{
