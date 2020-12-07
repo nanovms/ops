@@ -47,27 +47,27 @@ func (l *Logger) Log(message string, a ...interface{}) {
 // Info checks info level is activated to write the message
 func (l *Logger) Info(message string, a ...interface{}) {
 	if l.info == true {
-		l.Log(ConsoleColors.Blue()+message, a...)
+		l.Log(ConsoleColors.Blue()+message+ConsoleColors.White(), a...)
 	}
 }
 
 // Warn checks warn level is activated to write the message
 func (l *Logger) Warn(message string, a ...interface{}) {
 	if l.warn == true {
-		l.Log(ConsoleColors.Yellow()+message, a...)
+		l.Log(ConsoleColors.Yellow()+message+ConsoleColors.White(), a...)
 	}
 }
 
 // Error checks error level is activated to write the message
 func (l *Logger) Error(message string, a ...interface{}) {
 	if l.err == true {
-		l.Log(ConsoleColors.Red()+message, a...)
+		l.Log(ConsoleColors.Red()+message+ConsoleColors.White(), a...)
 	}
 }
 
 // Debug checks debug level is activated to write the message
 func (l *Logger) Debug(message string, a ...interface{}) {
 	if l.debug == true {
-		l.Log(ConsoleColors.Cyan()+message, a...)
+		l.Log(ConsoleColors.Cyan()+message+ConsoleColors.White(), a...)
 	}
 }
