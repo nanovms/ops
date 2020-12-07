@@ -211,18 +211,14 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	ports := []int{}
-	port, err := cmd.Flags().GetStringArray("port")
-
+	portsFlag, err := cmd.Flags().GetStringArray("port")
 	if err != nil {
 		panic(err)
 	}
-	for _, p := range port {
-		i, err := strconv.Atoi(p)
-		if err != nil {
-			panic(err)
-		}
-		ports = append(ports, i)
+	ports, err := prepareNetworkPorts(portsFlag)
+	if err != nil {
+		exitWithError(err.Error())
+		return
 	}
 
 	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)

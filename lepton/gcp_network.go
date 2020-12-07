@@ -3,7 +3,6 @@ package lepton
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	compute "google.golang.org/api/compute/v1"
@@ -158,11 +157,7 @@ func (p *GCloud) getNIC(ctx *Context, computeService *compute.Service) (nic []*c
 	return
 }
 
-func (p *GCloud) buildFirewallRule(protocol string, ports []int, tag string) *compute.Firewall {
-	var portsStr []string
-	for _, i := range ports {
-		portsStr = append(portsStr, strconv.Itoa(i))
-	}
+func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string) *compute.Firewall {
 
 	return &compute.Firewall{
 		Name:        fmt.Sprintf("ops-%s-rule-%s", protocol, tag),
@@ -170,7 +165,7 @@ func (p *GCloud) buildFirewallRule(protocol string, ports []int, tag string) *co
 		Allowed: []*compute.FirewallAllowed{
 			{
 				IPProtocol: protocol,
-				Ports:      portsStr,
+				Ports:      ports,
 			},
 		},
 		TargetTags:   []string{tag},

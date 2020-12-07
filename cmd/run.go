@@ -213,22 +213,22 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		ports := []int{}
-		port, err := cmd.Flags().GetStringArray("port")
+		portsFlag, err := cmd.Flags().GetStringArray("port")
 		if err != nil {
 			panic(err)
 		}
-		for _, p := range port {
-			i, err := strconv.Atoi(p)
-			if err != nil {
-				panic(err)
-			}
+		ports, err := prepareNetworkPorts(portsFlag)
+		if err != nil {
+			exitWithError(err.Error())
+			return
+		}
 
-			if i == gdbport {
+		for _, p := range ports {
+			i, err := strconv.Atoi(p)
+			if err == nil && i == gdbport {
 				errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
 				panic(errors.New(errstr))
 			}
-			ports = append(ports, i)
 		}
 
 		fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)

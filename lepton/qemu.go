@@ -46,7 +46,7 @@ type netdev struct {
 }
 
 type portfwd struct {
-	port  int
+	port  string
 	proto string
 }
 
@@ -132,7 +132,16 @@ func (nd netdev) String() string {
 }
 
 func (pf portfwd) String() string {
-	return fmt.Sprintf("hostfwd=%s::%v-:%v", pf.proto, pf.port, pf.port)
+	fromPort := pf.port
+	toPort := pf.port
+
+	if strings.Contains(fromPort, "-") {
+		rangeParts := strings.Split(fromPort, "-")
+		fromPort = rangeParts[0]
+		toPort = rangeParts[1]
+	}
+
+	return fmt.Sprintf("hostfwd=%s::%v-:%v", pf.proto, fromPort, toPort)
 }
 
 func (q *qemu) Stop() {
@@ -239,7 +248,7 @@ func (q *qemu) addSerial(serialType string) {
 // added. If the mac address is empty then a random mac address is chosen.
 // Backend interface are created for each device and their ids are auto
 // incremented.
-func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []int, udp bool) {
+func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udp bool) {
 	id := fmt.Sprintf("n%d", len(q.ifaces))
 	dv := device{
 		driver:  "virtio-net",
@@ -263,7 +272,6 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []int, udp
 			if udp {
 				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
 			}
-
 		}
 	}
 

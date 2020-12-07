@@ -48,7 +48,7 @@ type Tag struct {
 type RunConfig struct {
 	Imagename      string // FIXME: fullpath? of image
 	BaseName       string // FIXME: basename of image only
-	Ports          []int
+	Ports          []string
 	DomainName     string
 	GdbPort        int
 	CPUs           int // number of cpus
@@ -58,7 +58,7 @@ type RunConfig struct {
 	TapName        string
 	Accel          bool
 	UDP            bool // enable UDP
-	UDPPorts       []int
+	UDPPorts       []string
 	OnPrem         bool // true if in a multi-instance/tenant on-prem env
 	Mounts         []string
 	VolumeSizeInGb int //This option is only for openstack.
@@ -75,7 +75,7 @@ type RunConfig struct {
 }
 
 // RuntimeConfig constructs runtime config
-func RuntimeConfig(image string, ports []int, verbose bool) RunConfig {
+func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
 	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
 }
 

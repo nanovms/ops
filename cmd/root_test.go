@@ -108,7 +108,7 @@ func runHyperVisor(userImage string, started string, expected string, t *testing
 	var c api.Config
 	c.Program = userImage
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
-	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []int{8080}, true)
+	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []string{"8080"}, true)
 	fixupConfigImages(&c, api.LocalReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
@@ -142,7 +142,7 @@ func TestImageWithStaticFiles(t *testing.T) {
 	c.Dirs = []string{"../data/static"}
 	c.Program = "../data/main"
 	c.TargetRoot = os.Getenv("NANOS_TARGET_ROOT")
-	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []int{8080}, true)
+	c.RunConfig = api.RuntimeConfig(api.GenerateImageName(c.Program), []string{"8080"}, true)
 	fixupConfigImages(&c, api.LatestReleaseVersion)
 	err := api.BuildImage(c)
 	if err != nil {
