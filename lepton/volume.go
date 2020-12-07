@@ -58,6 +58,10 @@ func CreateLocalVolume(config *Config, name, data, size, provider string) (Nanos
 		mkfsCommand.SetEmptyFileSystem()
 	}
 
+	if config.BaseVolumeSz != "" {
+		mkfsCommand.SetFileSystemSize(config.BaseVolumeSz)
+	}
+
 	mkfsCommand.SetupCommand()
 	err := mkfsCommand.Execute()
 	if err != nil {
