@@ -8,6 +8,8 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
@@ -141,7 +143,7 @@ func getProviderAndContext(c *api.Config, providerName string) (api.Provider, *a
 	return p, ctx, nil
 }
 
-func initDefaultRunConfigs(c *api.Config, ports []int) {
+func initDefaultRunConfigs(c *api.Config, ports []string) {
 	if c.RunConfig.Memory == "" {
 		c.RunConfig.Memory = "2G"
 	}
@@ -235,4 +237,52 @@ func downloadAndExtractPackage(pkg string) string {
 	os.RemoveAll(expackage)
 	api.ExtractPackage(localpackage, localstaging)
 	return expackage
+}
+
+// validateNetworkPorts verifies ports strings have right format
+// Strings must have only numbers, commas or hyphens. Commas and hypens must separate 2 numbers
+func validateNetworkPorts(ports []string) error {
+	for _, str := range ports {
+		var hyphenUsed bool
+
+		if str[0] == ',' || str[len(str)-1] == ',' {
+			return errors.Errorf("\"%s\" commas must separate numbers", str)
+		} else if str[0] == '-' || str[len(str)-1] == '-' {
+			return errors.Errorf("\"%s\" hyphen must separate two numbers", str)
+		}
+
+		for i, ch := range str {
+			if ch == ',' {
+				if !unicode.IsDigit(rune(str[i-1])) || !unicode.IsDigit(rune(str[i+1])) {
+					return errors.Errorf("\"%s\" commas must separate numbers", str)
+				}
+			} else if ch == '-' {
+				if hyphenUsed {
+					return errors.Errorf("\"%s\" may have only one hyphen", str)
+				} else if !unicode.IsDigit(rune(str[i-1])) || !unicode.IsDigit(rune(str[i+1])) {
+					return errors.Errorf("\"%s\" hyphen must separate two numbers", str)
+				}
+				hyphenUsed = true
+			} else if !unicode.IsDigit(ch) {
+				return errors.Errorf("\"%s\" must have only numbers, commas or one hyphen", str)
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// prepareNetworkPorts validates ports and split ports strings separated by commas
+func prepareNetworkPorts(ports []string) (portsPrepared []string, err error) {
+	err = validateNetworkPorts(ports)
+	if err != nil {
+		return
+	}
+
+	for _, ports := range ports {
+		portsPrepared = append(portsPrepared, strings.Split(ports, ",")...)
+	}
+
+	return
 }

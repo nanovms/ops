@@ -13,7 +13,7 @@ func exitWithError(errs string) {
 	os.Exit(1)
 }
 
-func arrayToString(a []int, delim string) string {
+func arrayToString(a interface{}, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -304,7 +303,6 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 		return vnet, fmt.Errorf("cannot get the vnet create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated Virtual Network\n")
 	vn, err := future.Result(*vnetClient)
 
 	return &vn, err
@@ -434,7 +432,6 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		return subnet, fmt.Errorf("cannot get the subnet create or update future response: %v", err)
 	}
 
-	fmt.Printf("\nCreated subnet with security group")
 	sc, err := future.Result(*subnetsClient)
 
 	return &sc, err
@@ -464,16 +461,15 @@ func (a *Azure) getNsgClient() (*network.SecurityGroupsClient, error) {
 	return &nsgClient, nil
 }
 
-func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port int) network.SecurityRule {
-	portStr := strconv.Itoa(port)
+func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port string) network.SecurityRule {
 	return network.SecurityRule{
-		Name: to.StringPtr("allow_" + portStr),
+		Name: to.StringPtr("allow_" + strings.ReplaceAll(port, ",", ".")),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
 			Protocol:                 protocol,
 			SourceAddressPrefix:      to.StringPtr("0.0.0.0/0"),
 			SourcePortRange:          to.StringPtr("1-65535"),
 			DestinationAddressPrefix: to.StringPtr("0.0.0.0/0"),
-			DestinationPortRange:     to.StringPtr(portStr),
+			DestinationPortRange:     to.StringPtr(port),
 			Access:                   network.SecurityRuleAccessAllow,
 			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 to.Int32Ptr(rand.Int31n(200-100) + 100), //Generating number between 100 - 200
@@ -491,13 +487,13 @@ func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string,
 
 	var securityRules []network.SecurityRule
 
-	for _, port := range c.RunConfig.Ports {
-		var rule = a.buildFirewallRule(network.SecurityRuleProtocolTCP, port)
+	for _, ports := range c.RunConfig.Ports {
+		var rule = a.buildFirewallRule(network.SecurityRuleProtocolTCP, ports)
 		securityRules = append(securityRules, rule)
 	}
 
-	for _, port := range c.RunConfig.UDPPorts {
-		var rule = a.buildFirewallRule(network.SecurityRuleProtocolUDP, port)
+	for _, ports := range c.RunConfig.UDPPorts {
+		var rule = a.buildFirewallRule(network.SecurityRuleProtocolUDP, ports)
 		securityRules = append(securityRules, rule)
 	}
 

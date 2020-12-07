@@ -752,11 +752,30 @@ func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	return vpc, nil
 }
 
-func (p AWS) buildFirewallRule(protocol string, port int) *ec2.IpPermission {
+func (p AWS) buildFirewallRule(protocol string, port string) *ec2.IpPermission {
+	fromPort := port
+	toPort := port
+
+	if strings.Contains(port, "-") {
+		rangeParts := strings.Split(port, "-")
+		fromPort = rangeParts[0]
+		toPort = rangeParts[1]
+	}
+
+	fromPortInt, err := strconv.Atoi(fromPort)
+	if err != nil {
+		panic(err)
+	}
+
+	toPortInt, err := strconv.Atoi(toPort)
+	if err != nil {
+		panic(err)
+	}
+
 	var ec2Permission = new(ec2.IpPermission)
 	ec2Permission.SetIpProtocol(protocol)
-	ec2Permission.SetFromPort(int64(port))
-	ec2Permission.SetToPort(int64(port))
+	ec2Permission.SetFromPort(int64(fromPortInt))
+	ec2Permission.SetToPort(int64(toPortInt))
 	ec2Permission.SetIpRanges([]*ec2.IpRange{
 		{CidrIp: aws.String("0.0.0.0/0")},
 	})

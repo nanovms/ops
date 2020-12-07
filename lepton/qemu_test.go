@@ -2,6 +2,7 @@ package lepton
 
 import (
 	. "fmt"
+	"reflect"
 	"testing"
 )
 
@@ -40,7 +41,7 @@ func TestStringNetDev(t *testing.T) {
 }
 
 func TestStringNetDevWithHostPortForwarding(t *testing.T) {
-	testHostPorts := []portfwd{{proto: "tcp", port: 80}, {proto: "tcp", port: 443}}
+	testHostPorts := []portfwd{{proto: "tcp", port: "80"}, {proto: "tcp", port: "443"}}
 	testNetDev := &netdev{nettype: "tap", id: "n0", hports: testHostPorts}
 	expected := "-netdev tap,id=n0,script=no,downscript=no,hostfwd=tcp::80-:80,hostfwd=tcp::443-:443"
 	checkQemuString(testNetDev, expected, t)
@@ -50,7 +51,7 @@ func TestStringNetDevWithTypeUser(t *testing.T) {
 	// The 'downscript' and 'script' parameters are not valid for 'user'
 	// device type so we don't render them to the string in that case even
 	// if they are populated in the type.
-	testHostPorts := []portfwd{{proto: "tcp", port: 80}, {proto: "tcp", port: 443}}
+	testHostPorts := []portfwd{{proto: "tcp", port: "80"}, {proto: "tcp", port: "443"}}
 	testNetDev := &netdev{nettype: "user", id: "n0", downscript: "no", script: "no", hports: testHostPorts}
 	expected := "-netdev user,id=n0,hostfwd=tcp::80-:80,hostfwd=tcp::443-:443"
 	checkQemuString(testNetDev, expected, t)
@@ -70,10 +71,43 @@ func TestStringSerial(t *testing.T) {
 
 func TestRandomMacGen(t *testing.T) {
 	q := qemu{}
-	q.addNetDevice("tap", "tap0", "", []int{}, false)
+	q.addNetDevice("tap", "tap0", "", []string{}, false)
 	if len(q.devices[0].mac) == 0 {
 		t.Errorf("No RandomMac was assigned %s", q.devices[0].mac)
 	}
+}
+
+func TestAddNetDevices(t *testing.T) {
+
+	t.Run("should add a port forward per tcp port", func(t *testing.T) {
+		q := qemu{}
+		q.addNetDevice("user", "", "", []string{"80", "8080", "9000"}, false)
+
+		want := []portfwd{
+			{port: "80", proto: "tcp"},
+			{port: "8080", proto: "tcp"},
+			{port: "9000", proto: "tcp"},
+		}
+		got := q.ifaces[0].hports
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v,want %v", got, want)
+		}
+	})
+
+	t.Run("should add a port forward range", func(t *testing.T) {
+		q := qemu{}
+		q.addNetDevice("user", "", "", []string{"80-9000"}, false)
+
+		want := []portfwd{
+			{port: "80-9000", proto: "tcp"},
+		}
+		got := q.ifaces[0].hports
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v,want %v", got, want)
+		}
+	})
 }
 
 func TestQemuVersion(t *testing.T) {

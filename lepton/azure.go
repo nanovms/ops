@@ -421,7 +421,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	location := a.getLocation(ctx.config)
 
 	vmName := ctx.config.RunConfig.InstanceName
-	ctx.logger.Log("spinning up:\t%s\n", vmName)
+	ctx.logger.Log("spinning up:\t%s", vmName)
 
 	// create virtual network
 	var vnet *network.VirtualNetwork
@@ -434,7 +434,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 			return fmt.Errorf("error getting virtual network with id %s", configVPC)
 		}
 	} else {
-		ctx.logger.Info("creating virtual network with id %s\n", vmName)
+		ctx.logger.Info("creating virtual network with id %s", vmName)
 		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName)
 		if err != nil {
 			ctx.logger.Error(err.Error())
@@ -452,7 +452,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 			return errors.New("error getting security group")
 		}
 	} else {
-		ctx.logger.Info("creating network security group with id %s\n", vmName)
+		ctx.logger.Info("creating network security group with id %s", vmName)
 		nsg, err = a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
 		if err != nil {
 			ctx.logger.Error(err.Error())
@@ -470,7 +470,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 			return errors.New("error getting subnet")
 		}
 	} else {
-		ctx.logger.Info("creating subnet with id %s\n", vmName)
+		ctx.logger.Info("creating subnet with id %s", vmName)
 		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
 		if err != nil {
 			ctx.logger.Error(err.Error())
@@ -479,7 +479,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	}
 
 	// create ip
-	ctx.logger.Info("creating public ip with id %s\n", vmName)
+	ctx.logger.Info("creating public ip with id %s", vmName)
 	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
 		ctx.logger.Error(err.Error())
@@ -488,7 +488,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create nic
 	// pass vnet, subnet, ip, nicname
-	ctx.logger.Info("creating network interface controller with id %s\n", vmName)
+	ctx.logger.Info("creating network interface controller with id %s", vmName)
 	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName)
 	if err != nil {
 		ctx.logger.Error(err.Error())
@@ -817,7 +817,7 @@ func (a *Azure) GetInstanceLogs(ctx *Context, instancename string) (string, erro
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		fmt.Printf("Invalid credentials with error: %s\n", err.Error())
+		fmt.Printf("Invalid credentials with error: %s", err.Error())
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 
