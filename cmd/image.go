@@ -41,6 +41,10 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		c.RunConfig.Klibs = append(c.RunConfig.Klibs, "cloud_init")
 	}
 
+	if _, ok := c.Env["RADAR_KEY"]; ok {
+		c.RunConfig.Klibs = append(c.RunConfig.Klibs, "tls", "radar")
+	}
+
 	if len(c.CloudConfig.Platform) == 0 {
 		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
 	}
@@ -49,7 +53,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError("Please specify a cloud projectid in config")
 	}
 
-	if len(c.CloudConfig.BucketName) == 0 {
+	if len(c.CloudConfig.BucketName) == 0 && c.CloudConfig.Platform != "onprem" {
 		exitWithError("Please specify a cloud bucket in config")
 	}
 
