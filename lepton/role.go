@@ -198,9 +198,9 @@ func findBucketInPolicy(svc *iam.IAM, bucket string) (string, error) {
 
 // VerifyRole ensures we have a role and attached policy for the vmie service to hit our
 // bucket.
-func VerifyRole(ctx *Context, bucket string) {
+func VerifyRole(zone string, bucket string) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.config.CloudConfig.Zone)},
+		Region: aws.String(zone)},
 	)
 
 	svc := iam.New(sess)
