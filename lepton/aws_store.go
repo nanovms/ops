@@ -21,6 +21,9 @@ func (s *S3) CopyToBucket(config *Config, archPath string) error {
 	bucket := config.CloudConfig.BucketName
 	zone := config.CloudConfig.Zone
 
+	// verify we can even use the vm importer
+	VerifyRole(zone, bucket)
+
 	file, err := os.Open(archPath)
 	if err != nil {
 		return err

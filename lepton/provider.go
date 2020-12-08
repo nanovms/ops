@@ -22,7 +22,7 @@ type Provider interface {
 
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
-	CreateImage(ctx *Context) error
+	CreateImage(ctx *Context, imagePath string) error
 	ListImages(ctx *Context) error
 	GetImages(ctx *Context) ([]CloudImage, error)
 	DeleteImage(ctx *Context, imagename string) error
@@ -41,8 +41,6 @@ type Provider interface {
 	PrintInstanceLogs(ctx *Context, instancename string, watch bool) error
 
 	VolumeService
-
-	GetStorage() Storage
 }
 
 // Storage is an interface that provider's storage must implement
