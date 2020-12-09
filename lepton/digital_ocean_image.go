@@ -93,7 +93,8 @@ func (do *DigitalOcean) GetInstanceLogs(ctx *Context, instancename string) (stri
 	return "", nil
 }
 
-func (do *DigitalOcean) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (do *DigitalOcean) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }

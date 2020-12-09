@@ -25,7 +25,7 @@ func (v *Vsphere) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return v.customizeImage(ctx)
+	return v.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on Vsphere.
@@ -35,7 +35,7 @@ func (v *Vsphere) BuildImageWithPackage(ctx *Context, pkgpath string) (string, e
 	if err != nil {
 		return "", err
 	}
-	return v.customizeImage(ctx)
+	return v.CustomizeImage(ctx)
 }
 
 func (v *Vsphere) createImage(key string, bucket string, region string) {
@@ -180,7 +180,8 @@ func (v *Vsphere) SyncImage(config *Config, target Provider, image string) error
 	return nil
 }
 
-func (v *Vsphere) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (v *Vsphere) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }

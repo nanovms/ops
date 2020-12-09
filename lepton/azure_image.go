@@ -15,7 +15,8 @@ func (a *Azure) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }
 
-func (a *Azure) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (a *Azure) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
 
@@ -48,7 +49,7 @@ func (a *Azure) BuildImageWithPackage(ctx *Context, pkgpath string) (string, err
 	if err != nil {
 		return "", err
 	}
-	return a.customizeImage(ctx)
+	return a.CustomizeImage(ctx)
 }
 
 // CreateImage - Creates image on Azure using nanos images

@@ -21,7 +21,7 @@ func (v *Vultr) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return v.customizeImage(ctx)
+	return v.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on Vultr.
@@ -31,7 +31,7 @@ func (v *Vultr) BuildImageWithPackage(ctx *Context, pkgpath string) (string, err
 	if err != nil {
 		return "", err
 	}
-	return v.customizeImage(ctx)
+	return v.CustomizeImage(ctx)
 }
 
 func (v *Vultr) createImage(key string, bucket string, region string) {
@@ -178,7 +178,8 @@ func (v *Vultr) ResizeImage(ctx *Context, imagename string, hbytes string) error
 	return fmt.Errorf("Operation not supported")
 }
 
-func (v *Vultr) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (v *Vultr) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }

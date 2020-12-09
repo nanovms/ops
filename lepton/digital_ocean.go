@@ -24,7 +24,7 @@ func (do *DigitalOcean) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return do.customizeImage(ctx)
+	return do.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on DO .
@@ -34,7 +34,7 @@ func (do *DigitalOcean) BuildImageWithPackage(ctx *Context, pkgpath string) (str
 	if err != nil {
 		return "", err
 	}
-	return do.customizeImage(ctx)
+	return do.CustomizeImage(ctx)
 }
 
 func (do *DigitalOcean) createImage(key string, bucket string, region string) {

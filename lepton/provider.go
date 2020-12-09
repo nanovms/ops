@@ -28,7 +28,7 @@ type Provider interface {
 	DeleteImage(ctx *Context, imagename string) error
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
 	SyncImage(config *Config, target Provider, imagename string) error
-	customizeImage(ctx *Context) (string, error)
+	CustomizeImage(ctx *Context) (string, error)
 
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
