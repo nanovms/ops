@@ -18,7 +18,8 @@ func (p *GCloud) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }
 
-func (p *GCloud) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (p *GCloud) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
 
@@ -51,7 +52,7 @@ func (p *GCloud) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return p.customizeImage(ctx)
+	return p.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on GCP
@@ -61,7 +62,7 @@ func (p *GCloud) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 	if err != nil {
 		return "", err
 	}
-	return p.customizeImage(ctx)
+	return p.CustomizeImage(ctx)
 }
 
 // CreateImage - Creates image on GCP using nanos images

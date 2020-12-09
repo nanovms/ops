@@ -26,7 +26,7 @@ func (o *OpenStack) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return o.customizeImage(ctx)
+	return o.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on OpenStack.
@@ -36,7 +36,7 @@ func (o *OpenStack) BuildImageWithPackage(ctx *Context, pkgpath string) (string,
 	if err != nil {
 		return "", err
 	}
-	return o.customizeImage(ctx)
+	return o.CustomizeImage(ctx)
 }
 
 func (o *OpenStack) findImage(name string) (id string, err error) {
@@ -233,7 +233,8 @@ func (o *OpenStack) SyncImage(config *Config, target Provider, image string) err
 	return nil
 }
 
-func (o *OpenStack) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (o *OpenStack) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }

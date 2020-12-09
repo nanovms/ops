@@ -118,8 +118,8 @@ func (p *OnPrem) SyncImage(config *Config, target Provider, image string) error 
 	config.CloudConfig.ImageName = image
 
 	// customizes image for target
-	ctx := NewContext(config, &target)
-	archive, err := target.customizeImage(ctx)
+	ctx := NewContext(config)
+	archive, err := target.CustomizeImage(ctx)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (p *OnPrem) SyncImage(config *Config, target Provider, image string) error 
 	return target.CreateImage(ctx, archive)
 }
 
-// customizeImage for onprem as stub to satisfy interface
-func (p *OnPrem) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage for onprem as stub to satisfy interface
+func (p *OnPrem) CustomizeImage(ctx *Context) (string, error) {
 	return "", nil
 }

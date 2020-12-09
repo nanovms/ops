@@ -23,7 +23,7 @@ func (p *AWS) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return p.customizeImage(ctx)
+	return p.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on AWS
@@ -33,7 +33,7 @@ func (p *AWS) BuildImageWithPackage(ctx *Context, pkgpath string) (string, error
 	if err != nil {
 		return "", err
 	}
-	return p.customizeImage(ctx)
+	return p.CustomizeImage(ctx)
 }
 
 // CreateImage - Creates image on AWS using nanos images
@@ -295,7 +295,8 @@ func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
 	return nil
 }
 
-func (p *AWS) customizeImage(ctx *Context) (string, error) {
+// CustomizeImage returns image path with adaptations needed by cloud provider
+func (p *AWS) CustomizeImage(ctx *Context) (string, error) {
 	imagePath := ctx.config.RunConfig.Imagename
 	return imagePath, nil
 }

@@ -152,7 +152,7 @@ func (a *Azure) BuildImage(ctx *Context) (string, error) {
 		return "", err
 	}
 
-	return a.customizeImage(ctx)
+	return a.CustomizeImage(ctx)
 }
 
 // Initialize Azure related things
