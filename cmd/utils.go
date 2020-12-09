@@ -138,7 +138,7 @@ func getProviderAndContext(c *api.Config, providerName string) (api.Provider, *a
 		return nil, nil, err
 	}
 
-	ctx := api.NewContext(c, &p)
+	ctx := api.NewContext(c)
 
 	return p, ctx, nil
 }

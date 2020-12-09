@@ -118,7 +118,7 @@ func (p *OnPrem) SyncImage(config *Config, target Provider, image string) error 
 	config.CloudConfig.ImageName = image
 
 	// customizes image for target
-	ctx := NewContext(config, &target)
+	ctx := NewContext(config)
 	archive, err := target.customizeImage(ctx)
 	if err != nil {
 		return err

@@ -129,7 +129,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		setDefaultImageName(cmd, c)
 
 		// Config merged with package config, need to update context
-		ctx = api.NewContext(c, &p)
+		ctx = api.NewContext(c)
 
 		keypath, err = p.BuildImageWithPackage(ctx, expackage)
 		if err != nil {
@@ -185,7 +185,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	ctx := api.NewContext(c, &p)
+	ctx := api.NewContext(c)
 
 	err = p.ListImages(ctx)
 	if err != nil {
@@ -255,7 +255,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	ctx := api.NewContext(c, &p)
+	ctx := api.NewContext(c)
 
 	err = p.ResizeImage(ctx, args[0], args[1])
 	if err != nil {

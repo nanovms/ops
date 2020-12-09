@@ -33,9 +33,8 @@ var (
 
 func NewTestContext(c *Config) *Context {
 	return &Context{
-		config:   testVolumeConfig,
-		provider: nil,
-		logger:   NewLogger(ioutil.Discard),
+		config: testVolumeConfig,
+		logger: NewLogger(ioutil.Discard),
 	}
 }
 

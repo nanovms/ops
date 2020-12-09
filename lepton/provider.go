@@ -113,14 +113,13 @@ func CreateDNSRecord(config *Config, aRecordIP string, dnsService DNSService) er
 
 // Context captures required info for provider operation
 type Context struct {
-	config   *Config
-	provider *Provider
-	logger   *Logger
+	config *Config
+	logger *Logger
 }
 
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
-func NewContext(c *Config, provider *Provider) *Context {
+func NewContext(c *Config) *Context {
 
 	logger := NewLogger(os.Stdout)
 
@@ -144,8 +143,7 @@ func NewContext(c *Config, provider *Provider) *Context {
 	}
 
 	return &Context{
-		config:   c,
-		provider: provider,
-		logger:   logger,
+		config: c,
+		logger: logger,
 	}
 }
