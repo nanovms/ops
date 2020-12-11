@@ -130,8 +130,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
-	c.Args = append(c.Args, cmdargs...)
-
 	//Precedance is given to command line manifest file name.
 	if manifestName == "" && c.ManifestName != "" {
 		manifestName = c.ManifestName
@@ -140,6 +138,12 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.Program = args[0]
 	curdir, _ := os.Getwd()
 	c.ProgramPath = path.Join(curdir, args[0])
+
+	if len(c.Args) == 0 {
+		c.Args = append([]string{args[0]}, cmdargs...)
+	} else {
+		c.Args = append(c.Args, cmdargs...)
+	}
 
 	if len(cmdenvs) > 0 {
 		if len(c.Env) == 0 {
