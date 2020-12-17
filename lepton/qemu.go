@@ -260,10 +260,11 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 		id:      id,
 	}
 
+	if mac == "" {
+		dv.mac = generateMac()
+	}
+
 	if devType != "user" {
-		if mac == "" {
-			dv.mac = generateMac()
-		}
 		ndv.ifname = ifaceName
 	} else {
 		for _, p := range hostPorts {
