@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -57,23 +58,30 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	for key, val := range *packages {
+	// Sort the package list by packagename
+	keys := make([]string, 0, len(*packages))
+	for key := range *packages {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
 		var row []string
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
 		// row.
 		if filter &&
-			!(r.MatchString(val.Language) ||
-				r.MatchString(val.Runtime) ||
+			!(r.MatchString((*packages)[key].Language) ||
+				r.MatchString((*packages)[key].Runtime) ||
 				r.MatchString(key)) {
 			continue
 		}
 
 		row = append(row, key)
-		row = append(row, val.Version)
-		row = append(row, val.Language)
-		row = append(row, val.Runtime)
-		row = append(row, val.Description)
+		row = append(row, (*packages)[key].Version)
+		row = append(row, (*packages)[key].Language)
+		row = append(row, (*packages)[key].Runtime)
+		row = append(row, (*packages)[key].Description)
 		table.Append(row)
 	}
 
