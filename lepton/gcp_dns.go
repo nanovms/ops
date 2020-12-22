@@ -11,8 +11,21 @@ import (
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
 func (p *GCloud) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
 	zoneName := strings.Split(dnsName, ".")[0]
-	zone, err := p.dnsService.ManagedZones.Get(config.CloudConfig.ProjectID, zoneName).Do()
-	if err != nil || zone == nil {
+	zones, err := p.dnsService.ManagedZones.List(config.CloudConfig.ProjectID).Do()
+	if err != nil {
+		return "", err
+	}
+
+	var zone *dns.ManagedZone
+	for _, z := range zones.ManagedZones {
+		if z.DnsName == dnsName+"." {
+			zone = z
+			zoneName = z.Name
+			break
+		}
+	}
+
+	if zone == nil {
 		managedZone := &dns.ManagedZone{
 			Name:        zoneName,
 			Description: zoneName,
