@@ -170,9 +170,11 @@ func imageListCommand() *cobra.Command {
 
 func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
+	config, _ := cmd.Flags().GetString("config")
+	config = strings.TrimSpace(config)
 
 	var c *api.Config
-	c = api.NewConfig()
+	c = unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	zone, _ := cmd.Flags().GetString("zone")
