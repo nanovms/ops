@@ -113,6 +113,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		cinstance := p.convertToCloudInstance(instance)
 
 		if len(cinstance.PublicIps) != 0 {
+			ctx.logger.Info("Assigning IP %s to %s", cinstance.PublicIps[0], c.RunConfig.DomainName)
 			err := CreateDNSRecord(ctx.config, cinstance.PublicIps[0], p)
 			if err != nil {
 				return err
