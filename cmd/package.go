@@ -63,7 +63,9 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	for key := range *packages {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	sort.Slice(keys, func(i, j int) bool {
+		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
+	})
 
 	for _, key := range keys {
 		var row []string
