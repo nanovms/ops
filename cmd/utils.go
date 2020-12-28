@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/user"
 	"path"
@@ -285,4 +286,13 @@ func prepareNetworkPorts(ports []string) (portsPrepared []string, err error) {
 	}
 
 	return
+}
+
+// isIPAddressValid checks whether IP address is valid
+func isIPAddressValid(ip string) bool {
+	if net.ParseIP(ip) == nil {
+		return false
+	}
+
+	return true
 }

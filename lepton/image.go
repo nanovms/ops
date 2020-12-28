@@ -299,6 +299,15 @@ func BuildManifest(c *Config) (*Manifest, error) {
 	for _, libpath := range deps {
 		m.AddLibrary(libpath)
 	}
+
+	if c.RunConfig.IPAddr != "" {
+		m.AddNetworkConfig(&ManifestNetworkConfig{
+			IP:      c.RunConfig.IPAddr,
+			Gateway: c.RunConfig.Gateway,
+			NetMask: c.RunConfig.NetMask,
+		})
+	}
+
 	return m, nil
 }
 
