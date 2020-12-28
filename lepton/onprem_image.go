@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,7 +30,8 @@ func (p *OnPrem) BuildImageWithPackage(ctx *Context, pkgpath string) (string, er
 // CreateImage on prem
 // assumes local for now
 func (p *OnPrem) CreateImage(ctx *Context, imagePath string) error {
-	return fmt.Errorf("Operation not supported")
+	// this method implementation is not necessary as BuildImage and BuildImageWithPackage creates an image locally
+	return nil
 }
 
 // ResizeImage resizes the lcoal image imagename. You should never
