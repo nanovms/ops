@@ -56,6 +56,9 @@ type RunConfig struct {
 	Memory         string
 	Bridged        bool
 	TapName        string
+	IPAddr         string
+	Gateway        string
+	NetMask        string
 	Accel          bool
 	UDP            bool // enable UDP
 	UDPPorts       []string

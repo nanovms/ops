@@ -16,20 +16,28 @@ type link struct {
 	path string
 }
 
+// ManifestNetworkConfig has network configuration to set static IP
+type ManifestNetworkConfig struct {
+	IP      string
+	Gateway string
+	NetMask string
+}
+
 // Manifest represent the filesystem.
 type Manifest struct {
-	sb          strings.Builder
-	children    map[string]interface{} // root fs
-	boot        map[string]interface{} // boot fs
-	program     string
-	args        []string
-	debugFlags  map[string]rune
-	noTrace     []string
-	environment map[string]string
-	targetRoot  string
-	mounts      map[string]string
-	klibs       []string
-	nightly     bool
+	sb            strings.Builder
+	children      map[string]interface{} // root fs
+	boot          map[string]interface{} // boot fs
+	program       string
+	args          []string
+	debugFlags    map[string]rune
+	noTrace       []string
+	environment   map[string]string
+	targetRoot    string
+	mounts        map[string]string
+	klibs         []string
+	nightly       bool
+	networkConfig *ManifestNetworkConfig
 }
 
 // NewManifest init
@@ -42,6 +50,11 @@ func NewManifest(targetRoot string) *Manifest {
 		targetRoot:  targetRoot,
 		mounts:      make(map[string]string),
 	}
+}
+
+// AddNetworkConfig adds network configuration
+func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
+	m.networkConfig = networkConfig
 }
 
 // AddUserProgram adds user program
@@ -437,6 +450,16 @@ func (m *Manifest) String() string {
 			sb.WriteRune('\n')
 		}
 		sb.WriteString(")\n")
+	}
+
+	if m.networkConfig != nil {
+		sb.WriteString("ipaddr:")
+		sb.WriteString(m.networkConfig.IP)
+		sb.WriteString("\ngateway:")
+		sb.WriteString(m.networkConfig.Gateway)
+		sb.WriteString("\nnetmask:")
+		sb.WriteString(m.networkConfig.NetMask)
+		sb.WriteRune('\n')
 	}
 
 	//

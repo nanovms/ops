@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"strconv"
@@ -106,6 +107,21 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	ipaddr, err := cmd.Flags().GetString("ip-address")
+	if err != nil {
+		panic(err)
+	}
+
+	gateway, err := cmd.Flags().GetString("gateway")
+	if err != nil {
+		panic(err)
+	}
+
+	netmask, err := cmd.Flags().GetString("netmask")
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	if err != nil {
 		panic(err)
@@ -197,6 +213,25 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.Force = force
 	c.ManifestName = manifestName
 
+	if ipaddr != "" && isIPAddressValid(ipaddr) {
+		c.RunConfig.IPAddr = ipaddr
+
+		if gateway == "" || !isIPAddressValid(gateway) {
+			// assumes the default gateway is the first IP in the network range
+			ip := net.ParseIP(ipaddr).To4()
+			ip[3] = byte(1)
+			c.RunConfig.Gateway = ip.String()
+		} else {
+			c.RunConfig.Gateway = gateway
+		}
+
+		if netmask != "" && !isIPAddressValid(netmask) {
+			c.RunConfig.NetMask = "255.255.255.0"
+		} else {
+			c.RunConfig.NetMask = netmask
+		}
+	}
+
 	if len(noTrace) > 0 {
 		c.NoTrace = noTrace
 	}
@@ -213,34 +248,33 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	if !skipbuild {
 		err = buildImages(c)
-	}
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		portsFlag, err := cmd.Flags().GetStringArray("port")
 		if err != nil {
 			panic(err)
 		}
-		ports, err := prepareNetworkPorts(portsFlag)
-		if err != nil {
-			exitWithError(err.Error())
-			return
-		}
-
-		for _, p := range ports {
-			i, err := strconv.Atoi(p)
-			if err == nil && i == gdbport {
-				errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
-				panic(errors.New(errstr))
-			}
-		}
-
-		fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
-
-		initDefaultRunConfigs(c, ports)
-		hypervisor.Start(&c.RunConfig)
 	}
 
+	portsFlag, err := cmd.Flags().GetStringArray("port")
+	if err != nil {
+		panic(err)
+	}
+	ports, err := prepareNetworkPorts(portsFlag)
+	if err != nil {
+		exitWithError(err.Error())
+		return
+	}
+
+	for _, p := range ports {
+		i, err := strconv.Atoi(p)
+		if err == nil && i == gdbport {
+			errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", gdbport)
+			panic(errors.New(errstr))
+		}
+	}
+
+	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
+
+	initDefaultRunConfigs(c, ports)
+	hypervisor.Start(&c.RunConfig)
 }
 
 // RunCommand provides support for running binary with nanos
@@ -287,6 +321,9 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
 	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
+	cmdRun.PersistentFlags().String("ip-address", "", "static ip address")
+	cmdRun.PersistentFlags().String("gateway", "", "network gateway")
+	cmdRun.PersistentFlags().String("netmask", "255.255.255.0", "network mask")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
