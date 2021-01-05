@@ -73,7 +73,7 @@ func testCreateVolume(t *testing.T, name string, vol *NanosVolume, count *int) {
 		}
 		*count++
 		assignVolumeData(res, vol)
-		// only test GetVolumes if create is succesful
+		// only test GetVolumes if create is successful
 		testGetVolumes(t, fmt.Sprintf("get_after_create_%s", name), count)
 	})
 }
@@ -99,7 +99,7 @@ func testDeleteVolumeByName(t *testing.T, name string, vol *NanosVolume, count *
 			return
 		}
 		*count--
-		// only test GetVolumes if delete is succesful
+		// only test GetVolumes if delete is successful
 		testGetVolumes(t, fmt.Sprintf("get_after_delete_%s", name), count)
 	})
 }
@@ -112,7 +112,7 @@ func testDeleteVolumeByUUID(t *testing.T, name string, vol *NanosVolume, count *
 			return
 		}
 		*count--
-		// only test GetVolumes if delete is succesful
+		// only test GetVolumes if delete is successful
 		testGetVolumes(t, fmt.Sprintf("get_after_delete_%s", name), count)
 	})
 }
