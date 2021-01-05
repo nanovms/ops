@@ -9,16 +9,16 @@ type Config struct {
 	// volume (defaults to the end of blocks written by TFS).
 	BaseVolumeSz string
 
-	// Boot - To be described...
+	// Boot
 	Boot string
 
-	// BuildDir - To be described...
+	// BuildDir
 	BuildDir string
 
-	// CloudConfig - To be described...
+	// CloudConfig
 	CloudConfig ProviderConfig
 
-	// Debugflags - To be described...
+	// Debugflags
 	Debugflags []string
 
 	// Dirs defines an array of directory locations to include into the image.
@@ -31,10 +31,10 @@ type Config struct {
 	// Files defines an array of file locations to include into the image.
 	Files []string
 
-	// Force - To be described...
+	// Force
 	Force bool
 
-	// Kernel - To be described...
+	// Kernel
 	Kernel string
 
 	// ManifestName defines the name of the manifest file.
@@ -45,23 +45,23 @@ type Config struct {
 	// to image path specification.
 	MapDirs map[string]string
 
-	// Mkfs - To be described...
+	// Mkfs
 	Mkfs string
 
-	// Mounts - To be described...
+	// Mounts
 	Mounts map[string]string
 
 	// NameServer is an optional parameter that defines the DNS server to use
 	// for DNS resolutions (defaults to Google's DNS server: '8.8.8.8').
 	NameServer string
 
-	// NightlyBuild - To be described...
+	// NightlyBuild
 	NightlyBuild bool
 
-	// NoTrace - To be described...
+	// NoTrace
 	NoTrace []string
 
-	// Program - To be described...
+	// Program
 	Program string
 
 	// ProgramPath specifies the original path of the program to refer to on
@@ -72,63 +72,135 @@ type Config struct {
 	// if an error/failure occurs.
 	RebootOnExit bool
 
-	// RunConfig - To be described...
+	// RunConfig
 	RunConfig RunConfig
 
-	// TargetRoot - To be described...
+	// TargetRoot
 	TargetRoot string
 
-	// Version - To be described...
+	// Version
 	Version string
 }
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
+	// BucketName
 	BucketName string `cloud:"bucketname"`
-	Flavor     string `cloud:"flavor"`
-	ImageName  string `cloud:"imagename"`
-	Platform   string `cloud:"platform"`
-	ProjectID  string `cloud:"projectid"`
-	Zone       string `cloud:"zone"`
+
+	// Flavor
+	Flavor string `cloud:"flavor"`
+
+	// ImageName
+	ImageName string `cloud:"imagename"`
+
+	// Platform
+	Platform string `cloud:"platform"`
+
+	// ProjectID
+	ProjectID string `cloud:"projectid"`
+
+	// Zone
+	Zone string `cloud:"zone"`
 }
 
 // Tag is used as property on creating instances
 type Tag struct {
-	Key   string `json:"key"`
+	// Key
+	Key string `json:"key"`
+
+	// Value
 	Value string `json:"value"`
 }
 
 // RunConfig provides runtime details
 type RunConfig struct {
-	Accel          bool
-	BaseName       string // FIXME: basename of image only
-	Bridged        bool
-	CPUs           int // number of cpus
-	Debug          bool
-	DomainName     string
-	Gateway        string
-	GdbPort        int
-	Imagename      string // FIXME: fullpath? of image
-	InstanceName   string
-	IPAddr         string
-	Klibs          []string
-	Memory         string
-	Mounts         []string
-	NetMask        string
-	OnPrem         bool // true if in a multi-instance/tenant on-prem env
-	Ports          []string
-	SecurityGroup  string
-	ShowDebug      bool
-	ShowErrors     bool
-	ShowWarnings   bool
-	Subnet         string
-	Tags           []Tag
-	TapName        string
-	UDP            bool // enable UDP
-	UDPPorts       []string
-	Verbose        bool
-	VolumeSizeInGb int //This option is only for openstack.
-	VPC            string
+	// Accel defines whether hardware acceleration should be enabled.
+	Accel bool
+
+	// BaseName of the image (FIXME).
+	BaseName string
+
+	// Bridged
+	Bridged bool
+
+	// CPUs specifies the number of CPU cores to use
+	CPUs int
+
+	// Debug
+	Debug bool
+
+	// DomainName
+	DomainName string
+
+	// Gateway
+	Gateway string
+
+	// GdbPort
+	GdbPort int
+
+	// Imagename (FIXME)
+	Imagename string
+
+	// InstanceName
+	InstanceName string
+
+	// IPAddr
+	IPAddr string
+
+	// Klibs
+	Klibs []string
+
+	// Memory
+	Memory string
+
+	// Mounts
+	Mounts []string
+
+	// NetMask
+	NetMask string
+
+	// OnPrem is set to be true if the image is in a multi-instance/tenant
+	// on-premise environment.
+	OnPrem bool
+
+	// Ports
+	Ports []string
+
+	// SecurityGroup
+	SecurityGroup string
+
+	// ShowDebug
+	ShowDebug bool
+
+	// ShowErrors
+	ShowErrors bool
+
+	// ShowWarnings
+	ShowWarnings bool
+
+	// Subnet
+	Subnet string
+
+	// Tags
+	Tags []Tag
+
+	// TapName
+	TapName string
+
+	// UDP specifies if the UDP protocol is enabled.
+	UDP bool
+
+	// UDPPorts
+	UDPPorts []string
+
+	// Verbose
+	Verbose bool
+
+	// VolumeSizeInGb is an optional parameter only available for OpenStack.
+	VolumeSizeInGb int
+
+	// VPC
+	VPC string
 }
 
 // RuntimeConfig constructs runtime config
