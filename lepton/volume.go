@@ -23,7 +23,7 @@ type NanosVolume struct {
 	Status     string `json:"status"`
 }
 
-// CreateLocalVolume creates volume on ops directoy
+// CreateLocalVolume creates volume on ops directory
 // creates a volume named <name>:<uuid>
 // where <uuid> is generated on creation
 // also creates a symlink to volume label at <name>

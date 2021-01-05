@@ -53,7 +53,7 @@ func (p *AWS) Initialize(config *ProviderConfig) error {
 	return nil
 }
 
-// buildAwsTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overriden if there is a tag with key name
+// buildAwsTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overridden if there is a tag with key name
 func buildAwsTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
 	tags := []*ec2.Tag{}
 	var nameSpecified bool
