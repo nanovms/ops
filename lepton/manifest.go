@@ -80,6 +80,28 @@ func (m *Manifest) AddMount(label, path string) {
 // AddEnvironmentVariable adds environment variables
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 	m.environment[name] = value
+
+	if name == "RADAR_KEY" {
+		m.AddKlibs([]string{"tls", "radar"})
+	}
+
+}
+
+// AddKlibs append klibs to manifest file if they don't exist
+func (m *Manifest) AddKlibs(klibs []string) {
+	for _, klib := range klibs {
+		var exists bool
+		for _, mKlib := range m.klibs {
+			if mKlib == klib {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			m.klibs = append(m.klibs, klib)
+		}
+	}
 }
 
 // AddArgument add commandline arguments to

@@ -84,10 +84,6 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		c.RunConfig.Klibs = append(c.RunConfig.Klibs, "cloud_init")
 	}
 
-	if _, ok := c.Env["RADAR_KEY"]; ok {
-		c.RunConfig.Klibs = append(c.RunConfig.Klibs, "tls", "radar")
-	}
-
 	if len(c.CloudConfig.Platform) == 0 {
 		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
 	}

@@ -3,6 +3,7 @@ package lepton
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -78,4 +79,32 @@ func TestSerializeManifest(t *testing.T) {
 	if len(s) < 100 {
 		t.Errorf("Unexpected")
 	}
+}
+
+func TestAddKlibs(t *testing.T) {
+
+	t.Run("should add klibs to manifest", func(t *testing.T) {
+		m := NewManifest("")
+		m.AddKlibs([]string{"tls", "cloud_init"})
+
+		got := m.klibs
+		want := []string{"tls", "cloud_init"}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("should add klibs to manifest if they do not exist yet", func(t *testing.T) {
+		m := NewManifest("")
+		m.AddKlibs([]string{"tls", "cloud_init"})
+		m.AddKlibs([]string{"tls", "radar"})
+
+		got := m.klibs
+		want := []string{"tls", "cloud_init", "radar"}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
 }
