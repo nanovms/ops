@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// IprouteNetworkService uses iproute commands to change network configuration in OS
+type IprouteNetworkService struct {
+}
+
 func execCmd(cmdStr string) (output string, err error) {
 	cmd := exec.Command("/bin/bash", "-c", cmdStr)
 	out, err := cmd.CombinedOutput()
@@ -18,18 +22,23 @@ func execCmd(cmdStr string) (output string, err error) {
 	return
 }
 
+// NewIprouteNetworkService returns an instance of IprouteNetworkService
+func NewIprouteNetworkService() *IprouteNetworkService {
+	return &IprouteNetworkService{}
+}
+
 // AddBridge creates bridge interface
-func AddBridge(br string) (string, error) {
+func (s *IprouteNetworkService) AddBridge(br string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip link add name %s type bridge", br))
 }
 
 // ListBridges prints a list of bridge network interfaces
-func ListBridges() (string, error) {
+func (s *IprouteNetworkService) ListBridges() (string, error) {
 	return execCmd("sudo ip link show type bridge")
 }
 
 // CheckBridgeHasInterface checks whether interface is listed in bridge network
-func CheckBridgeHasInterface(bridgeName string, ifcName string) (bool, error) {
+func (s *IprouteNetworkService) CheckBridgeHasInterface(bridgeName string, ifcName string) (bool, error) {
 	output, err := execCmd(fmt.Sprintf("sudo ip link show master %s", bridgeName))
 	if err != nil {
 		return false, err
@@ -51,7 +60,7 @@ func CheckBridgeHasInterface(bridgeName string, ifcName string) (bool, error) {
 }
 
 // GetBridgeInterfacesNames get list of interfaces names in bridge network
-func GetBridgeInterfacesNames(bridgeName string) ([]string, error) {
+func (s *IprouteNetworkService) GetBridgeInterfacesNames(bridgeName string) ([]string, error) {
 	output, err := execCmd(fmt.Sprintf("sudo ip link show master %s", bridgeName))
 	if err != nil {
 		return nil, err
@@ -73,7 +82,7 @@ func GetBridgeInterfacesNames(bridgeName string) ([]string, error) {
 }
 
 // CheckNetworkInterfaceExists checks whether network interface exists
-func CheckNetworkInterfaceExists(name string) (bool, error) {
+func (s *IprouteNetworkService) CheckNetworkInterfaceExists(name string) (bool, error) {
 	ifcs, err := net.Interfaces()
 	if err != nil {
 		return false, err
@@ -89,46 +98,46 @@ func CheckNetworkInterfaceExists(name string) (bool, error) {
 }
 
 // AddTap creates tap interface
-func AddTap(tap string) (string, error) {
+func (s *IprouteNetworkService) AddTap(tap string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip tuntap add %s mode tap", tap))
 }
 
 // AddTapToBridge adds tap interface to bridge network
-func AddTapToBridge(br, tap string) (string, error) {
+func (s *IprouteNetworkService) AddTapToBridge(br, tap string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip link set %s master %s", tap, br))
 }
 
 // SetNIIP sets network interface IP
-func SetNIIP(ifc string, ip string, netmask string) (string, error) {
+func (s *IprouteNetworkService) SetNIIP(ifc string, ip string, netmask string) (string, error) {
 	cmd := fmt.Sprintf("sudo ip address add %s/%s dev %s", ip, netmask, ifc)
 
 	return execCmd(cmd)
 }
 
 // FlushIPFromNI removes every IP assigned to network interface
-func FlushIPFromNI(niName string) (string, error) {
+func (s *IprouteNetworkService) FlushIPFromNI(niName string) (string, error) {
 	cmd := fmt.Sprintf("sudo ip address flush dev %s", niName)
 
 	return execCmd(cmd)
 }
 
 // TurnNIUp turns on network interface
-func TurnNIUp(ifc string) (string, error) {
+func (s *IprouteNetworkService) TurnNIUp(ifc string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip link set dev %s up", ifc))
 }
 
 // TurnNIDown turns off network interface
-func TurnNIDown(ifc string) (string, error) {
+func (s *IprouteNetworkService) TurnNIDown(ifc string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip link set dev %s down", ifc))
 }
 
 // DeleteNIC removes network interface
-func DeleteNIC(ifc string) (string, error) {
+func (s *IprouteNetworkService) DeleteNIC(ifc string) (string, error) {
 	return execCmd(fmt.Sprintf("sudo ip link delete %s", ifc))
 }
 
 // IsNIUp checks whether network interface is on
-func IsNIUp(ifcName string) (bool, error) {
+func (s *IprouteNetworkService) IsNIUp(ifcName string) (bool, error) {
 	output, err := execCmd("sudo ip link ls up")
 	if err != nil {
 		return false, err
@@ -150,7 +159,7 @@ func IsNIUp(ifcName string) (bool, error) {
 }
 
 // GetNetworkInterfaceIP get IP from network interface
-func GetNetworkInterfaceIP(ifcName string) (string, error) {
+func (s *IprouteNetworkService) GetNetworkInterfaceIP(ifcName string) (string, error) {
 	output, err := execCmd(fmt.Sprintf("sudo ip address show %s", ifcName))
 	if err != nil {
 		return "", err

@@ -17,6 +17,7 @@ require (
 	github.com/digitalocean/godo v1.50.0
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
+	github.com/golang/mock v1.4.4
 	github.com/gophercloud/gophercloud v0.12.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
