@@ -15,7 +15,7 @@ type Config struct {
 	// BuildDir
 	BuildDir string
 
-	// CloudConfig
+	// CloudConfig configures various attributes about the cloud provider.
 	CloudConfig ProviderConfig
 
 	// Debugflags
@@ -84,7 +84,7 @@ type Config struct {
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
-	// BucketName
+	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 
 	// Flavor
@@ -93,13 +93,17 @@ type ProviderConfig struct {
 	// ImageName
 	ImageName string `cloud:"imagename"`
 
-	// Platform
+	// Platform defines the cloud provider to use with the ops CLI, currently
+	// supporting aws, azure, and gcp.
 	Platform string `cloud:"platform"`
 
-	// ProjectID
+	// ProjectID is used to define the project ID when the Platform is set
+	// to gcp.
 	ProjectID string `cloud:"projectid"`
 
-	// Zone
+	// Zone is used to define the location of the host resource when the
+	// Platform is set to gcp. A list of these zones can be found here:
+	// https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `cloud:"zone"`
 }
 
@@ -120,7 +124,8 @@ type RunConfig struct {
 	// BaseName of the image (FIXME).
 	BaseName string
 
-	// Bridged
+	// Bridged parameter is set to true if bridged networking mode is
+	// in use. This also enables KVM acceleration.
 	Bridged bool
 
 	// CPUs specifies the number of CPU cores to use
@@ -150,7 +155,9 @@ type RunConfig struct {
 	// Klibs
 	Klibs []string
 
-	// Memory
+	// Memory configures the amount of memory to allocate to qemu (default
+	// is 128 MiB). Optionally, a suffix of "M" or "G" can be used to
+	// signify a value in megabytes or gigabytes respectively.
 	Memory string
 
 	// Mounts
@@ -163,7 +170,7 @@ type RunConfig struct {
 	// on-premise environment.
 	OnPrem bool
 
-	// Ports
+	// Ports specifies a list of port to expose.
 	Ports []string
 
 	// SecurityGroup
@@ -187,13 +194,13 @@ type RunConfig struct {
 	// TapName
 	TapName string
 
-	// UDP specifies if the UDP protocol is enabled.
+	// UDP specifies if the UDP protocol is enabled (default is false).
 	UDP bool
 
 	// UDPPorts
 	UDPPorts []string
 
-	// Verbose
+	// Verbose enables logging for the runtime environment.
 	Verbose bool
 
 	// VolumeSizeInGb is an optional parameter only available for OpenStack.
