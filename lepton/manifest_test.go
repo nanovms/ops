@@ -108,3 +108,15 @@ func TestAddKlibs(t *testing.T) {
 		}
 	})
 }
+
+func TestAddRadarEnvAddKlibs(t *testing.T) {
+	m := NewManifest("")
+	m.AddEnvironmentVariable("RADAR_KEY", "TEST")
+
+	got := m.klibs
+	want := []string{"tls", "radar"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
