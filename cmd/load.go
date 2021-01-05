@@ -175,6 +175,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	syscallSummary, err := strconv.ParseBool(cmd.Flag("syscall-summary").Value.String())
+	if err != nil {
+		panic(err)
+	}
+
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 	cmdargs, _ := cmd.Flags().GetStringArray("args")
@@ -184,6 +189,10 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	if debugflags {
 		pkgConfig.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+	}
+
+	if syscallSummary {
+		pkgConfig.Debugflags = append(pkgConfig.Debugflags, "syscall_summary")
 	}
 
 	c = mergeConfigs(pkgConfig, c)
@@ -232,7 +241,7 @@ func LoadCommand() *cobra.Command {
 		ports, args, mounts             []string
 		force, debugflags, verbose      bool
 		nightly, accel, bridged, local  bool
-		skipbuild                       bool
+		skipbuild, syscallSummary       bool
 		config, imageName, manifestName string
 	)
 
@@ -256,6 +265,7 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")
 	cmdLoadPackage.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "<volume_id/label>:/<mount_path>")
+	cmdLoadPackage.PersistentFlags().BoolVar(&syscallSummary, "syscall-summary", false, "print syscall summary on exit")
 
 	return cmdLoadPackage
 }

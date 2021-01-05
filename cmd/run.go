@@ -143,6 +143,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	syscallSummary, err := cmd.Flags().GetBool("syscall-summary")
+	if err != nil {
+		panic(err)
+	}
+
 	c := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
@@ -195,6 +200,10 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		if !api.HasDebuggingSymbols(elfFile) {
 			log.Fatalf("Program %s must be compiled with debugging symbols", c.ProgramPath)
 		}
+	}
+
+	if syscallSummary {
+		c.Debugflags = append(c.Debugflags, "syscall_summary")
 	}
 
 	c.RunConfig.GdbPort = gdbport
@@ -293,6 +302,7 @@ func RunCommand() *cobra.Command {
 	var nightly bool
 	var tap string
 	var mounts []string
+	var syscallSummary bool
 
 	var skipbuild bool
 	var manifestName string
@@ -330,6 +340,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
 	cmdRun.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "<volume_id/label>:/<mount_path>")
+	cmdRun.PersistentFlags().BoolVar(&syscallSummary, "syscall-summary", false, "print syscall summary on exit")
 
 	return cmdRun
 }
