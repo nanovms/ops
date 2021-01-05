@@ -12,6 +12,7 @@ import (
 	"github.com/go-errors/errors"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/network"
 	"github.com/spf13/cobra"
 )
 
@@ -273,8 +274,24 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
 
+	networkService := network.NewIprouteNetworkService()
+
+	if tapDeviceName != "" {
+		err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridged, ipaddr, netmask)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	initDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
+
+	if tapDeviceName != "" {
+		err := network.TurnOffNetworkInterfaces(networkService, tapDeviceName, bridged, bridgeName)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 // RunCommand provides support for running binary with nanos

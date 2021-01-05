@@ -38,6 +38,9 @@ run:
 deps:
 	@GO111MODULE=on go mod download
 
+update-mocks:
+	mockgen --source=network/setup_network_interfaces.go > mock_network/setup_network_interfaces.go
+
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build
 .PHONY: pre-test do-test post-test
