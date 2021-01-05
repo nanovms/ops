@@ -101,9 +101,11 @@ type ProviderConfig struct {
 	// to gcp.
 	ProjectID string `cloud:"projectid"`
 
-	// Zone is used to define the location of the host resource when the
-	// Platform is set to gcp. A list of these zones can be found here:
-	// https://cloud.google.com/compute/docs/regions-zones#available
+	// Zone is used to define the location of the host resource. Lists of these
+	// zones are dependent on selected Platform and can be found here:
+	// aws: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+	// azure: https://azure.microsoft.com/en-us/global-infrastructure/geographies/#overview
+	// gcp: https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `cloud:"zone"`
 }
 
