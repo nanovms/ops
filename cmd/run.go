@@ -347,7 +347,7 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().StringVarP(&targetRoot, "target-root", "r", "", "target root")
 	cmdRun.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdRun.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
-	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "tap0", "tap device name")
+	cmdRun.PersistentFlags().StringVarP(&tap, "tapname", "t", "", "tap device name")
 	cmdRun.PersistentFlags().String("ip-address", "", "static ip address")
 	cmdRun.PersistentFlags().String("gateway", "", "network gateway")
 	cmdRun.PersistentFlags().String("netmask", "255.255.255.0", "network mask")
