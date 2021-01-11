@@ -236,6 +236,15 @@ func BuildImageFromPackage(packagepath string, c Config) error {
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
+
+	if c.RunConfig.IPAddr != "" {
+		m.AddNetworkConfig(&ManifestNetworkConfig{
+			IP:      c.RunConfig.IPAddr,
+			Gateway: c.RunConfig.Gateway,
+			NetMask: c.RunConfig.NetMask,
+		})
+	}
+
 	if err := buildImage(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
