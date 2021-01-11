@@ -498,6 +498,7 @@ func (q *qemu) setConfig(rconfig *RunConfig) {
 
 	q.addFlag("-no-reboot")
 	q.addOption("-cpu", "max")
+	q.addOption("-vga", "none")
 
 	if rconfig.CPUs > 0 {
 		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
