@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/network"
 	"github.com/spf13/cobra"
 	"github.com/ttacon/chalk"
 )
@@ -150,6 +152,26 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	tapDeviceName, err := cmd.Flags().GetString("tapname")
+	if err != nil {
+		panic(err)
+	}
+
+	ipaddr, err := cmd.Flags().GetString("ip-address")
+	if err != nil {
+		panic(err)
+	}
+
+	gateway, err := cmd.Flags().GetString("gateway")
+	if err != nil {
+		panic(err)
+	}
+
+	netmask, err := cmd.Flags().GetString("netmask")
+	if err != nil {
+		panic(err)
+	}
+
 	force, err := strconv.ParseBool(cmd.Flag("force").Value.String())
 	if err != nil {
 		panic(err)
@@ -198,10 +220,31 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	c = mergeConfigs(pkgConfig, c)
 	pkgConfig.RunConfig.Verbose = verbose
 	pkgConfig.RunConfig.Bridged = bridged
+	pkgConfig.RunConfig.TapName = tapDeviceName
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 	pkgConfig.RunConfig.Accel = accel
 	pkgConfig.ManifestName = manifestName
+
+	if ipaddr != "" && isIPAddressValid(ipaddr) {
+		c.RunConfig.IPAddr = ipaddr
+
+		if gateway == "" || !isIPAddressValid(gateway) {
+			// assumes the default gateway is the first IP in the network range
+			ip := net.ParseIP(ipaddr).To4()
+			ip[3] = byte(1)
+			c.RunConfig.Gateway = ip.String()
+		} else {
+			c.RunConfig.Gateway = gateway
+		}
+
+		if netmask != "" && !isIPAddressValid(netmask) {
+			c.RunConfig.NetMask = "255.255.255.0"
+		} else {
+			c.RunConfig.NetMask = netmask
+		}
+	}
+
 	setDefaultImageName(cmd, c)
 
 	mounts, _ := cmd.Flags().GetStringArray("mounts")
@@ -230,9 +273,25 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	networkService := network.NewIprouteNetworkService()
+
+	if tapDeviceName != "" {
+		err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridged, ipaddr, netmask)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	fmt.Printf("booting %s ...\n", c.RunConfig.Imagename)
 	initDefaultRunConfigs(c, ports)
 	hypervisor.Start(&c.RunConfig)
+
+	if tapDeviceName != "" {
+		err := network.TurnOffNetworkInterfaces(networkService, tapDeviceName, bridged, bridgeName)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 // LoadCommand helps you to run application with package
@@ -259,6 +318,10 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&bridged, "bridged", "b", false, "bridge networking")
+	cmdLoadPackage.PersistentFlags().StringP("tapname", "t", "", "tap device name")
+	cmdLoadPackage.PersistentFlags().String("ip-address", "", "static ip address")
+	cmdLoadPackage.PersistentFlags().String("gateway", "", "network gateway")
+	cmdLoadPackage.PersistentFlags().String("netmask", "255.255.255.0", "network mask")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
 	cmdLoadPackage.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdLoadPackage.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
