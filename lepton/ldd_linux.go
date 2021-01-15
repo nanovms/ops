@@ -38,13 +38,11 @@ func HasDebuggingSymbols(efd *elf.File) bool {
 
 // IsDynamicLinked checks whether elf file was linked dynamically
 func IsDynamicLinked(efd *elf.File) bool {
-	for _, phdr := range efd.Progs {
-		if phdr.Type == elf.PT_DYNAMIC {
-			return true
-		}
+	libs, err := efd.ImportedLibraries()
+	if err != nil || len(libs) == 0 {
+		return false
 	}
-
-	return false
+	return true
 }
 
 // works only on linux, need to
