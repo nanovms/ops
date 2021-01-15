@@ -221,11 +221,12 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 		}
 
 		mvols[src.Name()] = NanosVolume{
-			ID:    id,
-			Name:  label,
-			Label: label,
-			Size:  bytes2Human(src.Size()),
-			Path:  path.Join(dir, src.Name()),
+			ID:        id,
+			Name:      label,
+			Label:     label,
+			Size:      bytes2Human(src.Size()),
+			Path:      path.Join(dir, src.Name()),
+			CreatedAt: src.ModTime().String(),
 		}
 	}
 	for _, info := range fi {
