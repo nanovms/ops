@@ -48,14 +48,12 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 	password := "fake"
 
 	c := ctx.config
-	bucket := c.CloudConfig.BucketName
-	if bucket == "" {
-		bucket = a.storageAccount
+
+	bucket, err := a.getBucketName()
+	if err != nil {
+		return err
 	}
-	if bucket == "" {
-		fmt.Println("AZURE_STORAGE_ACCOUNT should be set otherwise logs can not be retrieved.")
-		os.Exit(1)
-	}
+
 	location := a.getLocation(ctx.config)
 
 	vmName := ctx.config.RunConfig.InstanceName
@@ -63,7 +61,6 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create virtual network
 	var vnet *network.VirtualNetwork
-	var err error
 	configVPC := ctx.config.RunConfig.VPC
 	if configVPC != "" {
 		vnet, err = a.GetVPC(configVPC)

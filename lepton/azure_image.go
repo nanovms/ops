@@ -64,7 +64,10 @@ func (a *Azure) CreateImage(ctx *Context, imagePath string) error {
 	c := ctx.config
 	imgName := c.CloudConfig.ImageName
 
-	bucket := c.CloudConfig.BucketName
+	bucket, err := a.getBucketName()
+	if err != nil {
+		return err
+	}
 
 	region := a.getLocation(ctx.config)
 	container := "quickstart-nanos"
