@@ -1,6 +1,7 @@
 package lepton
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -212,6 +213,14 @@ func (a *Azure) Initialize(config *ProviderConfig) error {
 	a.authorizer = &authorizer
 
 	return nil
+}
+
+func (a *Azure) getBucketName() (string, error) {
+	if a.storageAccount != "" {
+		return a.storageAccount, nil
+	}
+
+	return "", errors.New("AZURE_STORAGE_ACCOUNT should be set")
 }
 
 // GetStorage returns storage interface for cloud provider

@@ -40,10 +40,11 @@ func (a *Azure) CreateVolume(ctx *Context, name, data, size, provider string) (N
 		return vol, fmt.Errorf("copy volume archive to azure bucket: %v", err)
 	}
 
-	bucket := config.CloudConfig.BucketName
-	if bucket == "" {
-		bucket = a.storageAccount
+	bucket, err := a.getBucketName()
+	if err != nil {
+		return vol, err
 	}
+
 	container := "quickstart-nanos"
 	disk := name + ".vhd"
 
