@@ -20,6 +20,30 @@ type AWS struct {
 	ec2           *ec2.EC2
 }
 
+func loadAWSCreds() (err error) {
+	foundValidCredentials := false
+
+	fileCreds := credentials.NewSharedCredentials("", "")
+
+	_, err = fileCreds.Get()
+	if err == nil {
+		foundValidCredentials = true
+	}
+
+	envCreds := credentials.NewEnvCredentials()
+
+	_, err = envCreds.Get()
+	if err == nil {
+		foundValidCredentials = true
+	}
+
+	if foundValidCredentials {
+		err = nil
+	}
+
+	return
+}
+
 // Initialize AWS related things
 func (p *AWS) Initialize(config *ProviderConfig) error {
 	p.Storage = &S3{}
@@ -28,9 +52,7 @@ func (p *AWS) Initialize(config *ProviderConfig) error {
 		return fmt.Errorf("Zone missing")
 	}
 
-	creds := credentials.NewEnvCredentials()
-
-	_, err := creds.Get()
+	err := loadAWSCreds()
 	if err != nil {
 		return err
 	}
