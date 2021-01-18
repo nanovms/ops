@@ -220,7 +220,7 @@ func (p *AWS) ListImages(ctx *Context) error {
 		row = append(row, image.Name)
 		row = append(row, image.ID)
 		row = append(row, image.Status)
-		row = append(row, image.Created.String())
+		row = append(row, time2Human(image.Created))
 
 		table.Append(row)
 	}

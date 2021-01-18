@@ -66,18 +66,12 @@ func (p *OnPrem) GetImages(ctx *Context) (images []CloudImage, err error) {
 		name := info.Name()
 
 		if len(name) > 4 && strings.LastIndex(info.Name(), ".img") == len(name)-4 {
-
 			images = append(images, CloudImage{
 				Name:    info.Name(),
 				Path:    hostpath,
 				Size:    info.Size(),
 				Created: info.ModTime(),
 			})
-			var row []string
-			row = append(row, info.Name())
-			row = append(row, hostpath)
-			row = append(row, bytes2Human(info.Size()))
-			row = append(row, info.ModTime().String())
 		}
 		return nil
 	})
@@ -105,7 +99,7 @@ func (p *OnPrem) ListImages(ctx *Context) error {
 		row = append(row, i.Name)
 		row = append(row, i.Path)
 		row = append(row, bytes2Human(i.Size))
-		row = append(row, i.Created.String())
+		row = append(row, time2Human(i.Created))
 		table.Append(row)
 	}
 	table.Render()

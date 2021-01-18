@@ -160,7 +160,7 @@ func (p *GCloud) ListImages(ctx *Context) error {
 		var row []string
 		row = append(row, image.Name)
 		row = append(row, image.Status)
-		row = append(row, image.Created.String())
+		row = append(row, time2Human(image.Created))
 		table.Append(row)
 	}
 
