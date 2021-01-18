@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -49,16 +48,47 @@ func (p *OnPrem) ResizeImage(ctx *Context, imagename string, hbytes string) erro
 }
 
 // GetImages return all images on prem
-func (p *OnPrem) GetImages(ctx *Context) ([]CloudImage, error) {
-	return nil, errors.New("un-implemented")
+func (p *OnPrem) GetImages(ctx *Context) (images []CloudImage, err error) {
+	opshome := GetOpsHome()
+	imgpath := path.Join(opshome, "images")
+
+	if _, err = os.Stat(imgpath); os.IsNotExist(err) {
+		return
+	}
+
+	err = filepath.Walk(imgpath, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		name := info.Name()
+
+		if len(name) > 4 && strings.LastIndex(info.Name(), ".img") == len(name)-4 {
+
+			images = append(images, CloudImage{
+				Name:    info.Name(),
+				Path:    hostpath,
+				Size:    info.Size(),
+				Created: info.ModTime(),
+			})
+			var row []string
+			row = append(row, info.Name())
+			row = append(row, hostpath)
+			row = append(row, bytes2Human(info.Size()))
+			row = append(row, info.ModTime().String())
+		}
+		return nil
+	})
+
+	return
 }
 
 // ListImages on premise
 func (p *OnPrem) ListImages(ctx *Context) error {
-	opshome := GetOpsHome()
-	imgpath := path.Join(opshome, "images")
-
-	if _, err := os.Stat(imgpath); os.IsNotExist(err) {
+	images, err := p.GetImages(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -70,27 +100,13 @@ func (p *OnPrem) ListImages(ctx *Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
-	err := filepath.Walk(imgpath, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		name := info.Name()
-
-		if len(name) > 4 && strings.LastIndex(info.Name(), ".img") == len(name)-4 {
-			var row []string
-			row = append(row, info.Name())
-			row = append(row, hostpath)
-			row = append(row, bytes2Human(info.Size()))
-			row = append(row, time2Human(info.ModTime()))
-			table.Append(row)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
+	for _, i := range images {
+		var row []string
+		row = append(row, i.Name)
+		row = append(row, i.Path)
+		row = append(row, bytes2Human(i.Size))
+		row = append(row, i.Created.String())
+		table.Append(row)
 	}
 	table.Render()
 	return nil

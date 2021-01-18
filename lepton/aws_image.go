@@ -173,18 +173,23 @@ func (p *AWS) GetImages(ctx *Context) ([]CloudImage, error) {
 
 	images := result.Images
 	for _, image := range images {
+		tagName := p.getNameTag(image.Tags)
+
 		var name string
-		if image.Tags != nil {
-			name = aws.StringValue(image.Tags[0].Value)
+
+		if tagName != nil {
+			name = *tagName.Value
 		} else {
 			name = "n/a"
 		}
+
+		imageCreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", *image.CreationDate)
 
 		cimage := CloudImage{
 			Name:    name,
 			ID:      *image.Name,
 			Status:  *image.State,
-			Created: *image.CreationDate,
+			Created: imageCreatedAt,
 		}
 
 		cimages = append(cimages, cimage)
@@ -215,7 +220,7 @@ func (p *AWS) ListImages(ctx *Context) error {
 		row = append(row, image.Name)
 		row = append(row, image.ID)
 		row = append(row, image.Status)
-		row = append(row, image.Created)
+		row = append(row, image.Created.String())
 
 		table.Append(row)
 	}

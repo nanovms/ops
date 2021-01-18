@@ -161,7 +161,7 @@ func (o *OpenStack) GetImages(ctx *Context) ([]CloudImage, error) {
 		cimage := CloudImage{
 			Name:    image.Name,
 			Status:  string(image.Status),
-			Created: time2Human(image.CreatedAt),
+			Created: image.CreatedAt,
 		}
 
 		cimages = append(cimages, cimage)
@@ -191,7 +191,7 @@ func (o *OpenStack) ListImages(ctx *Context) error {
 
 		row = append(row, image.Name)
 		row = append(row, image.Status)
-		row = append(row, image.Created)
+		row = append(row, image.Created.String())
 
 		table.Append(row)
 	}

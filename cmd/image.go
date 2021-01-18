@@ -6,6 +6,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
@@ -196,14 +197,18 @@ func imageDeleteCommand() *cobra.Command {
 		Use:   "delete <image_name>",
 		Short: "delete images from provider",
 		Run:   imageDeleteCommandHandler,
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MinimumNArgs(0),
 	}
+
+	cmdImageDelete.PersistentFlags().StringP("lru", "", "", "clean least recently used images with a time notation. Use \"1w\" notation to delete images older than one week. Other notation examples are 300d, 3w, 1m and 2y.")
+
 	return cmdImageDelete
 }
 
 func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	provider, _ := cmd.Flags().GetString("target-cloud")
 	config, _ := cmd.Flags().GetString("config")
+	lru, _ := cmd.Flags().GetString("lru")
 	config = strings.TrimSpace(config)
 
 	c := unWarpConfig(config)
@@ -219,9 +224,69 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	err = p.DeleteImage(ctx, args[0])
-	if err != nil {
-		exitWithError(err.Error())
+	imagesToDelete := []string{}
+
+	if lru != "" {
+		olderThanDate, err := SubtractTimeNotation(time.Now(), lru)
+		if err != nil {
+			exitWithError(fmt.Errorf("failed getting date from lru flag: %s", err).Error())
+		}
+
+		images, err := p.GetImages(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+
+		for _, image := range images {
+			if image.Created.Before(olderThanDate) {
+				if image.ID != "" {
+					imagesToDelete = append(imagesToDelete, image.ID)
+				} else {
+					imagesToDelete = append(imagesToDelete, image.Name)
+				}
+			}
+		}
+	}
+
+	if len(args) > 0 {
+		imagesToDelete = append(imagesToDelete, args...)
+	}
+
+	if len(imagesToDelete) == 0 {
+		fmt.Println("There are no images to delete")
+		return
+	}
+
+	fmt.Printf("You are about to delete the next images:\n")
+	for _, i := range imagesToDelete {
+		fmt.Println(i)
+	}
+	fmt.Println("Are you sure? (yes/no)")
+	confirmation := askForConfirmation()
+	if !confirmation {
+		return
+	}
+
+	responses := make(chan error)
+
+	deleteImage := func(imageName string) {
+		errMsg := p.DeleteImage(ctx, imageName)
+		if errMsg != nil {
+			errMsg = fmt.Errorf("failed deleting %s: %v", imageName, errMsg)
+		}
+
+		responses <- errMsg
+	}
+
+	for _, i := range imagesToDelete {
+		go deleteImage(i)
+	}
+
+	for range imagesToDelete {
+		err = <-responses
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 

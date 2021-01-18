@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/oauth2/google"
@@ -122,10 +123,12 @@ func (p *GCloud) GetImages(ctx *Context) ([]CloudImage, error) {
 	err = req.Pages(context, func(page *compute.ImageList) error {
 		for _, image := range page.Items {
 			if val, ok := image.Labels["createdby"]; ok && val == "ops" {
+				imageCreatedAt, _ := time.Parse("2006-01-02T15:04:05-07:00", image.CreationTimestamp)
+
 				ci := CloudImage{
 					Name:    image.Name,
 					Status:  fmt.Sprintf("%v", image.Status),
-					Created: image.CreationTimestamp,
+					Created: imageCreatedAt,
 				}
 
 				images = append(images, ci)
@@ -157,7 +160,7 @@ func (p *GCloud) ListImages(ctx *Context) error {
 		var row []string
 		row = append(row, image.Name)
 		row = append(row, image.Status)
-		row = append(row, image.Created)
+		row = append(row, image.Created.String())
 		table.Append(row)
 	}
 

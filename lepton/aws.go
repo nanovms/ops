@@ -104,6 +104,16 @@ func buildAwsTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
 	return tags, name
 }
 
+func (p *AWS) getNameTag(tags []*ec2.Tag) *ec2.Tag {
+	for _, tag := range tags {
+		if *tag.Key == "Name" {
+			return tag
+		}
+	}
+
+	return nil
+}
+
 // GetInstanceByID returns the instance with the id passed by argument if it exists
 func (p *AWS) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
 	var filters []*ec2.Filter
