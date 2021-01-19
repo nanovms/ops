@@ -17,6 +17,7 @@ import (
 	"unicode"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/hyperv"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
@@ -129,6 +130,8 @@ func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Prov
 		provider = &api.OpenStack{}
 	case "azure":
 		provider = &api.Azure{}
+	case "hyper-v":
+		provider = &hyperv.Provider{}
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}

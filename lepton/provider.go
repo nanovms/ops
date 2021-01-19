@@ -117,6 +117,11 @@ type Context struct {
 	logger *Logger
 }
 
+// Config returns context configuration
+func (c Context) Config() *Config {
+	return c.config
+}
+
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *Config) *Context {

@@ -506,7 +506,6 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
 	// Get the data
 	c := &http.Client{
@@ -535,10 +534,12 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 		return err
 	}
 
+	out.Close()
 	err = os.Rename(filepath+".tmp", filepath)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
