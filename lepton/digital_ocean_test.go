@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/digitalocean/godo"
 )
@@ -53,9 +54,13 @@ func TestDoGetImages(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	item1CreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", "2020-09-04T06:50:46Z")
+	item2CreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", "2020-09-04T06:50:46Z")
+
 	expectedResult := []CloudImage{
-		{ID: "1", Name: "test1", Status: "test", Created: "2020-09-04T06:50:46Z"},
-		{ID: "2", Name: "test2", Status: "test", Created: "2020-09-04T06:50:46Z"},
+		{ID: "1", Name: "test1", Status: "test", Created: item1CreatedAt},
+		{ID: "2", Name: "test2", Status: "test", Created: item2CreatedAt},
 	}
 	if !reflect.DeepEqual(images, expectedResult) {
 		t.Fail()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/digitalocean/godo"
 	"github.com/olekukonko/tablewriter"
@@ -47,7 +48,7 @@ func (do *DigitalOcean) GetImages(ctx *Context) ([]CloudImage, error) {
 		images[i].ID = fmt.Sprintf("%d", doImage.ID)
 		images[i].Name = doImage.Name
 		images[i].Status = doImage.Status
-		images[i].Created = doImage.Created
+		images[i].Created, _ = time.Parse("2006-01-02T15:04:05Z", doImage.Created)
 	}
 	return images, nil
 }
@@ -65,7 +66,7 @@ func (do *DigitalOcean) ListImages(ctx *Context) error {
 		var row []string
 		row = append(row, image.Name)
 		row = append(row, image.Status)
-		row = append(row, image.Created)
+		row = append(row, time2Human(image.Created))
 		table.Append(row)
 	}
 	table.Render()
