@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -102,6 +103,8 @@ func (p *AWS) CreateImage(ctx *Context, imagePath string) error {
 	amiName := key + s
 
 	// register ami
+	enaSupport := GetEnaSupportForFlavor(c.CloudConfig.Flavor)
+
 	rinput := &ec2.RegisterImageInput{
 		Name:         aws.String(amiName),
 		Architecture: aws.String("x86_64"),
@@ -118,7 +121,7 @@ func (p *AWS) CreateImage(ctx *Context, imagePath string) error {
 		Description:        aws.String(fmt.Sprintf("nanos image %s", key)),
 		RootDeviceName:     aws.String("/dev/sda1"),
 		VirtualizationType: aws.String("hvm"),
-		EnaSupport:         aws.Bool(false),
+		EnaSupport:         aws.Bool(enaSupport),
 	}
 
 	ctx.logger.Info("Registering image")
@@ -135,6 +138,70 @@ func (p *AWS) CreateImage(ctx *Context, imagePath string) error {
 	})
 
 	return nil
+}
+
+var (
+	// NitroInstanceTypes are the AWS virtualized types built on the Nitro system.
+	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
+	NitroInstanceTypes = []string{
+		"A1",
+		"C5",
+		"C5a",
+		"C5ad",
+		"C5d",
+		"C5n",
+		"C6g",
+		"C6gd",
+		"C6gn",
+		"D3",
+		"D3en",
+		"G4",
+		"I3en",
+		"Inf1",
+		"M5",
+		"M5a",
+		"M5ad",
+		"M5d",
+		"M5dn",
+		"M5n",
+		"M5zn",
+		"M6g",
+		"M6gd",
+		"p3dn",
+		"P4",
+		"R5",
+		"R5a",
+		"R5ad",
+		"R5b",
+		"R5d",
+		"R5dn",
+		"R5n",
+		"R6g",
+		"R6gd",
+		"T3",
+		"T3a",
+		"T4g",
+		"z1d",
+	}
+)
+
+// GetEnaSupportForFlavor checks whether an image should be registered with EnaSupport based on instances type which will load the image
+func GetEnaSupportForFlavor(flavor string) bool {
+	if flavor == "" {
+		return false
+	}
+
+	flavorParts := strings.Split(flavor, ".")
+
+	instanceFamily := strings.ToUpper(flavorParts[0])
+
+	for _, instanceType := range NitroInstanceTypes {
+		if instanceType == instanceFamily {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
