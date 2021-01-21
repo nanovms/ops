@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/olekukonko/tablewriter"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 // BuildImage to be upload on AWS
@@ -322,9 +324,11 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 		return nil, err
 	}
 
-	fmt.Println("waiting for snapshot - can take like 5min.... ")
+	fmt.Println("waiting for snapshot - can take like 5 min...")
 
 	waitStartTime := time.Now()
+	bar := progressbar.New(100)
+	bar.RenderBlank()
 
 	ct := aws.BackgroundContext()
 	w := request.Waiter{
@@ -352,19 +356,37 @@ func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*stri
 			},
 		},
 		NewRequest: func(opts []request.Option) (*request.Request, error) {
+			// update progress bar
+			snapshotTasksOutput, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
+			if err == nil && len(snapshotTasksOutput.ImportSnapshotTasks) > 0 {
+				snapshotProgress := (*snapshotTasksOutput.ImportSnapshotTasks[0]).SnapshotTaskDetail.Progress
+
+				if snapshotProgress != nil {
+					progress, _ := strconv.Atoi(*snapshotProgress)
+					bar.Set(progress)
+					bar.RenderBlank()
+				}
+			}
+
 			req, _ := p.ec2.DescribeImportSnapshotTasksRequest(taskFilter)
 			req.SetContext(ct)
 			req.ApplyOptions(opts...)
 			return req, nil
 		},
 	}
+
 	err = w.WaitWithContext(ct)
+
+	bar.Set(100)
+	bar.Finish()
+	bar.RenderBlank()
+
 	if err != nil {
-		fmt.Printf("import timed out after %f minutes\n", time.Since(waitStartTime).Minutes())
+		fmt.Printf("\nimport timed out after %f minutes\n", time.Since(waitStartTime).Minutes())
 		return nil, err
 	}
 
-	fmt.Printf("import done - took %f minutes\n", time.Since(waitStartTime).Minutes())
+	fmt.Printf("\nimport done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
 	describeOutput, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
 	if err != nil {
