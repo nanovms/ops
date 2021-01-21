@@ -10,7 +10,7 @@ import (
 
 var (
 	testVolumeConfig = &Config{
-		Mkfs: path.Join(GetOpsHome(), "nightly", "mkfs"),
+		Mkfs: path.Join(GetOpsHome(), LatestReleaseVersion, "mkfs"),
 	}
 	testVolume1 = &NanosVolume{
 		ID:    "",
@@ -49,7 +49,6 @@ func TestOnPremVolume(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	DownloadNightlyImages(testVolumeConfig)
 
 	testVolumeConfig.BuildDir = tmp
 	testVolume2.Data = tmpdata
