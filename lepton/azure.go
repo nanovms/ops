@@ -145,17 +145,6 @@ func (a *Azure) getLocation(config *Config) string {
 	return location
 }
 
-// BuildImage to be upload on Azure
-func (a *Azure) BuildImage(ctx *Context) (string, error) {
-	c := ctx.config
-	err := BuildImage(*c)
-	if err != nil {
-		return "", err
-	}
-
-	return a.CustomizeImage(ctx)
-}
-
 // Initialize Azure related things
 func (a *Azure) Initialize(config *ProviderConfig) error {
 	a.Storage = &AzureStorage{}

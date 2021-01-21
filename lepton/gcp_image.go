@@ -15,6 +15,17 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
+// BuildImage to be upload on GCP
+func (p *GCloud) BuildImage(ctx *Context) (string, error) {
+	c := ctx.config
+	err := BuildImage(*c)
+	if err != nil {
+		return "", err
+	}
+
+	return p.CustomizeImage(ctx)
+}
+
 func (p *GCloud) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }
@@ -43,17 +54,6 @@ func (p *GCloud) CustomizeImage(ctx *Context) (string, error) {
 		return "", err
 	}
 	return archPath, nil
-}
-
-// BuildImage to be upload on GCP
-func (p *GCloud) BuildImage(ctx *Context) (string, error) {
-	c := ctx.config
-	err := BuildImage(*c)
-	if err != nil {
-		return "", err
-	}
-
-	return p.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on GCP

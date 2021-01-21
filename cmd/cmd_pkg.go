@@ -17,6 +17,51 @@ import (
 	api "github.com/nanovms/ops/lepton"
 )
 
+// PackageCommands gives package related commands
+func PackageCommands() *cobra.Command {
+	var search string
+	var cmdPkgList = &cobra.Command{
+		Use:   "list",
+		Short: "list packages",
+		Run:   cmdListPackages,
+	}
+
+	var cmdGetPackage = &cobra.Command{
+		Use:   "get [packagename]",
+		Short: "download a package from ['ops pkg list'] to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdGetPackage,
+	}
+
+	var cmdPackageDescribe = &cobra.Command{
+		Use:   "describe [packagename]",
+		Short: "display information of a package from ['ops pkg list']",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdPackageDescribe,
+	}
+
+	var cmdPackageContents = &cobra.Command{
+		Use:   "contents [packagename]",
+		Short: "list contents of a package from ['ops pkg list']",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdPackageContents,
+	}
+	var cmdPkg = &cobra.Command{
+		Use:       "pkg",
+		Short:     "Package related commands",
+		Args:      cobra.OnlyValidArgs,
+		ValidArgs: []string{"list", "get", "describe", "contents"},
+	}
+
+	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
+	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
+	cmdPkg.AddCommand(cmdPkgList)
+	cmdPkg.AddCommand(cmdGetPackage)
+	cmdPkg.AddCommand(cmdPackageContents)
+	cmdPkg.AddCommand(cmdPackageDescribe)
+	return cmdPkg
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
 	var packages *map[string]api.Package
 	var err error
@@ -104,7 +149,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	description := path.Join(expackage, "README.md")
 	if _, err := os.Stat(description); err != nil {
 		fmt.Println("Error: Package information not provided.")
-		os.Exit(1)
+		return
 	}
 
 	file, err := os.Open(description)
@@ -145,49 +190,4 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 		return nil
 	})
-}
-
-// PackageCommands gives package related commands
-func PackageCommands() *cobra.Command {
-	var search string
-	var cmdPkgList = &cobra.Command{
-		Use:   "list",
-		Short: "list packages",
-		Run:   cmdListPackages,
-	}
-
-	var cmdGetPackage = &cobra.Command{
-		Use:   "get [packagename]",
-		Short: "download a package from ['ops pkg list'] to the local cache",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdGetPackage,
-	}
-
-	var cmdPackageDescribe = &cobra.Command{
-		Use:   "describe [packagename]",
-		Short: "display information of a package from ['ops pkg list']",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdPackageDescribe,
-	}
-
-	var cmdPackageContents = &cobra.Command{
-		Use:   "contents [packagename]",
-		Short: "list contents of a package from ['ops pkg list']",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdPackageContents,
-	}
-	var cmdPkg = &cobra.Command{
-		Use:       "pkg",
-		Short:     "Package related commands",
-		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents"},
-	}
-
-	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
-	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
-	cmdPkg.AddCommand(cmdPkgList)
-	cmdPkg.AddCommand(cmdGetPackage)
-	cmdPkg.AddCommand(cmdPackageContents)
-	cmdPkg.AddCommand(cmdPackageDescribe)
-	return cmdPkg
 }

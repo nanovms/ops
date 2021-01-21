@@ -39,4 +39,5 @@ require (
 	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
 	google.golang.org/api v0.7.0
 	gopkg.in/ini.v1 v1.55.0 // indirect
+	gotest.tools v2.2.0+incompatible
 )

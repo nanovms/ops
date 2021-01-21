@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/fs"
 )
 
 // PackageList contains a list of known packages.
@@ -238,15 +237,7 @@ func BuildImageFromPackage(packagepath string, c Config) error {
 		return errors.Wrap(err, 1)
 	}
 
-	if c.RunConfig.IPAddr != "" {
-		m.AddNetworkConfig(&fs.ManifestNetworkConfig{
-			IP:      c.RunConfig.IPAddr,
-			Gateway: c.RunConfig.Gateway,
-			NetMask: c.RunConfig.NetMask,
-		})
-	}
-
-	if err := buildImage(&c, m); err != nil {
+	if err := createImageFile(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 	return nil

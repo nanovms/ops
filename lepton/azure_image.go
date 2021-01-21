@@ -11,6 +11,17 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// BuildImage to be upload on Azure
+func (a *Azure) BuildImage(ctx *Context) (string, error) {
+	c := ctx.config
+	err := BuildImage(*c)
+	if err != nil {
+		return "", err
+	}
+
+	return a.CustomizeImage(ctx)
+}
+
 func (a *Azure) getArchiveName(ctx *Context) string {
 	return ctx.config.CloudConfig.ImageName + ".tar.gz"
 }

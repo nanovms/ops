@@ -9,3 +9,4 @@ vendor/
 
 config*.json
 load*
+coverage.out

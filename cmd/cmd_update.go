@@ -9,6 +9,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// UpdateCommand provides update related commands
+func UpdateCommand() *cobra.Command {
+	var cmdUpdate = &cobra.Command{
+		Use:   "update",
+		Short: "check for updates",
+		Run:   updateCommandHandler,
+	}
+	return cmdUpdate
+}
+
 func updateCommandHandler(cmd *cobra.Command, args []string) {
 	fmt.Println("Checking for updates...")
 	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, runtime.GOOS))
@@ -32,14 +42,4 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Printf("Update nanos to %s version.\n", remote)
 	}
 	os.Exit(0)
-}
-
-// UpdateCommand provides update related commands
-func UpdateCommand() *cobra.Command {
-	var cmdUpdate = &cobra.Command{
-		Use:   "update",
-		Short: "check for updates",
-		Run:   updateCommandHandler,
-	}
-	return cmdUpdate
 }
