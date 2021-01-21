@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -63,7 +62,6 @@ func TestManifestWithDeps(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.AddDirectory("../data/static")
-	fmt.Println(m.String())
 }
 
 func TestSerializeManifest(t *testing.T) {

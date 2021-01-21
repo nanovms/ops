@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"testing"
 	"time"
@@ -62,33 +61,6 @@ func runAndWaitForString(rconfig *api.RunConfig, timeout time.Duration, text str
 	}
 	return hypervisor
 }
-func TestDownloadImages(t *testing.T) {
-	// remove the files to force a download
-	// ignore any error from remove
-	boot := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "boot.img")
-	kernel := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "kernel.img")
-	mkfs := path.Join(api.GetOpsHome(), api.LatestReleaseVersion, "mkfs")
-	os.Remove(mkfs)
-	os.Remove(boot)
-	os.Remove(kernel)
-	api.DownloadReleaseImages(api.LatestReleaseVersion)
-
-	if _, err := os.Stat(boot); os.IsNotExist(err) {
-		t.Errorf("%v file not found", boot)
-	}
-
-	if info, err := os.Stat(mkfs); os.IsNotExist(err) {
-		t.Errorf("%v not found", mkfs)
-	} else {
-		if (info.Mode().Perm() & 0111) == 0 {
-			t.Errorf("mkfs not executable")
-		}
-	}
-
-	if _, err := os.Stat(kernel); os.IsNotExist(err) {
-		t.Errorf("%v not found", kernel)
-	}
-}
 
 func executeCommand(root *cobra.Command, args ...string) (output string, err error) {
 	_, output, err = executeCommandC(root, args...)
@@ -137,7 +109,6 @@ func runHyperVisor(userImage string, started string, expected string, t *testing
 }
 
 func TestImageWithStaticFiles(t *testing.T) {
-	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	var c api.Config
 	c.Dirs = []string{"../data/static"}
 	c.Program = "../data/main"
@@ -169,11 +140,9 @@ func TestImageWithStaticFiles(t *testing.T) {
 }
 
 func TestRunningDynamicImage(t *testing.T) {
-	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	runHyperVisor("../data/webg", "Server started", "unibooty 0", t)
 }
 
 func TestStartHypervisor(t *testing.T) {
-	api.DownloadReleaseImages(api.LatestReleaseVersion)
 	runHyperVisor("../data/webs", "Server started", "unibooty!", t)
 }

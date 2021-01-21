@@ -20,6 +20,7 @@ jobs:
       - run: ./hack/verify-govet.sh
       - run: ./hack/verify-golint.sh
       - run: mkdir -p $TEST_RESULTS
+      - run: go run ops.go update
       - run:
           name : run unit tests
           command: |
@@ -45,4 +46,4 @@ jobs:
       - checkout
       - run:
         command: |
-          go build 
+          go build

@@ -438,6 +438,24 @@ func DownloadNightlyImages(c *Config) error {
 	return nil
 }
 
+// DownloadCommonFiles dowloads common tarball files and extract them to common directory
+func DownloadCommonFiles() error {
+	commonPath := path.Join(GetOpsHome(), "common")
+	if _, err := os.Stat(commonPath); os.IsNotExist(err) {
+		os.MkdirAll(commonPath, 0755)
+	} else if err != nil {
+		return err
+	}
+
+	localtar := path.Join(GetOpsHome(), "common.tar.gz")
+	err := DownloadFileWithProgress(localtar, commonArchive, 10)
+	if err != nil {
+		return err
+	}
+	ExtractPackage(localtar, commonPath)
+	return nil
+}
+
 // DownloadReleaseImages downloads nanos for particular release version
 func DownloadReleaseImages(version string) error {
 	url := getReleaseURL(version)
