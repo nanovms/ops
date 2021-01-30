@@ -418,6 +418,28 @@ func (m *Manifest) String() string {
 	//
 	if len(m.klibs) > 0 {
 		sb.WriteString("klibs:bootfs\n")
+
+		for _, klib := range m.klibs {
+			if klib == "ntp" {
+
+				ntpAddress := "pool.ntp.org"
+				ntpPort := "123"
+
+				if val, ok := m.environment["ntpAddress"]; ok {
+					ntpAddress = val
+				}
+
+				if val, ok := m.environment["ntpPort"]; ok {
+					ntpPort = val
+				}
+
+				sb.WriteString(fmt.Sprintf("ntp_address:%s\n", ntpAddress))
+				sb.WriteString(fmt.Sprintf("ntp_port:%s\n", ntpPort))
+
+				break
+			}
+		}
+
 	}
 
 	// arguments
