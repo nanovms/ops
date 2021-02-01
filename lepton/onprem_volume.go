@@ -99,13 +99,13 @@ func (op *OnPrem) DetachVolume(ctx *Context, image, name string) error {
 func (op *OnPrem) parseSize(vol NanosVolume) string {
 	if vol.Size == "" {
 		// return the default size of a volume
-		return bytes2Human(MiByte)
+		return Bytes2Human(MiByte)
 	}
 	bytes, err := parseBytes(vol.Size)
 	if err != nil {
 		fmt.Printf("warning: invalid size value for volume %s with UUID %s: %s\n", vol.Name, vol.ID, err.Error())
 	}
-	size := bytes2Human(bytes)
+	size := Bytes2Human(bytes)
 	return size
 }
 
@@ -224,7 +224,7 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 			ID:        id,
 			Name:      label,
 			Label:     label,
-			Size:      bytes2Human(src.Size()),
+			Size:      Bytes2Human(src.Size()),
 			Path:      path.Join(dir, src.Name()),
 			CreatedAt: src.ModTime().String(),
 		}
@@ -252,7 +252,7 @@ func GetVolumes(dir string, query map[string]string) ([]NanosVolume, error) {
 		mvols[info.Name()] = NanosVolume{
 			ID:   id,
 			Name: nu[0],
-			Size: bytes2Human(info.Size()),
+			Size: Bytes2Human(info.Size()),
 			Path: path.Join(dir, info.Name()),
 		}
 	}

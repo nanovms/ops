@@ -47,13 +47,46 @@ func (p *OnPrem) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error
 }
 
 // GetInstances return all instances on prem
-// TODO
-func (p *OnPrem) GetInstances(ctx *Context) ([]CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+func (p *OnPrem) GetInstances(ctx *Context) (instances []CloudInstance, err error) {
+	opshome := GetOpsHome()
+	instancesPath := path.Join(opshome, "instances")
+
+	files, err := ioutil.ReadDir(instancesPath)
+	if err != nil {
+		return
+	}
+
+	for _, f := range files {
+		fullpath := path.Join(instancesPath, f.Name())
+		body, err := ioutil.ReadFile(fullpath)
+		if err != nil {
+			return nil, err
+		}
+
+		var i instance
+		if err := json.Unmarshal(body, &i); err != nil {
+			return nil, err
+		}
+
+		instances = append(instances, CloudInstance{
+			Name:       f.Name(),
+			Image:      i.Image,
+			Status:     "Running",
+			Created:    Time2Human(f.ModTime()),
+			PrivateIps: []string{"127.0.0.1"},
+			PublicIps:  strings.Split(i.portList(), ","),
+		})
+	}
+
+	return
 }
 
 // ListInstances on premise
 func (p *OnPrem) ListInstances(ctx *Context) error {
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"PID", "Name", "Status", "Created", "Private Ips", "Port"})
@@ -67,37 +100,16 @@ func (p *OnPrem) ListInstances(ctx *Context) error {
 
 	table.SetRowLine(true)
 
-	opshome := GetOpsHome()
-	instances := path.Join(opshome, "instances")
-
-	files, err := ioutil.ReadDir(instances)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	for _, f := range files {
+	for _, i := range instances {
 		var rows []string
 
-		fullpath := path.Join(instances, f.Name())
-		body, err := ioutil.ReadFile(fullpath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		var i instance
-		if err := json.Unmarshal(body, &i); err != nil {
-			return err
-		}
-
-		rows = append(rows, f.Name())
+		rows = append(rows, i.Name)
 		rows = append(rows, i.Image)
-		rows = append(rows, "Running")
-		rows = append(rows, time2Human(f.ModTime()))
+		rows = append(rows, i.Status)
+		rows = append(rows, i.Created)
+		rows = append(rows, strings.Join(i.PrivateIps, ","))
+		rows = append(rows, strings.Join(i.PublicIps, ","))
 
-		privateIps := []string{"127.0.0.1"}
-
-		rows = append(rows, strings.Join(privateIps, ","))
-		rows = append(rows, i.portList())
 		table.Append(rows)
 	}
 

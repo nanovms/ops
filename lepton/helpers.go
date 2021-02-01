@@ -44,10 +44,9 @@ const (
 	EByte = PByte * 1000
 )
 
-// Time formats a time into a relative string.
-//
+// Time2Human formats a time into a relative string.
 // Time(someT) -> "3 weeks ago"
-func time2Human(then time.Time) string {
+func Time2Human(then time.Time) string {
 	return RelTime(then, time.Now(), "ago", "from now")
 }
 
@@ -175,7 +174,8 @@ func CustomRelTime(a, b time.Time, albl, blbl string, magnitudes []RelTimeMagnit
 	return fmt.Sprintf(mag.Format, args...)
 }
 
-func bytes2Human(b int64) string {
+// Bytes2Human parses bytes to other byte units as MegaByte and Gigabyte
+func Bytes2Human(b int64) string {
 	const unit = 1000
 	if b < unit {
 		return fmt.Sprintf("%d B", b)

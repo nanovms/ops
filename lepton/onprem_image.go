@@ -98,8 +98,8 @@ func (p *OnPrem) ListImages(ctx *Context) error {
 		var row []string
 		row = append(row, i.Name)
 		row = append(row, i.Path)
-		row = append(row, bytes2Human(i.Size))
-		row = append(row, time2Human(i.Created))
+		row = append(row, Bytes2Human(i.Size))
+		row = append(row, Time2Human(i.Created))
 		table.Append(row)
 	}
 	table.Render()
