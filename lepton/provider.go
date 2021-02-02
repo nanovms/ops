@@ -122,6 +122,11 @@ func (c Context) Config() *Config {
 	return c.config
 }
 
+// Logger returns logger
+func (c Context) Logger() *Logger {
+	return c.logger
+}
+
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *Config) *Context {

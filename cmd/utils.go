@@ -19,6 +19,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/hyperv"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/upcloud"
 	"github.com/spf13/cobra"
 )
 
@@ -132,6 +133,8 @@ func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Prov
 		provider = &api.Azure{}
 	case "hyper-v":
 		provider = &hyperv.Provider{}
+	case "upcloud":
+		provider = upcloud.NewProvider()
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
