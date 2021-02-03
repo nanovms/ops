@@ -212,10 +212,10 @@ func TestSetupNetworkInterfaces(t *testing.T) {
 
 }
 
-func NewNetworkService(t *testing.T) *mock_network.MockNetworkService {
+func NewNetworkService(t *testing.T) *mock_network.MockService {
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
 
-	return mock_network.NewMockNetworkService(ctrl)
+	return mock_network.NewMockService(ctrl)
 }

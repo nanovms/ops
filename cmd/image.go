@@ -22,7 +22,7 @@ func ImageCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 	cmdImage.PersistentFlags().StringVarP(&config, "config", "c", "", "ops config file")
-	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, do, vultr, onprem, hyper-v]")
+	cmdImage.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, do, vultr, onprem, hyper-v, upcloud]")
 	cmdImage.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for target cloud platform. defaults to GCP or set env GOOGLE_CLOUD_ZONE")
 	cmdImage.AddCommand(imageCreateCommand())
 	cmdImage.AddCommand(imageListCommand())
@@ -89,7 +89,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError("Please select on of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
 	}
 
-	if len(c.CloudConfig.BucketName) == 0 && c.CloudConfig.Platform != "onprem" && c.CloudConfig.Platform != "hyper-v" {
+	if len(c.CloudConfig.BucketName) == 0 && c.CloudConfig.Platform != "onprem" && c.CloudConfig.Platform != "hyper-v" && c.CloudConfig.Platform != "upcloud" {
 		exitWithError("Please specify a cloud bucket in config")
 	}
 
@@ -334,7 +334,7 @@ func imageSyncCommand() *cobra.Command {
 		Run:   imageSyncCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-	cmdImageSync.PersistentFlags().StringVarP(&sourceCloud, "source-cloud", "s", "onprem", "cloud platform [gcp, aws, do, vultr, onprem, hyper-v]")
+	cmdImageSync.PersistentFlags().StringVarP(&sourceCloud, "source-cloud", "s", "onprem", "cloud platform [gcp, aws, do, vultr, onprem, hyper-v, upcloud]")
 	return cmdImageSync
 }
 

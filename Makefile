@@ -40,6 +40,7 @@ deps:
 
 update-mocks:
 	mockgen --source=network/setup_network_interfaces.go > mock_network/setup_network_interfaces.go
+	mockgen --source=upcloud/provider.go > mock_upcloud/provider.go
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build

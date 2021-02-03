@@ -9,31 +9,31 @@ import (
 	reflect "reflect"
 )
 
-// MockNetworkService is a mock of NetworkService interface
-type MockNetworkService struct {
+// MockService is a mock of Service interface
+type MockService struct {
 	ctrl     *gomock.Controller
-	recorder *MockNetworkServiceMockRecorder
+	recorder *MockServiceMockRecorder
 }
 
-// MockNetworkServiceMockRecorder is the mock recorder for MockNetworkService
-type MockNetworkServiceMockRecorder struct {
-	mock *MockNetworkService
+// MockServiceMockRecorder is the mock recorder for MockService
+type MockServiceMockRecorder struct {
+	mock *MockService
 }
 
-// NewMockNetworkService creates a new mock instance
-func NewMockNetworkService(ctrl *gomock.Controller) *MockNetworkService {
-	mock := &MockNetworkService{ctrl: ctrl}
-	mock.recorder = &MockNetworkServiceMockRecorder{mock}
+// NewMockService creates a new mock instance
+func NewMockService(ctrl *gomock.Controller) *MockService {
+	mock := &MockService{ctrl: ctrl}
+	mock.recorder = &MockServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockNetworkService) EXPECT() *MockNetworkServiceMockRecorder {
+func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
 // AddBridge mocks base method
-func (m *MockNetworkService) AddBridge(br string) (string, error) {
+func (m *MockService) AddBridge(br string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddBridge", br)
 	ret0, _ := ret[0].(string)
@@ -42,13 +42,13 @@ func (m *MockNetworkService) AddBridge(br string) (string, error) {
 }
 
 // AddBridge indicates an expected call of AddBridge
-func (mr *MockNetworkServiceMockRecorder) AddBridge(br interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) AddBridge(br interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBridge", reflect.TypeOf((*MockNetworkService)(nil).AddBridge), br)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBridge", reflect.TypeOf((*MockService)(nil).AddBridge), br)
 }
 
 // ListBridges mocks base method
-func (m *MockNetworkService) ListBridges() (string, error) {
+func (m *MockService) ListBridges() (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBridges")
 	ret0, _ := ret[0].(string)
@@ -57,13 +57,13 @@ func (m *MockNetworkService) ListBridges() (string, error) {
 }
 
 // ListBridges indicates an expected call of ListBridges
-func (mr *MockNetworkServiceMockRecorder) ListBridges() *gomock.Call {
+func (mr *MockServiceMockRecorder) ListBridges() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBridges", reflect.TypeOf((*MockNetworkService)(nil).ListBridges))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBridges", reflect.TypeOf((*MockService)(nil).ListBridges))
 }
 
 // CheckBridgeHasInterface mocks base method
-func (m *MockNetworkService) CheckBridgeHasInterface(bridgeName, ifcName string) (bool, error) {
+func (m *MockService) CheckBridgeHasInterface(bridgeName, ifcName string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckBridgeHasInterface", bridgeName, ifcName)
 	ret0, _ := ret[0].(bool)
@@ -72,13 +72,13 @@ func (m *MockNetworkService) CheckBridgeHasInterface(bridgeName, ifcName string)
 }
 
 // CheckBridgeHasInterface indicates an expected call of CheckBridgeHasInterface
-func (mr *MockNetworkServiceMockRecorder) CheckBridgeHasInterface(bridgeName, ifcName interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) CheckBridgeHasInterface(bridgeName, ifcName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBridgeHasInterface", reflect.TypeOf((*MockNetworkService)(nil).CheckBridgeHasInterface), bridgeName, ifcName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBridgeHasInterface", reflect.TypeOf((*MockService)(nil).CheckBridgeHasInterface), bridgeName, ifcName)
 }
 
 // GetBridgeInterfacesNames mocks base method
-func (m *MockNetworkService) GetBridgeInterfacesNames(bridgeName string) ([]string, error) {
+func (m *MockService) GetBridgeInterfacesNames(bridgeName string) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBridgeInterfacesNames", bridgeName)
 	ret0, _ := ret[0].([]string)
@@ -87,13 +87,13 @@ func (m *MockNetworkService) GetBridgeInterfacesNames(bridgeName string) ([]stri
 }
 
 // GetBridgeInterfacesNames indicates an expected call of GetBridgeInterfacesNames
-func (mr *MockNetworkServiceMockRecorder) GetBridgeInterfacesNames(bridgeName interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetBridgeInterfacesNames(bridgeName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBridgeInterfacesNames", reflect.TypeOf((*MockNetworkService)(nil).GetBridgeInterfacesNames), bridgeName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBridgeInterfacesNames", reflect.TypeOf((*MockService)(nil).GetBridgeInterfacesNames), bridgeName)
 }
 
 // CheckNetworkInterfaceExists mocks base method
-func (m *MockNetworkService) CheckNetworkInterfaceExists(name string) (bool, error) {
+func (m *MockService) CheckNetworkInterfaceExists(name string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckNetworkInterfaceExists", name)
 	ret0, _ := ret[0].(bool)
@@ -102,13 +102,13 @@ func (m *MockNetworkService) CheckNetworkInterfaceExists(name string) (bool, err
 }
 
 // CheckNetworkInterfaceExists indicates an expected call of CheckNetworkInterfaceExists
-func (mr *MockNetworkServiceMockRecorder) CheckNetworkInterfaceExists(name interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) CheckNetworkInterfaceExists(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckNetworkInterfaceExists", reflect.TypeOf((*MockNetworkService)(nil).CheckNetworkInterfaceExists), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckNetworkInterfaceExists", reflect.TypeOf((*MockService)(nil).CheckNetworkInterfaceExists), name)
 }
 
 // AddTap mocks base method
-func (m *MockNetworkService) AddTap(tap string) (string, error) {
+func (m *MockService) AddTap(tap string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddTap", tap)
 	ret0, _ := ret[0].(string)
@@ -117,13 +117,13 @@ func (m *MockNetworkService) AddTap(tap string) (string, error) {
 }
 
 // AddTap indicates an expected call of AddTap
-func (mr *MockNetworkServiceMockRecorder) AddTap(tap interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) AddTap(tap interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTap", reflect.TypeOf((*MockNetworkService)(nil).AddTap), tap)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTap", reflect.TypeOf((*MockService)(nil).AddTap), tap)
 }
 
 // AddTapToBridge mocks base method
-func (m *MockNetworkService) AddTapToBridge(br, tap string) (string, error) {
+func (m *MockService) AddTapToBridge(br, tap string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddTapToBridge", br, tap)
 	ret0, _ := ret[0].(string)
@@ -132,13 +132,13 @@ func (m *MockNetworkService) AddTapToBridge(br, tap string) (string, error) {
 }
 
 // AddTapToBridge indicates an expected call of AddTapToBridge
-func (mr *MockNetworkServiceMockRecorder) AddTapToBridge(br, tap interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) AddTapToBridge(br, tap interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTapToBridge", reflect.TypeOf((*MockNetworkService)(nil).AddTapToBridge), br, tap)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTapToBridge", reflect.TypeOf((*MockService)(nil).AddTapToBridge), br, tap)
 }
 
 // SetNIIP mocks base method
-func (m *MockNetworkService) SetNIIP(ifc, ip, netmask string) (string, error) {
+func (m *MockService) SetNIIP(ifc, ip, netmask string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetNIIP", ifc, ip, netmask)
 	ret0, _ := ret[0].(string)
@@ -147,13 +147,13 @@ func (m *MockNetworkService) SetNIIP(ifc, ip, netmask string) (string, error) {
 }
 
 // SetNIIP indicates an expected call of SetNIIP
-func (mr *MockNetworkServiceMockRecorder) SetNIIP(ifc, ip, netmask interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) SetNIIP(ifc, ip, netmask interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNIIP", reflect.TypeOf((*MockNetworkService)(nil).SetNIIP), ifc, ip, netmask)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNIIP", reflect.TypeOf((*MockService)(nil).SetNIIP), ifc, ip, netmask)
 }
 
 // FlushIPFromNI mocks base method
-func (m *MockNetworkService) FlushIPFromNI(niName string) (string, error) {
+func (m *MockService) FlushIPFromNI(niName string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FlushIPFromNI", niName)
 	ret0, _ := ret[0].(string)
@@ -162,13 +162,13 @@ func (m *MockNetworkService) FlushIPFromNI(niName string) (string, error) {
 }
 
 // FlushIPFromNI indicates an expected call of FlushIPFromNI
-func (mr *MockNetworkServiceMockRecorder) FlushIPFromNI(niName interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) FlushIPFromNI(niName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlushIPFromNI", reflect.TypeOf((*MockNetworkService)(nil).FlushIPFromNI), niName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlushIPFromNI", reflect.TypeOf((*MockService)(nil).FlushIPFromNI), niName)
 }
 
 // TurnNIUp mocks base method
-func (m *MockNetworkService) TurnNIUp(ifc string) (string, error) {
+func (m *MockService) TurnNIUp(ifc string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TurnNIUp", ifc)
 	ret0, _ := ret[0].(string)
@@ -177,13 +177,13 @@ func (m *MockNetworkService) TurnNIUp(ifc string) (string, error) {
 }
 
 // TurnNIUp indicates an expected call of TurnNIUp
-func (mr *MockNetworkServiceMockRecorder) TurnNIUp(ifc interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) TurnNIUp(ifc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TurnNIUp", reflect.TypeOf((*MockNetworkService)(nil).TurnNIUp), ifc)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TurnNIUp", reflect.TypeOf((*MockService)(nil).TurnNIUp), ifc)
 }
 
 // TurnNIDown mocks base method
-func (m *MockNetworkService) TurnNIDown(ifc string) (string, error) {
+func (m *MockService) TurnNIDown(ifc string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TurnNIDown", ifc)
 	ret0, _ := ret[0].(string)
@@ -192,13 +192,13 @@ func (m *MockNetworkService) TurnNIDown(ifc string) (string, error) {
 }
 
 // TurnNIDown indicates an expected call of TurnNIDown
-func (mr *MockNetworkServiceMockRecorder) TurnNIDown(ifc interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) TurnNIDown(ifc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TurnNIDown", reflect.TypeOf((*MockNetworkService)(nil).TurnNIDown), ifc)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TurnNIDown", reflect.TypeOf((*MockService)(nil).TurnNIDown), ifc)
 }
 
 // DeleteNIC mocks base method
-func (m *MockNetworkService) DeleteNIC(ifc string) (string, error) {
+func (m *MockService) DeleteNIC(ifc string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteNIC", ifc)
 	ret0, _ := ret[0].(string)
@@ -207,13 +207,13 @@ func (m *MockNetworkService) DeleteNIC(ifc string) (string, error) {
 }
 
 // DeleteNIC indicates an expected call of DeleteNIC
-func (mr *MockNetworkServiceMockRecorder) DeleteNIC(ifc interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) DeleteNIC(ifc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNIC", reflect.TypeOf((*MockNetworkService)(nil).DeleteNIC), ifc)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNIC", reflect.TypeOf((*MockService)(nil).DeleteNIC), ifc)
 }
 
 // IsNIUp mocks base method
-func (m *MockNetworkService) IsNIUp(ifcName string) (bool, error) {
+func (m *MockService) IsNIUp(ifcName string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsNIUp", ifcName)
 	ret0, _ := ret[0].(bool)
@@ -222,13 +222,13 @@ func (m *MockNetworkService) IsNIUp(ifcName string) (bool, error) {
 }
 
 // IsNIUp indicates an expected call of IsNIUp
-func (mr *MockNetworkServiceMockRecorder) IsNIUp(ifcName interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) IsNIUp(ifcName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNIUp", reflect.TypeOf((*MockNetworkService)(nil).IsNIUp), ifcName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNIUp", reflect.TypeOf((*MockService)(nil).IsNIUp), ifcName)
 }
 
 // GetNetworkInterfaceIP mocks base method
-func (m *MockNetworkService) GetNetworkInterfaceIP(ifcName string) (string, error) {
+func (m *MockService) GetNetworkInterfaceIP(ifcName string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNetworkInterfaceIP", ifcName)
 	ret0, _ := ret[0].(string)
@@ -237,7 +237,7 @@ func (m *MockNetworkService) GetNetworkInterfaceIP(ifcName string) (string, erro
 }
 
 // GetNetworkInterfaceIP indicates an expected call of GetNetworkInterfaceIP
-func (mr *MockNetworkServiceMockRecorder) GetNetworkInterfaceIP(ifcName interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetNetworkInterfaceIP(ifcName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkInterfaceIP", reflect.TypeOf((*MockNetworkService)(nil).GetNetworkInterfaceIP), ifcName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkInterfaceIP", reflect.TypeOf((*MockService)(nil).GetNetworkInterfaceIP), ifcName)
 }
