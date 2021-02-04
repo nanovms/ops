@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -421,9 +422,15 @@ func (m *Manifest) String() string {
 
 		for _, klib := range m.klibs {
 			if klib == "ntp" {
+				var err error
 
-				ntpAddress := "pool.ntp.org"
-				ntpPort := "123"
+				var ntpAddress string
+				var ntpPort string
+				var ntpPollMin string
+				var ntpPollMax string
+
+				var pollMinNumber int
+				var pollMaxNumber int
 
 				if val, ok := m.environment["ntpAddress"]; ok {
 					ntpAddress = val
@@ -433,8 +440,40 @@ func (m *Manifest) String() string {
 					ntpPort = val
 				}
 
-				sb.WriteString(fmt.Sprintf("ntp_address:%s\n", ntpAddress))
-				sb.WriteString(fmt.Sprintf("ntp_port:%s\n", ntpPort))
+				if val, ok := m.environment["ntpPollMin"]; ok {
+					pollMinNumber, err = strconv.Atoi(val)
+					if err == nil && pollMinNumber > 3 {
+						ntpPollMin = val
+					}
+				}
+
+				if val, ok := m.environment["ntpPollMax"]; ok {
+					pollMaxNumber, err = strconv.Atoi(val)
+					if err == nil && pollMaxNumber < 18 {
+						ntpPollMax = val
+					}
+				}
+
+				if pollMinNumber != 0 && pollMaxNumber != 0 && pollMinNumber > pollMaxNumber {
+					ntpPollMin = ""
+					ntpPollMax = ""
+				}
+
+				if ntpAddress != "" {
+					sb.WriteString(fmt.Sprintf("ntp_address:%s\n", ntpAddress))
+				}
+
+				if ntpPort != "" {
+					sb.WriteString(fmt.Sprintf("ntp_port:%s\n", ntpPort))
+				}
+
+				if ntpPollMin != "" {
+					sb.WriteString(fmt.Sprintf("ntp_poll_min:%s\n", ntpPollMin))
+				}
+
+				if ntpPollMax != "" {
+					sb.WriteString(fmt.Sprintf("ntp_poll_max:%s\n", ntpPollMax))
+				}
 
 				break
 			}
