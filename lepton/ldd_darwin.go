@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/fs"
 )
 
 // GetElfFileInfo returns an object with elf information of the path program
@@ -51,7 +52,7 @@ func expandVars(origin string, s string) string {
 
 func findLib(targetRoot string, origin string, libDirs []string, path string) (string, error) {
 	if path[0] == '/' {
-		if _, err := lookupFile(targetRoot, path); err != nil {
+		if _, err := fs.LookupFile(targetRoot, path); err != nil {
 			return "", err
 		}
 		return path, nil
@@ -59,7 +60,7 @@ func findLib(targetRoot string, origin string, libDirs []string, path string) (s
 
 	for _, libDir := range libDirs {
 		lib := filepath.Join(expandVars(origin, libDir), path)
-		_, err := lookupFile(targetRoot, lib)
+		_, err := fs.LookupFile(targetRoot, lib)
 		if err == nil {
 			return lib, nil
 		} else if !os.IsNotExist(err) {
@@ -71,7 +72,7 @@ func findLib(targetRoot string, origin string, libDirs []string, path string) (s
 }
 
 func _getSharedLibs(targetRoot string, path string) ([]string, error) {
-	path, err := lookupFile(targetRoot, path)
+	path, err := fs.LookupFile(targetRoot, path)
 	if err != nil {
 		return nil, errors.WrapPrefix(err, path, 0)
 	}

@@ -1,4 +1,4 @@
-package lepton
+package fs
 
 import (
 	"fmt"
@@ -24,10 +24,10 @@ type ManifestNetworkConfig struct {
 
 // Manifest represent the filesystem.
 type Manifest struct {
-	root       map[string]interface{} // root fs
-	boot       map[string]interface{} // boot fs
-	targetRoot string
-	nightly    bool
+	root        map[string]interface{} // root fs
+	boot        map[string]interface{} // boot fs
+	targetRoot  string
+	klibHostDir string
 }
 
 // NewManifest init
@@ -67,6 +67,11 @@ func (m *Manifest) SetProgram(program string) {
 	m.root["program"] = program
 }
 
+// SetKlibDir sets the host directory where kernel libs are located
+func (m *Manifest) SetKlibDir(dir string) {
+	m.klibHostDir = dir
+}
+
 // AddMount adds mount
 func (m *Manifest) AddMount(label, path string) {
 	dir := strings.TrimPrefix(path, "/")
@@ -98,7 +103,7 @@ func (m *Manifest) AddKlibs(klibs []string) {
 		m.boot = mkFS()
 	}
 	klibDir := mkDir(m.bootDir(), "klib")
-	hostDir := getKlibsDir(m.nightly)
+	hostDir := m.klibHostDir
 	for _, klib := range klibs {
 		klibPath := hostDir + "/" + klib
 		if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
@@ -288,7 +293,7 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
 
-	_, err := lookupFile(m.targetRoot, hostpath)
+	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
@@ -335,7 +340,7 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, pathtest, hostpath)
 	}
 
-	_, err := lookupFile(m.targetRoot, hostpath)
+	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
@@ -425,6 +430,47 @@ func (m *Manifest) bootDir() map[string]interface{} {
 
 func (m *Manifest) rootDir() map[string]interface{} {
 	return getRootDir(m.root)
+}
+
+// LookupFile look up file path in target root directory
+func LookupFile(targetRoot string, path string) (string, error) {
+	if targetRoot != "" {
+		var targetPath string
+		currentPath := path
+		for {
+			targetPath = filepath.Join(targetRoot, currentPath)
+			fi, err := os.Lstat(targetPath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					return path, err
+				}
+				// lookup on host
+				break
+			}
+
+			if fi.Mode()&os.ModeSymlink == 0 {
+				// not a symlink found in target root
+				return targetPath, nil
+			}
+
+			currentPath, err = os.Readlink(targetPath)
+			if err != nil {
+				return path, err
+			}
+
+			if currentPath[0] != '/' {
+				// relative symlinks are ok
+				path = targetPath
+				break
+			}
+
+			// absolute symlinks need to be resolved again
+		}
+	}
+
+	_, err := os.Stat(path)
+
+	return path, err
 }
 
 func mkDir(parent map[string]interface{}, dir string) map[string]interface{} {

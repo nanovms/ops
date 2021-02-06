@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/fs"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -29,7 +30,7 @@ type NanosVolume struct {
 // TODO investigate symlinked volume interaction with image
 func CreateLocalVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
-	var mkfsCommand *MkfsCommand
+	var mkfsCommand *fs.MkfsCommand
 
 	if data != "" {
 		config.Dirs = append(config.Dirs, data)
@@ -38,9 +39,9 @@ func CreateLocalVolume(config *Config, name, data, size, provider string) (Nanos
 			return vol, err
 		}
 
-		mkfsCommand = NewMkfsCommand(m)
+		mkfsCommand = fs.NewMkfsCommand(m)
 	} else {
-		mkfsCommand = NewMkfsCommand(nil)
+		mkfsCommand = fs.NewMkfsCommand(nil)
 	}
 
 	mkfsCommand.SetLabel(name)

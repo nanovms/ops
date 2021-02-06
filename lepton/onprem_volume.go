@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/fs"
 )
 
 var (
@@ -110,8 +111,8 @@ func (op *OnPrem) parseSize(vol NanosVolume) string {
 }
 
 // buildVolumeManifest builds manifests for non-empty volume
-func buildVolumeManifest(conf *Config) (*Manifest, error) {
-	m := NewManifest("")
+func buildVolumeManifest(conf *Config) (*fs.Manifest, error) {
+	m := fs.NewManifest("")
 
 	for _, d := range conf.Dirs {
 		err := m.AddRelativeDirectory(d)

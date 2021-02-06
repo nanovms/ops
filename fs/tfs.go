@@ -1,4 +1,4 @@
-package lepton
+package fs
 
 import (
 	"fmt"
