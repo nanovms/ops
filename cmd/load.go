@@ -87,12 +87,10 @@ func mergeConfigs(pkgConfig *api.Config, usrConfig *api.Config) *api.Config {
 	pkgConfig.CloudConfig = usrConfig.CloudConfig
 	pkgConfig.Kernel = usrConfig.Kernel
 	pkgConfig.Boot = usrConfig.Boot
-	pkgConfig.Mkfs = usrConfig.Mkfs
 	pkgConfig.TargetRoot = usrConfig.TargetRoot
 	pkgConfig.Force = usrConfig.Force
 	pkgConfig.NightlyBuild = usrConfig.NightlyBuild
 	pkgConfig.NameServer = usrConfig.NameServer
-	pkgConfig.ManifestName = usrConfig.ManifestName
 
 	return pkgConfig
 }
@@ -192,11 +190,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	manifestName, err := cmd.Flags().GetString("manifest-name")
-	if err != nil {
-		panic(err)
-	}
-
 	syscallSummary, err := strconv.ParseBool(cmd.Flag("syscall-summary").Value.String())
 	if err != nil {
 		panic(err)
@@ -224,7 +217,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	pkgConfig.NightlyBuild = nightly
 	pkgConfig.Force = force
 	pkgConfig.RunConfig.Accel = accel
-	pkgConfig.ManifestName = manifestName
 
 	if ipaddr != "" && isIPAddressValid(ipaddr) {
 		c.RunConfig.IPAddr = ipaddr
@@ -297,11 +289,11 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 // LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var (
-		ports, args, mounts             []string
-		force, debugflags, verbose      bool
-		nightly, accel, bridged, local  bool
-		skipbuild, syscallSummary       bool
-		config, imageName, manifestName string
+		ports, args, mounts            []string
+		force, debugflags, verbose     bool
+		nightly, accel, bridged, local bool
+		skipbuild, syscallSummary      bool
+		config, imageName              string
 	)
 
 	var cmdLoadPackage = &cobra.Command{
@@ -323,7 +315,6 @@ func LoadCommand() *cobra.Command {
 	cmdLoadPackage.PersistentFlags().String("gateway", "", "network gateway")
 	cmdLoadPackage.PersistentFlags().String("netmask", "255.255.255.0", "network mask")
 	cmdLoadPackage.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
-	cmdLoadPackage.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdLoadPackage.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building package image")
 	cmdLoadPackage.PersistentFlags().BoolVarP(&local, "local", "l", false, "load local package")

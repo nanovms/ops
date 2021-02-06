@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"log"
-	"path"
 	"strconv"
 
 	api "github.com/nanovms/ops/lepton"
@@ -22,17 +21,13 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	conf.NightlyBuild = nightly
 	var err error
-	var version string
 	if conf.NightlyBuild {
-		version, err = downloadNightlyImages(conf)
+		_, err = downloadNightlyImages(conf)
 	} else {
-		version, err = downloadReleaseImages()
+		_, err = downloadReleaseImages()
 	}
 	if err != nil {
 		log.Fatal(err)
-	}
-	if conf.Mkfs == "" {
-		conf.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
 	}
 	conf.BuildDir = api.LocalVolumeDir
 

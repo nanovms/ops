@@ -12,19 +12,6 @@ import (
 	"strings"
 )
 
-// file system manifest
-const manifest string = `(
-    #64 bit elf to boot from host
-    children:(kernel:(contents:(host:%v))
-              #user program
-              %v:(contents:(host:%v)))
-    # filesystem path to elf for kernel to run
-    program:/%v
-    fault:t
-    arguments:[%v sec third]
-    environment:(USER:bobby PWD:/)
-)`
-
 // Version for ops
 var Version string
 

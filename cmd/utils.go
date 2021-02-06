@@ -175,10 +175,6 @@ func fixupConfigImages(c *api.Config, version string) {
 		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 	}
 
-	if c.Mkfs == "" {
-		c.Mkfs = path.Join(api.GetOpsHome(), version, "mkfs")
-	}
-
 	if c.NameServer == "" {
 		// google dns server
 		c.NameServer = "8.8.8.8"
@@ -188,10 +184,6 @@ func fixupConfigImages(c *api.Config, version string) {
 func validateRequired(c *api.Config) {
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Kernel, err)
-		os.Exit(1)
-	}
-	if _, err := os.Stat(c.Mkfs); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Mkfs, err)
 		os.Exit(1)
 	}
 	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {

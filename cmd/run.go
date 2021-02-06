@@ -98,11 +98,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	manifestName, err := cmd.Flags().GetString("manifest-name")
-	if err != nil {
-		panic(err)
-	}
-
 	tapDeviceName, err := cmd.Flags().GetString("tapname")
 	if err != nil {
 		panic(err)
@@ -151,11 +146,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	c := unWarpConfig(config)
 	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
-
-	//Precedance is given to command line manifest file name.
-	if manifestName == "" && c.ManifestName != "" {
-		manifestName = c.ManifestName
-	}
 
 	c.Program = args[0]
 	curdir, _ := os.Getwd()
@@ -221,7 +211,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	c.RunConfig.Accel = accel
 	c.NightlyBuild = nightly
 	c.Force = force
-	c.ManifestName = manifestName
 
 	if ipaddr != "" && isIPAddressValid(ipaddr) {
 		c.RunConfig.IPAddr = ipaddr
@@ -322,7 +311,6 @@ func RunCommand() *cobra.Command {
 	var syscallSummary bool
 
 	var skipbuild bool
-	var manifestName string
 	var accel bool
 	var config string
 	var imageName string
@@ -353,7 +341,6 @@ func RunCommand() *cobra.Command {
 	cmdRun.PersistentFlags().String("netmask", "255.255.255.0", "network mask")
 	cmdRun.PersistentFlags().BoolVarP(&skipbuild, "skipbuild", "s", false, "skip building image")
 	cmdRun.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name")
-	cmdRun.PersistentFlags().StringVarP(&manifestName, "manifest-name", "m", "", "save manifest to file")
 	cmdRun.PersistentFlags().BoolVar(&accel, "accel", true, "use cpu virtualization extension")
 	cmdRun.PersistentFlags().IntVarP(&smp, "smp", "", 1, "number of threads to use")
 	cmdRun.PersistentFlags().StringArrayVar(&mounts, "mounts", nil, "<volume_id/label>:/<mount_path>")

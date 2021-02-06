@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -202,7 +201,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*Manifest, error) {
 	addFilesFromPackage(packagepath, m)
 
 	m.nightly = c.NightlyBuild
-	m.program = c.Program
+	m.SetProgram(c.Program)
 	err := addFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -339,16 +338,6 @@ func addMappedFiles(src string, dest string, m *Manifest) error {
 }
 
 func buildImage(c *Config, m *Manifest) error {
-	//  prepare manifest file
-	var elfmanifest string
-	elfmanifest = m.String()
-	if c.ManifestName != "" {
-		err := ioutil.WriteFile(c.ManifestName, []byte(elfmanifest), 0644)
-		if err != nil {
-			return errors.Wrap(err, 1)
-		}
-	}
-
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.RunConfig.Imagename)
 	defer func() {
@@ -360,11 +349,7 @@ func buildImage(c *Config, m *Manifest) error {
 
 	defer cleanup(c)
 
-	mkfsCommand := NewMkfsCommand(c.Mkfs)
-
-	if c.TargetRoot != "" {
-		mkfsCommand.SetTargetRoot(c.TargetRoot)
-	}
+	mkfsCommand := NewMkfsCommand(m)
 
 	if c.BaseVolumeSz != "" {
 		mkfsCommand.SetFileSystemSize(c.BaseVolumeSz)
@@ -373,20 +358,8 @@ func buildImage(c *Config, m *Manifest) error {
 	mkfsCommand.SetBoot(c.Boot)
 	mkfsCommand.SetFileSystemPath(c.RunConfig.Imagename)
 
-	mkfsCommand.SetupCommand()
-	stdin, err := mkfsCommand.GetStdinPipe()
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
-	go func() {
-		defer stdin.Close()
-		io.WriteString(stdin, elfmanifest)
-	}()
-
 	err = mkfsCommand.Execute()
 	if err != nil {
-		log.Println("mkfs:" + string(mkfsCommand.GetOutput()))
 		return errors.Wrap(err, 1)
 	}
 
@@ -430,11 +403,6 @@ func DownloadNightlyImages(c *Config) error {
 		ExtractPackage(localtar, NightlyLocalFolder)
 	}
 
-	// make mkfs executable
-	err = os.Chmod(path.Join(NightlyLocalFolder, "mkfs"), 0775)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
 	return nil
 }
 
@@ -472,17 +440,11 @@ func DownloadReleaseImages(version string) error {
 
 	ExtractPackage(localtar, localFolder)
 
-	// make mkfs executable
-	err := os.Chmod(path.Join(localFolder, "mkfs"), 0775)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
 	updateLocalRelease(version)
 	// FIXME hack to rename stage3.img to kernel.img
 	oldKernel := path.Join(localFolder, "stage3.img")
 	newKernel := path.Join(localFolder, "kernel.img")
-	_, err = os.Stat(newKernel)
+	_, err := os.Stat(newKernel)
 	if err == nil {
 		return nil
 	}

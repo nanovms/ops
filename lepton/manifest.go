@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-var localManifestDir = path.Join(GetOpsHome(), "manifests")
-
 // link refers to a link filetype
 type link struct {
 	path string
@@ -26,36 +24,28 @@ type ManifestNetworkConfig struct {
 
 // Manifest represent the filesystem.
 type Manifest struct {
-	sb            strings.Builder
-	children      map[string]interface{} // root fs
-	boot          map[string]interface{} // boot fs
-	program       string
-	args          []string
-	debugFlags    map[string]rune
-	noTrace       []string
-	environment   map[string]string
-	targetRoot    string
-	mounts        map[string]string
-	klibs         []string
-	nightly       bool
-	networkConfig *ManifestNetworkConfig
+	root       map[string]interface{} // root fs
+	boot       map[string]interface{} // boot fs
+	targetRoot string
+	nightly    bool
 }
 
 // NewManifest init
 func NewManifest(targetRoot string) *Manifest {
-	return &Manifest{
-		boot:        make(map[string]interface{}),
-		children:    make(map[string]interface{}),
-		debugFlags:  make(map[string]rune),
-		environment: make(map[string]string),
-		targetRoot:  targetRoot,
-		mounts:      make(map[string]string),
+	m := &Manifest{
+		root:       mkFS(),
+		targetRoot: targetRoot,
 	}
+	m.root["arguments"] = make([]string, 0)
+	m.root["environment"] = make(map[string]interface{})
+	return m
 }
 
 // AddNetworkConfig adds network configuration
 func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
-	m.networkConfig = networkConfig
+	m.root["ipaddr"] = networkConfig.IP
+	m.root["netmask"] = networkConfig.NetMask
+	m.root["gateway"] = networkConfig.Gateway
 }
 
 // AddUserProgram adds user program
@@ -64,23 +54,34 @@ func (m *Manifest) AddUserProgram(imgpath string) {
 	if parts[0] == "." {
 		parts = parts[1:]
 	}
-	m.program = path.Join("/", path.Join(parts...))
-	err := m.AddFile(m.program, imgpath)
+	program := path.Join("/", path.Join(parts...))
+	err := m.AddFile(program, imgpath)
 	if err != nil {
 		panic(err)
 	}
+	m.SetProgram(program)
+}
+
+// SetProgram sets user program
+func (m *Manifest) SetProgram(program string) {
+	m.root["program"] = program
 }
 
 // AddMount adds mount
 func (m *Manifest) AddMount(label, path string) {
 	dir := strings.TrimPrefix(path, "/")
-	m.children[dir] = map[string]interface{}{}
-	m.mounts[label] = path
+	mkDirPath(m.rootDir(), dir)
+	if m.root["mounts"] == nil {
+		m.root["mounts"] = make(map[string]interface{})
+	}
+	mounts := m.root["mounts"].(map[string]interface{})
+	mounts[label] = path
 }
 
 // AddEnvironmentVariable adds environment variables
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
-	m.environment[name] = value
+	env := m.root["environment"].(map[string]interface{})
+	env[name] = value
 
 	if name == "RADAR_KEY" {
 		m.AddKlibs([]string{"tls", "radar"})
@@ -90,47 +91,52 @@ func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 
 // AddKlibs append klibs to manifest file if they don't exist
 func (m *Manifest) AddKlibs(klibs []string) {
+	if len(klibs) == 0 {
+		return
+	}
+	if m.boot == nil {
+		m.boot = mkFS()
+	}
+	klibDir := mkDir(m.bootDir(), "klib")
+	hostDir := getKlibsDir(m.nightly)
 	for _, klib := range klibs {
-		var exists bool
-		for _, mKlib := range m.klibs {
-			if mKlib == klib {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			m.klibs = append(m.klibs, klib)
+		klibPath := hostDir + "/" + klib
+		if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
+			m.AddFileTo(klibDir, klib, klibPath)
+		} else {
+			fmt.Printf("Klib %s not found in directory %s\n", klib, hostDir)
 		}
 	}
+	m.root["klibs"] = "bootfs"
 }
 
 // AddArgument add commandline arguments to
 // user program
 func (m *Manifest) AddArgument(arg string) {
-	m.args = append(m.args, arg)
+	args := m.root["arguments"].([]string)
+	m.root["arguments"] = append(args, arg)
 }
 
 // AddDebugFlag enables debug flags
 func (m *Manifest) AddDebugFlag(name string, value rune) {
-	m.debugFlags[name] = value
+	m.root[name] = string(value)
 }
 
 // AddNoTrace enables debug flags
 func (m *Manifest) AddNoTrace(name string) {
-	m.noTrace = append(m.noTrace, name)
+	if m.root["notrace"] == nil {
+		m.root["notrace"] = make([]string, 0)
+	}
+	notrace := m.root["notrace"].([]string)
+	m.root["notrace"] = append(notrace, name)
 }
 
 // AddKernel the kernel to use
 func (m *Manifest) AddKernel(path string) {
-	node := make(map[string]interface{})
-	node["kernel"] = path
-	m.boot = node
-}
-
-// AddRelative path
-func (m *Manifest) AddRelative(key string, path string) {
-	m.children[key] = path
+	if m.boot == nil {
+		m.boot = mkFS()
+	}
+	m.AddFileTo(m.bootDir(), "kernel", path)
 }
 
 // AddDirectory adds all files in dir to image
@@ -167,7 +173,7 @@ func (m *Manifest) AddDirectory(dir string) error {
 
 		if info.IsDir() {
 			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
-			node := m.children
+			node := m.rootDir()
 			for i := 0; i < len(parts); i++ {
 				if _, ok := node[parts[i]]; !ok {
 					node[parts[i]] = make(map[string]interface{})
@@ -219,7 +225,7 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 
 		if info.IsDir() {
 			parts := strings.FieldsFunc(vmpath, func(c rune) bool { return c == '/' })
-			node := m.children
+			node := m.rootDir()
 			for i := 0; i < len(parts); i++ {
 				if _, ok := node[parts[i]]; !ok {
 					node[parts[i]] = make(map[string]interface{})
@@ -245,7 +251,7 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 // FileExists checks if file is present at path in manifest
 func (m *Manifest) FileExists(filepath string) bool {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
-	node := m.children
+	node := m.rootDir()
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
 			return false
@@ -262,7 +268,7 @@ func (m *Manifest) FileExists(filepath string) bool {
 // AddLink to add a file to manifest
 func (m *Manifest) AddLink(filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
-	node := m.children
+	node := m.rootDir()
 
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
@@ -303,8 +309,13 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 
 // AddFile to add a file to manifest
 func (m *Manifest) AddFile(filepath string, hostpath string) error {
+	return m.AddFileTo(m.rootDir(), filepath, hostpath)
+}
+
+// AddFileTo adds a file to a given directory
+func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
-	node := m.children
+	node := dir
 
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
@@ -340,252 +351,96 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 // AddLibrary to add a dependent library
 func (m *Manifest) AddLibrary(path string) {
 	parts := strings.FieldsFunc(path, func(c rune) bool { return c == '/' })
-	node := m.children
+	node := m.rootDir()
 	for i := 0; i < len(parts)-1; i++ {
-		if _, ok := node[parts[i]]; !ok {
-			node[parts[i]] = make(map[string]interface{})
-		}
-		node = node[parts[i]].(map[string]interface{})
+		node = mkDir(node, parts[i])
 	}
-	node[parts[len(parts)-1]] = path
+	m.AddFileTo(node, parts[len(parts)-1], path)
 }
 
-// AddUserData adds all files in dir to
-// final image.
-func (m *Manifest) AddUserData(dir string) {
-	// TODO
-}
+func (m *Manifest) finalize() {
+	if m.boot != nil {
+		klibDir, isDir := m.bootDir()["klib"].(map[string]interface{})
+		if isDir && (klibDir["ntp"] != nil) {
+			env := m.root["environment"].(map[string]interface{})
+			var err error
 
-func escapeValue(s string) string {
-	if strings.Contains(s, "\"") {
-		s = strings.Replace(s, "\"", "\\\"", -1)
-	}
-	if strings.ContainsAny(s, "\":()[] \t\n") {
-		s = "\"" + s + "\""
-	}
-	return s
-}
+			var ntpAddress string
+			var ntpPort string
+			var ntpPollMin string
+			var ntpPollMax string
 
-func (m *Manifest) String() string {
-	sb := m.sb
-	sb.WriteString("(\n")
+			var pollMinNumber int
+			var pollMaxNumber int
 
-	// write boot fs
-
-	if len(m.boot) > 0 {
-		sb.WriteString("boot:(children:(\n")
-		toString(&m.boot, &sb, 4)
-
-		// include klibs specified in configuration if present in ops klib directory
-		if len(m.klibs) > 0 {
-			klibs := map[string]interface{}{}
-			klibsPath := getKlibsDir(m.nightly)
-			if _, err := os.Stat(klibsPath); !os.IsNotExist(err) {
-
-				sb.WriteString("    klib:(children:(\n")
-
-				for _, klibName := range m.klibs {
-					klibPath := klibsPath + "/" + klibName
-
-					if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
-						klibs[klibName] = klibPath
-					} else {
-						fmt.Printf("Klib %s not found in directory %s\n", klibName, klibsPath)
-					}
-				}
-				toString(&klibs, &sb, 6)
-
-				sb.WriteString("    ))\n")
-			} else {
-				fmt.Printf("Klibs directory with path %s not found\n", klibsPath)
-			}
-		}
-
-		sb.WriteString("))\n")
-	}
-
-	// write root fs
-	sb.WriteString("children:(\n")
-	toString(&m.children, &sb, 4)
-	sb.WriteString(")\n")
-
-	// program
-	if m.program != "" {
-		sb.WriteString("program:")
-		sb.WriteString(m.program)
-		sb.WriteRune('\n')
-	}
-
-	//
-	if len(m.klibs) > 0 {
-		sb.WriteString("klibs:bootfs\n")
-
-		for _, klib := range m.klibs {
-			if klib == "ntp" {
-				var err error
-
-				var ntpAddress string
-				var ntpPort string
-				var ntpPollMin string
-				var ntpPollMax string
-
-				var pollMinNumber int
-				var pollMaxNumber int
-
-				if val, ok := m.environment["ntpAddress"]; ok {
-					ntpAddress = val
-				}
-
-				if val, ok := m.environment["ntpPort"]; ok {
-					ntpPort = val
-				}
-
-				if val, ok := m.environment["ntpPollMin"]; ok {
-					pollMinNumber, err = strconv.Atoi(val)
-					if err == nil && pollMinNumber > 3 {
-						ntpPollMin = val
-					}
-				}
-
-				if val, ok := m.environment["ntpPollMax"]; ok {
-					pollMaxNumber, err = strconv.Atoi(val)
-					if err == nil && pollMaxNumber < 18 {
-						ntpPollMax = val
-					}
-				}
-
-				if pollMinNumber != 0 && pollMaxNumber != 0 && pollMinNumber > pollMaxNumber {
-					ntpPollMin = ""
-					ntpPollMax = ""
-				}
-
-				if ntpAddress != "" {
-					sb.WriteString(fmt.Sprintf("ntp_address:%s\n", ntpAddress))
-				}
-
-				if ntpPort != "" {
-					sb.WriteString(fmt.Sprintf("ntp_port:%s\n", ntpPort))
-				}
-
-				if ntpPollMin != "" {
-					sb.WriteString(fmt.Sprintf("ntp_poll_min:%s\n", ntpPollMin))
-				}
-
-				if ntpPollMax != "" {
-					sb.WriteString(fmt.Sprintf("ntp_poll_max:%s\n", ntpPollMax))
-				}
-
-				break
-			}
-		}
-
-	}
-
-	// arguments
-	sb.WriteString("arguments:[")
-	if len(m.args) > 0 {
-		fmt.Println(m.args)
-		escapedArgs := make([]string, len(m.args))
-		for i, arg := range m.args {
-			escapedArgs[i] = escapeValue(arg)
-		}
-		sb.WriteString(strings.Join(escapedArgs, " "))
-	}
-	sb.WriteString("]\n")
-
-	// debug
-	for k, v := range m.debugFlags {
-		sb.WriteString(k)
-		sb.WriteRune(':')
-		sb.WriteRune(v)
-		sb.WriteRune('\n')
-	}
-
-	// notrace
-	if len(m.noTrace) > 0 {
-		sb.WriteString("notrace:[")
-		sb.WriteString(strings.Join(m.noTrace, " "))
-		sb.WriteString("]\n")
-	}
-
-	// environment
-	n := len(m.environment)
-	sb.WriteString("environment:(")
-	for k, v := range m.environment {
-		n = n - 1
-		sb.WriteString(k)
-		sb.WriteRune(':')
-		sb.WriteString(escapeValue(v))
-		if n > 0 {
-			sb.WriteRune(' ')
-		}
-	}
-	sb.WriteString(")\n")
-
-	// mounts
-	if len(m.mounts) > 0 {
-		sb.WriteString("mounts:(\n")
-		for k, v := range m.mounts {
-			sb.WriteString("    ")
-			sb.WriteString(k)
-			sb.WriteRune(':')
-			sb.WriteString(v)
-			sb.WriteRune('\n')
-		}
-		sb.WriteString(")\n")
-	}
-
-	if m.networkConfig != nil {
-		sb.WriteString("ipaddr:")
-		sb.WriteString(m.networkConfig.IP)
-		sb.WriteString("\ngateway:")
-		sb.WriteString(m.networkConfig.Gateway)
-		sb.WriteString("\nnetmask:")
-		sb.WriteString(m.networkConfig.NetMask)
-		sb.WriteRune('\n')
-	}
-
-	//
-	sb.WriteString(")\n")
-	return sb.String()
-}
-
-func toString(m *map[string]interface{}, sb *strings.Builder, indent int) {
-	for k, v := range *m {
-		sb.WriteString(strings.Repeat(" ", indent))
-
-		nvalue, nok := v.(link)
-		// link
-		if nok {
-			sb.WriteString(escapeValue(k))
-			sb.WriteString(":(linktarget:")
-			sb.WriteString(escapeValue(nvalue.path))
-			sb.WriteString(")\n")
-			continue
-		}
-
-		value, ok := v.(string)
-
-		// file
-		if ok {
-			sb.WriteString(escapeValue(k))
-			sb.WriteString(":(contents:(host:")
-			sb.WriteString(escapeValue(value))
-			sb.WriteString("))\n")
-
-			// dir
-		} else {
-			sb.WriteString(k)
-			sb.WriteString(":(children:(")
-			// recur
-			ch := v.(map[string]interface{})
-			if len(ch) > 0 {
-				sb.WriteRune('\n')
-				toString(&ch, sb, indent+4)
-				sb.WriteString(strings.Repeat(" ", indent))
+			if val, ok := env["ntpAddress"].(string); ok {
+				ntpAddress = val
 			}
 
-			sb.WriteString("))\n")
+			if val, ok := env["ntpPort"].(string); ok {
+				ntpPort = val
+			}
+
+			if val, ok := env["ntpPollMin"].(string); ok {
+				pollMinNumber, err = strconv.Atoi(val)
+				if err == nil && pollMinNumber > 3 {
+					ntpPollMin = val
+				}
+			}
+
+			if val, ok := env["ntpPollMax"].(string); ok {
+				pollMaxNumber, err = strconv.Atoi(val)
+				if err == nil && pollMaxNumber < 18 {
+					ntpPollMax = val
+				}
+			}
+
+			if pollMinNumber != 0 && pollMaxNumber != 0 && pollMinNumber > pollMaxNumber {
+				ntpPollMin = ""
+				ntpPollMax = ""
+			}
+
+			if ntpAddress != "" {
+				m.root["ntp_address"] = ntpAddress
+			}
+
+			if ntpPort != "" {
+				m.root["ntp_port"] = ntpPort
+			}
+
+			if ntpPollMin != "" {
+				m.root["ntp_poll_min"] = ntpPollMin
+			}
+
+			if ntpPollMax != "" {
+				m.root["ntp_poll_max"] = ntpPollMax
+			}
 		}
 	}
+}
+
+func (m *Manifest) bootDir() map[string]interface{} {
+	return getRootDir(m.boot)
+}
+
+func (m *Manifest) rootDir() map[string]interface{} {
+	return getRootDir(m.root)
+}
+
+func mkDir(parent map[string]interface{}, dir string) map[string]interface{} {
+	subDir := parent[dir]
+	if subDir != nil {
+		return subDir.(map[string]interface{})
+	}
+	newDir := make(map[string]interface{})
+	parent[dir] = newDir
+	return newDir
+}
+
+func mkDirPath(parent map[string]interface{}, path string) map[string]interface{} {
+	parts := strings.Split(path, "/")
+	for _, element := range parts {
+		parent = mkDir(parent, element)
+	}
+	return parent
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/go-errors/errors"
 	"github.com/olekukonko/tablewriter"
@@ -30,42 +29,31 @@ type NanosVolume struct {
 // TODO investigate symlinked volume interaction with image
 func CreateLocalVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
-	var mnfPath string
-	mkfsPath := config.Mkfs
-	var mkfsCommand = NewMkfsCommand(mkfsPath)
-	mkfsCommand.SetLabel(name)
-
-	tmp := fmt.Sprintf("%s.raw", name)
-	mnf := fmt.Sprintf("%s.manifest", name)
-	tmpPath := path.Join(config.BuildDir, tmp)
-	mkfsCommand.SetFileSystemPath(tmpPath)
+	var mkfsCommand *MkfsCommand
 
 	if data != "" {
 		config.Dirs = append(config.Dirs, data)
-		mnfPath = path.Join(config.BuildDir, mnf)
-		err := buildVolumeManifest(config, mnfPath)
+		m, err := buildVolumeManifest(config)
 		if err != nil {
 			return vol, err
 		}
 
-		src, err := os.Open(mnfPath)
-		if err != nil {
-			return vol, err
-		}
-		defer src.Close()
-		mkfsCommand.SetStdin(src)
+		mkfsCommand = NewMkfsCommand(m)
 	} else {
-		mkfsCommand.SetEmptyFileSystem()
+		mkfsCommand = NewMkfsCommand(nil)
 	}
 
+	mkfsCommand.SetLabel(name)
+	tmp := fmt.Sprintf("%s.raw", name)
+	tmpPath := path.Join(config.BuildDir, tmp)
+	mkfsCommand.SetFileSystemPath(tmpPath)
 	if config.BaseVolumeSz != "" {
 		mkfsCommand.SetFileSystemSize(config.BaseVolumeSz)
 	}
 
-	mkfsCommand.SetupCommand()
 	err := mkfsCommand.Execute()
 	if err != nil {
-		return vol, errors.Wrap(fmt.Errorf("mkfs %s: %v", strings.Join(mkfsCommand.GetArgs(), " "), err), 1)
+		return vol, errors.Wrap(err, 1)
 	}
 
 	uuid := mkfsCommand.GetUUID()
@@ -81,7 +69,6 @@ func CreateLocalVolume(config *Config, name, data, size, provider string) (Nanos
 		symlinkVolume(config.BuildDir, name, uuid)
 	}
 
-	cleanUpVolumeManifest(mnfPath)
 	vol = NanosVolume{
 		ID:    uuid,
 		Name:  name,

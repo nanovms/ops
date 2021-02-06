@@ -110,17 +110,13 @@ func (op *OnPrem) parseSize(vol NanosVolume) string {
 }
 
 // buildVolumeManifest builds manifests for non-empty volume
-func buildVolumeManifest(conf *Config, out string) error {
-	m := &Manifest{
-		children:    make(map[string]interface{}),
-		debugFlags:  make(map[string]rune),
-		environment: make(map[string]string),
-	}
+func buildVolumeManifest(conf *Config) (*Manifest, error) {
+	m := NewManifest("")
 
 	for _, d := range conf.Dirs {
 		err := m.AddRelativeDirectory(d)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -130,24 +126,7 @@ func buildVolumeManifest(conf *Config, out string) error {
 		m.AddEnvironmentVariable(k, v)
 	}
 
-	return ioutil.WriteFile(out, []byte(m.String()), 0644)
-}
-
-// cleanUpVolumeManifest cleans up manifests for non-empty volume
-func cleanUpVolumeManifest(file string) error {
-	if file == "" {
-		return nil
-	}
-	_, err := os.Stat(file)
-	if err != nil && os.IsNotExist(err) {
-		return nil
-	}
-	err = os.Remove(file)
-	if err != nil {
-		fmt.Printf("failed cleaning up temporary manifest file: %s\n", file)
-		return err
-	}
-	return nil
+	return m, nil
 }
 
 // symlinkVolume creates a symlink to volume that acts as volume label
