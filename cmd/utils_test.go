@@ -1,134 +1,165 @@
-package cmd
+package cmd_test
 
 import (
-	"reflect"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"math/rand"
+	"os"
+	"os/exec"
 	"testing"
 	"time"
+
+	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/lepton"
+	"github.com/stretchr/testify/assert"
 )
-
-func TestValidateNetworkPorts(t *testing.T) {
-
-	t.Run("should return error if ports have wrong format", func(t *testing.T) {
-		tests := []struct {
-			ports       []string
-			valid       bool
-			errExpected string
-		}{
-			{[]string{"80"}, true, ""},
-			{[]string{"80-100"}, true, ""},
-			{[]string{"80,90,100"}, true, ""},
-			{[]string{"80-8080,9000"}, true, ""},
-			{[]string{"9000,80-8080"}, true, ""},
-			{[]string{"hello"}, false, "\"hello\" must have only numbers, commas or one hyphen"},
-			{[]string{"-80"}, false, "\"-80\" hyphen must separate two numbers"},
-			{[]string{"80-8080-9000"}, false, "\"80-8080-9000\" may have only one hyphen"},
-			{[]string{"80,"}, false, "\"80,\" commas must separate numbers"},
-		}
-
-		for _, tt := range tests {
-			err := validateNetworkPorts(tt.ports)
-			if err != nil && tt.valid {
-				t.Errorf("Expected %s to be valid, got next error %s", tt.ports, err.Error())
-			} else if err == nil && !tt.valid {
-				t.Errorf("Expected %s to be invalid", tt.ports)
-			}
-
-			if !tt.valid && err != nil && err.Error() != tt.errExpected {
-				t.Errorf("expected \"%s\", got \"%s\" (%s)", tt.errExpected, err.Error(), tt.ports)
-			}
-		}
-
-	})
-
-}
-
-func TestPrepareNetworkPorts(t *testing.T) {
-
-	t.Run("separate ports separated by commas", func(t *testing.T) {
-
-		got, _ := prepareNetworkPorts([]string{"80,8080", "9000-10000"})
-		want := []string{"80", "8080", "9000-10000"}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, want %v", got, want)
-		}
-
-	})
-
-}
 
 var (
-	ErrInvalidTimeNotation = func(notation string) string {
-		return "expected to throw an error because time notation \"" + notation + "\" is invalid"
+	basicProgram = `package main
+
+	import(
+		"fmt"
+	)
+
+	func main(){
+		fmt.Println("hello world")
 	}
+	`
+	nodejsProgram = `console.log("hello world");`
 )
 
-func TestSubtractDateNotation(t *testing.T) {
-	t.Run("should return error if time notation is invalid", func(t *testing.T) {
-		layout := "01/02/2006"
-		str := "01/10/2020"
-		date, _ := time.Parse(layout, str)
+func buildBasicProgram() (binaryPath string) {
+	program := []byte(basicProgram)
+	randomString := String(5)
+	binaryPath = "./basic" + randomString
+	sourcePath := fmt.Sprintf("basic%s.go", randomString)
 
-		_, err := SubtractTimeNotation(date, "kjfgd")
-		if err == nil {
-			t.Errorf(ErrInvalidTimeNotation("kjfgd"))
-		}
+	err := ioutil.WriteFile(sourcePath, program, 0644)
+	if err != nil {
+		log.Panic(err)
+	}
+	defer os.Remove(sourcePath)
 
-		_, err = SubtractTimeNotation(date, "123")
-		if err == nil {
-			t.Errorf(ErrInvalidTimeNotation("123"))
-		}
-	})
+	cmd := exec.Command("go", "build", sourcePath)
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
 
-	t.Run("should return date of days ago", func(t *testing.T) {
-		layout := "2006-01-02"
-		str := "2020-10-10"
-		date, _ := time.Parse(layout, str)
+	return
+}
 
-		got, _ := SubtractTimeNotation(date, "5d")
-		want := "2020-10-05"
+func buildNodejsProgram() (path string) {
+	program := []byte(nodejsProgram)
+	randomString := String(5)
+	path = "nodejs-" + randomString + ".js"
 
-		if want != got.Format(layout) {
-			t.Errorf("got %s, want %s", got.Format(layout), want)
-		}
-	})
+	err := ioutil.WriteFile(path, program, 0644)
+	if err != nil {
+		log.Panic(err)
+	}
 
-	t.Run("should return date of weeks ago", func(t *testing.T) {
-		layout := "2006-01-02"
-		str := "2020-10-10"
-		date, _ := time.Parse(layout, str)
+	return
+}
 
-		got, _ := SubtractTimeNotation(date, "5w")
-		want := "2020-09-05"
+func getImagePath(imageName string) string {
+	return lepton.GetOpsHome() + "/images/" + imageName
+}
 
-		if want != got.Format(layout) {
-			t.Errorf("got %s, want %s", got.Format(layout), want)
-		}
-	})
+func buildImage(imageName string) string {
+	imageName += String(5)
+	basicProgram := buildBasicProgram()
+	defer os.Remove(basicProgram)
 
-	t.Run("should return date of months ago", func(t *testing.T) {
-		layout := "2006-01-02"
-		str := "2020-10-10"
-		date, _ := time.Parse(layout, str)
+	createImageCmd := cmd.ImageCommands()
 
-		got, _ := SubtractTimeNotation(date, "2m")
-		want := "2020-08-10"
+	createImageCmd.SetArgs([]string{"create", "-a", basicProgram, "-i", imageName})
 
-		if want != got.Format(layout) {
-			t.Errorf("got %s, want %s", got.Format(layout), want)
-		}
-	})
+	createImageCmd.Execute()
 
-	t.Run("should return date of years ago", func(t *testing.T) {
-		layout := "2006-01-02"
-		str := "2020-10-10"
-		date, _ := time.Parse(layout, str)
+	return imageName
+}
 
-		got, _ := SubtractTimeNotation(date, "3y")
-		want := "2017-10-10"
+func buildInstance(imageName string) string {
+	instanceName := imageName + String(5)
+	createInstanceCmd := cmd.InstanceCommands()
 
-		if want != got.Format(layout) {
-			t.Errorf("got %s, want %s", got.Format(layout), want)
-		}
-	})
+	createInstanceCmd.SetArgs([]string{"create", instanceName, "--imagename", imageName})
+
+	err := createInstanceCmd.Execute()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return instanceName
+}
+
+func removeInstance(instanceName string) {
+	createInstanceCmd := cmd.InstanceCommands()
+
+	createInstanceCmd.SetArgs([]string{"delete", instanceName})
+
+	createInstanceCmd.Execute()
+}
+
+func assertImageExists(t *testing.T, imageName string) {
+	t.Helper()
+
+	imagePath := getImagePath(imageName)
+	_, err := os.Stat(imagePath)
+
+	assert.False(t, os.IsNotExist(err))
+}
+
+func removeImage(imageName string) {
+	imagePath := getImagePath(imageName)
+
+	os.Remove(imagePath)
+}
+
+func buildVolume(volumeName string) string {
+	volumeName += String(5)
+	createVolumeCmd := cmd.VolumeCommands()
+
+	createVolumeCmd.SetArgs([]string{"create", volumeName})
+
+	createVolumeCmd.Execute()
+
+	return volumeName
+}
+
+func removeVolume(volumeName string) {
+	createVolumeCmd := cmd.VolumeCommands()
+
+	createVolumeCmd.SetArgs([]string{"delete", volumeName})
+
+	createVolumeCmd.Execute()
+}
+
+func attachVolume(instanceName, volumeName string) {
+	attachVolumeCmd := cmd.VolumeCommands()
+
+	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
+
+	attachVolumeCmd.Execute()
+}
+
+const charset = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func String(length int) string {
+	return StringWithCharset(length, charset)
 }

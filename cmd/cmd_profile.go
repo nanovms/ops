@@ -1,3 +1,5 @@
+// +build linux darwin
+
 package cmd
 
 import (
@@ -18,14 +20,15 @@ import (
 type Profile struct {
 	OpsVersion   string
 	NanosVersion string
+	QemuVersion  string
 	Arch         string
 	Hypervisor   bool
 }
 
 func (p *Profile) save() {
 
-	str := fmt.Sprintf("ops version:%s\nnanos version:%s\narch:%s",
-		p.OpsVersion, p.NanosVersion, p.Arch)
+	str := fmt.Sprintf("ops version:%s\nnanos version:%s\nqemu version:%s\narch:%s",
+		p.OpsVersion, p.NanosVersion, p.QemuVersion, p.Arch)
 
 	local := path.Join(api.GetOpsHome(), "profile")
 
@@ -39,6 +42,13 @@ func (p *Profile) setProfile() {
 
 	p.OpsVersion = api.Version
 	p.NanosVersion = api.LocalReleaseVersion
+
+	qv, err := api.QemuVersion()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	p.QemuVersion = qv
 
 	p.Arch = runtime.GOOS
 
@@ -69,16 +79,9 @@ func (p *Profile) virtualized() bool {
 func (p *Profile) display() {
 	fmt.Printf("Ops version: %s\n", p.OpsVersion)
 	fmt.Printf("Nanos version: %s\n", p.NanosVersion)
+	fmt.Printf("Qemu version: %s\n", p.QemuVersion)
 	fmt.Printf("Arch: %s\n", p.Arch)
 	fmt.Printf("Virtualized: %t\n", p.Hypervisor)
-}
-
-func printProfile(cmd *cobra.Command, args []string) {
-	p := Profile{}
-
-	p.setProfile()
-
-	p.display()
 }
 
 // ProfileCommand provides a profile command
@@ -89,4 +92,12 @@ func ProfileCommand() *cobra.Command {
 		Run:   printProfile,
 	}
 	return cmdProfile
+}
+
+func printProfile(cmd *cobra.Command, args []string) {
+	p := Profile{}
+
+	p.setProfile()
+
+	p.display()
 }

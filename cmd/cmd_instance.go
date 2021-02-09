@@ -5,18 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
-	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 
 // InstanceCommands provides instance related commands
 func InstanceCommands() *cobra.Command {
-	var targetCloud, projectID, zone string
-	var ports []string
-	var udpPorts []string
 
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
@@ -25,11 +21,11 @@ func InstanceCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 
-	cmdInstance.PersistentFlags().StringArrayVarP(&ports, "port", "p", nil, "port to open")
-	cmdInstance.PersistentFlags().StringArrayVarP(&udpPorts, "udp", "", nil, "udp ports to forward")
-	cmdInstance.PersistentFlags().StringVarP(&targetCloud, "target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, hyper-v, upcloud]")
-	cmdInstance.PersistentFlags().StringVarP(&projectID, "projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
-	cmdInstance.PersistentFlags().StringVarP(&zone, "zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
+	PersistProviderCommandFlags(cmdInstance.PersistentFlags())
+	PersistConfigCommandFlags(cmdInstance.PersistentFlags())
+	cmdInstance.PersistentFlags().StringP("projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
+	cmdInstance.PersistentFlags().StringP("zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
+
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
 	cmdInstance.AddCommand(instanceDeleteCommand())
@@ -40,10 +36,7 @@ func InstanceCommands() *cobra.Command {
 	return cmdInstance
 }
 
-// Create Instance
-
 func instanceCreateCommand() *cobra.Command {
-	var imageName, config, flavor, domainname string
 
 	var cmdInstanceCreate = &cobra.Command{
 		Use:   "create <instance_name>",
@@ -51,27 +44,21 @@ func instanceCreateCommand() *cobra.Command {
 		Run:   instanceCreateCommandHandler,
 	}
 
-	cmdInstanceCreate.PersistentFlags().StringVarP(&config, "config", "c", "", "config for nanos")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&imageName, "imagename", "i", "", "image name [required]")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&flavor, "flavor", "f", "", "flavor name for cloud provider")
-	cmdInstanceCreate.PersistentFlags().StringVarP(&domainname, "domainname", "d", "", "domain name for instance")
+	cmdInstanceCreate.PersistentFlags().StringArrayP("port", "p", nil, "port to open")
+	cmdInstanceCreate.PersistentFlags().StringArrayP("udp", "", nil, "udp ports to forward")
+	cmdInstanceCreate.PersistentFlags().StringP("imagename", "i", "", "image name [required]")
+	cmdInstanceCreate.PersistentFlags().StringP("flavor", "f", "", "flavor name for cloud provider")
+	cmdInstanceCreate.PersistentFlags().StringP("domainname", "d", "", "domain name for instance")
 
 	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
 	return cmdInstanceCreate
 }
 
 func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-	config, _ := cmd.Flags().GetString("config")
-	config = strings.TrimSpace(config)
-
-	var c *api.Config
-	if config != "" {
-		c = unWarpConfig(config)
-	} else {
-		c = api.NewConfig()
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
 	}
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
@@ -112,7 +99,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	ports, err := prepareNetworkPorts(portsFlag)
+	ports, err := PrepareNetworkPorts(portsFlag)
 	if err != nil {
 		exitWithError(err.Error())
 		return
@@ -122,16 +109,15 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	udpPorts, err := prepareNetworkPorts(udpPortsFlag)
+	udpPorts, err := PrepareNetworkPorts(udpPortsFlag)
 	if err != nil {
 		exitWithError(err.Error())
 		return
 	}
 	c.RunConfig.UDPPorts = udpPorts
+	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
 
-	initDefaultRunConfigs(c, ports)
-
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -141,8 +127,6 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-// List Instances
 
 func instanceListCommand() *cobra.Command {
 	var cmdInstanceList = &cobra.Command{
@@ -154,10 +138,10 @@ func instanceListCommand() *cobra.Command {
 }
 
 func instanceListCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
@@ -170,7 +154,7 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -180,8 +164,6 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-// Delete Instance
 
 func instanceDeleteCommand() *cobra.Command {
 	var cmdInstanceDelete = &cobra.Command{
@@ -194,18 +176,22 @@ func instanceDeleteCommand() *cobra.Command {
 }
 
 func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
 
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
+	if projectID != "" {
+		c.CloudConfig.ProjectID = projectID
+	}
+	if zone != "" {
+		c.CloudConfig.Zone = zone
+	}
 
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -215,8 +201,6 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-// Start Instance
 
 func instanceStartCommand() *cobra.Command {
 	var cmdInstanceStart = &cobra.Command{
@@ -229,10 +213,10 @@ func instanceStartCommand() *cobra.Command {
 }
 
 func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
@@ -240,7 +224,7 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -250,8 +234,6 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-// Stop Instance
 
 func instanceStopCommand() *cobra.Command {
 	var cmdInstanceStop = &cobra.Command{
@@ -264,10 +246,10 @@ func instanceStopCommand() *cobra.Command {
 }
 
 func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
@@ -275,7 +257,7 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -285,8 +267,6 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-// Instance logs
 
 func instanceLogsCommand() *cobra.Command {
 	var watch bool
@@ -301,10 +281,10 @@ func instanceLogsCommand() *cobra.Command {
 }
 
 func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
-	provider, _ := cmd.Flags().GetString("target-cloud")
-
-	c := api.NewConfig()
-	AppendGlobalCmdFlagsToConfig(cmd.Flags(), c)
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
@@ -317,7 +297,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	c.CloudConfig.ProjectID = projectID
 	c.CloudConfig.Zone = zone
 
-	p, ctx, err := getProviderAndContext(c, provider)
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
 	}
@@ -326,4 +306,19 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+}
+
+func getInstanceCommandDefaultConfig(cmd *cobra.Command) (c *lepton.Config, err error) {
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+
+	c = lepton.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err = mergeContainer.Merge(c)
+
+	return
 }

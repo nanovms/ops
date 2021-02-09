@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,7 +24,11 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 		os.Exit(1)
 	}
 
-	instancename := c.CloudConfig.ImageName
+	instancename := c.RunConfig.InstanceName
+
+	if instancename == "" {
+		instancename = c.CloudConfig.ImageName
+	}
 
 	fmt.Printf("booting %s ...\n", instancename)
 
@@ -43,7 +46,18 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 
 // GetInstanceByID returns the instance with the id passed by argument if it exists
 func (p *OnPrem) GetInstanceByID(ctx *Context, id string) (*CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range instances {
+		if i.Image == id {
+			return &i, nil
+		}
+	}
+
+	return nil, fmt.Errorf("instance with id \"%s\" not found", id)
 }
 
 // GetInstances return all instances on prem
@@ -134,17 +148,24 @@ func (p *OnPrem) DeleteInstance(ctx *Context, instancename string) error {
 
 	pid, err := strconv.Atoi(instancename)
 	if err != nil {
-		fmt.Println(err)
+		instance, err := p.GetInstanceByID(ctx, instancename)
+		if err == nil {
+			pid, _ = strconv.Atoi(instance.Name)
+		}
 	}
 
-	// yolo
+	if pid == 0 {
+		fmt.Printf("did not find pid of instance \"%s\"\n", instancename)
+		return nil
+	}
+
 	err = sysKill(pid)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	opshome := GetOpsHome()
-	ipath := path.Join(opshome, "instances", instancename)
+	ipath := path.Join(opshome, "instances", strconv.Itoa(pid))
 	err = os.Remove(ipath)
 	if err != nil {
 		return err

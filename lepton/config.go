@@ -1,5 +1,11 @@
 package lepton
 
+import (
+	"fmt"
+	"path"
+	"path/filepath"
+)
+
 // Config for Build
 type Config struct {
 	// Args defines an array of commands to execute when the image is launched.
@@ -206,6 +212,20 @@ type RunConfig struct {
 	VPC string
 }
 
+// SetImage generates a new image path if not specified, otherwise fixes the image path
+func (c *Config) SetImage() {
+	imageName := c.RunConfig.Imagename
+	if imageName == "" {
+		imageName = GenerateImageName(c.Program)
+		c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(c.Program))
+	} else {
+		c.CloudConfig.ImageName = imageName
+		images := path.Join(GetOpsHome(), "images")
+		imageName = path.Join(images, filepath.Base(imageName))
+	}
+	c.RunConfig.Imagename = imageName
+}
+
 // RuntimeConfig constructs runtime config
 func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
 	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
@@ -215,5 +235,6 @@ func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
 func NewConfig() *Config {
 	cfg := new(Config)
 	cfg.RunConfig.Accel = true
+	cfg.RunConfig.Memory = "2G"
 	return cfg
 }

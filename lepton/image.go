@@ -21,12 +21,13 @@ var localImageDir = path.Join(GetOpsHome(), "images")
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
 func BuildImage(c Config) error {
+
 	m, err := BuildManifest(&c)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
 
-	if err = buildImage(&c, m); err != nil {
+	if err = createImageFile(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
@@ -42,7 +43,7 @@ func rebuildImage(c Config) error {
 		return errors.Wrap(err, 1)
 	}
 
-	if err = buildImage(&c, m); err != nil {
+	if err = createImageFile(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
@@ -112,7 +113,7 @@ func addPasswd(m *fs.Manifest, c *Config) {
 }
 
 // bunch of default files that's required.
-func addDefaultFiles(m *fs.Manifest, c *Config) error {
+func addCommonFilesToManifest(m *fs.Manifest) error {
 
 	commonPath := path.Join(GetOpsHome(), "common")
 	if _, err := os.Stat(commonPath); os.IsNotExist(err) {
@@ -198,14 +199,15 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 func BuildPackageManifest(packagepath string, c *Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
-	// Add files from package
 	addFilesFromPackage(packagepath, m)
 
 	m.SetProgram(c.Program)
-	err := addFromConfig(m, c)
+
+	err := setManifestFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
+
 	if len(c.Args) > 1 {
 		if _, err := os.Stat(c.Args[1]); err == nil {
 			err = m.AddFile(c.Args[1], c.Args[1])
@@ -218,7 +220,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*fs.Manifest, error) {
 	return m, nil
 }
 
-func addFromConfig(m *fs.Manifest, c *Config) error {
+func setManifestFromConfig(m *fs.Manifest, c *Config) error {
 	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
@@ -275,6 +277,14 @@ func addFromConfig(m *fs.Manifest, c *Config) error {
 		m.AddMount(k, v)
 	}
 
+	if c.RunConfig.IPAddr != "" {
+		m.AddNetworkConfig(&fs.ManifestNetworkConfig{
+			IP:      c.RunConfig.IPAddr,
+			Gateway: c.RunConfig.Gateway,
+			NetMask: c.RunConfig.NetMask,
+		})
+	}
+
 	return nil
 }
 
@@ -282,14 +292,13 @@ func addFromConfig(m *fs.Manifest, c *Config) error {
 func BuildManifest(c *Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
-	addDefaultFiles(m, c)
+	addCommonFilesToManifest(m)
 
-	err := addFromConfig(m, c)
+	m.AddUserProgram(c.Program)
+	err := setManifestFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
-
-	m.AddUserProgram(c.Program)
 
 	deps, err := getSharedLibs(c.TargetRoot, c.Program)
 	if err != nil {
@@ -337,7 +346,7 @@ func addMappedFiles(src string, dest string, m *fs.Manifest) error {
 	return err
 }
 
-func buildImage(c *Config, m *fs.Manifest) error {
+func createImageFile(c *Config, m *fs.Manifest) error {
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.RunConfig.Imagename)
 	defer func() {

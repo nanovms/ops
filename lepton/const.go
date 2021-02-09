@@ -1,7 +1,6 @@
 package lepton
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,12 +37,7 @@ const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 func GenerateImageName(program string) string {
 	program = filepath.Base(program)
 	images := path.Join(GetOpsHome(), "images")
-	var buffer bytes.Buffer
-	buffer.WriteString(images)
-	buffer.WriteRune('/')
-	buffer.WriteString(program)
-	buffer.WriteString(".img")
-	return buffer.String()
+	return fmt.Sprintf("%s/%s.img", images, program)
 }
 
 // PackagesCache where all packages are stored
