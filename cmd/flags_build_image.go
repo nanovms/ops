@@ -3,7 +3,6 @@ package cmd
 import (
 	"strings"
 
-	"github.com/go-errors/errors"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 )
@@ -44,15 +43,15 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *api.Config) (err error) {
 		c.Program = flags.CmdArgs[0]
 	} else if len(c.Args) != 0 {
 		c.Program = c.Args[0]
-	} else if c.Program == "" {
-		return errors.New("Please mention program to run")
 	}
 
-	if c.RunConfig.Imagename == "" {
+	if c.RunConfig.Imagename == "" && c.Program != "" {
 		c.RunConfig.Imagename = c.Program
 	}
 
-	c.SetImage()
+	if c.RunConfig.Imagename != "" {
+		c.SetImage()
+	}
 
 	if c.Args != nil {
 		c.Args = append(c.Args, flags.CmdArgs...)
