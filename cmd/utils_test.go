@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -171,4 +172,13 @@ func StringWithCharset(length int, charset string) string {
 
 func String(length int) string {
 	return StringWithCharset(length, charset)
+}
+
+func writeConfigToFile(config *lepton.Config, fileName string) {
+	json, _ := json.MarshalIndent(config, "", "  ")
+
+	err := ioutil.WriteFile(fileName, json, 0666)
+	if err != nil {
+		panic(err)
+	}
 }
