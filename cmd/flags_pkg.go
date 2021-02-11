@@ -60,15 +60,24 @@ func (flags *PkgCommandFlags) MergeToConfig(c *api.Config) (err error) {
 		pkgConfig.Env[k] = v
 	}
 
-	pkgConfig.BaseVolumeSz = c.BaseVolumeSz
+	if c.BaseVolumeSz != "" {
+		pkgConfig.BaseVolumeSz = c.BaseVolumeSz
+	}
+
+	if c.NameServer != "" {
+		pkgConfig.NameServer = c.NameServer
+	}
+
+	if c.TargetRoot != "" {
+		pkgConfig.TargetRoot = c.TargetRoot
+	}
+
 	pkgConfig.RunConfig = c.RunConfig
 	pkgConfig.CloudConfig = c.CloudConfig
 	pkgConfig.Kernel = c.Kernel
 	pkgConfig.Boot = c.Boot
-	pkgConfig.TargetRoot = c.TargetRoot
 	pkgConfig.Force = c.Force
 	pkgConfig.NightlyBuild = c.NightlyBuild
-	pkgConfig.NameServer = c.NameServer
 
 	pkgConfig.SetImage()
 
