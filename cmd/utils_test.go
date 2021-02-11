@@ -107,14 +107,23 @@ func removeInstance(instanceName string) {
 func assertImageExists(t *testing.T, imageName string) {
 	t.Helper()
 
-	imagePath := getImagePath(imageName)
+	imagePath := getImagePath(imageName + ".img")
 	_, err := os.Stat(imagePath)
 
 	assert.False(t, os.IsNotExist(err))
 }
 
+func assertImageDoesNotExist(t *testing.T, imageName string) {
+	t.Helper()
+
+	imagePath := getImagePath(imageName + ".img")
+	_, err := os.Stat(imagePath)
+
+	assert.True(t, os.IsNotExist(err))
+}
+
 func removeImage(imageName string) {
-	imagePath := getImagePath(imageName)
+	imagePath := getImagePath(imageName + ".img")
 
 	os.Remove(imagePath)
 }

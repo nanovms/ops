@@ -38,7 +38,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 		err := container.Merge(config)
 
 		assert.Nil(t, err)
-		assert.Equal(t, config.RunConfig.Imagename, imagesPath+"/build-image")
+		assert.Equal(t, config.RunConfig.Imagename, imagesPath+"/build-image.img")
 	})
 
 	t.Run("if build image flags are placed before the config image flags imagename overrides the value", func(t *testing.T) {

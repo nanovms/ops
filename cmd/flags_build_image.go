@@ -51,6 +51,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *api.Config) (err error) {
 
 	if c.RunConfig.Imagename != "" {
 		c.SetImage()
+		c.RunConfig.Imagename = c.RunConfig.Imagename + ".img"
 	}
 
 	if c.Args != nil {

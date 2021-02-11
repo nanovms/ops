@@ -19,5 +19,5 @@ func TestRunCommand(t *testing.T) {
 	err := runCmd.Execute()
 
 	assert.Nil(t, err)
-	removeImage(programPath + ".img")
+	removeImage(programPath)
 }
