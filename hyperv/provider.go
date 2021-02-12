@@ -10,6 +10,11 @@ import (
 type Provider struct {
 }
 
+// NewProvider returns an instance of Hyper-V provider
+func NewProvider() *Provider {
+	return &Provider{}
+}
+
 // Initialize checks conditions to use hyper-v
 func (p *Provider) Initialize(config *lepton.ProviderConfig) error {
 	if available, _, _ := IsPowershellAvailable(); !available {

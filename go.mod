@@ -3,7 +3,8 @@ module github.com/nanovms/ops
 go 1.12
 
 require (
-	cloud.google.com/go v0.41.0
+	cloud.google.com/go v0.65.0
+	cloud.google.com/go/storage v1.10.0
 	github.com/Azure/azure-sdk-for-go v44.1.0+incompatible
 	github.com/Azure/azure-storage-blob-go v0.10.0
 	github.com/Azure/go-autorest/autorest v0.11.9
@@ -15,10 +16,11 @@ require (
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c
 	github.com/d2g/dhcp4client v1.0.0
-	github.com/digitalocean/godo v1.50.0
+	github.com/digitalocean/godo v1.57.0
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/golang/mock v1.4.4
+	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/gophercloud/gophercloud v0.12.0
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
@@ -34,10 +36,11 @@ require (
 	github.com/vishvananda/netlink v1.0.0
 	github.com/vishvananda/netns v0.0.0-20190625233234-7109fa855b0f // indirect
 	github.com/vmware/govmomi v0.22.2
-	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
 	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
-	google.golang.org/api v0.7.0
+	google.golang.org/api v0.30.0
+	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.55.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )

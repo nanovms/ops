@@ -3,7 +3,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/nanovms/ops/digitalocean"
+	"github.com/nanovms/ops/hyperv"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/upcloud"
 )
 
 // TODO : use factory or DI
@@ -18,7 +21,7 @@ func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Prov
 	case "aws":
 		provider = &api.AWS{}
 	case "do":
-		provider = &api.DigitalOcean{}
+		provider = &digitalocean.DigitalOcean{}
 	case "vultr":
 		provider = &api.Vultr{}
 	case "vsphere":
@@ -27,6 +30,10 @@ func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Prov
 		provider = &api.OpenStack{}
 	case "azure":
 		provider = &api.Azure{}
+	case "hyper-v":
+		provider = hyperv.NewProvider()
+	case "upcloud":
+		provider = upcloud.NewProvider()
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
