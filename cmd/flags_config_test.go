@@ -1,8 +1,6 @@
 package cmd_test
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -48,12 +46,6 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
-}
-
-func writeConfigToFile(config *lepton.Config, fileName string) {
-	json, _ := json.MarshalIndent(config, "", "  ")
-
-	ioutil.WriteFile(fileName, json, 0644)
 }
 
 func newConfigFlagSet() (flagSet *pflag.FlagSet) {

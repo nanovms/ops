@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -107,14 +108,23 @@ func removeInstance(instanceName string) {
 func assertImageExists(t *testing.T, imageName string) {
 	t.Helper()
 
-	imagePath := getImagePath(imageName)
+	imagePath := getImagePath(imageName + ".img")
 	_, err := os.Stat(imagePath)
 
 	assert.False(t, os.IsNotExist(err))
 }
 
+func assertImageDoesNotExist(t *testing.T, imageName string) {
+	t.Helper()
+
+	imagePath := getImagePath(imageName + ".img")
+	_, err := os.Stat(imagePath)
+
+	assert.True(t, os.IsNotExist(err))
+}
+
 func removeImage(imageName string) {
-	imagePath := getImagePath(imageName)
+	imagePath := getImagePath(imageName + ".img")
 
 	os.Remove(imagePath)
 }
@@ -162,4 +172,13 @@ func StringWithCharset(length int, charset string) string {
 
 func String(length int) string {
 	return StringWithCharset(length, charset)
+}
+
+func writeConfigToFile(config *lepton.Config, fileName string) {
+	json, _ := json.MarshalIndent(config, "", "  ")
+
+	err := ioutil.WriteFile(fileName, json, 0666)
+	if err != nil {
+		panic(err)
+	}
 }

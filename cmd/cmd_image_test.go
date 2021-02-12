@@ -40,9 +40,10 @@ func TestDeleteImage(t *testing.T) {
 
 	deleteImageCmd := cmd.ImageCommands()
 
-	deleteImageCmd.SetArgs([]string{"delete", imagePath, "--assume-yes"})
+	deleteImageCmd.SetArgs([]string{"delete", imagePath + ".img", "--assume-yes"})
 
 	err := deleteImageCmd.Execute()
 
 	assert.Nil(t, err)
+	assertImageDoesNotExist(t, imagePath)
 }

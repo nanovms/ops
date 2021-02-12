@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateInstance(t *testing.T) {
-	imageName := "basic"
+	imageName := "test-create-instance"
 	imageName = buildImage(imageName)
 	defer removeImage(imageName)
 

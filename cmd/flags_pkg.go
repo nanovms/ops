@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
+	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 )
@@ -60,17 +63,34 @@ func (flags *PkgCommandFlags) MergeToConfig(c *api.Config) (err error) {
 		pkgConfig.Env[k] = v
 	}
 
-	pkgConfig.BaseVolumeSz = c.BaseVolumeSz
+	if c.BaseVolumeSz != "" {
+		pkgConfig.BaseVolumeSz = c.BaseVolumeSz
+	}
+
+	if c.NameServer != "" {
+		pkgConfig.NameServer = c.NameServer
+	}
+
+	if c.TargetRoot != "" {
+		pkgConfig.TargetRoot = c.TargetRoot
+	}
+
 	pkgConfig.RunConfig = c.RunConfig
 	pkgConfig.CloudConfig = c.CloudConfig
 	pkgConfig.Kernel = c.Kernel
 	pkgConfig.Boot = c.Boot
-	pkgConfig.TargetRoot = c.TargetRoot
 	pkgConfig.Force = c.Force
 	pkgConfig.NightlyBuild = c.NightlyBuild
-	pkgConfig.NameServer = c.NameServer
 
-	pkgConfig.SetImage()
+	imageName := pkgConfig.RunConfig.Imagename
+	images := path.Join(lepton.GetOpsHome(), "images")
+	if imageName == "" {
+		pkgConfig.RunConfig.Imagename = path.Join(images, filepath.Base(pkgConfig.Program))
+		pkgConfig.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(pkgConfig.Program))
+	} else {
+		c.CloudConfig.ImageName = imageName
+		imageName = path.Join(images, filepath.Base(imageName))
+	}
 
 	*c = *pkgConfig
 

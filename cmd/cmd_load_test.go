@@ -20,5 +20,5 @@ func TestLoad(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	removeImage("node.img")
+	removeImage(program)
 }

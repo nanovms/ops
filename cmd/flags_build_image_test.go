@@ -58,7 +58,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			ImageName: "test-image",
 		},
 		RunConfig: lepton.RunConfig{
-			Imagename: imagesPath + "/test-image",
+			Imagename: imagesPath + "/test-image.img",
 		},
 		Args:       []string{"a b c d"},
 		Program:    "a b c d",
