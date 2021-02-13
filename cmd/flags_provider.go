@@ -22,7 +22,7 @@ func (flags *ProviderCommandFlags) MergeToConfig(c *api.Config) (err error) {
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {
-		err = errors.New("Please select one of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr]")
+		err = errors.New("Please select one of the cloud platform in config. [onprem, aws, gcp, do, vsphere, vultr, upcloud, hyper-v]")
 		return
 	}
 
@@ -44,5 +44,5 @@ func NewProviderCommandFlags(cmdFlags *pflag.FlagSet) (flags *ProviderCommandFla
 
 // PersistProviderCommandFlags append a command the required flags to run an image
 func PersistProviderCommandFlags(cmdFlags *pflag.FlagSet) {
-	cmdFlags.StringP("target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, hyper-v, upcloud]")
+	cmdFlags.StringP("target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, upcloud, hyper-v]")
 }

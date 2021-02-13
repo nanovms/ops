@@ -1,4 +1,4 @@
-package lepton
+package digitalocean
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/digitalocean/godo"
+	"github.com/nanovms/ops/lepton"
 )
 
 var (
@@ -50,7 +51,7 @@ func TestDoGetImages(t *testing.T) {
 	do := &DigitalOcean{
 		Client: client,
 	}
-	images, err := do.GetImages(&Context{})
+	images, err := do.GetImages(&lepton.Context{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +59,7 @@ func TestDoGetImages(t *testing.T) {
 	item1CreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", "2020-09-04T06:50:46Z")
 	item2CreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", "2020-09-04T06:50:46Z")
 
-	expectedResult := []CloudImage{
+	expectedResult := []lepton.CloudImage{
 		{ID: "1", Name: "test1", Status: "test", Created: item1CreatedAt},
 		{ID: "2", Name: "test2", Status: "test", Created: item2CreatedAt},
 	}
