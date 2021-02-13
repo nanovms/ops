@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
@@ -45,4 +46,19 @@ func TestPkgDescribeCommand(t *testing.T) {
 	err := getPkgCmd.Execute()
 
 	assert.Nil(t, err)
+}
+
+func TestLoad(t *testing.T) {
+	getPkgCmd := cmd.PackageCommands()
+
+	program := buildNodejsProgram()
+	defer os.Remove(program)
+
+	getPkgCmd.SetArgs([]string{"load", "node_v14.2.0", "-a", program})
+
+	err := getPkgCmd.Execute()
+
+	assert.Nil(t, err)
+
+	removeImage(program)
 }
