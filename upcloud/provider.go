@@ -9,7 +9,8 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/client"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/service"
-	"github.com/nanovms/ops/lepton"
+
+	"github.com/nanovms/ops/config"
 )
 
 // Service is the interface implemented by upcloud service
@@ -37,7 +38,7 @@ func NewProviderWithService(service Service) *Provider {
 }
 
 // Initialize checks conditions to use hyper-v
-func (p *Provider) Initialize(config *lepton.ProviderConfig) error {
+func (p *Provider) Initialize(c *config.ProviderConfig) error {
 	user := os.Getenv("UPCLOUD_USER")
 	if user == "" {
 		return errors.New(`"UPCLOUD_USER" not set`)

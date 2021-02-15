@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -118,7 +119,7 @@ func (p *OnPrem) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from onprem to target provider provided in Context
-func (p *OnPrem) SyncImage(config *Config, target Provider, image string) error {
+func (p *OnPrem) SyncImage(config *config.Config, target Provider, image string) error {
 	imagePath := path.Join(localImageDir, image+".img")
 	_, err := os.Stat(imagePath)
 	if err != nil {

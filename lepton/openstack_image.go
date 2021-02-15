@@ -10,6 +10,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -228,7 +229,7 @@ func (o *OpenStack) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (o *OpenStack) SyncImage(config *Config, target Provider, image string) error {
+func (o *OpenStack) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }

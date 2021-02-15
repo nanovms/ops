@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	"github.com/stretchr/testify/assert"
 )
@@ -174,7 +175,7 @@ func String(length int) string {
 	return StringWithCharset(length, charset)
 }
 
-func writeConfigToFile(config *lepton.Config, fileName string) {
+func writeConfigToFile(config *config.Config, fileName string) {
 	json, _ := json.MarshalIndent(config, "", "  ")
 
 	err := ioutil.WriteFile(fileName, json, 0666)

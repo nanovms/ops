@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
+	"github.com/nanovms/ops/config"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -21,7 +22,7 @@ type OpenStack struct {
 }
 
 // Initialize OpenStack related things
-func (o *OpenStack) Initialize(config *ProviderConfig) error {
+func (o *OpenStack) Initialize(config *config.ProviderConfig) error {
 
 	opts, err := openstack.AuthOptionsFromEnv()
 

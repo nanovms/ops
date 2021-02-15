@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/go-errors/errors"
-	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 )
 
@@ -12,7 +12,7 @@ type ProviderCommandFlags struct {
 }
 
 // MergeToConfig merge provider flags to configuration
-func (flags *ProviderCommandFlags) MergeToConfig(c *api.Config) (err error) {
+func (flags *ProviderCommandFlags) MergeToConfig(c *config.Config) (err error) {
 	if flags.TargetCloud != "" {
 		c.CloudConfig.Platform = flags.TargetCloud
 	}

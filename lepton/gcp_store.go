@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 
 	storage "cloud.google.com/go/storage"
+	"github.com/nanovms/ops/config"
 )
 
 // GCPStorage provides GCP storage related operations
 type GCPStorage struct{}
 
 // CopyToBucket copies archive to bucket
-func (s *GCPStorage) CopyToBucket(config *Config, archPath string) error {
+func (s *GCPStorage) CopyToBucket(config *config.Config, archPath string) error {
 
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)

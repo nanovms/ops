@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
@@ -38,7 +39,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 	return p.createVhdxImage(c)
 }
 
-func (p *Provider) createVhdxImage(c *lepton.Config) (imagePath string, err error) {
+func (p *Provider) createVhdxImage(c *config.Config) (imagePath string, err error) {
 
 	vhdxImagesDir, err := findOrCreateHyperVImagesDir()
 	if err != nil {
@@ -139,7 +140,7 @@ func (p *Provider) ResizeImage(ctx *lepton.Context, imagename string, hbytes str
 }
 
 // SyncImage is a stub
-func (p *Provider) SyncImage(config *lepton.Config, target lepton.Provider, imagename string) error {
+func (p *Provider) SyncImage(config *config.Config, target lepton.Provider, imagename string) error {
 	return errors.New("Unsupported")
 }
 

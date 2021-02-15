@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,18 +36,18 @@ func TestStartImageFlagsMergeToConfig(t *testing.T) {
 	startImageFlags := newStartImageFlagSet("false")
 	startImageFlags.Debug = false
 
-	config := &lepton.Config{}
+	c := &config.Config{}
 
-	err := startImageFlags.MergeToConfig(config)
+	err := startImageFlags.MergeToConfig(c)
 
 	assert.Nil(t, err, nil)
 
-	expected := &lepton.Config{
+	expected := &config.Config{
 		BuildDir:   "",
 		Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
 		Force:      true,
 		NoTrace:    []string{"a"},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Accel:   true,
 			Bridged: true,
 			CPUs:    2,
@@ -63,7 +63,7 @@ func TestStartImageFlagsMergeToConfig(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, config)
+	assert.Equal(t, expected, c)
 
 }
 

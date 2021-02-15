@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -196,7 +197,7 @@ func (p *GCloud) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (p *GCloud) SyncImage(config *Config, target Provider, image string) error {
+func (p *GCloud) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }

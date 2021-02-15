@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/constants"
 )
 
 // Version for ops
@@ -76,7 +79,7 @@ func GetOpsHome() string {
 	return opshome
 }
 
-func getImageTempDir(c *Config) string {
+func getImageTempDir(c *config.Config) string {
 	temp := filepath.Base(c.Program) + "_temp"
 
 	if c.BuildDir == "" {
@@ -157,19 +160,12 @@ func updateLocalRelease(version string) error {
 // LatestReleaseVersion give latest stable release for nanos
 var LatestReleaseVersion = getLatestRelVersion()
 
-const (
-	// WarningColor used in warning texts
-	WarningColor = "\033[1;33m%s\033[0m"
-	// ErrorColor used in error texts
-	ErrorColor = "\033[1;31m%s\033[0m"
-)
-
 func getLatestRelVersion() string {
 	resp, err := http.Get(releaseBaseURL + "latest.txt")
 	if err != nil {
-		fmt.Printf(WarningColor, "version lookup failed, using local.\n")
+		fmt.Printf(constants.WarningColor, "version lookup failed, using local.\n")
 		if LocalReleaseVersion == "0.0" {
-			fmt.Printf(ErrorColor, "No local build found.")
+			fmt.Printf(constants.ErrorColor, "No local build found.")
 			os.Exit(1)
 		}
 		return LocalReleaseVersion

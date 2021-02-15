@@ -1,10 +1,12 @@
 package lepton
 
+import "github.com/nanovms/ops/config"
+
 // OnPrem provider for ops
 type OnPrem struct{}
 
 // Initialize on prem provider
-func (p *OnPrem) Initialize(config *ProviderConfig) error {
+func (p *OnPrem) Initialize(config *config.ProviderConfig) error {
 	return nil
 }
 

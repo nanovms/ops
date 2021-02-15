@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -168,7 +169,7 @@ func (v *Vultr) DeleteImage(ctx *Context, snapshotID string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (v *Vultr) SyncImage(config *Config, target Provider, image string) error {
+func (v *Vultr) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }

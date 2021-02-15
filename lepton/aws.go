@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ebs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/nanovms/ops/config"
 )
 
 // AWS contains all operations for AWS
@@ -45,7 +46,7 @@ func loadAWSCreds() (err error) {
 }
 
 // Initialize AWS related things
-func (p *AWS) Initialize(config *ProviderConfig) error {
+func (p *AWS) Initialize(config *config.ProviderConfig) error {
 	p.Storage = &S3{}
 
 	if config.Zone == "" {
@@ -76,7 +77,7 @@ func (p *AWS) Initialize(config *ProviderConfig) error {
 }
 
 // buildAwsTags converts configuration tags to AWS tags and returns the resource name. The defaultName is overridden if there is a tag with key name
-func buildAwsTags(configTags []Tag, defaultName string) ([]*ec2.Tag, string) {
+func buildAwsTags(configTags []config.Tag, defaultName string) ([]*ec2.Tag, string) {
 	tags := []*ec2.Tag{}
 	var nameSpecified bool
 	name := defaultName

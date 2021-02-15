@@ -10,13 +10,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/nanovms/ops/config"
 )
 
 // S3 provides AWS storage related operations
 type S3 struct{}
 
 // CopyToBucket copies archive to bucket
-func (s *S3) CopyToBucket(config *Config, archPath string) error {
+func (s *S3) CopyToBucket(config *config.Config, archPath string) error {
 
 	bucket := config.CloudConfig.BucketName
 	zone := config.CloudConfig.Zone
@@ -56,7 +57,7 @@ func (s *S3) CopyToBucket(config *Config, archPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (s *S3) DeleteFromBucket(config *Config, key string) error {
+func (s *S3) DeleteFromBucket(config *config.Config, key string) error {
 	bucket := config.CloudConfig.BucketName
 	zone := config.CloudConfig.Zone
 

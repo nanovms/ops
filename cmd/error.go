@@ -5,17 +5,17 @@ import (
 	"os"
 
 	"github.com/go-errors/errors"
-	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/constants"
 	"github.com/spf13/cobra"
 )
 
 func exitWithError(errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
+	fmt.Println(fmt.Sprintf(constants.ErrorColor, errs))
 	os.Exit(1)
 }
 
 func exitForCmd(cmd *cobra.Command, errs string) {
-	fmt.Println(fmt.Sprintf(api.ErrorColor, errs))
+	fmt.Println(fmt.Sprintf(constants.ErrorColor, errs))
 	cmd.Help()
 	os.Exit(1)
 }

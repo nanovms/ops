@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/nanovms/ops/config"
 )
 
 // AzureStorage provides Azure storage related operations
@@ -102,7 +103,7 @@ func (az *AzureStorage) resizeImage(basePath string, newPath string, resizeSz ui
 }
 
 // CopyToBucket copies archive to bucket
-func (az *AzureStorage) CopyToBucket(config *Config, imgPath string) error {
+func (az *AzureStorage) CopyToBucket(config *config.Config, imgPath string) error {
 
 	base := filepath.Base(imgPath)
 
@@ -193,7 +194,7 @@ func (az *AzureStorage) CopyToBucket(config *Config, imgPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (az *AzureStorage) DeleteFromBucket(config *Config, key string) error {
+func (az *AzureStorage) DeleteFromBucket(config *config.Config, key string) error {
 
 	fmt.Printf("Started deleting image from container")
 	blobURL := getBlobURL(containerName, key)

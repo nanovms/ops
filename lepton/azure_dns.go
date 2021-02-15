@@ -5,10 +5,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/nanovms/ops/config"
 )
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
-func (a *Azure) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+func (a *Azure) FindOrCreateZoneIDByName(config *config.Config, dnsName string) (string, error) {
 	service := dns.NewZonesClient(a.subID)
 	authr, _ := a.GetResourceManagementAuthorizer()
 	service.Authorizer = authr
@@ -37,12 +38,12 @@ func (a *Azure) FindOrCreateZoneIDByName(config *Config, dnsName string) (string
 }
 
 // DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
-func (a *Azure) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+func (a *Azure) DeleteZoneRecordIfExists(config *config.Config, zoneID string, recordName string) error {
 	return nil
 }
 
 // CreateZoneRecord creates a record in a DNS zone
-func (a *Azure) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+func (a *Azure) CreateZoneRecord(config *config.Config, zoneID string, record *DNSRecord) error {
 	service := dns.NewRecordSetsClient(a.subID)
 	authr, _ := a.GetResourceManagementAuthorizer()
 	service.Authorizer = authr

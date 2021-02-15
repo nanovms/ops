@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +51,7 @@ func imageCreateCommand() *cobra.Command {
 
 func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
-	c := lepton.NewConfig()
+	c := config.NewConfig()
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
@@ -117,7 +117,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := lepton.NewConfig()
+	c := config.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)
@@ -163,7 +163,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := lepton.NewConfig()
+	c := config.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)

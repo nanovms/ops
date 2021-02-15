@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/digitalocean"
 	"github.com/nanovms/ops/hyperv"
 	api "github.com/nanovms/ops/lepton"
@@ -10,7 +11,7 @@ import (
 )
 
 // TODO : use factory or DI
-func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Provider, error) {
+func getCloudProvider(providerName string, c *config.ProviderConfig) (api.Provider, error) {
 	var provider api.Provider
 
 	switch providerName {
@@ -38,11 +39,11 @@ func getCloudProvider(providerName string, config *api.ProviderConfig) (api.Prov
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
 
-	err := provider.Initialize(config)
+	err := provider.Initialize(c)
 	return provider, err
 }
 
-func getProviderAndContext(c *api.Config, providerName string) (api.Provider, *api.Context, error) {
+func getProviderAndContext(c *config.Config, providerName string) (api.Provider, *api.Context, error) {
 	p, err := getCloudProvider(providerName, &c.CloudConfig)
 	if err != nil {
 		return nil, nil, err

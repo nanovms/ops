@@ -1,5 +1,7 @@
 package lepton
 
+import "github.com/nanovms/ops/config"
+
 // Vultr provides access to the Vultr API.
 type Vultr struct {
 	Storage *Objects
@@ -25,7 +27,7 @@ type vultrServer struct {
 }
 
 // Initialize GCP related things
-func (v *Vultr) Initialize(config *ProviderConfig) error {
+func (v *Vultr) Initialize(config *config.ProviderConfig) error {
 	return nil
 }
 

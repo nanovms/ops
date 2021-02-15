@@ -6,10 +6,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/nanovms/ops/config"
 )
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
-func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+func (p *AWS) FindOrCreateZoneIDByName(config *config.Config, dnsName string) (string, error) {
 	var zoneID string
 	hostedZones, err := p.dnsService.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
 	if err == nil && hostedZones.HostedZones == nil {
@@ -36,7 +37,7 @@ func (p *AWS) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, 
 }
 
 // DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
-func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+func (p *AWS) DeleteZoneRecordIfExists(config *config.Config, zoneID string, recordName string) error {
 	records, err := p.dnsService.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{HostedZoneId: &zoneID})
 	if err != nil {
 		return err
@@ -67,7 +68,7 @@ func (p *AWS) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName
 }
 
 // CreateZoneRecord creates a record in a DNS zone
-func (p *AWS) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+func (p *AWS) CreateZoneRecord(config *config.Config, zoneID string, record *DNSRecord) error {
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch: &route53.ChangeBatch{
 			Changes: []*route53.Change{

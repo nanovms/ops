@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/nanovms/ops/config"
 )
 
 // Datastores provides access to VSphere's Datastores
 type Datastores struct{}
 
 // CopyToBucket converts the raw disk image to a monolithicFlat vmdk.
-func (s *Datastores) CopyToBucket(config *Config, archPath string) error {
+func (s *Datastores) CopyToBucket(config *config.Config, archPath string) error {
 
 	vmdkPath := "/tmp/" + config.CloudConfig.ImageName + ".vmdk"
 
@@ -32,6 +34,6 @@ func (s *Datastores) CopyToBucket(config *Config, archPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (s *Datastores) DeleteFromBucket(config *Config, key string) error {
+func (s *Datastores) DeleteFromBucket(config *config.Config, key string) error {
 	return nil
 }

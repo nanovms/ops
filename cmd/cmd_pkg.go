@@ -14,7 +14,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
 )
 
@@ -218,7 +218,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	pkgFlags.Package = args[0]
 
-	c := lepton.NewConfig()
+	c := config.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, buildImageFlags, globalFlags, startImageFlags, pkgFlags)
 	err := mergeContainer.Merge(c)

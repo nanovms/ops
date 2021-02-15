@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/vim25/soap"
@@ -175,7 +176,7 @@ func (v *Vsphere) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (v *Vsphere) SyncImage(config *Config, target Provider, image string) error {
+func (v *Vsphere) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }

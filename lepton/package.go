@@ -17,6 +17,8 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/constants"
 )
 
 // PackageList contains a list of known packages.
@@ -133,7 +135,7 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	res, err := http.Head(remoteURL)
 	if err != nil {
 		if err, ok := err.(net.Error); ok {
-			fmt.Printf(WarningColor, "missing internet?, using local manifest.\n")
+			fmt.Printf(constants.WarningColor, "missing internet?, using local manifest.\n")
 		} else {
 			panic(err)
 		}
@@ -231,7 +233,7 @@ func ExtractPackage(archive string, dest string) {
 }
 
 // BuildImageFromPackage builds nanos image using a package
-func BuildImageFromPackage(packagepath string, c Config) error {
+func BuildImageFromPackage(packagepath string, c config.Config) error {
 	m, err := BuildPackageManifest(packagepath, &c)
 	if err != nil {
 		return errors.Wrap(err, 1)

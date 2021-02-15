@@ -7,10 +7,11 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
+	"github.com/nanovms/ops/config"
 )
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
-func (o *OpenStack) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+func (o *OpenStack) FindOrCreateZoneIDByName(config *config.Config, dnsName string) (string, error) {
 	dnsClient, err := o.getDNSClient()
 	if err != nil {
 		return "", err
@@ -50,7 +51,7 @@ func (o *OpenStack) FindOrCreateZoneIDByName(config *Config, dnsName string) (st
 }
 
 // DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
-func (o *OpenStack) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+func (o *OpenStack) DeleteZoneRecordIfExists(config *config.Config, zoneID string, recordName string) error {
 	dnsClient, err := o.getDNSClient()
 	if err != nil {
 		return err
@@ -78,7 +79,7 @@ func (o *OpenStack) DeleteZoneRecordIfExists(config *Config, zoneID string, reco
 }
 
 // CreateZoneRecord creates a record in a DNS zone
-func (o *OpenStack) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+func (o *OpenStack) CreateZoneRecord(config *config.Config, zoneID string, record *DNSRecord) error {
 	dnsClient, err := o.getDNSClient()
 	if err != nil {
 		return err

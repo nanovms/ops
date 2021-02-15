@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,14 +37,14 @@ func TestGlobalFlagsMergeToConfig(t *testing.T) {
 
 	globalFlags := cmd.NewGlobalCommandFlags(flagSet)
 
-	config := &lepton.Config{}
+	c := &config.Config{}
 
-	err := globalFlags.MergeToConfig(config)
+	err := globalFlags.MergeToConfig(c)
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, config, &lepton.Config{
-		RunConfig: lepton.RunConfig{
+	assert.Equal(t, c, &config.Config{
+		RunConfig: config.RunConfig{
 			ShowDebug:    true,
 			ShowErrors:   false,
 			ShowWarnings: true,

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/fs"
 )
 
@@ -20,7 +21,7 @@ var localImageDir = path.Join(GetOpsHome(), "images")
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
-func BuildImage(c Config) error {
+func BuildImage(c config.Config) error {
 
 	m, err := BuildManifest(&c)
 	if err != nil {
@@ -36,7 +37,7 @@ func BuildImage(c Config) error {
 
 // rebuildImage rebuilds a unikernel image for user
 // supplied ELF binary after volume attach/detach
-func rebuildImage(c Config) error {
+func rebuildImage(c config.Config) error {
 	c.Program = c.ProgramPath
 	m, err := BuildManifest(&c)
 	if err != nil {
@@ -64,7 +65,7 @@ func createFile(filepath string) (*os.File, error) {
 }
 
 // add /etc/resolv.conf
-func addDNSConfig(m *fs.Manifest, c *Config) {
+func addDNSConfig(m *fs.Manifest, c *config.Config) {
 	temp := getImageTempDir(c)
 	resolv := path.Join(temp, "resolv.conf")
 	data := []byte("nameserver ")
@@ -80,7 +81,7 @@ func addDNSConfig(m *fs.Manifest, c *Config) {
 }
 
 // /proc/sys/kernel/hostname
-func addHostName(m *fs.Manifest, c *Config) {
+func addHostName(m *fs.Manifest, c *config.Config) {
 	temp := getImageTempDir(c)
 	hostname := path.Join(temp, "hostname")
 	data := []byte("uniboot")
@@ -94,7 +95,7 @@ func addHostName(m *fs.Manifest, c *Config) {
 	}
 }
 
-func addPasswd(m *fs.Manifest, c *Config) {
+func addPasswd(m *fs.Manifest, c *config.Config) {
 	// Skip adding password file if present in package
 	if m.FileExists("/etc/passwd") {
 		return
@@ -196,7 +197,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 }
 
 // BuildPackageManifest builds manifest using package
-func BuildPackageManifest(packagepath string, c *Config) (*fs.Manifest, error) {
+func BuildPackageManifest(packagepath string, c *config.Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
 	addFilesFromPackage(packagepath, m)
@@ -220,7 +221,7 @@ func BuildPackageManifest(packagepath string, c *Config) (*fs.Manifest, error) {
 	return m, nil
 }
 
-func setManifestFromConfig(m *fs.Manifest, c *Config) error {
+func setManifestFromConfig(m *fs.Manifest, c *config.Config) error {
 	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
@@ -289,7 +290,7 @@ func setManifestFromConfig(m *fs.Manifest, c *Config) error {
 }
 
 // BuildManifest builds manifest using config
-func BuildManifest(c *Config) (*fs.Manifest, error) {
+func BuildManifest(c *config.Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
 	addCommonFilesToManifest(m)
@@ -346,7 +347,7 @@ func addMappedFiles(src string, dest string, m *fs.Manifest) error {
 	return err
 }
 
-func createImageFile(c *Config, m *fs.Manifest) error {
+func createImageFile(c *config.Config, m *fs.Manifest) error {
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.RunConfig.Imagename)
 	defer func() {
@@ -375,7 +376,7 @@ func createImageFile(c *Config, m *fs.Manifest) error {
 	return nil
 }
 
-func cleanup(c *Config) {
+func cleanup(c *config.Config) {
 	os.RemoveAll(c.BuildDir)
 }
 
@@ -388,7 +389,7 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 // DownloadNightlyImages downloads nightly build for nanos
-func DownloadNightlyImages(c *Config) error {
+func DownloadNightlyImages(c *config.Config) error {
 	local, err := LocalTimeStamp()
 	if err != nil {
 		return err
