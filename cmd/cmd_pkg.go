@@ -138,11 +138,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
-	_, err := api.DownloadPackage(args[0])
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	downloadAndExtractPackage(args[0])
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
