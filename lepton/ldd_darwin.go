@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/fs"
 )
 
@@ -80,7 +81,7 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 	fd, err := elf.Open(path)
 	if err != nil {
 		if strings.Contains(err.Error(), "bad magic number") {
-			fmt.Printf(ErrorColor, "Only ELF binaries are supported. Is thia a Mach-0 (osx) binary? run 'file "+path+"' on it\n")
+			fmt.Printf(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Mach-0 (osx) binary? run 'file "+path+"' on it\n")
 			os.Exit(1)
 		}
 		return nil, errors.WrapPrefix(err, path, 0)
