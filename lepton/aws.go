@@ -65,12 +65,16 @@ func (p *AWS) Initialize(config *ProviderConfig) error {
 	if err != nil {
 		return err
 	}
-
 	// initialize aws services
 	p.session = session
 	p.dnsService = route53.New(session)
 	p.ec2 = ec2.New(session)
 	p.volumeService = ebs.New(session)
+
+	_, err = p.ec2.DescribeRegions(&ec2.DescribeRegionsInput{RegionNames: aws.StringSlice([]string{config.Zone})})
+	if err != nil {
+		return fmt.Errorf("region with name %v is invalid", config.Zone)
+	}
 
 	return nil
 }
