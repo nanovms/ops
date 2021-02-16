@@ -2,10 +2,12 @@ package lepton
 
 import (
 	"fmt"
-	"github.com/minio/minio-go"
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/minio/minio-go"
+	"github.com/nanovms/ops/config"
 )
 
 // Objects provides Vultr Object Storage related operations
@@ -43,7 +45,7 @@ func (s *Objects) getSignedURL(key string, bucket string, region string) string 
 }
 
 // CopyToBucket copies archive to bucket
-func (s *Objects) CopyToBucket(config *Config, archPath string) error {
+func (s *Objects) CopyToBucket(config *config.Config, archPath string) error {
 
 	bucket := config.CloudConfig.BucketName
 	zone := config.CloudConfig.Zone
@@ -87,6 +89,6 @@ func (s *Objects) CopyToBucket(config *Config, archPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (s *Objects) DeleteFromBucket(config *Config, key string) error {
+func (s *Objects) DeleteFromBucket(config *config.Config, key string) error {
 	return nil
 }

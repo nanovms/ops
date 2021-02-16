@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/constants"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/dns/v1"
@@ -27,7 +29,7 @@ type GCloudOperation struct {
 	operationType string
 }
 
-func buildGcpTags(tags []Tag) map[string]string {
+func buildGcpTags(tags []config.Tag) map[string]string {
 	labels := map[string]string{}
 	for _, tag := range tags {
 		labels[tag.Key] = tag.Value
@@ -41,10 +43,10 @@ func buildGcpTags(tags []Tag) map[string]string {
 func checkGCCredentialsProvided() error {
 	creds, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !ok {
-		return fmt.Errorf(ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+		return fmt.Errorf(constants.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
 	}
 	if _, err := os.Stat(creds); os.IsNotExist(err) {
-		return fmt.Errorf(ErrorColor, fmt.Sprintf("error: File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist.", creds))
+		return fmt.Errorf(constants.ErrorColor, fmt.Sprintf("error: File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist.", creds))
 	}
 	return nil
 }
@@ -140,7 +142,7 @@ func (p *GCloud) pollOperation(ctx context.Context, projectID string, service *c
 }
 
 // Initialize GCP related things
-func (p *GCloud) Initialize(config *ProviderConfig) error {
+func (p *GCloud) Initialize(config *config.ProviderConfig) error {
 	p.Storage = &GCPStorage{}
 
 	if config.ProjectID == "" {

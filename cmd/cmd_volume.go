@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
@@ -191,7 +191,7 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *lepton.Config, err error) {
+func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *config.Config, err error) {
 	flags := cmd.Flags()
 
 	configFlags := NewConfigCommandFlags(flags)
@@ -199,7 +199,7 @@ func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *lepton.Config, err er
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = lepton.NewConfig()
+	c = config.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, providerFlags)
 	err = mergeContainer.Merge(c)

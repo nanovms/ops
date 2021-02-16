@@ -10,6 +10,8 @@ import (
 	"github.com/nanovms/ops/mock_upcloud"
 	"github.com/nanovms/ops/upcloud"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/nanovms/ops/config"
 )
 
 func TestProviderInitialize(t *testing.T) {
@@ -21,7 +23,7 @@ func TestProviderInitialize(t *testing.T) {
 			GetAccount().
 			Return(nil, nil)
 
-		err := p.Initialize(&lepton.NewConfig().CloudConfig)
+		err := p.Initialize(&config.NewConfig().CloudConfig)
 
 		assert.Error(t, err)
 	})
@@ -35,7 +37,7 @@ func TestProviderInitialize(t *testing.T) {
 			GetAccount().
 			Return(nil, nil)
 
-		err := p.Initialize(&lepton.NewConfig().CloudConfig)
+		err := p.Initialize(&config.NewConfig().CloudConfig)
 
 		assert.Error(t, err)
 	})
@@ -50,7 +52,7 @@ func TestProviderInitialize(t *testing.T) {
 			GetAccount().
 			Return(nil, nil)
 
-		err := p.Initialize(&lepton.NewConfig().CloudConfig)
+		err := p.Initialize(&config.NewConfig().CloudConfig)
 
 		assert.Error(t, err)
 	})
@@ -68,7 +70,7 @@ func TestProviderInitialize(t *testing.T) {
 			GetAccount().
 			Return(nil, errInvalidCredentials)
 
-		err := p.Initialize(&lepton.NewConfig().CloudConfig)
+		err := p.Initialize(&config.NewConfig().CloudConfig)
 
 		assert.Error(t, err)
 	})
@@ -84,7 +86,7 @@ func TestProviderInitialize(t *testing.T) {
 			GetAccount().
 			Return(nil, nil)
 
-		err := p.Initialize(&lepton.NewConfig().CloudConfig)
+		err := p.Initialize(&config.NewConfig().CloudConfig)
 
 		assert.Nil(t, err)
 	})
@@ -101,5 +103,5 @@ func NewProvider(t *testing.T) (*upcloud.Provider, *mock_upcloud.MockService) {
 }
 
 func NewMockContext() *lepton.Context {
-	return lepton.NewContext(lepton.NewConfig())
+	return lepton.NewContext(config.NewConfig())
 }

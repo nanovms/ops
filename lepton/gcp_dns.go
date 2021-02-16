@@ -4,12 +4,13 @@ import (
 	"context"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 )
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one
-func (p *GCloud) FindOrCreateZoneIDByName(config *Config, dnsName string) (string, error) {
+func (p *GCloud) FindOrCreateZoneIDByName(config *config.Config, dnsName string) (string, error) {
 	zoneName := strings.Split(dnsName, ".")[0]
 	zones, err := p.dnsService.ManagedZones.List(config.CloudConfig.ProjectID).Do()
 	if err != nil {
@@ -42,7 +43,7 @@ func (p *GCloud) FindOrCreateZoneIDByName(config *Config, dnsName string) (strin
 }
 
 // DeleteZoneRecordIfExists deletes a record from a DNS zone if it exists
-func (p *GCloud) DeleteZoneRecordIfExists(config *Config, zoneID string, recordName string) error {
+func (p *GCloud) DeleteZoneRecordIfExists(config *config.Config, zoneID string, recordName string) error {
 	recordsResponse, err := p.dnsService.ResourceRecordSets.List(config.CloudConfig.ProjectID, zoneID).Do()
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func (p *GCloud) DeleteZoneRecordIfExists(config *Config, zoneID string, recordN
 }
 
 // CreateZoneRecord creates a record in a DNS zone
-func (p *GCloud) CreateZoneRecord(config *Config, zoneID string, record *DNSRecord) error {
+func (p *GCloud) CreateZoneRecord(config *config.Config, zoneID string, record *DNSRecord) error {
 	resource := &dns.ResourceRecordSet{
 		Name:    record.Name,
 		Type:    record.Type,

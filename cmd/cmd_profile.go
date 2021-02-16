@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/qemu"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +44,7 @@ func (p *Profile) setProfile() {
 	p.OpsVersion = api.Version
 	p.NanosVersion = api.LocalReleaseVersion
 
-	qv, err := api.QemuVersion()
+	qv, err := qemu.Version()
 	if err != nil {
 		fmt.Println(err)
 	}

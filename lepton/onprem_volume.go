@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/fs"
 )
 
@@ -111,7 +112,7 @@ func (op *OnPrem) parseSize(vol NanosVolume) string {
 }
 
 // buildVolumeManifest builds manifests for non-empty volume
-func buildVolumeManifest(conf *Config) (*fs.Manifest, error) {
+func buildVolumeManifest(conf *config.Config) (*fs.Manifest, error) {
 	m := fs.NewManifest("")
 
 	for _, d := range conf.Dirs {
@@ -279,7 +280,7 @@ func filterVolume(all []NanosVolume, query map[string]string) []NanosVolume {
 }
 
 // AddMounts adds Mounts and RunConfig.Mounts to image from flags
-func AddMounts(mounts []string, config *Config) error {
+func AddMounts(mounts []string, config *config.Config) error {
 	if config.Mounts == nil {
 		config.Mounts = make(map[string]string)
 	}
@@ -319,7 +320,7 @@ func AddMounts(mounts []string, config *Config) error {
 
 // addMounts adds RunConfig.Mounts to image from existing Mounts
 // to simulate attach/detach volume locally
-func addMounts(config *Config) error {
+func addMounts(config *config.Config) error {
 	if config.Mounts == nil {
 		return fmt.Errorf("no mount configuration found for image")
 	}

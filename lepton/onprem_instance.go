@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nanovms/ops/qemu"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -17,7 +18,7 @@ import (
 func (p *OnPrem) CreateInstance(ctx *Context) error {
 	c := ctx.config
 
-	hypervisor := HypervisorInstance()
+	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		fmt.Println("No hypervisor found on $PATH")
 		fmt.Println("Please install OPS using curl https://ops.city/get.sh -sSfL | sh")
@@ -33,13 +34,41 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 	fmt.Printf("booting %s ...\n", instancename)
 
 	opshome := GetOpsHome()
-	imgpath := path.Join(opshome, "images", instancename)
+	imgpath := path.Join(opshome, "images", c.CloudConfig.ImageName)
 
 	c.RunConfig.BaseName = instancename
 	c.RunConfig.Imagename = imgpath
 	c.RunConfig.OnPrem = true
 
-	hypervisor.Start(&c.RunConfig)
+	err := hypervisor.Start(&c.RunConfig)
+	if err != nil {
+		return err
+	}
+
+	pid, err := hypervisor.PID()
+	if err != nil {
+		return err
+	}
+
+	instances := path.Join(opshome, "instances")
+
+	base := path.Base(c.RunConfig.Imagename)
+	sbase := strings.Split(base, ".")
+
+	i := instance{
+		Image: sbase[0],
+		Ports: c.RunConfig.Ports,
+	}
+
+	d1, err := json.Marshal(i)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	return nil
 }

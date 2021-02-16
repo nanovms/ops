@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+	"path"
+	"path/filepath"
 	"strings"
 
+	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 )
@@ -17,7 +22,7 @@ type BuildImageCommandFlags struct {
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
-func (flags *BuildImageCommandFlags) MergeToConfig(c *api.Config) (err error) {
+func (flags *BuildImageCommandFlags) MergeToConfig(c *config.Config) (err error) {
 	if len(flags.CmdEnvs) > 0 {
 		if len(c.Env) == 0 {
 			c.Env = make(map[string]string)
@@ -50,8 +55,16 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *api.Config) (err error) {
 	}
 
 	if c.RunConfig.Imagename != "" {
-		c.SetImage()
-		c.RunConfig.Imagename = c.RunConfig.Imagename + ".img"
+		imageName := c.RunConfig.Imagename
+		if imageName == "" {
+			imageName = lepton.GenerateImageName(c.Program)
+			c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(c.Program))
+		} else {
+			c.CloudConfig.ImageName = imageName
+			images := path.Join(lepton.GetOpsHome(), "images")
+			imageName = path.Join(images, filepath.Base(imageName)+".img")
+		}
+		c.RunConfig.Imagename = imageName
 	}
 
 	if c.Args != nil {

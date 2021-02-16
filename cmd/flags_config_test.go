@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,12 +23,12 @@ func TestConfigFlags(t *testing.T) {
 
 func TestConfigFlagsMergeToConfig(t *testing.T) {
 	configFileName := "test-" + String(5) + ".json"
-	expected := &lepton.Config{
-		CloudConfig: lepton.ProviderConfig{
+	expected := &config.Config{
+		CloudConfig: config.ProviderConfig{
 			ProjectID:  "projectid",
 			BucketName: "thebucketname",
 		},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Memory: "2G",
 		},
 	}
@@ -40,7 +40,7 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 	flagSet.Set("config", configFileName)
 	configFlags := cmd.NewConfigCommandFlags(flagSet)
 
-	actual := &lepton.Config{}
+	actual := &config.Config{}
 
 	err := configFlags.MergeToConfig(actual)
 

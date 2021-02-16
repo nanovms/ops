@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -185,7 +186,7 @@ func (a *Azure) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (a *Azure) SyncImage(config *Config, target Provider, image string) error {
+func (a *Azure) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }

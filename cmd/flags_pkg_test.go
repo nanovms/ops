@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
@@ -40,7 +41,7 @@ func TestPkgFlagsPackagePath(t *testing.T) {
 func TestPkgFlagsMergeToConfig(t *testing.T) {
 	packageName := "package-" + String(5)
 
-	pkgConfig := &lepton.Config{
+	pkgConfig := &config.Config{
 		Program:      "ops",
 		Args:         []string{"a", "b"},
 		Dirs:         []string{"da", "db"},
@@ -54,11 +55,11 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 		Boot:         "/manifest/path/to/boot",
 		Force:        false,
 		NightlyBuild: false,
-		CloudConfig: lepton.ProviderConfig{
+		CloudConfig: config.ProviderConfig{
 			ProjectID:  "manifest-projectid",
 			BucketName: "manifest-thebucketname",
 		},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Memory: "manifest-2G",
 		},
 	}
@@ -82,7 +83,7 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 	writeConfigToFile(pkgConfig, manifestPath)
 	defer os.RemoveAll(pkgFlags.PackagePath())
 
-	config := &lepton.Config{
+	c := &config.Config{
 		Args:         []string{"c", "d"},
 		Dirs:         []string{"dc", "dd"},
 		Files:        []string{"fc", "fd"},
@@ -95,20 +96,20 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 		Boot:         "/path/to/boot",
 		Force:        true,
 		NightlyBuild: true,
-		CloudConfig: lepton.ProviderConfig{
+		CloudConfig: config.ProviderConfig{
 			ProjectID:  "projectid",
 			BucketName: "thebucketname",
 		},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Memory: "2G",
 		},
 	}
 
-	err = pkgFlags.MergeToConfig(config)
+	err = pkgFlags.MergeToConfig(c)
 
 	assert.Nil(t, err)
 
-	expectedConfig := &lepton.Config{
+	expectedConfig := &config.Config{
 		Program: "ops",
 		Args:    []string{"a", "b", "c", "d"},
 		Dirs:    []string{"da", "db", "dc", "dd"},
@@ -121,18 +122,18 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 		Boot:         "/path/to/boot",
 		Force:        true,
 		NightlyBuild: true,
-		CloudConfig: lepton.ProviderConfig{
+		CloudConfig: config.ProviderConfig{
 			ProjectID:  "projectid",
 			BucketName: "thebucketname",
 			ImageName:  "ops-image",
 		},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Memory:    "2G",
 			Imagename: lepton.GetOpsHome() + "/images/ops",
 		},
 	}
 
-	assert.Equal(t, expectedConfig, config)
+	assert.Equal(t, expectedConfig, c)
 }
 
 func newPkgFlagSet() (flagSet *pflag.FlagSet) {

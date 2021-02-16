@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/digitalocean/godo"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 )
 
@@ -14,7 +15,7 @@ type DigitalOcean struct {
 }
 
 // Initialize DigialOcean related things
-func (do *DigitalOcean) Initialize(config *lepton.ProviderConfig) error {
+func (do *DigitalOcean) Initialize(c *config.ProviderConfig) error {
 	doToken := os.Getenv("TOKEN")
 	do.Client = godo.NewFromToken(doToken)
 	return nil

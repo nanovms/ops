@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nanovms/ops/config"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/soap"
@@ -25,7 +26,7 @@ type Vsphere struct {
 }
 
 // Initialize Vsphere related things
-func (v *Vsphere) Initialize(config *ProviderConfig) error {
+func (v *Vsphere) Initialize(config *config.ProviderConfig) error {
 	u, err := v.getCredentials()
 	if err != nil {
 		return err

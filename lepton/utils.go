@@ -6,10 +6,12 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/nanovms/ops/constants"
 )
 
 func exitWithError(errs string) {
-	fmt.Println(fmt.Sprintf(ErrorColor, errs))
+	fmt.Println(fmt.Sprintf(constants.ErrorColor, errs))
 	os.Exit(1)
 }
 

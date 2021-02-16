@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/nanovms/ops/config"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 )
@@ -132,7 +133,7 @@ func (a *Azure) getVMExtensionsClient() compute.VirtualMachineExtensionsClient {
 	return extClient
 }
 
-func (a *Azure) getLocation(config *Config) string {
+func (a *Azure) getLocation(config *config.Config) string {
 	c := config
 	location := c.CloudConfig.Zone
 	if location == "" {
@@ -146,7 +147,7 @@ func (a *Azure) getLocation(config *Config) string {
 }
 
 // Initialize Azure related things
-func (a *Azure) Initialize(config *ProviderConfig) error {
+func (a *Azure) Initialize(config *config.ProviderConfig) error {
 	a.Storage = &AzureStorage{}
 
 	subID := os.Getenv("AZURE_SUBSCRIPTION_ID")

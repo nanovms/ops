@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -47,17 +48,17 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 	opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 	imagesPath := lepton.GetOpsHome() + "/images"
 
-	config := &lepton.Config{}
-	expected := &lepton.Config{
+	c := &config.Config{}
+	expected := &config.Config{
 		Boot:   opsPath + "/boot.img",
 		Kernel: opsPath + "/kernel.img",
 		Mounts: map[string]string{
 			volumeName: "/files",
 		},
-		CloudConfig: lepton.ProviderConfig{
+		CloudConfig: config.ProviderConfig{
 			ImageName: "test-image",
 		},
-		RunConfig: lepton.RunConfig{
+		RunConfig: config.RunConfig{
 			Imagename: imagesPath + "/test-image.img",
 		},
 		Args:       []string{"a b c d"},
@@ -67,11 +68,11 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		NameServer: "8.8.8.8",
 	}
 
-	buildImageFlags.MergeToConfig(config)
+	buildImageFlags.MergeToConfig(c)
 
-	config.RunConfig.Mounts = nil
+	c.RunConfig.Mounts = nil
 
-	assert.Equal(t, expected, config)
+	assert.Equal(t, expected, c)
 }
 
 func newBuildImageFlagSet() (flagSet *pflag.FlagSet) {

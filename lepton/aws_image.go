@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/nanovms/ops/config"
 	"github.com/olekukonko/tablewriter"
 
 	"github.com/schollz/progressbar/v3"
@@ -364,7 +365,7 @@ func (p *AWS) DeleteImage(ctx *Context, imagename string) error {
 }
 
 // SyncImage syncs image from provider to another provider
-func (p *AWS) SyncImage(config *Config, target Provider, image string) error {
+func (p *AWS) SyncImage(config *config.Config, target Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }
@@ -381,7 +382,7 @@ func (p *AWS) getArchiveName(ctx *Context) string {
 	return imagePath
 }
 
-func (p *AWS) waitSnapshotToBeReady(config *Config, importTaskID *string) (*string, error) {
+func (p *AWS) waitSnapshotToBeReady(config *config.Config, importTaskID *string) (*string, error) {
 	taskFilter := &ec2.DescribeImportSnapshotTasksInput{
 		ImportTaskIds: []*string{importTaskID},
 	}

@@ -6,10 +6,12 @@ import (
 	"os"
 	"path"
 	"testing"
+
+	"github.com/nanovms/ops/config"
 )
 
 var (
-	testVolumeConfig = &Config{}
+	testVolumeConfig = &config.Config{}
 	testVolume1      = &NanosVolume{
 		ID:    "",
 		Name:  "empty",
@@ -29,7 +31,7 @@ var (
 	testOP = &OnPrem{}
 )
 
-func NewTestContext(c *Config) *Context {
+func NewTestContext(c *config.Config) *Context {
 	return &Context{
 		config: testVolumeConfig,
 		logger: NewLogger(ioutil.Discard),
@@ -128,7 +130,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	config := &Config{BuildDir: dir}
+	config := &config.Config{BuildDir: dir}
 
 	tests := []struct {
 		title   string

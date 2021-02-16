@@ -11,6 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/nanovms/ops/config"
 )
 
 func getAzureResourceNameFromID(id string) string {
@@ -520,7 +521,7 @@ func (a Azure) buildFirewallRule(protocol network.SecurityRuleProtocol, port str
 
 // CreateNetworkSecurityGroup creates a new network security group with
 // rules set for allowing SSH and HTTPS use
-func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *Config) (nsg *network.SecurityGroup, err error) {
+func (a *Azure) CreateNetworkSecurityGroup(ctx context.Context, location string, nsgName string, c *config.Config) (nsg *network.SecurityGroup, err error) {
 	nsgClient, err := a.getNsgClient()
 	if err != nil {
 		return

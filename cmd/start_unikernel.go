@@ -3,13 +3,14 @@ package cmd
 import (
 	"fmt"
 
-	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/network"
+	"github.com/nanovms/ops/qemu"
 )
 
 // StartUnikernel runs a virtual machine in a hypervisor
-func StartUnikernel(c *api.Config) (err error) {
-	hypervisor := api.HypervisorInstance()
+func StartUnikernel(c *config.Config) (err error) {
+	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		ErrNoHypervisor := "No hypervisor found on $PATH"
 		InfoInstallOps := "Please install OPS using curl https://ops.city/get.sh -sSfL | sh"

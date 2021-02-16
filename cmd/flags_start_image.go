@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 )
@@ -32,7 +33,7 @@ type StartImageCommandFlags struct {
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
-func (flags *StartImageCommandFlags) MergeToConfig(c *api.Config) (err error) {
+func (flags *StartImageCommandFlags) MergeToConfig(c *config.Config) (err error) {
 	c.Debugflags = []string{}
 
 	if flags.Trace {

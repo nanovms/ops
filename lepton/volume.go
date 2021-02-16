@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/fs"
 	"github.com/olekukonko/tablewriter"
 )
@@ -28,7 +29,7 @@ type NanosVolume struct {
 // where <uuid> is generated on creation
 // also creates a symlink to volume label at <name>
 // TODO investigate symlinked volume interaction with image
-func CreateLocalVolume(config *Config, name, data, size, provider string) (NanosVolume, error) {
+func CreateLocalVolume(config *config.Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	var mkfsCommand *fs.MkfsCommand
 

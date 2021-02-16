@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 )
 
@@ -13,7 +13,7 @@ type GlobalCommandFlags struct {
 }
 
 // MergeToConfig append command flags that are used transversally for all commands to configuration
-func (flags *GlobalCommandFlags) MergeToConfig(config *lepton.Config) (err error) {
+func (flags *GlobalCommandFlags) MergeToConfig(config *config.Config) (err error) {
 	config.RunConfig.ShowWarnings = flags.ShowWarnings
 	config.RunConfig.ShowErrors = flags.ShowErrors
 	config.RunConfig.ShowDebug = flags.ShowDebug
