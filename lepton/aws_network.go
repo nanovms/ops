@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/nanovms/ops/config"
 )
 
 // CheckValidSecurityGroup checks whether the configuration security group exists and has the configuration VPC assigned
@@ -216,7 +217,7 @@ func (p *AWS) CreateVPC(ctx *Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
 		return
 	}
 
-	tags, _ := buildAwsTags([]Tag{}, vnetName)
+	tags, _ := buildAwsTags([]config.Tag{}, vnetName)
 
 	vpcs, err := svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
 	if err != nil {
@@ -250,7 +251,7 @@ func (p *AWS) CreateVPC(ctx *Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
 	vpc, err = p.GetVPC(ctx, svc)
 
 	if err == nil {
-		tags, _ = buildAwsTags([]Tag{}, ctx.config.RunConfig.Subnet)
+		tags, _ = buildAwsTags([]config.Tag{}, ctx.config.RunConfig.Subnet)
 
 		_, err = svc.CreateSubnet(&ec2.CreateSubnetInput{
 			VpcId:     vpc.VpcId,
