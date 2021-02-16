@@ -217,6 +217,13 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 		return err
 	}
 
+	if vpc == nil {
+		vpc, err = p.CreateVPC(ctx, svc)
+		if err != nil {
+			return err
+		}
+	}
+
 	var sg string
 
 	if ctx.config.RunConfig.SecurityGroup != "" && ctx.config.RunConfig.VPC != "" {
@@ -245,8 +252,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	// Create tags to assign to the instance
 	tags, tagInstanceName := buildAwsTags(ctx.config.RunConfig.Tags, ctx.config.RunConfig.InstanceName)
 
-	// Specify the details of the instance that you want to create.
-	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
+	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
 		InstanceType: aws.String(ctx.config.CloudConfig.Flavor),
 		MinCount:     aws.Int64(1),
@@ -259,7 +265,10 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 			{ResourceType: aws.String("instance"), Tags: tags},
 			{ResourceType: aws.String("volume"), Tags: tags},
 		},
-	})
+	}
+
+	// Specify the details of the instance that you want to create.
+	runResult, err := svc.RunInstances(instanceInput)
 
 	if err != nil {
 		fmt.Println("Could not create instance", err)
