@@ -45,7 +45,7 @@ func (p *AWS) GetSubnet(ctx *Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, 
 	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
 
 	if subnetName != "" {
-		filters = append(filters, &ec2.Filter{Name: aws.String("subnet-id"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
 	}
 
 	input := &ec2.DescribeSubnetsInput{
@@ -83,7 +83,7 @@ func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	if vpcName != "" {
 		var filters []*ec2.Filter
 
-		filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
 		input = &ec2.DescribeVpcsInput{
 			Filters: filters,
 		}
@@ -94,7 +94,7 @@ func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		return nil, fmt.Errorf("Unable to describe VPCs, %v", err)
 	}
 	if len(result.Vpcs) == 0 && vpcName != "" {
-		return nil, fmt.Errorf("No VPCs with name '%v' found to associate security group with", vpcName)
+		return nil, nil
 	} else if len(result.Vpcs) == 0 {
 		return nil, errors.New("No VPCs found to associate security group with")
 	}
@@ -205,4 +205,61 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string, vpcID string)
 	}
 
 	return aws.StringValue(createRes.GroupId), nil
+}
+
+// CreateVPC creates a virtual network
+func (p *AWS) CreateVPC(ctx *Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
+	vnetName := ctx.config.RunConfig.VPC
+
+	if vnetName == "" {
+		err = errors.New("specify vpc name")
+		return
+	}
+
+	tags, _ := buildAwsTags([]Tag{}, vnetName)
+
+	vpcs, err := svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
+	if err != nil {
+		return
+	}
+
+	cidrBlocks := []string{}
+
+	for _, v := range vpcs.Vpcs {
+		cidrBlocks = append(cidrBlocks, *v.CidrBlock)
+	}
+
+	_, err = svc.CreateVpc(&ec2.CreateVpcInput{
+		CidrBlock: aws.String(AllocateNewCidrBlock(cidrBlocks)),
+		TagSpecifications: []*ec2.TagSpecification{
+			{Tags: tags, ResourceType: aws.String("vpc")},
+		},
+	})
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				err = errors.New(aerr.Error())
+			}
+		} else {
+			err = errors.New(err.Error())
+		}
+		return
+	}
+
+	vpc, err = p.GetVPC(ctx, svc)
+
+	if err == nil {
+		tags, _ = buildAwsTags([]Tag{}, ctx.config.RunConfig.Subnet)
+
+		_, err = svc.CreateSubnet(&ec2.CreateSubnetInput{
+			VpcId:     vpc.VpcId,
+			CidrBlock: vpc.CidrBlock,
+			TagSpecifications: []*ec2.TagSpecification{
+				{Tags: tags, ResourceType: aws.String("subnet")},
+			},
+		})
+	}
+
+	return
 }
