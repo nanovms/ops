@@ -16,6 +16,7 @@ import (
 type StartImageCommandFlags struct {
 	Accel          bool
 	Bridged        bool
+	BridgeName     string
 	Debug          bool
 	Force          bool
 	Gateway        string
@@ -75,6 +76,10 @@ func (flags *StartImageCommandFlags) MergeToConfig(c *config.Config) (err error)
 
 	if flags.TapName != "" {
 		c.RunConfig.TapName = flags.TapName
+	}
+
+	if flags.BridgeName != "" {
+		c.RunConfig.BridgeName = flags.BridgeName
 	}
 
 	c.RunConfig.Verbose = flags.Verbose
@@ -206,6 +211,11 @@ func NewStartImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *StartImageComman
 		exitWithError(err.Error())
 	}
 
+	flags.BridgeName, err = cmdFlags.GetString("bridgename")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.Trace, err = cmdFlags.GetBool("trace")
 	if err != nil {
 		exitWithError(err.Error())
@@ -229,6 +239,7 @@ func PersistStartImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArrayP("no-trace", "", nil, "do not trace syscall")
 	cmdFlags.BoolP("verbose", "v", false, "verbose")
 	cmdFlags.BoolP("bridged", "b", false, "bridge networking")
+	cmdFlags.StringP("bridgename", "", "", "bridge name")
 	cmdFlags.StringP("tapname", "t", "", "tap device name")
 	cmdFlags.String("ip-address", "", "static ip address")
 	cmdFlags.String("gateway", "", "network gateway")
