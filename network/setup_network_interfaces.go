@@ -24,7 +24,7 @@ type Service interface {
 }
 
 // SetupNetworkInterfaces changes network configuration to support requirements
-func SetupNetworkInterfaces(network Service, tapDeviceName string, bridged bool, ipaddr string, netmask string) error {
+func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName string, ipaddr string, netmask string) error {
 	tapExists, err := network.CheckNetworkInterfaceExists(tapDeviceName)
 	if err != nil {
 		return errors.New("Not able to check tap exists")
@@ -37,9 +37,7 @@ func SetupNetworkInterfaces(network Service, tapDeviceName string, bridged bool,
 		}
 	}
 
-	bridgeName := "br0"
-
-	if bridged {
+	if bridgeName != "" {
 
 		bridgeExists, err := network.CheckNetworkInterfaceExists(bridgeName)
 		if err != nil {
@@ -118,13 +116,13 @@ func SetupNetworkInterfaces(network Service, tapDeviceName string, bridged bool,
 }
 
 // TurnOffNetworkInterfaces turns network interfaces off if they aren't used
-func TurnOffNetworkInterfaces(network Service, tapDeviceName string, bridged bool, bridgeName string) error {
+func TurnOffNetworkInterfaces(network Service, tapDeviceName string, bridgeName string) error {
 	_, err := network.TurnNIDown(tapDeviceName)
 	if err != nil {
 		return errors.New("Not able to turn tap down")
 	}
 
-	if bridged {
+	if bridgeName != "" {
 		bridgeInterfaces, err := network.GetBridgeInterfacesNames(bridgeName)
 		if err != nil {
 			return errors.New("Not able to get network interfaces in bridge")

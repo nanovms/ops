@@ -21,12 +21,16 @@ func StartUnikernel(c *config.Config) (err error) {
 	bridged := c.RunConfig.Bridged
 	ipaddr := c.RunConfig.IPAddr
 	netmask := c.RunConfig.NetMask
-	bridgeName := "br0"
+
+	bridgeName := c.RunConfig.BridgeName
+	if bridged && bridgeName == "" {
+		bridgeName = "br0"
+	}
 
 	networkService := network.NewIprouteNetworkService()
 
 	if tapDeviceName != "" {
-		err = network.SetupNetworkInterfaces(networkService, tapDeviceName, bridged, ipaddr, netmask)
+		err = network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddr, netmask)
 		if err != nil {
 			return
 		}
@@ -36,7 +40,7 @@ func StartUnikernel(c *config.Config) (err error) {
 	hypervisor.Start(&c.RunConfig)
 
 	if tapDeviceName != "" {
-		err = network.TurnOffNetworkInterfaces(networkService, tapDeviceName, bridged, bridgeName)
+		err = network.TurnOffNetworkInterfaces(networkService, tapDeviceName, bridgeName)
 		if err != nil {
 			return
 		}

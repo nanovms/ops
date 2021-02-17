@@ -124,6 +124,9 @@ type RunConfig struct {
 	// in use. This also enables KVM acceleration.
 	Bridged bool
 
+	// BridgeName
+	BridgeName string
+
 	// CPUs specifies the number of CPU cores to use
 	CPUs int
 

@@ -20,6 +20,7 @@ func TestCreateStartImageFlags(t *testing.T) {
 	assert.Equal(t, startImageFlags.NoTrace, []string{"a"})
 	assert.Equal(t, startImageFlags.Verbose, true)
 	assert.Equal(t, startImageFlags.Bridged, true)
+	assert.Equal(t, startImageFlags.BridgeName, "br1")
 
 	assert.Equal(t, startImageFlags.TapName, "tap1")
 	assert.Equal(t, startImageFlags.IPAddress, "192.168.0.1")
@@ -48,18 +49,19 @@ func TestStartImageFlagsMergeToConfig(t *testing.T) {
 		Force:      true,
 		NoTrace:    []string{"a"},
 		RunConfig: config.RunConfig{
-			Accel:   true,
-			Bridged: true,
-			CPUs:    2,
-			Debug:   false,
-			Gateway: "192.168.1.254",
-			GdbPort: 1234,
-			IPAddr:  "192.168.0.1",
-			Mounts:  []string(nil),
-			NetMask: "255.255.0.0",
-			Ports:   []string{"80", "81", "82-85"},
-			TapName: "tap1",
-			Verbose: true,
+			Accel:      true,
+			Bridged:    true,
+			BridgeName: "br1",
+			CPUs:       2,
+			Debug:      false,
+			Gateway:    "192.168.1.254",
+			GdbPort:    1234,
+			IPAddr:     "192.168.0.1",
+			Mounts:     []string(nil),
+			NetMask:    "255.255.0.0",
+			Ports:      []string{"80", "81", "82-85"},
+			TapName:    "tap1",
+			Verbose:    true,
 		},
 	}
 
@@ -80,6 +82,7 @@ func newStartImageFlagSet(debug string) *cmd.StartImageCommandFlags {
 	flagSet.Set("no-trace", "a")
 	flagSet.Set("verbose", "true")
 	flagSet.Set("bridged", "true")
+	flagSet.Set("bridgename", "br1")
 	flagSet.Set("tapname", "tap1")
 	flagSet.Set("ip-address", "192.168.0.1")
 	flagSet.Set("gateway", "192.168.1.254")
