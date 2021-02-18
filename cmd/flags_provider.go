@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
@@ -9,6 +11,8 @@ import (
 // ProviderCommandFlags consolidates all command flags required to use a provider
 type ProviderCommandFlags struct {
 	TargetCloud string
+	Zone        string
+	Project     string
 }
 
 // MergeToConfig merge provider flags to configuration
@@ -26,6 +30,14 @@ func (flags *ProviderCommandFlags) MergeToConfig(c *config.Config) (err error) {
 		return
 	}
 
+	if flags.Zone != "" {
+		c.CloudConfig.Zone = flags.Zone
+	}
+
+	if flags.Project != "" {
+		c.CloudConfig.ProjectID = flags.Project
+	}
+
 	return
 }
 
@@ -39,10 +51,22 @@ func NewProviderCommandFlags(cmdFlags *pflag.FlagSet) (flags *ProviderCommandFla
 		exitWithError(err.Error())
 	}
 
+	flags.Project, err = cmdFlags.GetString("projectid")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.Zone, err = cmdFlags.GetString("zone")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	return
 }
 
 // PersistProviderCommandFlags append a command the required flags to run an image
 func PersistProviderCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, upcloud, hyper-v]")
+	cmdFlags.StringP("projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
+	cmdFlags.StringP("zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 }

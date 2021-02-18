@@ -9,43 +9,17 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 )
 
 // CreateInstance - Creates instance on Google Cloud Platform
 func (p *GCloud) CreateInstance(ctx *Context) error {
-	context := context.TODO()
-	creds, err := google.FindDefaultCredentials(context)
-	if err != nil {
-		return err
-	}
-
 	c := ctx.config
-	if c.CloudConfig.Zone == "" {
-		return fmt.Errorf("Zone not provided in config.CloudConfig")
-	}
-
-	if c.CloudConfig.ProjectID == "" {
-		fmt.Printf("ProjectId not provided in config.CloudConfig. Using %s from default credentials.\n", creds.ProjectID)
-		c.CloudConfig.ProjectID = creds.ProjectID
-	}
-
 	if c.CloudConfig.Flavor == "" {
 		c.CloudConfig.Flavor = "g1-small"
 	}
 
-	client, err := google.DefaultClient(context, compute.CloudPlatformScope)
-	if err != nil {
-		return err
-	}
-
-	computeService, err := compute.New(client)
-	if err != nil {
-		return err
-	}
-
-	nic, err := p.getNIC(ctx, computeService)
+	nic, err := p.getNIC(ctx, p.Service)
 	if err != nil {
 		return err
 	}
@@ -92,12 +66,12 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 			Items: []string{instanceName},
 		},
 	}
-	op, err := computeService.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context).Do()
+	op, err := p.Service.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Instance creation started using image %s. Monitoring operation %s.\n", imageName, op.Name)
-	err = p.pollOperation(context, c.CloudConfig.ProjectID, computeService, *op)
+	err = p.pollOperation(context.TODO(), c.CloudConfig.ProjectID, p.Service, *op)
 	if err != nil {
 		return err
 	}
@@ -105,8 +79,9 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 
 	// create dns zones/records to associate DNS record to instance IP
 	if c.RunConfig.DomainName != "" {
-		instance, err := computeService.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
+		instance, err := p.Service.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
 		if err != nil {
+			ctx.logger.Error("failed getting instance")
 			return err
 		}
 
@@ -125,7 +100,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	if len(ctx.config.RunConfig.Ports) != 0 {
 		rule := p.buildFirewallRule("tcp", ctx.config.RunConfig.Ports, instanceName)
 
-		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
 		if err != nil {
 			ctx.logger.Error("%v", err)
@@ -136,7 +111,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	if len(ctx.config.RunConfig.UDPPorts) != 0 {
 		rule := p.buildFirewallRule("udp", ctx.config.RunConfig.UDPPorts, instanceName)
 
-		_, err = computeService.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context).Do()
+		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
 		if err != nil {
 			ctx.logger.Error("%v", err)

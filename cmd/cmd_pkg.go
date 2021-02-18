@@ -201,7 +201,7 @@ func LoadCommand() *cobra.Command {
 
 	PersistConfigCommandFlags(cmdLoadPackage.PersistentFlags())
 	PersistBuildImageCommandFlags(cmdLoadPackage.PersistentFlags())
-	PersistStartImageCommandFlags(cmdLoadPackage.PersistentFlags())
+	PersistRunLocalInstanceCommandFlags(cmdLoadPackage.PersistentFlags())
 	cmdLoadPackage.PersistentFlags().BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
@@ -213,27 +213,27 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(cmd.Flags())
 	buildImageFlags := NewBuildImageCommandFlags(flags)
-	startImageFlags := NewStartImageCommandFlags(flags)
+	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 
 	pkgFlags.Package = args[0]
 
 	c := config.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, buildImageFlags, globalFlags, startImageFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, buildImageFlags, globalFlags, runLocalInstanceFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
-	if !startImageFlags.SkipBuild {
+	if !runLocalInstanceFlags.SkipBuild {
 		setNanosBaseImage(c)
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
 			panic(err)
 		}
 	}
 
-	err = StartUnikernel(c)
+	err = RunLocalInstance(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}

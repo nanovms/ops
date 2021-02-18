@@ -52,7 +52,7 @@ func (p *GCloud) CustomizeImage(ctx *Context) (string, error) {
 
 	err = createArchive(archPath, files)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed creating archive: %v", err)
 	}
 	return archPath, nil
 }
@@ -207,6 +207,7 @@ func createArchive(archive string, files []string) error {
 	if err != nil {
 		return err
 	}
+
 	gzw := gzip.NewWriter(fd)
 
 	tw := tar.NewWriter(gzw)

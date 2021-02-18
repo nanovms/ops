@@ -22,7 +22,10 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *config.Config) (err error) {
 	if flags.Config != "" {
 		var data []byte
 
-		*c = *config.NewConfig()
+		if c == nil {
+			*c = *config.NewConfig()
+		}
+
 		data, err = ioutil.ReadFile(flags.Config)
 		if err != nil {
 			err = fmt.Errorf("error reading config: %v", err)
@@ -37,7 +40,10 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *config.Config) (err error) {
 		return
 	}
 
-	c = unWarpDefaultConfig()
+	if c == nil {
+		*c = *unWarpDefaultConfig()
+	}
+
 	return
 
 }
