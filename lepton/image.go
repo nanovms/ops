@@ -25,11 +25,11 @@ func BuildImage(c config.Config) error {
 
 	m, err := BuildManifest(&c)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return fmt.Errorf("failed building manifest: %v", err)
 	}
 
 	if err = createImageFile(&c, m); err != nil {
-		return errors.Wrap(err, 1)
+		return fmt.Errorf("failed creating image file: %v", err)
 	}
 
 	return nil

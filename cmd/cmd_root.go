@@ -20,6 +20,7 @@ func GetRootCommand() *cobra.Command {
 	rootCmd.AddCommand(UpdateCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(VolumeCommands())
+	rootCmd.AddCommand(DeployCommand())
 
 	return rootCmd
 }

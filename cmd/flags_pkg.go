@@ -117,5 +117,5 @@ func NewPkgCommandFlags(cmdFlags *pflag.FlagSet) (flags *PkgCommandFlags) {
 // PersistPkgCommandFlags append a command the required flags to use a package
 func PersistPkgCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.BoolP("local", "l", false, "load local package")
-	cmdFlags.StringP("package", "p", "", "ops package name")
+	cmdFlags.String("package", "", "ops package name")
 }

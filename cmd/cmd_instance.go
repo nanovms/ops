@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -23,8 +22,6 @@ func InstanceCommands() *cobra.Command {
 
 	PersistProviderCommandFlags(cmdInstance.PersistentFlags())
 	PersistConfigCommandFlags(cmdInstance.PersistentFlags())
-	cmdInstance.PersistentFlags().StringP("projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
-	cmdInstance.PersistentFlags().StringP("zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
@@ -44,27 +41,31 @@ func instanceCreateCommand() *cobra.Command {
 		Run:   instanceCreateCommandHandler,
 	}
 
-	cmdInstanceCreate.PersistentFlags().StringArrayP("port", "p", nil, "port to open")
-	cmdInstanceCreate.PersistentFlags().StringArrayP("udp", "", nil, "udp ports to forward")
+	PersistCreateInstanceFlags(cmdInstanceCreate.PersistentFlags())
 	cmdInstanceCreate.PersistentFlags().StringP("imagename", "i", "", "image name [required]")
-	cmdInstanceCreate.PersistentFlags().StringP("flavor", "f", "", "flavor name for cloud provider")
-	cmdInstanceCreate.PersistentFlags().StringP("domainname", "d", "", "domain name for instance")
-
 	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
+
 	return cmdInstanceCreate
 }
 
 func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
-	c, err := getInstanceCommandDefaultConfig(cmd)
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
+
+	c := config.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags, createInstanceFlags)
+	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
 	projectID, _ := cmd.Flags().GetString("projectid")
 	zone, _ := cmd.Flags().GetString("zone")
-	flavor, _ := cmd.Flags().GetString("flavor")
-	imagename, _ := cmd.Flags().GetString("imagename")
-	domainname, _ := cmd.Flags().GetString("domainname")
 
 	if projectID != "" {
 		c.CloudConfig.ProjectID = projectID
@@ -72,18 +73,6 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	if zone != "" {
 		c.CloudConfig.Zone = zone
-	}
-
-	if flavor != "" {
-		c.CloudConfig.Flavor = flavor
-	}
-
-	if imagename != "" {
-		c.CloudConfig.ImageName = imagename
-	}
-
-	if domainname != "" {
-		c.RunConfig.DomainName = domainname
 	}
 
 	if len(args) > 0 {
@@ -94,28 +83,6 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 			strconv.FormatInt(time.Now().Unix(), 10),
 		)
 	}
-
-	portsFlag, err := cmd.Flags().GetStringArray("port")
-	if err != nil {
-		panic(err)
-	}
-	ports, err := PrepareNetworkPorts(portsFlag)
-	if err != nil {
-		exitWithError(err.Error())
-		return
-	}
-
-	udpPortsFlag, err := cmd.Flags().GetStringArray("udp")
-	if err != nil {
-		panic(err)
-	}
-	udpPorts, err := PrepareNetworkPorts(udpPortsFlag)
-	if err != nil {
-		exitWithError(err.Error())
-		return
-	}
-	c.RunConfig.UDPPorts = udpPorts
-	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
