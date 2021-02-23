@@ -50,6 +50,9 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 	c := config.NewConfig()
 
+	c.Program = args[0]
+	checkProgramExists(c.Program)
+
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)

@@ -44,9 +44,9 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *config.Config) (err error)
 
 	setNanosBaseImage(c)
 
-	if len(flags.CmdArgs) != 0 {
+	if len(flags.CmdArgs) != 0 && c.Program == "" {
 		c.Program = flags.CmdArgs[0]
-	} else if len(c.Args) != 0 {
+	} else if len(c.Args) != 0 && c.Program == "" {
 		c.Program = c.Args[0]
 	}
 
