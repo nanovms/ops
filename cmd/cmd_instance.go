@@ -64,16 +64,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
-	if projectID != "" {
-		c.CloudConfig.ProjectID = projectID
-	}
-
-	if zone != "" {
-		c.CloudConfig.Zone = zone
-	}
+	c.CloudConfig.ImageName, _ = cmd.Flags().GetString("imagename")
 
 	if len(args) > 0 {
 		c.RunConfig.InstanceName = args[0]
