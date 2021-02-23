@@ -87,11 +87,6 @@ func (m *Manifest) AddMount(label, path string) {
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 	env := m.root["environment"].(map[string]interface{})
 	env[name] = value
-
-	if name == "RADAR_KEY" {
-		m.AddKlibs([]string{"tls", "radar"})
-	}
-
 }
 
 // AddKlibs append klibs to manifest file if they don't exist
