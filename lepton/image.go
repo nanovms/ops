@@ -274,6 +274,14 @@ func setManifestFromConfig(m *fs.Manifest, c *config.Config) error {
 		m.AddEnvironmentVariable(k, v)
 	}
 
+	if _, hasRadarKey := c.Env["RADAR_KEY"]; hasRadarKey {
+		m.AddKlibs([]string{"tls", "radar"})
+
+		if _, hasRadarImageName := c.Env["RADAR_IMAGE_NAME"]; !hasRadarImageName {
+			m.AddEnvironmentVariable("RADAR_IMAGE_NAME", c.CloudConfig.ImageName)
+		}
+	}
+
 	for k, v := range c.Mounts {
 		m.AddMount(k, v)
 	}
