@@ -37,10 +37,16 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 
 		for _, s := range serverList {
 			if val, ok := s.Metadata["CreatedBy"]; ok && val == "ops" {
-				// fugly
 				ipv4 := ""
-				// For some instances IP is not assigned.
+
+				// addresses may have a different structure in each cloud provider
+				// vexx
 				z := s.Addresses["public"]
+				if z == nil {
+					// ovh
+					z = s.Addresses["Ext-Net"]
+				}
+
 				if z != nil {
 					for _, v := range z.([]interface{}) {
 						sz := v.(map[string]interface{})
@@ -87,7 +93,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		return err
 	}
 
-	fmt.Printf("deploying imageID %s", imageID)
+	fmt.Printf("deploying imageID %s\n", imageID)
 
 	flavorID, err := o.findFlavorByName(ctx.config.CloudConfig.Flavor)
 
@@ -95,7 +101,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		fmt.Println(err)
 	}
 
-	fmt.Printf("\nDeploying flavorID %s", flavorID)
+	fmt.Printf("Deploying flavorID %s\n", flavorID)
 
 	instanceName := ctx.config.RunConfig.InstanceName
 
@@ -122,7 +128,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 		exitWithError(err.Error())
 	}
 
-	fmt.Printf("\nInstance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
+	fmt.Printf("Instance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
 
 	if ctx.config.RunConfig.DomainName != "" {
 		pollCount := 60
@@ -251,7 +257,7 @@ func (o *OpenStack) DeleteInstance(ctx *Context, instancename string) error {
 			result := servers.Delete(client, instance.ID).ExtractErr()
 
 			if result == nil {
-				fmt.Printf("Deleted instance with ID %s and name %s", instance.ID, instancename)
+				fmt.Printf("Deleted instance with ID %s and name %s\n", instance.ID, instancename)
 			} else {
 				exitWithError(result.Error())
 			}

@@ -22,7 +22,6 @@ var localImageDir = path.Join(GetOpsHome(), "images")
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
 func BuildImage(c config.Config) error {
-
 	m, err := BuildManifest(&c)
 	if err != nil {
 		return fmt.Errorf("failed building manifest: %v", err)

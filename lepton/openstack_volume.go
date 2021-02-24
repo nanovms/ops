@@ -69,7 +69,18 @@ func (o *OpenStack) CreateVolume(ctx *Context, name, data, size, provider string
 
 	response := volumes.Create(volumesClient, createOpts)
 
-	_, err = response.Extract()
+	r, err := response.Extract()
+	if err != nil {
+		return vol, err
+	}
+
+	fmt.Println("creating volume...")
+	err = volumes.WaitForStatus(volumesClient, r.ID, "available", 60)
+	if err != nil {
+		return vol, err
+	}
+
+	err = o.deleteImage(imagesClient, image.ID)
 	if err != nil {
 		return vol, err
 	}
@@ -97,7 +108,7 @@ func (o *OpenStack) GetAllVolumes(ctx *Context) (*[]NanosVolume, error) {
 	}
 
 	for _, volume := range volumes {
-		var name string
+		name := volume.Name
 		var attachments []string
 
 		for _, att := range volume.Attachments {
@@ -154,21 +165,6 @@ func (o *OpenStack) DeleteVolume(ctx *Context, name string) error {
 	}
 
 	err = volumes.Delete(volumesClient, volume.ID, opts).ExtractErr()
-	if err != nil {
-		return err
-	}
-
-	imageID, err := o.findImage(name)
-	if err != nil {
-		return err
-	}
-
-	imagesClient, err := o.getImagesClient()
-	if err != nil {
-		return err
-	}
-
-	err = o.deleteImage(imagesClient, imageID)
 	if err != nil {
 		return err
 	}
