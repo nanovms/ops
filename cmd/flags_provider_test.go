@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,12 +38,12 @@ func TestMergeProviderFlags(t *testing.T) {
 
 		providerFlags := cmd.NewProviderCommandFlags(flagSet)
 
-		actual := &config.Config{}
-		expected := &config.Config{
-			CloudConfig: config.ProviderConfig{
+		actual := &types.Config{}
+		expected := &types.Config{
+			CloudConfig: types.ProviderConfig{
 				Platform: "azure",
 			},
-			RunConfig: config.RunConfig{
+			RunConfig: types.RunConfig{
 				Klibs: []string{"cloud_init"},
 			},
 		}
@@ -63,14 +64,14 @@ func TestMergeProviderFlags(t *testing.T) {
 
 		providerFlags := cmd.NewProviderCommandFlags(flagSet)
 
-		actual := &config.Config{}
-		expected := &config.Config{
-			CloudConfig: config.ProviderConfig{
+		actual := &types.Config{}
+		expected := &types.Config{
+			CloudConfig: types.ProviderConfig{
 				Platform:  "gcp",
 				Zone:      "us-west",
 				ProjectID: "prod-xpto",
 			},
-			RunConfig: config.RunConfig{},
+			RunConfig: types.RunConfig{},
 		}
 
 		providerFlags.MergeToConfig(actual)

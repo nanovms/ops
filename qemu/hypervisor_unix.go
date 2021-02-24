@@ -5,7 +5,7 @@ package qemu
 import (
 	"os/exec"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 )
 
 func checkExists(key string) bool {
@@ -29,8 +29,8 @@ func HypervisorInstance() Hypervisor {
 
 // Hypervisor interface
 type Hypervisor interface {
-	Start(rconfig *config.RunConfig) error
-	Command(rconfig *config.RunConfig) *exec.Cmd
+	Start(rconfig *types.RunConfig) error
+	Command(rconfig *types.RunConfig) *exec.Cmd
 	Stop()
 	PID() (string, error)
 }

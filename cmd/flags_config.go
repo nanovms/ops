@@ -8,7 +8,7 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 )
 
@@ -18,12 +18,12 @@ type ConfigCommandFlags struct {
 }
 
 // MergeToConfig reads a json configuration file
-func (flags *ConfigCommandFlags) MergeToConfig(c *config.Config) (err error) {
+func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.Config != "" {
 		var data []byte
 
 		if c == nil {
-			*c = *config.NewConfig()
+			*c = *types.NewConfig()
 		}
 
 		data, err = ioutil.ReadFile(flags.Config)
@@ -49,10 +49,10 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *config.Config) (err error) {
 }
 
 // unWarpConfig parses lepton config file from file
-func unWarpConfig(file string) *config.Config {
-	var c config.Config
+func unWarpConfig(file string) *types.Config {
+	var c types.Config
 	if file != "" {
-		c = *config.NewConfig()
+		c = *types.NewConfig()
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
@@ -70,8 +70,8 @@ func unWarpConfig(file string) *config.Config {
 }
 
 // unWarpDefaultConfig gets default config file from env
-func unWarpDefaultConfig() *config.Config {
-	c := *config.NewConfig()
+func unWarpDefaultConfig() *types.Config {
+	c := *types.NewConfig()
 	conf := os.Getenv("OPS_DEFAULT_CONFIG")
 	if conf != "" {
 		data, err := ioutil.ReadFile(conf)

@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/digitalocean/godo"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 )
 
 // DigitalOcean provides access to the DigitalOcean API.
@@ -15,7 +15,7 @@ type DigitalOcean struct {
 }
 
 // Initialize DigialOcean related things
-func (do *DigitalOcean) Initialize(c *config.ProviderConfig) error {
+func (do *DigitalOcean) Initialize(c *types.ProviderConfig) error {
 	doToken := os.Getenv("TOKEN")
 	do.Client = godo.NewFromToken(doToken)
 	return nil

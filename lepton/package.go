@@ -17,8 +17,8 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/types"
 )
 
 // PackageList contains a list of known packages.
@@ -233,7 +233,7 @@ func ExtractPackage(archive string, dest string) {
 }
 
 // BuildImageFromPackage builds nanos image using a package
-func BuildImageFromPackage(packagepath string, c config.Config) error {
+func BuildImageFromPackage(packagepath string, c types.Config) error {
 	m, err := BuildPackageManifest(packagepath, &c)
 	if err != nil {
 		return errors.Wrap(err, 1)

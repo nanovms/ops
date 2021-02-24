@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/types"
 )
 
 // Version for ops
@@ -33,8 +33,10 @@ const PackageManifestURL string = "https://storage.googleapis.com/packagehub/man
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
 
-// GCPStorageURL is GCP storage path
-const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
+var (
+	// LocalVolumeDir is the default local volume directory
+	LocalVolumeDir = path.Join(GetOpsHome(), "volumes")
+)
 
 // GenerateImageName generate image name
 func GenerateImageName(program string) string {
@@ -79,7 +81,7 @@ func GetOpsHome() string {
 	return opshome
 }
 
-func getImageTempDir(c *config.Config) string {
+func getImageTempDir(c *types.Config) string {
 	temp := filepath.Base(c.Program) + "_temp"
 
 	if c.BuildDir == "" {

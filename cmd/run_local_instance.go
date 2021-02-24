@@ -3,13 +3,13 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/network"
 	"github.com/nanovms/ops/qemu"
+	"github.com/nanovms/ops/types"
 )
 
 // RunLocalInstance runs a virtual machine in a hypervisor
-func RunLocalInstance(c *config.Config) (err error) {
+func RunLocalInstance(c *types.Config) (err error) {
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		ErrNoHypervisor := "No hypervisor found on $PATH"

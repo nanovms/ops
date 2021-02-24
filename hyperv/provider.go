@@ -3,8 +3,8 @@ package hyperv
 import (
 	"errors"
 
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 )
 
 // Provider provides access to the Hyper-V API.
@@ -17,7 +17,7 @@ func NewProvider() *Provider {
 }
 
 // Initialize checks conditions to use hyper-v
-func (p *Provider) Initialize(c *config.ProviderConfig) error {
+func (p *Provider) Initialize(c *types.ProviderConfig) error {
 	if available, _, _ := IsPowershellAvailable(); !available {
 		return errors.New("powershell not available")
 	}

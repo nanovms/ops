@@ -4,8 +4,10 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/onprem"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +41,7 @@ func volumeCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume data source")
-	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", strconv.Itoa(api.MinimumVolumeSize), "volume initial size")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", strconv.Itoa(onprem.MinimumVolumeSize), "volume initial size")
 	return cmdVolumeCreate
 }
 
@@ -191,7 +193,7 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *config.Config, err error) {
+func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err error) {
 	flags := cmd.Flags()
 
 	configFlags := NewConfigCommandFlags(flags)
@@ -199,7 +201,7 @@ func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *config.Config, err er
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = config.NewConfig()
+	c = types.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, providerFlags)
 	err = mergeContainer.Merge(c)

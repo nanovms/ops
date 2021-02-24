@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +48,7 @@ func imageCreateCommand() *cobra.Command {
 
 func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
@@ -118,17 +118,12 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
-	}
-
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone != "" {
-		c.CloudConfig.Zone = zone
 	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
@@ -164,7 +159,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)

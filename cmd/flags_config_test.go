@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,12 +23,12 @@ func TestConfigFlags(t *testing.T) {
 
 func TestConfigFlagsMergeToConfig(t *testing.T) {
 	configFileName := "test-" + String(5) + ".json"
-	expected := &config.Config{
-		CloudConfig: config.ProviderConfig{
+	expected := &types.Config{
+		CloudConfig: types.ProviderConfig{
 			ProjectID:  "projectid",
 			BucketName: "thebucketname",
 		},
-		RunConfig: config.RunConfig{
+		RunConfig: types.RunConfig{
 			Memory: "2G",
 		},
 	}
@@ -40,7 +40,7 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 	flagSet.Set("config", configFileName)
 	configFlags := cmd.NewConfigCommandFlags(flagSet)
 
-	actual := &config.Config{}
+	actual := &types.Config{}
 
 	err := configFlags.MergeToConfig(actual)
 

@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -34,12 +35,12 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 
 	opsPath := lepton.GetOpsHome() + "/nightly"
 
-	c := &config.Config{}
-	expected := &config.Config{
+	c := &types.Config{}
+	expected := &types.Config{
 		Boot:         opsPath + "/boot.img",
 		Kernel:       opsPath + "/kernel.img",
-		CloudConfig:  config.ProviderConfig{},
-		RunConfig:    config.RunConfig{},
+		CloudConfig:  types.ProviderConfig{},
+		RunConfig:    types.RunConfig{},
 		NameServer:   "8.8.8.8",
 		NightlyBuild: true,
 	}

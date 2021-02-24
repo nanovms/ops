@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,18 +38,18 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 	runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
 	runLocalInstanceFlags.Debug = false
 
-	c := &config.Config{}
+	c := &types.Config{}
 
 	err := runLocalInstanceFlags.MergeToConfig(c)
 
 	assert.Nil(t, err, nil)
 
-	expected := &config.Config{
+	expected := &types.Config{
 		BuildDir:   "",
 		Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
 		Force:      true,
 		NoTrace:    []string{"a"},
-		RunConfig: config.RunConfig{
+		RunConfig: types.RunConfig{
 			Accel:      true,
 			Bridged:    true,
 			BridgeName: "br1",

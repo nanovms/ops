@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -48,17 +49,17 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 	opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 	imagesPath := lepton.GetOpsHome() + "/images"
 
-	c := &config.Config{}
-	expected := &config.Config{
+	c := &types.Config{}
+	expected := &types.Config{
 		Boot:   opsPath + "/boot.img",
 		Kernel: opsPath + "/kernel.img",
 		Mounts: map[string]string{
 			volumeName: "/files",
 		},
-		CloudConfig: config.ProviderConfig{
+		CloudConfig: types.ProviderConfig{
 			ImageName: "test-image",
 		},
-		RunConfig: config.RunConfig{
+		RunConfig: types.RunConfig{
 			Imagename: imagesPath + "/test-image.img",
 		},
 		Args:       []string{"a b c d"},

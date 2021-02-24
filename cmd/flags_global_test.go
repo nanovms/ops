@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,14 +38,14 @@ func TestGlobalFlagsMergeToConfig(t *testing.T) {
 
 	globalFlags := cmd.NewGlobalCommandFlags(flagSet)
 
-	c := &config.Config{}
+	c := &types.Config{}
 
 	err := globalFlags.MergeToConfig(c)
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, c, &config.Config{
-		RunConfig: config.RunConfig{
+	assert.Equal(t, c, &types.Config{
+		RunConfig: types.RunConfig{
 			ShowDebug:    true,
 			ShowErrors:   false,
 			ShowWarnings: true,

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 
 // Provider is an interface that provider must implement
 type Provider interface {
-	Initialize(config *config.ProviderConfig) error
+	Initialize(config *types.ProviderConfig) error
 
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
@@ -29,7 +29,7 @@ type Provider interface {
 	GetImages(ctx *Context) ([]CloudImage, error)
 	DeleteImage(ctx *Context, imagename string) error
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
-	SyncImage(config *config.Config, target Provider, imagename string) error
+	SyncImage(config *types.Config, target Provider, imagename string) error
 	CustomizeImage(ctx *Context) (string, error)
 
 	CreateInstance(ctx *Context) error
@@ -47,7 +47,7 @@ type Provider interface {
 
 // Storage is an interface that provider's storage must implement
 type Storage interface {
-	CopyToBucket(config *config.Config, source string) error
+	CopyToBucket(config *types.Config, source string) error
 }
 
 // VolumeService is an interface for volume related operations
@@ -69,13 +69,13 @@ type DNSRecord struct {
 
 // DNSService is an interface for DNS related operations
 type DNSService interface {
-	FindOrCreateZoneIDByName(config *config.Config, name string) (string, error)
-	DeleteZoneRecordIfExists(config *config.Config, zoneID string, recordName string) error
-	CreateZoneRecord(config *config.Config, zoneID string, record *DNSRecord) error
+	FindOrCreateZoneIDByName(config *types.Config, name string) (string, error)
+	DeleteZoneRecordIfExists(config *types.Config, zoneID string, recordName string) error
+	CreateZoneRecord(config *types.Config, zoneID string, record *DNSRecord) error
 }
 
 // CreateDNSRecord does the necessary operations to create a DNS record without issues in an cloud provider
-func CreateDNSRecord(config *config.Config, aRecordIP string, dnsService DNSService) error {
+func CreateDNSRecord(config *types.Config, aRecordIP string, dnsService DNSService) error {
 	domainName := config.CloudConfig.DomainName
 	if err := isDomainValid(domainName); err != nil {
 		return err
@@ -115,12 +115,12 @@ func CreateDNSRecord(config *config.Config, aRecordIP string, dnsService DNSServ
 
 // Context captures required info for provider operation
 type Context struct {
-	config *config.Config
+	config *types.Config
 	logger *Logger
 }
 
 // Config returns context configuration
-func (c Context) Config() *config.Config {
+func (c Context) Config() *types.Config {
 	return c.config
 }
 
@@ -131,7 +131,7 @@ func (c Context) Logger() *Logger {
 
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
-func NewContext(c *config.Config) *Context {
+func NewContext(c *types.Config) *Context {
 
 	logger := NewLogger(os.Stdout)
 

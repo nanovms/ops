@@ -6,9 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/onprem"
 	"github.com/spf13/pflag"
 )
 
@@ -22,7 +24,7 @@ type BuildImageCommandFlags struct {
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
-func (flags *BuildImageCommandFlags) MergeToConfig(c *config.Config) (err error) {
+func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if len(flags.CmdEnvs) > 0 {
 		if len(c.Env) == 0 {
 			c.Env = make(map[string]string)
@@ -77,7 +79,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *config.Config) (err error)
 		// borrow BuildDir from config
 		bd := c.BuildDir
 		c.BuildDir = api.LocalVolumeDir
-		err = api.AddMounts(flags.Mounts, c)
+		err = onprem.AddMounts(flags.Mounts, c)
 		if err != nil {
 			exitWithError(err.Error())
 		}

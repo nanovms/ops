@@ -18,8 +18,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/types"
 )
 
 const qemuBaseCommand = "qemu-system-x86_64"
@@ -49,13 +49,13 @@ func (q *qemu) Stop() {
 	}
 }
 
-func logv(rconfig *config.RunConfig, msg string) {
+func logv(rconfig *types.RunConfig, msg string) {
 	if rconfig.Verbose {
 		fmt.Println(msg)
 	}
 }
 
-func (q *qemu) Command(rconfig *config.RunConfig) *exec.Cmd {
+func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
 	logv(rconfig, qemuBaseCommand+" "+strings.Join(args, " "))
 	q.cmd = exec.Command(qemuBaseCommand, args...)
@@ -74,7 +74,7 @@ func (q *qemu) Command(rconfig *config.RunConfig) *exec.Cmd {
 	return q.cmd
 }
 
-func (q *qemu) Start(rconfig *config.RunConfig) error {
+func (q *qemu) Start(rconfig *types.RunConfig) error {
 	if q.cmd == nil {
 		q.Command(rconfig)
 		q.cmd.Stdout = os.Stdout
@@ -221,7 +221,7 @@ func (q *qemu) addOption(flag, value string) {
 // setAccel - trying to set accel.
 // Shows Warning messages if can't enable.
 // May terminate ops (depends on error, see qemu_errors:qemuAccelWarningMessage for details).
-func (q *qemu) setAccel(rconfig *config.RunConfig) {
+func (q *qemu) setAccel(rconfig *types.RunConfig) {
 	var (
 		isAdded      bool  = false
 		supportedErr error = &errQemuHWAccelDisabledInConfig{errCustom{"Hardware acceleration disabled in config", nil}}
@@ -293,7 +293,7 @@ func (q *qemu) addAccel() (bool, error) {
 	return false, nil
 }
 
-func (q *qemu) setConfig(rconfig *config.RunConfig) {
+func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	// add virtio drive
 	q.addDrive("hd0", rconfig.Imagename, "none")
 
@@ -384,7 +384,7 @@ func (q *qemu) isInstalled() bool {
 	return fi.Mode().Perm()&0111 != 0
 }
 
-func (q *qemu) Args(rconfig *config.RunConfig) []string {
+func (q *qemu) Args(rconfig *types.RunConfig) []string {
 	q.setConfig(rconfig)
 	args := []string{}
 
