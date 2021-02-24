@@ -123,7 +123,7 @@ func (o *OpenStack) CreateImage(ctx *Context, imagePath string) error {
 		fmt.Println(err)
 	}
 
-	imagePath = localImageDir + "/" + imgName
+	imagePath = localImageDir + "/" + imgName + ".img"
 	err = o.uploadImage(imagesClient, image.ID, imagePath)
 	if err != nil {
 		return err
