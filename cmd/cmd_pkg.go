@@ -202,6 +202,7 @@ func LoadCommand() *cobra.Command {
 	PersistConfigCommandFlags(cmdLoadPackage.PersistentFlags())
 	PersistBuildImageCommandFlags(cmdLoadPackage.PersistentFlags())
 	PersistRunLocalInstanceCommandFlags(cmdLoadPackage.PersistentFlags())
+	PersistNightlyCommandFlags(cmdLoadPackage.PersistentFlags())
 	cmdLoadPackage.PersistentFlags().BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
@@ -211,7 +212,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
 	configFlags := NewConfigCommandFlags(flags)
-	globalFlags := NewGlobalCommandFlags(cmd.Flags())
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
@@ -220,7 +222,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	c := config.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, buildImageFlags, globalFlags, runLocalInstanceFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

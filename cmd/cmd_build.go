@@ -20,6 +20,7 @@ func BuildCommand() *cobra.Command {
 	PersistConfigCommandFlags(cmdBuild.PersistentFlags())
 	PersistBuildImageCommandFlags(cmdBuild.PersistentFlags())
 	PersistProviderCommandFlags(cmdBuild.PersistentFlags())
+	PersistNightlyCommandFlags(cmdBuild.PersistentFlags())
 
 	return cmdBuild
 }
@@ -29,6 +30,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 
 	c := config.NewConfig()
@@ -36,7 +38,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	c.Program = args[0]
 	checkProgramExists(c.Program)
 
-	mergeConfigContainer := NewMergeConfigContainer(configFlags, buildImageFlags, globalFlags)
+	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags)
 	err := mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

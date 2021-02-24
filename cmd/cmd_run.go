@@ -21,6 +21,7 @@ func RunCommand() *cobra.Command {
 	PersistConfigCommandFlags(cmdRun.PersistentFlags())
 	PersistBuildImageCommandFlags(cmdRun.PersistentFlags())
 	PersistRunLocalInstanceCommandFlags(cmdRun.PersistentFlags())
+	PersistNightlyCommandFlags(cmdRun.PersistentFlags())
 
 	return cmdRun
 }
@@ -45,10 +46,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, buildImageFlags, runLocalInstanceFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
