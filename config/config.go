@@ -174,9 +174,9 @@ type RunConfig struct {
 	// NetMask
 	NetMask string
 
-	// OnPrem is set to be true if the image is in a multi-instance/tenant
-	// on-premise environment.
-	OnPrem bool
+	// Background runs unikernel in background
+	// use onprem instances commands to manage the unikernel
+	Background bool
 
 	// Ports specifies a list of port to expose.
 	Ports []string

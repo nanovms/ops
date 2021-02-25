@@ -35,7 +35,7 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 	imgpath := path.Join(opshome, "images", c.CloudConfig.ImageName)
 
 	c.RunConfig.Imagename = imgpath
-	c.RunConfig.OnPrem = true
+	c.RunConfig.Background = true
 
 	err := hypervisor.Start(&c.RunConfig)
 	if err != nil {
