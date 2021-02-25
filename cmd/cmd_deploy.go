@@ -93,7 +93,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		strconv.FormatInt(time.Now().Unix(), 10),
 	)
 
-	ctx.Config().RunConfig.Tags = append(ctx.Config().RunConfig.Tags, config.Tag{Key: "image", Value: c.CloudConfig.ImageName})
+	ctx.Config().CloudConfig.Tags = append(ctx.Config().CloudConfig.Tags, config.Tag{Key: "image", Value: c.CloudConfig.ImageName})
 
 	err = p.CreateInstance(ctx)
 	if err != nil {

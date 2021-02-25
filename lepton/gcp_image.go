@@ -83,7 +83,7 @@ func (p *GCloud) CreateImage(ctx *Context, imagePath string) error {
 
 	rb := &compute.Image{
 		Name:   c.CloudConfig.ImageName,
-		Labels: buildGcpTags(ctx.config.RunConfig.Tags),
+		Labels: buildGcpTags(ctx.config.CloudConfig.Tags),
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,
 		},

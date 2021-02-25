@@ -15,8 +15,8 @@ import (
 
 // CheckValidSecurityGroup checks whether the configuration security group exists and has the configuration VPC assigned
 func (p *AWS) CheckValidSecurityGroup(ctx *Context, svc *ec2.EC2) error {
-	sg := ctx.config.RunConfig.SecurityGroup
-	vpc := ctx.config.RunConfig.VPC
+	sg := ctx.config.CloudConfig.SecurityGroup
+	vpc := ctx.config.CloudConfig.VPC
 
 	input := &ec2.DescribeSecurityGroupsInput{
 		GroupIds: []*string{
@@ -30,7 +30,7 @@ func (p *AWS) CheckValidSecurityGroup(ctx *Context, svc *ec2.EC2) error {
 	}
 
 	if len(result.SecurityGroups) == 1 && *result.SecurityGroups[0].VpcId != vpc {
-		return fmt.Errorf("vpc mismatch: expected '%s' to have vpc '%s', got '%s'", sg, ctx.config.RunConfig.VPC, *result.SecurityGroups[0].VpcId)
+		return fmt.Errorf("vpc mismatch: expected '%s' to have vpc '%s', got '%s'", sg, ctx.config.CloudConfig.VPC, *result.SecurityGroups[0].VpcId)
 	} else if len(result.SecurityGroups) == 0 {
 		return fmt.Errorf("security group '%s' not found", sg)
 	}
@@ -40,13 +40,13 @@ func (p *AWS) CheckValidSecurityGroup(ctx *Context, svc *ec2.EC2) error {
 
 // GetSubnet returns a subnet with the context subnet name or the default subnet of vpc passed by argument
 func (p *AWS) GetSubnet(ctx *Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, error) {
-	subnetName := ctx.config.RunConfig.Subnet
+	subnetName := ctx.config.CloudConfig.Subnet
 	var filters []*ec2.Filter
 
 	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
 
 	if subnetName != "" {
-		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.Subnet})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.CloudConfig.Subnet})})
 	}
 
 	input := &ec2.DescribeSubnetsInput{
@@ -78,13 +78,13 @@ func (p *AWS) GetSubnet(ctx *Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, 
 
 // GetVPC returns a vpc with the context vpc name or the default vpc
 func (p *AWS) GetVPC(ctx *Context, svc *ec2.EC2) (*ec2.Vpc, error) {
-	vpcName := ctx.config.RunConfig.VPC
+	vpcName := ctx.config.CloudConfig.VPC
 	var vpc *ec2.Vpc
 	var input *ec2.DescribeVpcsInput
 	if vpcName != "" {
 		var filters []*ec2.Filter
 
-		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.RunConfig.VPC})})
+		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{ctx.config.CloudConfig.VPC})})
 		input = &ec2.DescribeVpcsInput{
 			Filters: filters,
 		}
@@ -210,7 +210,7 @@ func (p *AWS) CreateSG(ctx *Context, svc *ec2.EC2, imgName string, vpcID string)
 
 // CreateVPC creates a virtual network
 func (p *AWS) CreateVPC(ctx *Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
-	vnetName := ctx.config.RunConfig.VPC
+	vnetName := ctx.config.CloudConfig.VPC
 
 	if vnetName == "" {
 		err = errors.New("specify vpc name")
@@ -251,7 +251,7 @@ func (p *AWS) CreateVPC(ctx *Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
 	vpc, err = p.GetVPC(ctx, svc)
 
 	if err == nil {
-		tags, _ = buildAwsTags([]config.Tag{}, ctx.config.RunConfig.Subnet)
+		tags, _ = buildAwsTags([]config.Tag{}, ctx.config.CloudConfig.Subnet)
 
 		_, err = svc.CreateSubnet(&ec2.CreateSubnetInput{
 			VpcId:     vpc.VpcId,

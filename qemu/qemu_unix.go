@@ -328,7 +328,7 @@ func (q *qemu) setConfig(rconfig *config.RunConfig) {
 	q.addDisplay("none")
 
 	if rconfig.OnPrem {
-		q.addSerial("file:/tmp/" + rconfig.BaseName + ".log")
+		q.addSerial("file:/tmp/" + rconfig.InstanceName + ".log")
 	} else {
 		q.addSerial("stdio")
 	}

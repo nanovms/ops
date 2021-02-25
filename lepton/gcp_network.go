@@ -105,7 +105,7 @@ func (p *GCloud) getNIC(ctx *Context, computeService *compute.Service) (nic []*c
 
 	var network *compute.Network
 
-	vpcName := c.RunConfig.VPC
+	vpcName := c.CloudConfig.VPC
 
 	if vpcName != "" {
 		network, err = p.findOrCreateVPC(ctx, computeService, vpcName)
@@ -114,7 +114,7 @@ func (p *GCloud) getNIC(ctx *Context, computeService *compute.Service) (nic []*c
 		}
 
 		var subnet *compute.Subnetwork
-		subnetName := c.RunConfig.Subnet
+		subnetName := c.CloudConfig.Subnet
 
 		if subnetName != "" {
 			regionParts := strings.Split(c.CloudConfig.Zone, "-")

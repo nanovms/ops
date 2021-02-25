@@ -81,6 +81,9 @@ type ProviderConfig struct {
 	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 
+	// DomainName
+	DomainName string
+
 	// Flavor
 	Flavor string `cloud:"flavor"`
 
@@ -94,6 +97,18 @@ type ProviderConfig struct {
 	// ProjectID is used to define the project ID when the Platform is set
 	// to gcp.
 	ProjectID string `cloud:"projectid"`
+
+	// SecurityGroup
+	SecurityGroup string
+
+	// Subnet
+	Subnet string
+
+	// Tags
+	Tags []Tag
+
+	// VPC
+	VPC string
 
 	// Zone is used to define the location of the host resource. Lists of these
 	// zones are dependent on selected Platform and can be found here:
@@ -117,9 +132,6 @@ type RunConfig struct {
 	// Accel defines whether hardware acceleration should be enabled.
 	Accel bool
 
-	// BaseName of the image (FIXME).
-	BaseName string
-
 	// Bridged parameter is set to true if bridged networking mode is
 	// in use. This also enables KVM acceleration.
 	Bridged bool
@@ -132,9 +144,6 @@ type RunConfig struct {
 
 	// Debug
 	Debug bool
-
-	// DomainName
-	DomainName string
 
 	// Gateway
 	Gateway string
@@ -172,9 +181,6 @@ type RunConfig struct {
 	// Ports specifies a list of port to expose.
 	Ports []string
 
-	// SecurityGroup
-	SecurityGroup string
-
 	// ShowDebug
 	ShowDebug bool
 
@@ -183,12 +189,6 @@ type RunConfig struct {
 
 	// ShowWarnings
 	ShowWarnings bool
-
-	// Subnet
-	Subnet string
-
-	// Tags
-	Tags []Tag
 
 	// TapName
 	TapName string
@@ -204,9 +204,6 @@ type RunConfig struct {
 
 	// VolumeSizeInGb is an optional parameter only available for OpenStack.
 	VolumeSizeInGb int
-
-	// VPC
-	VPC string
 }
 
 // RuntimeConfig constructs runtime config
