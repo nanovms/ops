@@ -76,7 +76,7 @@ type DNSService interface {
 
 // CreateDNSRecord does the necessary operations to create a DNS record without issues in an cloud provider
 func CreateDNSRecord(config *config.Config, aRecordIP string, dnsService DNSService) error {
-	domainName := config.RunConfig.DomainName
+	domainName := config.CloudConfig.DomainName
 	if err := isDomainValid(domainName); err != nil {
 		return err
 	}

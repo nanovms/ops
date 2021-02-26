@@ -33,7 +33,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	serialTrue := "true"
 
 	labels := map[string]string{}
-	for _, tag := range ctx.config.RunConfig.Tags {
+	for _, tag := range ctx.config.CloudConfig.Tags {
 		labels[tag.Key] = tag.Value
 	}
 
@@ -61,7 +61,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 				},
 			},
 		},
-		Labels: buildGcpTags(ctx.config.RunConfig.Tags),
+		Labels: buildGcpTags(ctx.config.CloudConfig.Tags),
 		Tags: &compute.Tags{
 			Items: []string{instanceName},
 		},
@@ -78,7 +78,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 	fmt.Printf("Instance creation succeeded %s.\n", instanceName)
 
 	// create dns zones/records to associate DNS record to instance IP
-	if c.RunConfig.DomainName != "" {
+	if c.CloudConfig.DomainName != "" {
 		instance, err := p.Service.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
 		if err != nil {
 			ctx.logger.Error("failed getting instance")
@@ -88,7 +88,7 @@ func (p *GCloud) CreateInstance(ctx *Context) error {
 		cinstance := p.convertToCloudInstance(instance)
 
 		if len(cinstance.PublicIps) != 0 {
-			ctx.logger.Info("Assigning IP %s to %s", cinstance.PublicIps[0], c.RunConfig.DomainName)
+			ctx.logger.Info("Assigning IP %s to %s", cinstance.PublicIps[0], c.CloudConfig.DomainName)
 			err := CreateDNSRecord(ctx.config, cinstance.PublicIps[0], p)
 			if err != nil {
 				return err

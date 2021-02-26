@@ -226,13 +226,13 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 
 	var sg string
 
-	if ctx.config.RunConfig.SecurityGroup != "" && ctx.config.RunConfig.VPC != "" {
+	if ctx.config.CloudConfig.SecurityGroup != "" && ctx.config.CloudConfig.VPC != "" {
 		err = p.CheckValidSecurityGroup(ctx, svc)
 		if err != nil {
 			return err
 		}
 
-		sg = ctx.config.RunConfig.SecurityGroup
+		sg = ctx.config.CloudConfig.SecurityGroup
 	} else {
 		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
 		if err != nil {
@@ -250,7 +250,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	}
 
 	// Create tags to assign to the instance
-	tags, tagInstanceName := buildAwsTags(ctx.config.RunConfig.Tags, ctx.config.RunConfig.InstanceName)
+	tags, tagInstanceName := buildAwsTags(ctx.config.CloudConfig.Tags, ctx.config.RunConfig.InstanceName)
 
 	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
@@ -278,7 +278,7 @@ func (p *AWS) CreateInstance(ctx *Context) error {
 	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
 
 	// create dns zones/records to associate DNS record to instance IP
-	if ctx.config.RunConfig.DomainName != "" {
+	if ctx.config.CloudConfig.DomainName != "" {
 		pollCount := 60
 		for pollCount > 0 {
 			fmt.Printf(".")

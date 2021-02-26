@@ -130,7 +130,7 @@ func (o *OpenStack) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("Instance Created Successfully. ID ---> %s | Name ---> %s\n", server.ID, instanceName)
 
-	if ctx.config.RunConfig.DomainName != "" {
+	if ctx.config.CloudConfig.DomainName != "" {
 		pollCount := 60
 		for pollCount > 0 {
 			fmt.Printf(".")

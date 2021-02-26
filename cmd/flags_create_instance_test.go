@@ -43,12 +43,12 @@ func TestCreateInstanceFlagsMergeToConfig(t *testing.T) {
 
 	expected := &config.Config{
 		CloudConfig: config.ProviderConfig{
-			Flavor: "t2",
+			DomainName: "test.nanovms.com",
+			Flavor:     "t2",
 		},
 		RunConfig: config.RunConfig{
-			DomainName: "test.nanovms.com",
-			Ports:      []string{"30", "80", "9000-9040"},
-			UDPPorts:   []string{"90", "50-80", "8000"},
+			Ports:    []string{"30", "80", "9000-9040"},
+			UDPPorts: []string{"90", "50-80", "8000"},
 		},
 	}
 

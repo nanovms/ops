@@ -25,20 +25,17 @@ func (p *OnPrem) CreateInstance(ctx *Context) error {
 		os.Exit(1)
 	}
 
-	instancename := c.RunConfig.InstanceName
-
-	if instancename == "" {
-		instancename = c.CloudConfig.ImageName
+	if c.RunConfig.InstanceName == "" {
+		c.RunConfig.InstanceName = c.CloudConfig.ImageName
 	}
 
-	fmt.Printf("booting %s ...\n", instancename)
+	fmt.Printf("booting %s ...\n", c.RunConfig.InstanceName)
 
 	opshome := GetOpsHome()
 	imgpath := path.Join(opshome, "images", c.CloudConfig.ImageName)
 
-	c.RunConfig.BaseName = instancename
 	c.RunConfig.Imagename = imgpath
-	c.RunConfig.OnPrem = true
+	c.RunConfig.Background = true
 
 	err := hypervisor.Start(&c.RunConfig)
 	if err != nil {

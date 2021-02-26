@@ -61,7 +61,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create virtual network
 	var vnet *network.VirtualNetwork
-	configVPC := ctx.config.RunConfig.VPC
+	configVPC := ctx.config.CloudConfig.VPC
 	if configVPC != "" {
 		vnet, err = a.GetVPC(configVPC)
 		if err != nil {
@@ -79,7 +79,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create nsg
 	var nsg *network.SecurityGroup
-	configSecurityGroup := ctx.config.RunConfig.SecurityGroup
+	configSecurityGroup := ctx.config.CloudConfig.SecurityGroup
 	if configSecurityGroup != "" {
 		nsg, err = a.GetNetworkSecurityGroup(context.TODO(), configSecurityGroup)
 		if err != nil {
@@ -97,7 +97,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	// create subnet
 	var subnet *network.Subnet
-	configSubnet := ctx.config.RunConfig.Subnet
+	configSubnet := ctx.config.CloudConfig.Subnet
 	if configSubnet != "" {
 		subnet, err = a.GetVirtualNetworkSubnet(context.TODO(), *vnet.Name, configSubnet)
 		if err != nil {
@@ -214,7 +214,7 @@ func (a *Azure) CreateInstance(ctx *Context) error {
 
 	fmt.Printf("%+v\n", vm)
 
-	if ctx.config.RunConfig.DomainName != "" {
+	if ctx.config.CloudConfig.DomainName != "" {
 		err = CreateDNSRecord(ctx.config, *ip.IPAddress, a)
 		if err != nil {
 			return err

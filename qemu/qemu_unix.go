@@ -81,7 +81,7 @@ func (q *qemu) Start(rconfig *config.RunConfig) error {
 		q.cmd.Stderr = os.Stderr
 	}
 
-	if rconfig.OnPrem {
+	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
 			fmt.Println(err)
@@ -327,8 +327,8 @@ func (q *qemu) setConfig(rconfig *config.RunConfig) {
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)
 	q.addDisplay("none")
 
-	if rconfig.OnPrem {
-		q.addSerial("file:/tmp/" + rconfig.BaseName + ".log")
+	if rconfig.Background {
+		q.addSerial("file:/tmp/" + rconfig.InstanceName + ".log")
 	} else {
 		q.addSerial("stdio")
 	}

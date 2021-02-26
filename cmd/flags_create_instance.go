@@ -16,7 +16,7 @@ type CreateInstanceFlags struct {
 // MergeToConfig append command flags that are used to create an instance
 func (f *CreateInstanceFlags) MergeToConfig(config *config.Config) (err error) {
 	if f.DomainName != "" {
-		config.RunConfig.DomainName = f.DomainName
+		config.CloudConfig.DomainName = f.DomainName
 	}
 
 	if f.Flavor != "" {

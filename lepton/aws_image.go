@@ -89,7 +89,7 @@ func (p *AWS) CreateImage(ctx *Context, imagePath string) error {
 	}
 
 	// tag the volume
-	tags, _ := buildAwsTags(c.RunConfig.Tags, key)
+	tags, _ := buildAwsTags(c.CloudConfig.Tags, key)
 
 	ctx.logger.Log("Tagging snapshot")
 	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
