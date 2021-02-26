@@ -67,8 +67,19 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	// ignoring possible error because image may not exist. TODO: Verify whether image exists before deleting
-	p.DeleteImage(ctx, ctx.Config().CloudConfig.ImageName)
+	images, err := p.GetImages(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	for _, i := range images {
+		if i.Name == ctx.Config().CloudConfig.ImageName {
+			err = p.DeleteImage(ctx, ctx.Config().CloudConfig.ImageName)
+			if err != nil {
+				exitWithError(err.Error())
+			}
+		}
+	}
 
 	var keypath string
 	if pkgFlags.Package != "" {
