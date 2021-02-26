@@ -41,19 +41,31 @@ func TestCreateInstance(t *testing.T) {
 
 	s.EXPECT().
 		GetTags().
-		Return(&upcloud.Tags{}, nil)
+		Return(&upcloud.Tags{}, nil).
+		Times(2)
 
-	tag := upcloud.Tag{
+	imageTag := upcloud.Tag{
+		Name:        "image-test",
+		Description: "Creted with image test",
+	}
+
+	createTagReq := &request.CreateTagRequest{Tag: imageTag}
+	s.EXPECT().
+		CreateTag(createTagReq).
+		Return(&imageTag, nil)
+
+	opsTag := upcloud.Tag{
 		Name:        "OPS",
 		Description: "Created by ops",
 	}
-	createTagReq := &request.CreateTagRequest{Tag: tag}
+
+	createTagReq = &request.CreateTagRequest{Tag: opsTag}
 	s.EXPECT().
 		CreateTag(createTagReq).
-		Return(&tag, nil)
+		Return(&opsTag, nil)
 
 	s.EXPECT().
-		TagServer(&request.TagServerRequest{UUID: serverID, Tags: []string{"OPS"}}).
+		TagServer(&request.TagServerRequest{UUID: serverID, Tags: []string{"OPS", "image-test"}}).
 		Return(&upcloud.ServerDetails{}, nil)
 
 	ctx := NewMockContext()

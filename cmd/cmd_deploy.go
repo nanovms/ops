@@ -67,6 +67,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	// Delete image with the same name
 	images, err := p.GetImages(ctx)
 	if err != nil {
 		exitWithError(err.Error())
@@ -81,6 +82,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Build image
 	var keypath string
 	if pkgFlags.Package != "" {
 		keypath, err = p.BuildImageWithPackage(ctx, pkgFlags.PackagePath())
@@ -99,6 +101,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	// Create instance and stop instances created with the same image
 	ctx.Config().RunConfig.InstanceName = fmt.Sprintf("%v-%v",
 		filepath.Base(c.CloudConfig.ImageName),
 		strconv.FormatInt(time.Now().Unix(), 10),
@@ -106,8 +109,23 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 
 	ctx.Config().CloudConfig.Tags = append(ctx.Config().CloudConfig.Tags, types.Tag{Key: "image", Value: c.CloudConfig.ImageName})
 
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	err = p.CreateInstance(ctx)
 	if err != nil {
 		exitWithError("failed creating instance: " + err.Error())
+	}
+
+	for _, i := range instances {
+		if i.Image == c.CloudConfig.ImageName {
+			ctx.Logger().Debug("deleting instance %s", i.Name)
+			err := p.DeleteInstance(ctx, i.Name)
+			if err != nil {
+				exitWithError(err.Error())
+			}
+		}
 	}
 }

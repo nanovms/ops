@@ -17,10 +17,13 @@ import (
 )
 
 func formalizeAWSInstance(instance *ec2.Instance) *lepton.CloudInstance {
+	imageName := "unknown"
 	instanceName := "unknown"
 	for x := 0; x < len(instance.Tags); x++ {
 		if aws.StringValue(instance.Tags[x].Key) == "Name" {
 			instanceName = aws.StringValue(instance.Tags[x].Value)
+		} else if aws.StringValue(instance.Tags[x].Key) == "image" {
+			imageName = aws.StringValue(instance.Tags[x].Value)
 		}
 	}
 
@@ -40,6 +43,7 @@ func formalizeAWSInstance(instance *ec2.Instance) *lepton.CloudInstance {
 		Created:    aws.TimeValue(instance.LaunchTime).String(),
 		PublicIps:  publicIps,
 		PrivateIps: privateIps,
+		Image:      imageName,
 	}
 }
 
@@ -253,6 +257,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	// Create tags to assign to the instance
 	tags, tagInstanceName := buildAwsTags(ctx.Config().CloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
+	tags = append(tags, &ec2.Tag{Key: aws.String("image"), Value: &imgName})
 
 	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
@@ -321,8 +326,9 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -343,6 +349,8 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 
 		rows = append(rows, strings.Join(instance.PrivateIps, ","))
 		rows = append(rows, strings.Join(instance.PublicIps, ","))
+
+		rows = append(rows, instance.Image)
 
 		table.Append(rows)
 	}
