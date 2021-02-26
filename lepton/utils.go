@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/nanovms/ops/constants"
@@ -13,10 +12,6 @@ import (
 func exitWithError(errs string) {
 	fmt.Println(fmt.Sprintf(constants.ErrorColor, errs))
 	os.Exit(1)
-}
-
-func arrayToString(a interface{}, delim string) string {
-	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }
 
 // isDomainValid returns an error if the domain name is not valid

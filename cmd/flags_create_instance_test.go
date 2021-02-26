@@ -3,8 +3,9 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/cmd"
-	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,19 +42,19 @@ func TestCreateInstanceFlagsMergeToConfig(t *testing.T) {
 
 	createInstanceFlags := cmd.NewCreateInstanceCommandFlags(flagSet)
 
-	expected := &config.Config{
-		CloudConfig: config.ProviderConfig{
+	expected := &types.Config{
+		CloudConfig: types.ProviderConfig{
 			DomainName: "test.nanovms.com",
 			Flavor:     "t2",
 		},
-		RunConfig: config.RunConfig{
+		RunConfig: types.RunConfig{
 			Ports:    []string{"30", "80", "9000-9040"},
 			UDPPorts: []string{"90", "50-80", "8000"},
 		},
 	}
 
-	actual := &config.Config{
-		RunConfig: config.RunConfig{
+	actual := &types.Config{
+		RunConfig: types.RunConfig{
 			Ports:    []string{"30"},
 			UDPPorts: []string{"90"},
 		},

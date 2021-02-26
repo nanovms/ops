@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +33,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	c.Program = args[0]
 	checkProgramExists(c.Program)

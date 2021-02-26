@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	"github.com/spf13/pflag"
 )
 
@@ -14,7 +15,7 @@ type CreateInstanceFlags struct {
 }
 
 // MergeToConfig append command flags that are used to create an instance
-func (f *CreateInstanceFlags) MergeToConfig(config *config.Config) (err error) {
+func (f *CreateInstanceFlags) MergeToConfig(config *types.Config) (err error) {
 	if f.DomainName != "" {
 		config.CloudConfig.DomainName = f.DomainName
 	}

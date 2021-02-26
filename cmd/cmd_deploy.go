@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	program := args[0]
 	c.Program = program
@@ -93,7 +93,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		strconv.FormatInt(time.Now().Unix(), 10),
 	)
 
-	ctx.Config().CloudConfig.Tags = append(ctx.Config().CloudConfig.Tags, config.Tag{Key: "image", Value: c.CloudConfig.ImageName})
+	ctx.Config().CloudConfig.Tags = append(ctx.Config().CloudConfig.Tags, types.Tag{Key: "image", Value: c.CloudConfig.ImageName})
 
 	err = p.CreateInstance(ctx)
 	if err != nil {

@@ -6,8 +6,8 @@ import (
 	"path"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -24,12 +24,25 @@ type NanosVolume struct {
 	Status     string `json:"status"`
 }
 
+const (
+	// DefaultVolumeLabel is the default label of a volume created with mkfs
+	DefaultVolumeLabel = "default"
+
+	// VolumeDelimiter is the reserved character used as delimiter between
+	// volume name and uuid/label
+	VolumeDelimiter = ":"
+)
+
+var (
+	errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
+)
+
 // CreateLocalVolume creates volume on ops directory
 // creates a volume named <name>:<uuid>
 // where <uuid> is generated on creation
 // also creates a symlink to volume label at <name>
 // TODO investigate symlinked volume interaction with image
-func CreateLocalVolume(config *config.Config, name, data, size, provider string) (NanosVolume, error) {
+func CreateLocalVolume(config *types.Config, name, data, size, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	var mkfsCommand *fs.MkfsCommand
 
@@ -79,6 +92,57 @@ func CreateLocalVolume(config *config.Config, name, data, size, provider string)
 		Path:  rawPath,
 	}
 	return vol, nil
+}
+
+// symlinkVolume creates a symlink to volume that acts as volume label
+// if label of the same name exists for a volume, removes the label from the older volume
+// and assigns it to the newly created volume
+func symlinkVolume(dir, name, uuid string) error {
+	msg := fmt.Sprintf("volume: label: failed adding label info for volume %s\n", name)
+	msg = fmt.Sprintf("%vsymlink the file to %s should you want to attach it by label\n", msg, name)
+
+	src := path.Join(dir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid))
+	dst := path.Join(dir, fmt.Sprintf("%s.raw", name))
+
+	_, err := os.Lstat(dst)
+	if err == nil {
+		err := os.Remove(dst)
+		if err != nil {
+			fmt.Println(msg)
+			return err
+		}
+	}
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Println(msg)
+		return err
+	}
+
+	err = os.Symlink(src, dst)
+	if err != nil {
+		fmt.Println(msg)
+		return err
+	}
+	return nil
+}
+
+// buildVolumeManifest builds manifests for non-empty volume
+func buildVolumeManifest(conf *types.Config) (*fs.Manifest, error) {
+	m := fs.NewManifest("")
+
+	for _, d := range conf.Dirs {
+		err := m.AddRelativeDirectory(d)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	m.AddEnvironmentVariable("USER", "root")
+	m.AddEnvironmentVariable("PWD", "/")
+	for k, v := range conf.Env {
+		m.AddEnvironmentVariable(k, v)
+	}
+
+	return m, nil
 }
 
 // PrintVolumesList writes into console a table with volumes details

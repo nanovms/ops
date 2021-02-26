@@ -6,8 +6,9 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 )
@@ -34,7 +35,7 @@ type RunLocalInstanceCommandFlags struct {
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
-func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *config.Config) (err error) {
+func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	c.Debugflags = []string{}
 
 	if flags.Trace {

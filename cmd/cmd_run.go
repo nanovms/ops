@@ -4,8 +4,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/nanovms/ops/config"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func RunCommand() *cobra.Command {
 
 func runCommandHandler(cmd *cobra.Command, args []string) {
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	program := args[0]
 	c.Program = program

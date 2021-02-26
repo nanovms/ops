@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/ttacon/chalk"
@@ -19,7 +20,7 @@ type NightlyCommandFlags struct {
 }
 
 // MergeToConfig append command flags that are used transversally for all commands to configuration
-func (flags *NightlyCommandFlags) MergeToConfig(config *config.Config) (err error) {
+func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	config.NightlyBuild = flags.Nightly
 
 	setNanosBaseImage(config)
@@ -40,7 +41,7 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 	return
 }
 
-func setNanosBaseImage(c *config.Config) {
+func setNanosBaseImage(c *types.Config) {
 	var err error
 	var currversion string
 
@@ -54,7 +55,7 @@ func setNanosBaseImage(c *config.Config) {
 	updateNanosToolsPaths(c, currversion)
 }
 
-func updateNanosToolsPaths(c *config.Config, version string) {
+func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
 		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
@@ -84,7 +85,7 @@ func updateNanosToolsPaths(c *config.Config, version string) {
 	}
 }
 
-func downloadNightlyImages(c *config.Config) (string, error) {
+func downloadNightlyImages(c *types.Config) (string, error) {
 	var err error
 	err = api.DownloadNightlyImages(c)
 	return "nightly", err

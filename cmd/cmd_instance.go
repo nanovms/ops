@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +57,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	providerFlags := NewProviderCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
 
-	c := config.NewConfig()
+	c := types.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags, createInstanceFlags)
 	err := mergeContainer.Merge(c)
@@ -266,14 +267,14 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getInstanceCommandDefaultConfig(cmd *cobra.Command) (c *config.Config, err error) {
+func getInstanceCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err error) {
 	flags := cmd.Flags()
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = config.NewConfig()
+	c = types.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err = mergeContainer.Merge(c)

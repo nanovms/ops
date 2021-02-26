@@ -3,8 +3,9 @@ package cmd
 import (
 	"os"
 
+	"github.com/nanovms/ops/types"
+
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/config"
 	"github.com/spf13/pflag"
 )
 
@@ -16,7 +17,7 @@ type ProviderCommandFlags struct {
 }
 
 // MergeToConfig merge provider flags to configuration
-func (flags *ProviderCommandFlags) MergeToConfig(c *config.Config) (err error) {
+func (flags *ProviderCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.TargetCloud != "" {
 		c.CloudConfig.Platform = flags.TargetCloud
 	}

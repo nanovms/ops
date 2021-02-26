@@ -7,7 +7,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
+
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
@@ -30,7 +31,7 @@ func (flags *PkgCommandFlags) PackagePath() (packagePath string) {
 }
 
 // MergeToConfig merge package configuration to ops configuration
-func (flags *PkgCommandFlags) MergeToConfig(c *config.Config) (err error) {
+func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.Package == "" {
 		return
 	}

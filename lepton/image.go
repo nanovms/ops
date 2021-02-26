@@ -1,6 +1,8 @@
 package lepton
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,15 +15,17 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/types"
 )
 
-var localImageDir = path.Join(GetOpsHome(), "images")
+// LocalImageDir is the directory where ops save images
+var LocalImageDir = path.Join(GetOpsHome(), "images")
 
 // BuildImage builds a unikernel image for user
 // supplied ELF binary.
-func BuildImage(c config.Config) error {
+func BuildImage(c types.Config) error {
+
 	m, err := BuildManifest(&c)
 	if err != nil {
 		return fmt.Errorf("failed building manifest: %v", err)
@@ -36,7 +40,7 @@ func BuildImage(c config.Config) error {
 
 // rebuildImage rebuilds a unikernel image for user
 // supplied ELF binary after volume attach/detach
-func rebuildImage(c config.Config) error {
+func rebuildImage(c types.Config) error {
 	c.Program = c.ProgramPath
 	m, err := BuildManifest(&c)
 	if err != nil {
@@ -64,7 +68,7 @@ func createFile(filepath string) (*os.File, error) {
 }
 
 // add /etc/resolv.conf
-func addDNSConfig(m *fs.Manifest, c *config.Config) {
+func addDNSConfig(m *fs.Manifest, c *types.Config) {
 	temp := getImageTempDir(c)
 	resolv := path.Join(temp, "resolv.conf")
 	data := []byte("nameserver ")
@@ -80,7 +84,7 @@ func addDNSConfig(m *fs.Manifest, c *config.Config) {
 }
 
 // /proc/sys/kernel/hostname
-func addHostName(m *fs.Manifest, c *config.Config) {
+func addHostName(m *fs.Manifest, c *types.Config) {
 	temp := getImageTempDir(c)
 	hostname := path.Join(temp, "hostname")
 	data := []byte("uniboot")
@@ -94,7 +98,7 @@ func addHostName(m *fs.Manifest, c *config.Config) {
 	}
 }
 
-func addPasswd(m *fs.Manifest, c *config.Config) {
+func addPasswd(m *fs.Manifest, c *types.Config) {
 	// Skip adding password file if present in package
 	if m.FileExists("/etc/passwd") {
 		return
@@ -196,7 +200,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 }
 
 // BuildPackageManifest builds manifest using package
-func BuildPackageManifest(packagepath string, c *config.Config) (*fs.Manifest, error) {
+func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
 	addFilesFromPackage(packagepath, m)
@@ -220,7 +224,7 @@ func BuildPackageManifest(packagepath string, c *config.Config) (*fs.Manifest, e
 	return m, nil
 }
 
-func setManifestFromConfig(m *fs.Manifest, c *config.Config) error {
+func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddKernel(c.Kernel)
 	addDNSConfig(m, c)
 	addHostName(m, c)
@@ -297,7 +301,7 @@ func setManifestFromConfig(m *fs.Manifest, c *config.Config) error {
 }
 
 // BuildManifest builds manifest using config
-func BuildManifest(c *config.Config) (*fs.Manifest, error) {
+func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 	m := fs.NewManifest(c.TargetRoot)
 
 	addCommonFilesToManifest(m)
@@ -354,7 +358,7 @@ func addMappedFiles(src string, dest string, m *fs.Manifest) error {
 	return err
 }
 
-func createImageFile(c *config.Config, m *fs.Manifest) error {
+func createImageFile(c *types.Config, m *fs.Manifest) error {
 	// produce final image, boot + kernel + elf
 	fd, err := createFile(c.RunConfig.Imagename)
 	defer func() {
@@ -383,7 +387,7 @@ func createImageFile(c *config.Config, m *fs.Manifest) error {
 	return nil
 }
 
-func cleanup(c *config.Config) {
+func cleanup(c *types.Config) {
 	os.RemoveAll(c.BuildDir)
 }
 
@@ -396,7 +400,7 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 // DownloadNightlyImages downloads nightly build for nanos
-func DownloadNightlyImages(c *config.Config) error {
+func DownloadNightlyImages(c *types.Config) error {
 	local, err := LocalTimeStamp()
 	if err != nil {
 		return err
@@ -519,5 +523,59 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 		return err
 	}
 
+	return nil
+}
+
+// CreateArchive compress files into an archive
+func CreateArchive(archive string, files []string) error {
+	fd, err := os.Create(archive)
+	if err != nil {
+		return err
+	}
+
+	gzw := gzip.NewWriter(fd)
+
+	tw := tar.NewWriter(gzw)
+
+	for _, file := range files {
+		fstat, err := os.Stat(file)
+		if err != nil {
+			return err
+		}
+
+		// write the header
+		if err := tw.WriteHeader(&tar.Header{
+			Name:   filepath.Base(file),
+			Mode:   int64(fstat.Mode()),
+			Size:   fstat.Size(),
+			Format: tar.FormatGNU,
+		}); err != nil {
+			return err
+		}
+
+		fi, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+
+		// copy file data to tar
+		if _, err := io.CopyN(tw, fi, fstat.Size()); err != nil {
+			return err
+		}
+		if err = fi.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Explicitly close all writers in correct order without any error
+	if err := tw.Close(); err != nil {
+		return err
+	}
+	if err := gzw.Close(); err != nil {
+		return err
+	}
+	if err := fd.Close(); err != nil {
+		return err
+	}
 	return nil
 }

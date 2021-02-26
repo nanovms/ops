@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/minio/minio-go"
-	"github.com/nanovms/ops/config"
+	"github.com/nanovms/ops/types"
 )
 
 // Spaces provides Digital Ocean storage related operations
@@ -40,12 +40,12 @@ func (s *Spaces) getSignedURL(key string, bucket string, region string) string {
 	return presignedURL.String()
 }
 
-func (s *Spaces) getImageSpacesURL(config *config.Config, imageName string) string {
+func (s *Spaces) getImageSpacesURL(config *types.Config, imageName string) string {
 	return fmt.Sprintf("https://%s.%s.digitaloceanspaces.com/%s", config.CloudConfig.BucketName, config.CloudConfig.Zone, imageName)
 }
 
 // CopyToBucket copies archive to bucket
-func (s *Spaces) CopyToBucket(config *config.Config, archPath string) error {
+func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	file, err := os.Open(archPath)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *Spaces) CopyToBucket(config *config.Config, archPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (s *Spaces) DeleteFromBucket(config *config.Config, key string) error {
+func (s *Spaces) DeleteFromBucket(config *types.Config, key string) error {
 	bucket := config.CloudConfig.BucketName
 
 	client, err := s.getMinioClient(config)
@@ -107,7 +107,7 @@ func (s *Spaces) DeleteFromBucket(config *config.Config, key string) error {
 	return nil
 }
 
-func (s *Spaces) getMinioClient(config *config.Config) (*minio.Client, error) {
+func (s *Spaces) getMinioClient(config *types.Config) (*minio.Client, error) {
 	zone := config.CloudConfig.Zone
 
 	accessKey := os.Getenv("SPACES_KEY")

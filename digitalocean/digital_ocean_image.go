@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/digitalocean/godo"
-	"github.com/nanovms/ops/config"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -113,7 +113,7 @@ func (do *DigitalOcean) DeleteImage(ctx *lepton.Context, imagename string) error
 }
 
 // SyncImage syncs image from provider to another provider
-func (do *DigitalOcean) SyncImage(config *config.Config, target lepton.Provider, image string) error {
+func (do *DigitalOcean) SyncImage(config *types.Config, target lepton.Provider, image string) error {
 	fmt.Println("not yet implemented")
 	return nil
 }
