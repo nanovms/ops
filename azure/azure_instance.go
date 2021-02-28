@@ -145,13 +145,16 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		flavor = compute.VirtualMachineSizeTypesStandardA1V2
 	}
 
+	tags := getAzureDefaultTags()
+	tags["image"] = &ctx.Config().CloudConfig.ImageName
+
 	future, err := vmClient.CreateOrUpdate(
 		nctx,
 		a.groupName,
 		vmName,
 		compute.VirtualMachine{
 			Location: to.StringPtr(location),
-			Tags:     getAzureDefaultTags(),
+			Tags:     tags,
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
 					VMSize: flavor,
@@ -208,12 +211,10 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		os.Exit(1)
 	}
 
-	vm, err := future.Result(*vmClient)
+	_, err = future.Result(*vmClient)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	fmt.Printf("%+v\n", vm)
 
 	if ctx.Config().CloudConfig.DomainName != "" {
 		err = lepton.CreateDNSRecord(ctx.Config(), *ip.IPAddress, a)
@@ -258,6 +259,10 @@ func (a *Azure) GetInstances(ctx *lepton.Context) (cinstances []lepton.CloudInst
 			cinstance, err := a.convertToCloudInstance(&instance, nicClient, ipClient)
 			if err != nil {
 				return nil, err
+			}
+
+			if _, ok := instance.Tags["image"]; ok {
+				cinstance.Image = *instance.Tags["image"]
 			}
 
 			cinstances = append(cinstances, *cinstance)
@@ -313,8 +318,9 @@ func (a *Azure) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -330,6 +336,7 @@ func (a *Azure) ListInstances(ctx *lepton.Context) error {
 		rows = append(rows, "")
 		rows = append(rows, strings.Join(instance.PrivateIps, ","))
 		rows = append(rows, strings.Join(instance.PublicIps, ","))
+		rows = append(rows, instance.Image)
 		table.Append(rows)
 	}
 

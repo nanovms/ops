@@ -131,8 +131,9 @@ func (p *GCloud) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -147,6 +148,7 @@ func (p *GCloud) ListInstances(ctx *lepton.Context) error {
 		rows = append(rows, instance.Created)
 		rows = append(rows, strings.Join(instance.PrivateIps, ","))
 		rows = append(rows, strings.Join(instance.PublicIps, ","))
+		rows = append(rows, instance.Image)
 		table.Append(rows)
 	}
 	table.Render()
@@ -177,6 +179,11 @@ func (p *GCloud) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, erro
 		for _, instance := range page.Items {
 			if val, ok := instance.Labels["createdby"]; ok && val == "ops" {
 				cinstance := p.convertToCloudInstance(instance)
+
+				if instance.Labels["image"] != "" {
+					cinstance.Image = instance.Labels["image"]
+				}
+
 				cinstances = append(cinstances, *cinstance)
 			}
 		}

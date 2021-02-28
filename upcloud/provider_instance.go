@@ -13,6 +13,13 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var (
+	opsTag = upcloud.Tag{
+		Name:        "OPS",
+		Description: "Created by ops",
+	}
+)
+
 // CreateInstance uses a template to launch a server in upcloud
 func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
@@ -48,22 +55,26 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("%+v", serverDetails)
 
 	ctx.Logger().Info("getting ops tags")
-	tags, err := p.findOrCreateOpsTag()
+	opsTag, err := p.findOrCreateTag(opsTag)
 	if err != nil {
-		ctx.Logger().Warn("failed creating tags: %s", err)
+		ctx.Logger().Warn("failed creating ops tag: %s", err)
+		return nil
+	}
+
+	imageTag, err := p.findOrCreateTag(upcloud.Tag{
+		Name:        "image-" + image.Name,
+		Description: "Creted with image " + image.Name,
+	})
+	if err != nil {
+		ctx.Logger().Warn("failed creating image tag: %s", err)
 		return nil
 	}
 
 	ctx.Logger().Info("assigning ops tags")
 
-	tagsNames := []string{}
-	for _, t := range *tags {
-		tagsNames = append(tagsNames, t.Name)
-	}
-
 	assignOpsTagsRequest := &request.TagServerRequest{
 		UUID: serverDetails.UUID,
-		Tags: tagsNames,
+		Tags: []string{opsTag.Name, imageTag.Name},
 	}
 
 	_, err = p.upcloud.TagServer(assignOpsTagsRequest)
@@ -83,8 +94,9 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Name", "Status", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"ID", "Name", "Status", "Private Ips", "Public Ips", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -101,6 +113,7 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 		rows = append(rows, i.Status)
 		rows = append(rows, strings.Join(i.PrivateIps, ", "))
 		rows = append(rows, strings.Join(i.PublicIps, ", "))
+		rows = append(rows, i.Image)
 
 		table.Append(rows)
 	}
@@ -115,7 +128,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 	instances = []lepton.CloudInstance{}
 	serversIDs := []string{}
 
-	opsTags, err := p.findOrCreateOpsTag()
+	opsTag, err := p.findOrCreateTag(opsTag)
 	if err != nil {
 		ctx.Logger().Warn("failed creating tags: %s", err)
 
@@ -129,10 +142,8 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 			serversIDs = append(serversIDs, s.UUID)
 		}
 	} else {
-		for _, tag := range *opsTags {
-			for _, s := range tag.Servers {
-				serversIDs = append(serversIDs, s)
-			}
+		for _, s := range opsTag.Servers {
+			serversIDs = append(serversIDs, s)
 		}
 	}
 
@@ -297,12 +308,23 @@ func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (instance *le
 		}
 	}
 
+	imageName := ""
+	for _, t := range serverDetails.Tags {
+		if strings.Contains(t, "image-") {
+			parts := strings.Split(t, "-")
+			if len(parts) > 1 {
+				imageName = strings.Join(parts[1:], "-")
+			}
+		}
+	}
+
 	instance = &lepton.CloudInstance{
 		ID:         serverDetails.UUID,
 		Name:       serverDetails.Title,
 		Status:     serverDetails.State,
 		PublicIps:  publicIPS,
 		PrivateIps: privateIPS,
+		Image:      imageName,
 	}
 
 	return

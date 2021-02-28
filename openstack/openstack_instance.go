@@ -65,6 +65,10 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 					Created: s.Created.Format("2006-01-02 15:04:05"),
 				}
 
+				if val, ok := s.Metadata["Image"]; ok {
+					cinstance.Image = val
+				}
+
 				if ipv4 != "" {
 					cinstance.PublicIps = []string{ipv4}
 				}
@@ -112,7 +116,7 @@ func (o *OpenStack) CreateInstance(ctx *lepton.Context) error {
 		ImageRef:  imageID,
 		FlavorRef: flavorID,
 		AdminPass: "TODO",
-		Metadata:  map[string]string{"CreatedBy": "ops"},
+		Metadata:  map[string]string{"CreatedBy": "ops", "Image": imageName},
 	}
 
 	var volumeSize int
@@ -210,8 +214,9 @@ func (o *OpenStack) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Name", "IP", "Status", "Created"})
+	table.SetHeader([]string{"ID", "Name", "IP", "Status", "Created", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -227,6 +232,7 @@ func (o *OpenStack) ListInstances(ctx *lepton.Context) error {
 		row = append(row, strings.Join(instance.PublicIps, ","))
 		row = append(row, instance.Status)
 		row = append(row, instance.Created)
+		row = append(row, instance.Image)
 
 		table.Append(row)
 	}

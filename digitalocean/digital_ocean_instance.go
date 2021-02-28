@@ -32,14 +32,17 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		flavor = config.CloudConfig.Flavor
 	}
 
+	instanceName := strings.Replace(config.RunConfig.InstanceName, ".img", "", 1)
+	imageName := "image:" + strings.Replace(image.Name, ".img", "", 1)
+
 	createReq := &godo.DropletCreateRequest{
-		Name:   config.RunConfig.InstanceName,
+		Name:   instanceName,
 		Size:   flavor,
 		Region: config.CloudConfig.Zone,
 		Image: godo.DropletCreateImage{
 			ID: imageID,
 		},
-		Tags:    []string{opsTag},
+		Tags:    []string{opsTag, imageName},
 		SSHKeys: []godo.DropletCreateSSHKey{{Fingerprint: fakeFingerprint}},
 	}
 
@@ -80,12 +83,14 @@ func (do *DigitalOcean) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstanc
 	if err != nil {
 		return nil, err
 	}
-	cinstances := make([]lepton.CloudInstance, len(list))
-	for i, droplet := range list {
+
+	cinstances := []lepton.CloudInstance{}
+	for _, droplet := range list {
 		privateIPV4, _ := droplet.PrivateIPv4()
 		publicIPV4, _ := droplet.PublicIPv4()
 		publicIPV6, _ := droplet.PublicIPv6()
-		cinstances[i] = lepton.CloudInstance{
+
+		instance := lepton.CloudInstance{
 			ID:         fmt.Sprintf("%d", droplet.ID),
 			Name:       droplet.Name,
 			Status:     droplet.Status,
@@ -93,6 +98,24 @@ func (do *DigitalOcean) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstanc
 			PrivateIps: []string{privateIPV4},
 			PublicIps:  []string{publicIPV4, publicIPV6},
 		}
+
+		isOpsImage := false
+
+		for _, t := range droplet.Tags {
+			if t == opsTag {
+				isOpsImage = true
+			} else if strings.Contains(t, "image:") {
+				parts := strings.Split(t, ":")
+				if len(parts) > 1 {
+					instance.Image = parts[1] + ".img"
+				}
+			}
+		}
+
+		if isOpsImage {
+			cinstances = append(cinstances, instance)
+		}
+
 	}
 
 	return cinstances, nil
@@ -106,8 +129,9 @@ func (do *DigitalOcean) ListInstances(ctx *lepton.Context) error {
 	}
 	// print list of images in table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"Name", "Id", "Status", "Created", "Private Ips", "Public Ips", "Image"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -123,7 +147,7 @@ func (do *DigitalOcean) ListInstances(ctx *lepton.Context) error {
 		rows = append(rows, instance.Created)
 		rows = append(rows, strings.Join(instance.PrivateIps, ","))
 		rows = append(rows, strings.Join(instance.PublicIps, ","))
-
+		rows = append(rows, instance.Image)
 		table.Append(rows)
 	}
 	table.Render()

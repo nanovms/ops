@@ -74,34 +74,25 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 	return nil
 }
 
-func (p *Provider) findOrCreateOpsTag() (tags *[]upcloud.Tag, err error) {
-	tags = &[]upcloud.Tag{}
-
+func (p *Provider) findOrCreateTag(tag upcloud.Tag) (upcloudTag *upcloud.Tag, err error) {
 	tagsResponse, err := p.upcloud.GetTags()
 	if err != nil {
 		return
 	}
 
 	for _, t := range tagsResponse.Tags {
-		if t.Name == "OPS" {
-			*tags = append(*tags, t)
+		if t.Name == tag.Name {
+			upcloudTag = &t
 			return
 		}
 	}
 
-	tag := upcloud.Tag{
-		Name:        "OPS",
-		Description: "Created by ops",
-	}
-
 	createTagReq := &request.CreateTagRequest{Tag: tag}
 
-	tagDetails, err := p.upcloud.CreateTag(createTagReq)
+	upcloudTag, err = p.upcloud.CreateTag(createTagReq)
 	if err != nil {
 		return
 	}
-
-	*tags = append(*tags, *tagDetails)
 
 	return
 }
