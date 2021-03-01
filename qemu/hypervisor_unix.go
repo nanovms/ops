@@ -34,8 +34,3 @@ type Hypervisor interface {
 	Stop()
 	PID() (string, error)
 }
-
-// available hypervisors
-var hypervisors = map[string]func() Hypervisor{
-	"qemu-system-x86_64": newQemu,
-}
