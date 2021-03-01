@@ -289,10 +289,7 @@ func CreateExternalVirtualSwitch(switchName string) error {
 	var script = `
 param([string]$switchName)
 $switch = $null
-$names = @('Ethernet','WiFi','Lan')
-$adapters = foreach ($name in $names) {
-  Get-NetAdapter -Physical -Name $name -ErrorAction SilentlyContinue | where status -eq 'Up'
-}
+$adapters = Get-NetAdapter -Physical -ErrorAction SilentlyContinue | where status -eq 'Up'
 foreach ($adapter in $adapters) {
   $switch = Get-VMSwitch -SwitchType External | where { $_.NetAdapterInterfaceDescription -eq $adapter.InterfaceDescription }
   if ($switch -eq $null) {
