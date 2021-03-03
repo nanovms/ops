@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
-	"os/exec"
 	"testing"
-	"time"
 
+	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
 	"github.com/nanovms/ops/cmd"
@@ -19,44 +17,12 @@ import (
 )
 
 var (
-	basicProgram = `package main
-
-	import(
-		"fmt"
-	)
-
-	func main(){
-		fmt.Println("hello world")
-	}
-	`
 	nodejsProgram = `console.log("hello world");`
 )
 
-func buildBasicProgram() (binaryPath string) {
-	program := []byte(basicProgram)
-	randomString := String(5)
-	binaryPath = "./basic" + randomString
-	sourcePath := fmt.Sprintf("basic%s.go", randomString)
-
-	err := ioutil.WriteFile(sourcePath, program, 0644)
-	if err != nil {
-		log.Panic(err)
-	}
-	defer os.Remove(sourcePath)
-
-	cmd := exec.Command("go", "build", sourcePath)
-	err = cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-	}
-
-	return
-}
-
 func buildNodejsProgram() (path string) {
 	program := []byte(nodejsProgram)
-	randomString := String(5)
+	randomString := testutils.String(5)
 	path = "nodejs-" + randomString + ".js"
 
 	err := ioutil.WriteFile(path, program, 0644)
@@ -72,8 +38,8 @@ func getImagePath(imageName string) string {
 }
 
 func buildImage(imageName string) string {
-	imageName += String(5)
-	basicProgram := buildBasicProgram()
+	imageName += testutils.String(5)
+	basicProgram := testutils.BuildBasicProgram()
 	defer os.Remove(basicProgram)
 
 	createImageCmd := cmd.ImageCommands()
@@ -86,7 +52,7 @@ func buildImage(imageName string) string {
 }
 
 func buildInstance(imageName string) string {
-	instanceName := imageName + String(5)
+	instanceName := imageName + testutils.String(5)
 	createInstanceCmd := cmd.InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"create", instanceName, "--imagename", imageName})
@@ -132,7 +98,7 @@ func removeImage(imageName string) {
 }
 
 func buildVolume(volumeName string) string {
-	volumeName += String(5)
+	volumeName += testutils.String(5)
 	createVolumeCmd := cmd.VolumeCommands()
 
 	createVolumeCmd.SetArgs([]string{"create", volumeName})
@@ -156,24 +122,6 @@ func attachVolume(instanceName, volumeName string) {
 	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
 
 	attachVolumeCmd.Execute()
-}
-
-const charset = "abcdefghijklmnopqrstuvwxyz" +
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-var seededRand *rand.Rand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
-
-func StringWithCharset(length int, charset string) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
-func String(length int) string {
-	return StringWithCharset(length, charset)
 }
 
 func writeConfigToFile(config *types.Config, fileName string) {

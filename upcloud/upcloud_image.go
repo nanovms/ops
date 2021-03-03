@@ -98,7 +98,7 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetImages returns the list of images available to run upcloud virtual machines
+// GetImages returns the list of images available
 func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err error) {
 	images = []lepton.CloudImage{}
 

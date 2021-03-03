@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
 	"github.com/nanovms/ops/cmd"
@@ -28,7 +29,7 @@ func TestBuildPkgFlags(t *testing.T) {
 }
 
 func TestPkgFlagsPackagePath(t *testing.T) {
-	packageName := "package-" + String(5)
+	packageName := "package-" + testutils.String(5)
 
 	flagSet := newPkgFlagSet()
 	flagSet.Set("local", "true")
@@ -40,7 +41,7 @@ func TestPkgFlagsPackagePath(t *testing.T) {
 }
 
 func TestPkgFlagsMergeToConfig(t *testing.T) {
-	packageName := "package-" + String(5)
+	packageName := "package-" + testutils.String(5)
 
 	pkgConfig := &types.Config{
 		Program:      "ops",

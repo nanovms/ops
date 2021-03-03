@@ -87,6 +87,9 @@ type ProviderConfig struct {
 	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 
+	// BucketNamespace is required on uploading files to cloud providers as oci
+	BucketNamespace string
+
 	// DomainName
 	DomainName string
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +13,7 @@ func TestCreateInstance(t *testing.T) {
 	imageName = buildImage(imageName)
 	defer removeImage(imageName)
 
-	instanceName := imageName + String(5)
+	instanceName := imageName + testutils.String(5)
 
 	createInstanceCmd := cmd.InstanceCommands()
 

@@ -291,8 +291,7 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("file \"%s\" is missing: %v", hostpath, err)
 		}
 		return err
 	}
@@ -338,8 +337,7 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "please check your manifest for the missing file: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("file \"%s\" is missing: %v", hostpath, err)
 		}
 		return err
 	}

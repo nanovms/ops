@@ -7,6 +7,7 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,7 @@ func TestGetAllVolumes(t *testing.T) {
 		GetStorages(&request.GetStoragesRequest{Type: "disk", Access: "private"}).
 		Return(&upcloud.Storages{}, nil)
 
-	volumes, err := p.GetAllVolumes(NewMockContext())
+	volumes, err := p.GetAllVolumes(testutils.NewMockContext())
 
 	assert.Nil(t, err)
 
@@ -64,7 +65,7 @@ func TestAttachVolume(t *testing.T) {
 		StartServer(&request.StartServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
-	err := p.AttachVolume(NewMockContext(), serverName, volumeName)
+	err := p.AttachVolume(testutils.NewMockContext(), serverName, volumeName)
 
 	assert.Nil(t, err)
 }
@@ -109,7 +110,7 @@ func TestDetachVolume(t *testing.T) {
 		StartServer(&request.StartServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
-	err := p.DetachVolume(NewMockContext(), serverName, volumeName)
+	err := p.DetachVolume(testutils.NewMockContext(), serverName, volumeName)
 
 	assert.Nil(t, err)
 }
