@@ -27,7 +27,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if c.RunConfig.InstanceName == "" {
-		c.RunConfig.InstanceName = c.CloudConfig.ImageName
+		c.RunConfig.InstanceName = strings.Split(c.CloudConfig.ImageName, ".")[0]
 	}
 
 	fmt.Printf("booting %s ...\n", c.RunConfig.InstanceName)
@@ -50,12 +50,10 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 
 	instances := path.Join(opshome, "instances")
 
-	base := path.Base(c.RunConfig.Imagename)
-	sbase := strings.Split(base, ".")
-
 	i := instance{
-		Image: sbase[0],
-		Ports: c.RunConfig.Ports,
+		Instance: c.RunConfig.InstanceName,
+		Image:    c.RunConfig.Imagename,
+		Ports:    c.RunConfig.Ports,
 	}
 
 	d1, err := json.Marshal(i)
@@ -71,20 +69,20 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (p *OnPrem) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
+// GetInstanceByID returns the instance with the instance name passed by argument if it exists
+func (p *OnPrem) GetInstanceByID(ctx *lepton.Context, instanceName string) (*lepton.CloudInstance, error) {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, i := range instances {
-		if i.Image == id {
+		if i.Name == instanceName {
 			return &i, nil
 		}
 	}
 
-	return nil, fmt.Errorf("instance with id \"%s\" not found", id)
+	return nil, fmt.Errorf("instance with name \"%s\" not found", instanceName)
 }
 
 // GetInstances return all instances on prem
@@ -110,7 +108,8 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 		}
 
 		instances = append(instances, lepton.CloudInstance{
-			Name:       f.Name(),
+			ID:         f.Name(),
+			Name:       i.Instance,
 			Image:      i.Image,
 			Status:     "Running",
 			Created:    lepton.Time2Human(f.ModTime()),
@@ -130,8 +129,9 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"PID", "Name", "Status", "Created", "Private Ips", "Port"})
+	table.SetHeader([]string{"PID", "Name", "Image", "Status", "Created", "Private Ips", "Port"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -144,6 +144,7 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 	for _, i := range instances {
 		var rows []string
 
+		rows = append(rows, i.ID)
 		rows = append(rows, i.Name)
 		rows = append(rows, i.Image)
 		rows = append(rows, i.Status)
@@ -173,13 +174,13 @@ func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
 // DeleteInstance from on premise
 func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error {
 
-	pid, err := strconv.Atoi(instancename)
+	var pid int
+	instance, err := p.GetInstanceByID(ctx, instancename)
 	if err != nil {
-		instance, err := p.GetInstanceByID(ctx, instancename)
-		if err == nil {
-			pid, _ = strconv.Atoi(instance.Name)
-		}
+		return err
 	}
+
+	pid, _ = strconv.Atoi(instance.ID)
 
 	if pid == 0 {
 		fmt.Printf("did not find pid of instance \"%s\"\n", instancename)

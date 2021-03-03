@@ -34,7 +34,7 @@ func ImageCommands() *cobra.Command {
 func imageCreateCommand() *cobra.Command {
 
 	var cmdImageCreate = &cobra.Command{
-		Use:   "create",
+		Use:   "create [elf|program]",
 		Short: "create nanos image from ELF",
 		Run:   imageCreateCommandHandler,
 	}
@@ -61,10 +61,18 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	providerFlags := NewProviderCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 
+	if len(args) > 0 {
+		c.Program = args[0]
+	}
+
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
+	}
+
+	if c.Program == "" {
+		exitForCmd(cmd, "no program specified")
 	}
 
 	if len(c.CloudConfig.BucketName) == 0 &&

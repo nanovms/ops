@@ -5,8 +5,9 @@ import (
 )
 
 type instance struct {
-	Image string   `json:"image"`
-	Ports []string `json:"ports"`
+	Instance string   `json:"instance"`
+	Image    string   `json:"image"`
+	Ports    []string `json:"ports"`
 }
 
 func (in *instance) portList() string {

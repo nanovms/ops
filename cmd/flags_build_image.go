@@ -57,7 +57,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 	}
 
 	if c.RunConfig.Imagename != "" {
-		imageName := c.RunConfig.Imagename
+		imageName := strings.Split(c.RunConfig.Imagename, ".")[0]
 		if imageName == "" {
 			imageName = lepton.GenerateImageName(filepath.Base(c.Program))
 			c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(c.Program))
