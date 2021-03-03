@@ -17,10 +17,13 @@ func BuildCommand() *cobra.Command {
 		Run:   buildCommandHandler,
 	}
 
-	PersistConfigCommandFlags(cmdBuild.PersistentFlags())
-	PersistBuildImageCommandFlags(cmdBuild.PersistentFlags())
-	PersistProviderCommandFlags(cmdBuild.PersistentFlags())
-	PersistNightlyCommandFlags(cmdBuild.PersistentFlags())
+	persistentFlags := cmdBuild.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistProviderCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 
 	return cmdBuild
 }
@@ -31,6 +34,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 
 	c := types.NewConfig()
@@ -38,7 +42,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	c.Program = args[0]
 	checkProgramExists(c.Program)
 
-	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags)
+	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags)
 	err := mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

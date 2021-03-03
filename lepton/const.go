@@ -153,7 +153,8 @@ func updateLocalTimestamp(timestamp string) error {
 	return ioutil.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
 }
 
-func updateLocalRelease(version string) error {
+// UpdateLocalRelease updates nanos version used on ops operations
+func UpdateLocalRelease(version string) error {
 	local := path.Join(GetOpsHome(), "latest.txt")
 	LocalReleaseVersion = version
 	return ioutil.WriteFile(local, []byte(version), 0755)

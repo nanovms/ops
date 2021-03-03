@@ -14,16 +14,23 @@ import (
 	"github.com/ttacon/chalk"
 )
 
-// NightlyCommandFlags is used to change binaries paths used on ops operations
+// NightlyCommandFlags is used to change configuration to use nightly build tools paths
 type NightlyCommandFlags struct {
 	Nightly bool
 }
 
-// MergeToConfig append command flags that are used transversally for all commands to configuration
+// MergeToConfig downloads nightly build and change configuration nanos tools paths
 func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	config.NightlyBuild = flags.Nightly
 
-	setNanosBaseImage(config)
+	if config.NightlyBuild {
+		var version string
+		version, err = downloadNightlyImages(config)
+		if err != nil {
+			return
+		}
+		updateNanosToolsPaths(config, version)
+	}
 
 	return
 }
@@ -41,6 +48,11 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 	return
 }
 
+// PersistNightlyCommandFlags append nightly flag to a command
+func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
+	cmdFlags.BoolP("nightly", "n", false, "nightly build")
+}
+
 func setNanosBaseImage(c *types.Config) {
 	var err error
 	var currversion string
@@ -48,7 +60,7 @@ func setNanosBaseImage(c *types.Config) {
 	if c.NightlyBuild {
 		currversion, err = downloadNightlyImages(c)
 	} else {
-		currversion, err = downloadReleaseImages()
+		currversion, err = getCurrentVersion()
 	}
 
 	panicOnError(err)
@@ -91,6 +103,26 @@ func downloadNightlyImages(c *types.Config) (string, error) {
 	return "nightly", err
 }
 
+func getCurrentVersion() (string, error) {
+	var err error
+
+	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
+	if local == "0.0" {
+		err = api.DownloadReleaseImages(remote)
+		if err != nil {
+			return "", err
+		}
+		return remote, nil
+	}
+
+	if parseVersion(local, 4) != parseVersion(remote, 4) {
+		fmt.Println(chalk.Red, "You are running an older version of Ops.", chalk.Reset)
+		fmt.Println(chalk.Red, "Update: Run", chalk.Reset, chalk.Bold.TextStyle("`ops update`"))
+	}
+
+	return local, nil
+}
+
 func parseVersion(s string, width int) int64 {
 	strList := strings.Split(s, ".")
 	format := fmt.Sprintf("%%s%%0%ds", width)
@@ -104,31 +136,4 @@ func parseVersion(s string, width int) int64 {
 		panic(err)
 	}
 	return result
-}
-
-func downloadReleaseImages() (string, error) {
-	var err error
-
-	// if it's first run or we have an update
-	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
-	if local == "0.0" {
-		err = api.DownloadReleaseImages(remote)
-		if err != nil {
-			return "", err
-		}
-		return remote, nil
-
-	}
-
-	if parseVersion(local, 4) != parseVersion(remote, 4) {
-		fmt.Println(chalk.Red, "You are running an older version of Ops.", chalk.Reset)
-		fmt.Println(chalk.Red, "Update: Run", chalk.Reset, chalk.Bold.TextStyle("`ops update`"))
-	}
-
-	return local, nil
-}
-
-// PersistNightlyCommandFlags append nightly flag to a command
-func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
-	cmdFlags.BoolP("nightly", "n", false, "nightly build")
 }

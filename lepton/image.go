@@ -445,23 +445,36 @@ func DownloadCommonFiles() error {
 	return nil
 }
 
+// CheckNanosVersionExists verifies whether version exists in filesystem
+func CheckNanosVersionExists(version string) (bool, error) {
+	_, err := os.Stat(path.Join(GetOpsHome(), version))
+	if err != nil && os.IsNotExist(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // DownloadReleaseImages downloads nanos for particular release version
 func DownloadReleaseImages(version string) error {
 	url := getReleaseURL(version)
 	localFolder := getReleaseLocalFolder(version)
-	if _, err := os.Stat(localFolder); os.IsNotExist(err) {
-		os.MkdirAll(localFolder, 0755)
-	}
 
-	localtar := path.Join(localFolder, releaseFileName(version))
+	localtar := path.Join("/tmp", releaseFileName(version))
+	defer os.Remove(localtar)
 
 	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
 		return errors.Wrap(err, 1)
 	}
 
+	if _, err := os.Stat(localFolder); os.IsNotExist(err) {
+		os.MkdirAll(localFolder, 0755)
+	}
+
 	ExtractPackage(localtar, localFolder)
 
-	updateLocalRelease(version)
 	// FIXME hack to rename stage3.img to kernel.img
 	oldKernel := path.Join(localFolder, "stage3.img")
 	newKernel := path.Join(localFolder, "kernel.img")
@@ -500,6 +513,11 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		os.Remove(out.Name())
+		return errors.New("resource not found")
+	}
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
