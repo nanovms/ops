@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nanovms/ops/types"
@@ -71,7 +72,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		c.RunConfig.InstanceName = args[0]
 	} else if c.RunConfig.InstanceName == "" {
 		c.RunConfig.InstanceName = fmt.Sprintf("%v-%v",
-			filepath.Base(c.CloudConfig.ImageName),
+			strings.Split(filepath.Base(c.CloudConfig.ImageName), ".")[0],
 			strconv.FormatInt(time.Now().Unix(), 10),
 		)
 	}
