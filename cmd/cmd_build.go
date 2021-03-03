@@ -51,9 +51,11 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	if _, err := p.BuildImage(ctx); err != nil {
+	var imagePath string
+
+	if imagePath, err = p.BuildImage(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Printf("Bootable image file:%s\n", c.RunConfig.Imagename)
+	fmt.Printf("Bootable image file:%s\n", imagePath)
 }

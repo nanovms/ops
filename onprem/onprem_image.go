@@ -15,7 +15,7 @@ import (
 func (p *OnPrem) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
 	err := lepton.BuildImage(*c)
-	return "", err
+	return c.RunConfig.Imagename, err
 }
 
 // BuildImageWithPackage for onprem
@@ -25,7 +25,7 @@ func (p *OnPrem) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (str
 	if err != nil {
 		return "", err
 	}
-	return "", nil
+	return c.RunConfig.Imagename, nil
 }
 
 // CreateImage on prem

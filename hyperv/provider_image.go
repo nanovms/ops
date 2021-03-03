@@ -25,7 +25,17 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
-	return p.createVhdxImage(c)
+	imagePath, err := p.createVhdxImage(c)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Remove(c.RunConfig.Imagename)
+	if err != nil {
+		return "", err
+	}
+
+	return imagePath, nil
 }
 
 // BuildImageWithPackage creates and converts a raw image to vhdx using package image
