@@ -21,12 +21,15 @@ func DeployCommand() *cobra.Command {
 		Run:   deployCommandHandler,
 	}
 
-	PersistConfigCommandFlags(cmdDeploy.PersistentFlags())
-	PersistProviderCommandFlags(cmdDeploy.PersistentFlags())
-	PersistPkgCommandFlags(cmdDeploy.PersistentFlags())
-	PersistBuildImageCommandFlags(cmdDeploy.PersistentFlags())
-	PersistCreateInstanceFlags(cmdDeploy.PersistentFlags())
-	PersistNightlyCommandFlags(cmdDeploy.PersistentFlags())
+	persistentFlags := cmdDeploy.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistProviderCommandFlags(persistentFlags)
+	PersistPkgCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistCreateInstanceFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 
 	return cmdDeploy
 }
@@ -37,6 +40,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
@@ -56,7 +60,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		c.Args = append([]string{c.Program}, c.Args...)
 	}
 
-	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, providerFlags, pkgFlags, createInstanceFlags)
+	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags, createInstanceFlags)
 	err := mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

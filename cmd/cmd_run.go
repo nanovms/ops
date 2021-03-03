@@ -18,10 +18,13 @@ func RunCommand() *cobra.Command {
 		Run:   runCommandHandler,
 	}
 
-	PersistConfigCommandFlags(cmdRun.PersistentFlags())
-	PersistBuildImageCommandFlags(cmdRun.PersistentFlags())
-	PersistRunLocalInstanceCommandFlags(cmdRun.PersistentFlags())
-	PersistNightlyCommandFlags(cmdRun.PersistentFlags())
+	persistentFlags := cmdRun.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistRunLocalInstanceCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 
 	return cmdRun
 }
@@ -47,10 +50,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

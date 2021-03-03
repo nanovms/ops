@@ -20,9 +20,12 @@ func VolumeCommands() *cobra.Command {
 		Args:      cobra.OnlyValidArgs,
 	}
 
-	PersistConfigCommandFlags(cmdVolume.PersistentFlags())
-	PersistProviderCommandFlags(cmdVolume.PersistentFlags())
-	PersistNightlyCommandFlags(cmdVolume.PersistentFlags())
+	persistentFlags := cmdVolume.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistProviderCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 
 	cmdVolume.AddCommand(volumeCreateCommand())
 	cmdVolume.AddCommand(volumeListCommand())
