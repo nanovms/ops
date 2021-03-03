@@ -22,8 +22,6 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-const qemuBaseCommand = "qemu-system-x86_64"
-
 type qemu struct {
 	cmd     *exec.Cmd
 	drives  []drive
@@ -297,17 +295,48 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	// add virtio drive
 	q.addDrive("hd0", rconfig.Imagename, "none")
 
-	pciBus := "pcie.0"
+	pciBus := ""
+	if isx86() {
+		pciBus = "pcie.0"
+	}
 
 	// pcie root ports need to come before virtio/scsi devices
-	q.addOption("-machine", "q35")
-	q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
-	q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x1")
-	q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
+	if isx86() {
+		q.addOption("-machine", "q35")
 
-	// FIXME for multiple local tenants
-	q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
-	q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
+		// x86
+		q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
+		q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x1")
+		q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
+
+		// FIXME for multiple local tenants
+		// x86
+		q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
+		q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
+
+		q.addOption("-vga", "none")
+
+		if rconfig.CPUs > 0 {
+			q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
+		}
+
+		q.addOption("-device", "isa-debug-exit")
+		q.addOption("-m", rconfig.Memory)
+
+	} else {
+		q.addOption("-machine", "virt")
+
+		q.addOption("-machine", "gic-version=3")
+		q.addOption("-machine", "highmem=off")
+		q.addOption("-kernel", "/home/ubuntu/.ops/0.1.31/kernel.img")
+
+		q.addOption("-device", "virtio-blk-pci,drive=hd0")
+
+		q.addFlag("-semihosting")
+
+		q.addOption("-m", "1G")
+
+	}
 
 	// add mounted volumes
 	for n, file := range rconfig.Mounts {
@@ -335,18 +364,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addFlag("-no-reboot")
 	q.addOption("-cpu", "max")
-	q.addOption("-vga", "none")
-
-	if rconfig.CPUs > 0 {
-		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
-	}
-
-	// we could perhaps cascade for different versions of qemu here but
-	// I think everyone should have this
-	q.addOption("-machine", "q35")
-
-	q.addOption("-device", "isa-debug-exit")
-	q.addOption("-m", rconfig.Memory)
 
 	if rconfig.GdbPort > 0 {
 		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)

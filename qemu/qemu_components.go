@@ -40,7 +40,13 @@ func (dv device) String() string {
 
 	// simple pci net hack -- FIXME
 	if dv.driver == "virtio-net" {
-		sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=0x0,%s=%s", dv.driver, dv.devtype, dv.devid))
+
+		if isx86() {
+			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=0x0,%s=%s", dv.driver, dv.devtype, dv.devid))
+		} else {
+			sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
+		}
+
 	} else {
 		sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 	}
