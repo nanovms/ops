@@ -46,12 +46,6 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 
 	setNanosBaseImage(c)
 
-	if len(flags.CmdArgs) != 0 {
-		c.Program = flags.CmdArgs[0]
-	} else if len(c.Args) != 0 {
-		c.Program = c.Args[0]
-	}
-
 	if c.RunConfig.Imagename == "" && c.Program != "" {
 		c.RunConfig.Imagename = c.Program
 	}
@@ -133,4 +127,18 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("imagename", "i", "", "image name")
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
+}
+
+func setNanosBaseImage(c *types.Config) {
+	var err error
+	var currversion string
+
+	if c.NightlyBuild {
+		currversion, err = downloadNightlyImages(c)
+	} else {
+		currversion, err = getCurrentVersion()
+	}
+
+	panicOnError(err)
+	updateNanosToolsPaths(c, currversion)
 }

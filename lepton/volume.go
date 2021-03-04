@@ -62,8 +62,11 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 	tmp := fmt.Sprintf("%s.raw", name)
 	tmpPath := path.Join(config.BuildDir, tmp)
 	mkfsCommand.SetFileSystemPath(tmpPath)
-	if config.BaseVolumeSz != "" {
+
+	if config.BaseVolumeSz != "" && size == "" {
 		mkfsCommand.SetFileSystemSize(config.BaseVolumeSz)
+	} else if size != "" {
+		mkfsCommand.SetFileSystemSize(size)
 	}
 
 	err := mkfsCommand.Execute()

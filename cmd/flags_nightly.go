@@ -53,20 +53,6 @@ func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.BoolP("nightly", "n", false, "nightly build")
 }
 
-func setNanosBaseImage(c *types.Config) {
-	var err error
-	var currversion string
-
-	if c.NightlyBuild {
-		currversion, err = downloadNightlyImages(c)
-	} else {
-		currversion, err = getCurrentVersion()
-	}
-
-	panicOnError(err)
-	updateNanosToolsPaths(c, currversion)
-}
-
 func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"

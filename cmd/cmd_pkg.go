@@ -229,7 +229,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if !runLocalInstanceFlags.SkipBuild {
-		setNanosBaseImage(c)
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
 			panic(err)
 		}
