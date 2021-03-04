@@ -93,6 +93,9 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		c.CloudConfig.ImageName = imageName
 		imageName = path.Join(images, filepath.Base(imageName))
 	}
+	if c.Mounts != nil {
+		pkgConfig.Mounts = c.Mounts
+	}
 
 	*c = *pkgConfig
 
