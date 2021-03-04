@@ -134,3 +134,17 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
 }
+
+func setNanosBaseImage(c *types.Config) {
+	var err error
+	var currversion string
+
+	if c.NightlyBuild {
+		currversion, err = downloadNightlyImages(c)
+	} else {
+		currversion, err = getCurrentVersion()
+	}
+
+	panicOnError(err)
+	updateNanosToolsPaths(c, currversion)
+}
