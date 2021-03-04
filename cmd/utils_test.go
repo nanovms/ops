@@ -78,7 +78,7 @@ func buildImage(imageName string) string {
 
 	createImageCmd := cmd.ImageCommands()
 
-	createImageCmd.SetArgs([]string{"create", "-a", basicProgram, "-i", imageName})
+	createImageCmd.SetArgs([]string{"create", basicProgram, "-i", imageName})
 
 	createImageCmd.Execute()
 

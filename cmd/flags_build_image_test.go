@@ -63,7 +63,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			Imagename: imagesPath + "/test-image.img",
 		},
 		Args:       []string{"a b c d"},
-		Program:    "a b c d",
+		Program:    "",
 		TargetRoot: "unix",
 		Env:        map[string]string{"test": "1234"},
 		NameServer: "8.8.8.8",

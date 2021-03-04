@@ -14,7 +14,7 @@ func TestCreateImage(t *testing.T) {
 
 	createImageCmd := cmd.ImageCommands()
 
-	createImageCmd.SetArgs([]string{"create", "-a", basicProgram})
+	createImageCmd.SetArgs([]string{"create", basicProgram})
 
 	err := createImageCmd.Execute()
 
