@@ -111,12 +111,13 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	expectedConfig := &types.Config{
-		Program: "ops",
-		Args:    []string{"a", "b", "c", "d"},
-		Dirs:    []string{"da", "db", "dc", "dd"},
-		Files:   []string{"fa", "fb", "fc", "fd"},
-		MapDirs: map[string]string{"a": "/patha", "b": "/pathb", "c": "/pathc", "d": "/pathd"},
-		Env:     map[string]string{"a": "vala", "b": "valb", "c": "valc", "d": "vald"}, BaseVolumeSz: "200m",
+		Program:      "ops",
+		Args:         []string{"a", "b", "c", "d"},
+		Dirs:         []string{"da", "db", "dc", "dd"},
+		Files:        []string{"fa", "fb", "fc", "fd"},
+		MapDirs:      map[string]string{"a": "/patha", "b": "/pathb", "c": "/pathc", "d": "/pathd"},
+		Env:          map[string]string{"a": "vala", "b": "valb", "c": "valc", "d": "vald"},
+		BaseVolumeSz: "200m",
 		NameServer:   "ops.net",
 		TargetRoot:   "unix",
 		Kernel:       "/path/to/kernel",
