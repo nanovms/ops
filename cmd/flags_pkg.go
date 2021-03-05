@@ -45,59 +45,50 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 
 	pkgConfig := unWarpConfig(manifestPath)
 
-	pkgConfig.Args = append(pkgConfig.Args, c.Args...)
-	pkgConfig.Dirs = append(pkgConfig.Dirs, c.Dirs...)
-	pkgConfig.Files = append(pkgConfig.Files, c.Files...)
+	c.Program = pkgConfig.Program
+	c.Version = pkgConfig.Version
 
-	if pkgConfig.MapDirs == nil {
-		pkgConfig.MapDirs = make(map[string]string)
+	c.Args = append(pkgConfig.Args, c.Args...)
+	c.Dirs = append(pkgConfig.Dirs, c.Dirs...)
+	c.Files = append(pkgConfig.Files, c.Files...)
+
+	if c.MapDirs == nil {
+		c.MapDirs = make(map[string]string)
 	}
 
-	if pkgConfig.Env == nil {
-		pkgConfig.Env = make(map[string]string)
+	if c.Env == nil {
+		c.Env = make(map[string]string)
 	}
 
-	for k, v := range c.MapDirs {
-		pkgConfig.MapDirs[k] = v
+	for k, v := range pkgConfig.MapDirs {
+		c.MapDirs[k] = v
 	}
 
-	for k, v := range c.Env {
-		pkgConfig.Env[k] = v
+	for k, v := range pkgConfig.Env {
+		c.Env[k] = v
 	}
 
-	if c.BaseVolumeSz != "" {
-		pkgConfig.BaseVolumeSz = c.BaseVolumeSz
+	if c.BaseVolumeSz == "" {
+		c.BaseVolumeSz = pkgConfig.BaseVolumeSz
 	}
 
-	if c.NameServer != "" {
-		pkgConfig.NameServer = c.NameServer
+	if c.NameServer == "" {
+		c.NameServer = pkgConfig.NameServer
 	}
 
-	if c.TargetRoot != "" {
-		pkgConfig.TargetRoot = c.TargetRoot
+	if c.TargetRoot == "" {
+		c.TargetRoot = pkgConfig.TargetRoot
 	}
 
-	pkgConfig.RunConfig = c.RunConfig
-	pkgConfig.CloudConfig = c.CloudConfig
-	pkgConfig.Kernel = c.Kernel
-	pkgConfig.Boot = c.Boot
-	pkgConfig.Force = c.Force
-	pkgConfig.NightlyBuild = c.NightlyBuild
-
-	imageName := pkgConfig.RunConfig.Imagename
+	imageName := c.RunConfig.Imagename
 	images := path.Join(lepton.GetOpsHome(), "images")
 	if imageName == "" {
-		pkgConfig.RunConfig.Imagename = path.Join(images, filepath.Base(pkgConfig.Program))
-		pkgConfig.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(pkgConfig.Program))
-	} else {
-		c.CloudConfig.ImageName = imageName
+		c.RunConfig.Imagename = path.Join(images, filepath.Base(pkgConfig.Program))
+		c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(pkgConfig.Program))
+	} else if c.CloudConfig.ImageName == "" {
 		imageName = path.Join(images, filepath.Base(imageName))
+		c.CloudConfig.ImageName = imageName
 	}
-	if c.Mounts != nil {
-		pkgConfig.Mounts = c.Mounts
-	}
-
-	*c = *pkgConfig
 
 	return
 }
