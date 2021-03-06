@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"strings"
 
+	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 )
@@ -37,6 +38,11 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			err = fmt.Errorf("error config: %v", err)
 			return
 		}
+
+		if c.Mounts != nil {
+			err = onprem.AddMountsFromConfig(c)
+		}
+
 		return
 	}
 

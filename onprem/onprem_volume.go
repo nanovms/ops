@@ -220,6 +220,8 @@ func AddMounts(mounts []string, config *types.Config) error {
 	}
 	query := make(map[string]string)
 
+	bd := config.BuildDir
+	config.BuildDir = lepton.LocalVolumeDir
 	for _, mnt := range mounts {
 		lm := strings.Split(mnt, lepton.VolumeDelimiter)
 		if len(lm) != 2 {
@@ -248,6 +250,7 @@ func AddMounts(mounts []string, config *types.Config) error {
 		config.Mounts[lm[0]] = lm[1]
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
 	}
+	config.BuildDir = bd
 
 	return nil
 }
@@ -260,6 +263,8 @@ func AddMountsFromConfig(config *types.Config) error {
 	}
 	query := make(map[string]string)
 
+	bd := config.BuildDir
+	config.BuildDir = lepton.LocalVolumeDir
 	for label := range config.Mounts {
 		query["id"] = label
 		query["label"] = label
@@ -275,6 +280,7 @@ func AddMountsFromConfig(config *types.Config) error {
 		}
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
 	}
+	config.BuildDir = bd
 
 	return nil
 }
