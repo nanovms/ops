@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"strings"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
@@ -39,6 +40,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			return
 		}
 
+		c.VolumesDir = lepton.LocalVolumeDir
 		if c.Mounts != nil {
 			err = onprem.AddMountsFromConfig(c)
 		}
@@ -49,6 +51,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if c == nil {
 		*c = *unWarpDefaultConfig()
 	}
+	c.VolumesDir = lepton.LocalVolumeDir
 
 	return
 

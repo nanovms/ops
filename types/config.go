@@ -74,6 +74,9 @@ type Config struct {
 
 	// Version
 	Version string
+
+	// VolumesDir is the directory used to store and fetch volumes
+	VolumesDir string
 }
 
 // ProviderConfig give provider details

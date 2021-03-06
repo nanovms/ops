@@ -49,7 +49,7 @@ func TestOnPremVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testVolumeConfig.BuildDir = tmp
+	testVolumeConfig.VolumesDir = tmp
 	testVolume2.Data = tmpdata
 	count := new(int)
 	*count = 0
@@ -78,7 +78,7 @@ func testCreateVolume(t *testing.T, name string, vol *lepton.NanosVolume, count 
 
 func testGetVolumes(t *testing.T, name string, count *int) {
 	t.Run(name, func(t *testing.T) {
-		vols, err := onprem.GetVolumes(testVolumeConfig.BuildDir, nil)
+		vols, err := onprem.GetVolumes(testVolumeConfig.VolumesDir, nil)
 		if err != nil {
 			t.Error(err)
 			return
@@ -129,7 +129,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	config := &types.Config{BuildDir: dir}
+	config := &types.Config{VolumesDir: dir}
 
 	tests := []struct {
 		title   string

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,7 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 		RunConfig: types.RunConfig{
 			Memory: "2G",
 		},
+		VolumesDir: lepton.LocalVolumeDir,
 	}
 
 	writeConfigToFile(expected, configFileName)

@@ -60,7 +60,7 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 
 	mkfsCommand.SetLabel(name)
 	tmp := fmt.Sprintf("%s.raw", name)
-	tmpPath := path.Join(config.BuildDir, tmp)
+	tmpPath := path.Join(config.VolumesDir, tmp)
 	mkfsCommand.SetFileSystemPath(tmpPath)
 
 	if config.BaseVolumeSz != "" && size == "" {
@@ -77,14 +77,14 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 	uuid := mkfsCommand.GetUUID()
 
 	raw := fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid)
-	rawPath := path.Join(config.BuildDir, raw)
+	rawPath := path.Join(config.VolumesDir, raw)
 	err = os.Rename(tmpPath, rawPath)
 	if err != nil {
 		fmt.Printf("volume: UUID: failed adding UUID info for volume %s\n", name)
 		fmt.Printf("rename the file to %s%s%s should you want to attach it by UUID\n", name, VolumeDelimiter, uuid)
 		fmt.Printf("symlink the file to %s should you want to attach it by label\n", name)
 	} else {
-		symlinkVolume(config.BuildDir, name, uuid)
+		symlinkVolume(config.VolumesDir, name, uuid)
 	}
 
 	vol = NanosVolume{

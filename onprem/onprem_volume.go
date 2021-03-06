@@ -24,7 +24,7 @@ func (op *OnPrem) CreateVolume(ctx *lepton.Context, name, data, size, provider s
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes
 func (op *OnPrem) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, error) {
-	vols, err := GetVolumes(ctx.Config().BuildDir, nil)
+	vols, err := GetVolumes(ctx.Config().VolumesDir, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 		"id":    name,
 	}
 
-	buildDir := ctx.Config().BuildDir
+	buildDir := ctx.Config().VolumesDir
 
 	volumes, err := GetVolumes(buildDir, query)
 	if err != nil {
@@ -220,8 +220,6 @@ func AddMounts(mounts []string, config *types.Config) error {
 	}
 	query := make(map[string]string)
 
-	bd := config.BuildDir
-	config.BuildDir = lepton.LocalVolumeDir
 	for _, mnt := range mounts {
 		lm := strings.Split(mnt, lepton.VolumeDelimiter)
 		if len(lm) != 2 {
@@ -233,7 +231,7 @@ func AddMounts(mounts []string, config *types.Config) error {
 
 		query["id"] = lm[0]
 		query["label"] = lm[0]
-		vols, err := GetVolumes(config.BuildDir, query)
+		vols, err := GetVolumes(config.VolumesDir, query)
 		if err != nil {
 			return err
 		}
@@ -250,7 +248,6 @@ func AddMounts(mounts []string, config *types.Config) error {
 		config.Mounts[lm[0]] = lm[1]
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
 	}
-	config.BuildDir = bd
 
 	return nil
 }
@@ -263,12 +260,10 @@ func AddMountsFromConfig(config *types.Config) error {
 	}
 	query := make(map[string]string)
 
-	bd := config.BuildDir
-	config.BuildDir = lepton.LocalVolumeDir
 	for label := range config.Mounts {
 		query["id"] = label
 		query["label"] = label
-		vols, err := GetVolumes(config.BuildDir, query)
+		vols, err := GetVolumes(config.VolumesDir, query)
 		if err != nil {
 			return err
 		}
@@ -280,7 +275,6 @@ func AddMountsFromConfig(config *types.Config) error {
 		}
 		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
 	}
-	config.BuildDir = bd
 
 	return nil
 }

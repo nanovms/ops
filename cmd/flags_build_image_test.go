@@ -49,7 +49,9 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 	opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 	imagesPath := lepton.GetOpsHome() + "/images"
 
-	c := &types.Config{}
+	c := &types.Config{
+		VolumesDir: lepton.LocalVolumeDir,
+	}
 	expected := &types.Config{
 		Boot:   opsPath + "/boot.img",
 		Kernel: opsPath + "/kernel.img",
@@ -67,9 +69,12 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		TargetRoot: "unix",
 		Env:        map[string]string{"test": "1234"},
 		NameServer: "8.8.8.8",
+		VolumesDir: lepton.LocalVolumeDir,
 	}
 
-	buildImageFlags.MergeToConfig(c)
+	err := buildImageFlags.MergeToConfig(c)
+
+	assert.Nil(t, err)
 
 	c.RunConfig.Mounts = nil
 
