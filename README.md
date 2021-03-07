@@ -33,15 +33,19 @@ Installing from source follows these general steps:
 
 Install dependencies:
 
-    - `make deps`
+```sh
+make deps
+```
 
 Build:
 
-    - `make build`
+```sh
+make build
+```
 
 osx notes:
 
-```
+```sh
 GO111MODULE=on go build -ldflags "-w"
 ```
  
@@ -70,7 +74,7 @@ console.log('Server running at http://127.0.0.1:8083/');
 Then you can run it like so:
 
 ```bash
-ops load node_v11.5.0 -p 8083 -f -n -a hi.js
+ops pkg load node_v11.5.0 -p 8083 -f -n -a hi.js
 ```
 
 Want to push your app out to the cloud?
@@ -111,27 +115,30 @@ You can always find more pre-made packages via:
 ops pkg list
 ```
 
-
 # Build a bootable image
 `ops build <app>`
 
 # Package and run
-    ops run <app>
-    OR
-    ops run -p <port> <app>
+```sh
+ops run <app>
+# or
+ops run -p <port> <app>
+```
 
 # Using a config file
-    ops run -p <port> -c <file> <app>
+```sh
+ops run -p <port> -c <file> <app>
+```
 
 # Example config file
 
 ops config files are plain JSON, below is an example 
 
 ```JSON
-  {
-    "Args":["one","two"],
-    "Dirs":["myapp/static"]
-  }
+{
+  "Args":["one","two"],
+  "Dirs":["myapp/static"]
+}
 ```
 
 ## Setup networking
@@ -152,18 +159,18 @@ version and the release channel you are using.
 Also - if it doesn't work on the main release you can try the nightly -
 the main release can tail the nightly by many weeks sometimes.
 
-```
+```sh
 ops version
 ```
 
 get the release channel (or nightly)
-```
+```sh
 ls .ops/
 ```
 
 if using a package
 get the package hash:
-```
+```sh
 cat .ops/packages/manifest.json| jq '."gnatsd_1.4.1"'
 ```
 
