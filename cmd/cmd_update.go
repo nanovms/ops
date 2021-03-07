@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 
 	api "github.com/nanovms/ops/lepton"
@@ -28,7 +29,8 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Println("Updates ops to latest release.")
 	}
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
-	if local == "0.0" || parseVersion(local, 4) != parseVersion(remote, 4) {
+	_, err = os.Stat(path.Join(api.GetOpsHome(), local))
+	if local == "0.0" || parseVersion(local, 4) != parseVersion(remote, 4) || os.IsNotExist(err) {
 		err = api.DownloadReleaseImages(remote)
 		if err != nil {
 			fmt.Println(err)
