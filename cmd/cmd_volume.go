@@ -58,8 +58,6 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	c.BuildDir = api.LocalVolumeDir
-
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		log.Fatal(err)
@@ -94,8 +92,6 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	c.BuildDir = api.LocalVolumeDir
-
 	volumes, err := p.GetAllVolumes(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -126,8 +122,6 @@ func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	c.BuildDir = api.LocalVolumeDir
 
 	err = p.DeleteVolume(ctx, name)
 	if err != nil {
