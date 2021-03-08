@@ -135,12 +135,12 @@ func (g *GCloud) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches Compute Engine Disk volume to existing instance
-func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name, mount string) error {
+func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string) error {
 	config := ctx.Config()
 
 	disk := &compute.AttachedDisk{
 		AutoDelete: false,
-		DeviceName: mount,
+		DeviceName: name,
 		Source:     fmt.Sprintf("zones/%s/disks/%s", config.CloudConfig.Zone, name),
 	}
 	op, err := g.Service.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(context.TODO()).Do()

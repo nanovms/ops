@@ -48,7 +48,7 @@ func (p *Provider) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub
-func (p *Provider) AttachVolume(ctx *lepton.Context, image, name, mount string) error {
+func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string) error {
 	return errors.New("Unsupported")
 }
 

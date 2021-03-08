@@ -137,7 +137,7 @@ func volumeDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 func volumeAttachCommand() *cobra.Command {
 	cmdVolumeAttach := &cobra.Command{
-		Use:   "attach <image_name> <volume_name> <mount_path>",
+		Use:   "attach <image_name> <volume_name>",
 		Short: "attach volume",
 		Run:   volumeAttachCommandHandler,
 		Args:  cobra.MinimumNArgs(3),
@@ -148,7 +148,6 @@ func volumeAttachCommand() *cobra.Command {
 func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	image := args[0]
 	name := args[1]
-	mount := args[2]
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
@@ -160,7 +159,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	err = p.AttachVolume(ctx, image, name, mount)
+	err = p.AttachVolume(ctx, image, name)
 	if err != nil {
 		log.Fatal(err)
 	}

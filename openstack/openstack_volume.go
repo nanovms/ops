@@ -174,7 +174,7 @@ func (o *OpenStack) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) AttachVolume(ctx *lepton.Context, image, name, mount string) error {
+func (o *OpenStack) AttachVolume(ctx *lepton.Context, image, name string) error {
 	computeClient, err := o.getComputeClient()
 	if err != nil {
 		return err
@@ -196,7 +196,7 @@ func (o *OpenStack) AttachVolume(ctx *lepton.Context, image, name, mount string)
 	}
 
 	createOpts := volumeattach.CreateOpts{
-		Device:   "/dev/" + mount,
+		Device:   "/dev/" + name,
 		VolumeID: volume.ID,
 	}
 

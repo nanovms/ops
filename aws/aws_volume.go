@@ -140,7 +140,7 @@ func (a *AWS) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *AWS) AttachVolume(ctx *lepton.Context, image, name, mount string) error {
+func (a *AWS) AttachVolume(ctx *lepton.Context, image, name string) error {
 	input := &ec2.AttachVolumeInput{
 		Device:     aws.String("/dev/sdf"),
 		InstanceId: aws.String(image),

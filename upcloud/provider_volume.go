@@ -97,7 +97,7 @@ func (p *Provider) DeleteVolume(ctx *lepton.Context, name string) (err error) {
 }
 
 // AttachVolume attaches a storage to an upcloud server
-func (p *Provider) AttachVolume(ctx *lepton.Context, image, name, mount string) (err error) {
+func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string) (err error) {
 	instance, err := p.getInstanceByName(ctx, image)
 	if err != nil {
 		return
