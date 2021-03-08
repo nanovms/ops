@@ -19,7 +19,7 @@ func (v *Vsphere) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (v *Vsphere) AttachVolume(ctx *lepton.Context, image, name, mount string) error {
+func (v *Vsphere) AttachVolume(ctx *lepton.Context, image, name string) error {
 	return nil
 }
 
