@@ -49,7 +49,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		vmSwitch = "External"
 	}
 
-	err = AddVirtualMachineNetworkAdapter(vmName, vmSwitch)
+	err = ConnectVirtualMachineNetworkAdapterToSwitch(vmName, vmSwitch)
 	if err != nil {
 		return err
 	}
