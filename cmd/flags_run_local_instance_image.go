@@ -88,26 +88,33 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 	c.RunConfig.Accel = flags.Accel
 	c.Force = flags.Force
 
-	ipaddr := flags.IPAddress
+	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
+		c.RunConfig.IPAddr = flags.IPAddress
+	}
+
+	ipaddr := c.RunConfig.IPAddr
 	gateway := flags.Gateway
 	netmask := flags.Netmask
-	if ipaddr != "" && isIPAddressValid(ipaddr) {
-		c.RunConfig.IPAddr = ipaddr
 
-		if gateway == "" || !isIPAddressValid(gateway) {
-			// assumes the default gateway is the first IP in the network range
-			ip := net.ParseIP(ipaddr).To4()
+	if ipaddr != "" && (gateway == "" || !isIPAddressValid(gateway)) {
+		// assumes the default gateway is the first or last IP in the network range
+		ip := net.ParseIP(ipaddr).To4()
+
+		if ip[3] == byte(1) {
+			ip[3] = byte(254)
+		} else {
 			ip[3] = byte(1)
-			c.RunConfig.Gateway = ip.String()
-		} else {
-			c.RunConfig.Gateway = gateway
 		}
 
-		if netmask != "" && !isIPAddressValid(netmask) {
-			c.RunConfig.NetMask = "255.255.255.0"
-		} else {
-			c.RunConfig.NetMask = netmask
-		}
+		c.RunConfig.Gateway = ip.String()
+	} else if ipaddr != "" {
+		c.RunConfig.Gateway = gateway
+	}
+
+	if ipaddr != "" && (netmask == "" || !isIPAddressValid(netmask)) {
+		c.RunConfig.NetMask = "255.255.255.0"
+	} else if ipaddr != "" {
+		c.RunConfig.NetMask = netmask
 	}
 
 	if len(flags.NoTrace) > 0 {
