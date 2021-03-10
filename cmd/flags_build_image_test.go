@@ -51,6 +51,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 
 	c := &types.Config{
 		VolumesDir: lepton.LocalVolumeDir,
+		Program:    "MyTestApp",
 	}
 	expected := &types.Config{
 		Boot:   opsPath + "/boot.img",
@@ -64,8 +65,8 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		RunConfig: types.RunConfig{
 			Imagename: imagesPath + "/test-image.img",
 		},
-		Args:       []string{"a b c d"},
-		Program:    "",
+		Args:       []string{"MyTestApp", "a b c d"},
+		Program:    "MyTestApp",
 		TargetRoot: "unix",
 		Env:        map[string]string{"test": "1234"},
 		NameServer: "8.8.8.8",
