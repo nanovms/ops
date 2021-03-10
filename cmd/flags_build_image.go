@@ -79,6 +79,10 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		c.Args = flags.CmdArgs
 	}
 
+	if c.Program != "" {
+		c.Args = append([]string{c.Program}, c.Args...)
+	}
+
 	return
 }
 
