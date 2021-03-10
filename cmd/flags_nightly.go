@@ -57,6 +57,7 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
 		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	}
 
 	if c.Boot == "" {
