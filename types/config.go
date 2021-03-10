@@ -49,6 +49,9 @@ type Config struct {
 	// for DNS resolutions (defaults to Google's DNS server: '8.8.8.8').
 	NameServer string
 
+	// NanosVersion
+	NanosVersion string
+
 	// NightlyBuild
 	NightlyBuild bool
 

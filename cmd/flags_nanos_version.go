@@ -31,6 +31,9 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 		}
 
 		updateNanosToolsPaths(config, nanosVersion)
+		config.NanosVersion = nanosVersion
+	} else {
+		config.NanosVersion = lepton.LocalReleaseVersion
 	}
 
 	return
