@@ -154,7 +154,7 @@ func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string) error {
 
 	err = g.ResetInstance(lepton.NewContext(config), image)
 	if err != nil {
-		return fmt.Errorf("error reseting instance %v", image)
+		return fmt.Errorf("error reseting instance %v: %v", image, err)
 	}
 
 	return nil
@@ -191,7 +191,7 @@ func (g *GCloud) DetachVolume(ctx *lepton.Context, image, volumeName string) err
 
 	err = g.ResetInstance(lepton.NewContext(config), image)
 	if err != nil {
-		return fmt.Errorf("error reseting instance %v", image)
+		return fmt.Errorf("error reseting instance %v: %v", image, err)
 	}
 
 	return nil

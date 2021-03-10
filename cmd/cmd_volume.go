@@ -134,7 +134,7 @@ func volumeAttachCommand() *cobra.Command {
 		Use:   "attach <image_name> <volume_name>",
 		Short: "attach volume",
 		Run:   volumeAttachCommandHandler,
-		Args:  cobra.MinimumNArgs(3),
+		Args:  cobra.MinimumNArgs(2),
 	}
 	return cmdVolumeAttach
 }
