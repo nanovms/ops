@@ -138,11 +138,11 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
-	downloadAndExtractPackage(args[0])
+	downloadLocalPackage(args[0])
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
-	expackage := downloadAndExtractPackage(args[0])
+	expackage := downloadPackage(args[0])
 
 	description := path.Join(expackage, "README.md")
 	if _, err := os.Stat(description); err != nil {
@@ -170,7 +170,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 }
 
 func cmdPackageContents(cmd *cobra.Command, args []string) {
-	expackage := downloadAndExtractPackage(args[0])
+	expackage := downloadPackage(args[0])
 
 	filepath.Walk(expackage, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -199,11 +199,13 @@ func LoadCommand() *cobra.Command {
 		Run:   loadCommandHandler,
 	}
 
-	PersistConfigCommandFlags(cmdLoadPackage.PersistentFlags())
-	PersistBuildImageCommandFlags(cmdLoadPackage.PersistentFlags())
-	PersistRunLocalInstanceCommandFlags(cmdLoadPackage.PersistentFlags())
-	PersistNightlyCommandFlags(cmdLoadPackage.PersistentFlags())
-	cmdLoadPackage.PersistentFlags().BoolP("local", "l", false, "load local package")
+	persistentFlags := cmdLoadPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistRunLocalInstanceCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	persistentFlags.BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
 }
