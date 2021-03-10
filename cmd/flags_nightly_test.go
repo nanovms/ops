@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"path"
 	"testing"
 
 	"github.com/nanovms/ops/types"
@@ -25,27 +26,58 @@ func TestCreateNightlyFlags(t *testing.T) {
 }
 
 func TestNightlyFlagsMergeToConfig(t *testing.T) {
-	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistNightlyCommandFlags(flagSet)
+	nightlyPath := path.Join(lepton.GetOpsHome(), "nightly")
+	currentOpsPath := path.Join(lepton.GetOpsHome(), lepton.LocalReleaseVersion)
 
-	flagSet.Set("nightly", "true")
+	t.Run("if nighly flag is enabled should set boot and kernel nightly paths ", func(t *testing.T) {
+		flagSet := pflag.NewFlagSet("test", 0)
 
-	nightlyFlags := cmd.NewNightlyCommandFlags(flagSet)
+		cmd.PersistNightlyCommandFlags(flagSet)
 
-	opsPath := lepton.GetOpsHome() + "/nightly"
+		flagSet.Set("nightly", "true")
 
-	c := &types.Config{}
-	expected := &types.Config{
-		Boot:         opsPath + "/boot.img",
-		Kernel:       opsPath + "/kernel.img",
-		CloudConfig:  types.ProviderConfig{},
-		RunConfig:    types.RunConfig{},
-		NameServer:   "8.8.8.8",
-		NightlyBuild: true,
-	}
+		nightlyFlags := cmd.NewNightlyCommandFlags(flagSet)
 
-	nightlyFlags.MergeToConfig(c)
+		c := &types.Config{}
+		expected := &types.Config{
+			Boot:         path.Join(nightlyPath, "boot.img"),
+			Kernel:       path.Join(nightlyPath, "/kernel.img"),
+			CloudConfig:  types.ProviderConfig{},
+			RunConfig:    types.RunConfig{},
+			NameServer:   "8.8.8.8",
+			NightlyBuild: true,
+		}
 
-	assert.Equal(t, expected, c)
+		nightlyFlags.MergeToConfig(c)
+
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("if nighly flag is enabled should override current configuration boot and kernel paths with nightly paths", func(t *testing.T) {
+		flagSet := pflag.NewFlagSet("test", 0)
+
+		cmd.PersistNightlyCommandFlags(flagSet)
+
+		flagSet.Set("nightly", "true")
+
+		nightlyFlags := cmd.NewNightlyCommandFlags(flagSet)
+
+		c := &types.Config{
+			Kernel: currentOpsPath + "/kernel.img",
+			Boot:   currentOpsPath + "/boot.img",
+		}
+		expected := &types.Config{
+			Boot:         nightlyPath + "/boot.img",
+			Kernel:       nightlyPath + "/kernel.img",
+			CloudConfig:  types.ProviderConfig{},
+			RunConfig:    types.RunConfig{},
+			NameServer:   "8.8.8.8",
+			NightlyBuild: true,
+		}
+
+		nightlyFlags.MergeToConfig(c)
+
+		assert.Equal(t, expected, c)
+	})
 }
