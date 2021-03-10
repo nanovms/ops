@@ -8,28 +8,37 @@ import (
 	api "github.com/nanovms/ops/lepton"
 )
 
-func downloadAndExtractPackage(pkg string) string {
-	packagePath := api.GetOpsHome() + "/local_packages/" + pkg
+func downloadLocalPackage(pkg string) string {
+	packagesDirPath := path.Join(api.GetOpsHome(), "local_packages")
+	return downloadAndExtractPackage(packagesDirPath, pkg)
+}
 
-	if _, err := os.Stat(packagePath); err == nil {
-		return packagePath
-	}
+func downloadPackage(pkg string) string {
+	packagesDirPath := path.Join(api.GetOpsHome(), "packages")
+	return downloadAndExtractPackage(packagesDirPath, pkg)
+}
 
-	localPackagesPath := path.Join(api.GetOpsHome(), "local_packages")
-	err := os.MkdirAll(localPackagesPath, 0755)
+func downloadAndExtractPackage(packagesDirPath, pkg string) string {
+	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	expackage := path.Join(localPackagesPath, pkg)
+	expackage := path.Join(packagesDirPath, pkg)
 	opsPackage, err := api.DownloadPackage(pkg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	api.ExtractPackage(opsPackage, localPackagesPath)
+	api.ExtractPackage(opsPackage, packagesDirPath)
+
+	err = os.Remove(opsPackage)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	return expackage
 }

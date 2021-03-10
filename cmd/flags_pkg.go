@@ -21,13 +21,12 @@ type PkgCommandFlags struct {
 }
 
 // PackagePath returns the package path in file system
-func (flags *PkgCommandFlags) PackagePath() (packagePath string) {
+func (flags *PkgCommandFlags) PackagePath() string {
 	if flags.LocalPackage {
-		packagePath = path.Join(api.GetOpsHome(), "local_packages", flags.Package)
-	} else {
-		packagePath = downloadAndExtractPackage(flags.Package)
+		return path.Join(api.GetOpsHome(), "local_packages", flags.Package)
 	}
-	return
+
+	return path.Join(api.GetOpsHome(), "packages", flags.Package)
 }
 
 // MergeToConfig merge package configuration to ops configuration
@@ -37,6 +36,14 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	}
 
 	packagePath := flags.PackagePath()
+
+	if _, err := os.Stat(packagePath); os.IsNotExist(err) {
+		if flags.LocalPackage {
+			return fmt.Errorf("No local package with the name %s found", flags.Package)
+		}
+
+		downloadPackage(flags.Package)
+	}
 
 	manifestPath := path.Join(packagePath, "package.manifest")
 	if _, err := os.Stat(manifestPath); err != nil {
