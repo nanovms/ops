@@ -273,7 +273,7 @@ func (q *qemu) addAccel() (bool, error) {
 	if runtime.GOOS == "darwin" {
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
-			q.addOption("-cpu", "host")
+			q.addOption("-cpu", "host,-rdtscp")
 			return true, nil
 		}
 		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
@@ -363,7 +363,12 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	q.addFlag("-no-reboot")
-	q.addOption("-cpu", "max")
+
+	if runtime.GOOS == "darwin" {
+		q.addOption("-cpu", "max,-rdtscp")
+	} else {
+		q.addOption("-cpu", "max")
+	}
 
 	if rconfig.GdbPort > 0 {
 		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)
