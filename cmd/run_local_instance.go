@@ -19,7 +19,7 @@ func RunLocalInstance(c *types.Config) (err error) {
 
 	tapDeviceName := c.RunConfig.TapName
 	bridged := c.RunConfig.Bridged
-	ipaddr := c.RunConfig.IPAddr
+	ipaddress := c.RunConfig.IPAddress
 	netmask := c.RunConfig.NetMask
 
 	bridgeName := c.RunConfig.BridgeName
@@ -30,7 +30,7 @@ func RunLocalInstance(c *types.Config) (err error) {
 	networkService := network.NewIprouteNetworkService()
 
 	if tapDeviceName != "" {
-		err = network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddr, netmask)
+		err = network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask)
 		if err != nil {
 			return
 		}
