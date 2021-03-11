@@ -272,7 +272,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddEnvironmentVariable("USER", "root")
 	m.AddEnvironmentVariable("PWD", "/")
 	m.AddEnvironmentVariable("OPS_VERSION", Version)
-	m.AddEnvironmentVariable("NANOS_VERSION", LocalReleaseVersion)
+	m.AddEnvironmentVariable("NANOS_VERSION", c.NanosVersion)
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
