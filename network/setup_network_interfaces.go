@@ -24,7 +24,7 @@ type Service interface {
 }
 
 // SetupNetworkInterfaces changes network configuration to support requirements
-func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName string, ipaddr string, netmask string) error {
+func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName string, ipaddress string, netmask string) error {
 	tapExists, err := network.CheckNetworkInterfaceExists(tapDeviceName)
 	if err != nil {
 		return errors.New("Not able to check tap exists")
@@ -51,8 +51,8 @@ func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName st
 			}
 		}
 
-		if ipaddr != "" {
-			ip := net.ParseIP(ipaddr).To4()
+		if ipaddress != "" {
+			ip := net.ParseIP(ipaddress).To4()
 			ip[3] = byte(66) // 66 is a random IP
 			bridgeIP := ip.String()
 

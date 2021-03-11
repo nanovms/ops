@@ -160,8 +160,8 @@ type RunConfig struct {
 	// InstanceName
 	InstanceName string
 
-	// IPAddr
-	IPAddr string
+	// IPAddress
+	IPAddress string
 
 	// Klibs
 	Klibs []string

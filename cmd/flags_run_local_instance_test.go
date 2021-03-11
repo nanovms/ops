@@ -57,7 +57,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 			Debug:      false,
 			Gateway:    "192.168.1.254",
 			GdbPort:    1234,
-			IPAddr:     "192.168.0.1",
+			IPAddress:  "192.168.0.1",
 			Mounts:     []string(nil),
 			NetMask:    "255.255.0.0",
 			Ports:      []string{"80", "81", "82-85"},
