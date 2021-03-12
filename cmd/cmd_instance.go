@@ -103,17 +103,6 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
-	if projectID != "" {
-		c.CloudConfig.ProjectID = projectID
-	}
-
-	if zone != "" {
-		c.CloudConfig.Zone = zone
-	}
-
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
@@ -139,16 +128,6 @@ func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	c, err := getInstanceCommandDefaultConfig(cmd)
 	if err != nil {
 		exitWithError(err.Error())
-	}
-
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
-	if projectID != "" {
-		c.CloudConfig.ProjectID = projectID
-	}
-	if zone != "" {
-		c.CloudConfig.Zone = zone
 	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
@@ -178,12 +157,6 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
-
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		exitForCmd(cmd, err.Error())
@@ -210,12 +183,6 @@ func instanceStopCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
@@ -246,16 +213,10 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	projectID, _ := cmd.Flags().GetString("projectid")
-	zone, _ := cmd.Flags().GetString("zone")
-
 	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
 	if err != nil {
 		panic(err)
 	}
-
-	c.CloudConfig.ProjectID = projectID
-	c.CloudConfig.Zone = zone
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
