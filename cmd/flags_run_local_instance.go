@@ -133,9 +133,20 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 			errstr := fmt.Sprintf("Port %d is forwarded and cannot be used as gdb port", flags.GDBPort)
 			return errors.New(errstr)
 		}
-	}
 
-	c.RunConfig.Ports = append(c.RunConfig.Ports, ports...)
+		portAlreadyExists := false
+		for _, rconfigPort := range c.RunConfig.Ports {
+			if rconfigPort == p {
+				portAlreadyExists = true
+				break
+			}
+		}
+
+		if !portAlreadyExists {
+			c.RunConfig.Ports = append(c.RunConfig.Ports, p)
+		}
+
+	}
 
 	return
 }
