@@ -35,38 +35,72 @@ func TestCreateRunLocalInstanceFlags(t *testing.T) {
 }
 
 func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
-	runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
-	runLocalInstanceFlags.Debug = false
 
-	c := &types.Config{}
+	t.Run("should merge configuration", func(t *testing.T) {
+		runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
+		runLocalInstanceFlags.Debug = false
 
-	err := runLocalInstanceFlags.MergeToConfig(c)
+		c := &types.Config{}
 
-	assert.Nil(t, err, nil)
+		err := runLocalInstanceFlags.MergeToConfig(c)
 
-	expected := &types.Config{
-		BuildDir:   "",
-		Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
-		Force:      true,
-		NoTrace:    []string{"a"},
-		RunConfig: types.RunConfig{
-			Accel:      true,
-			Bridged:    true,
-			BridgeName: "br1",
-			CPUs:       2,
-			Debug:      false,
-			Gateway:    "192.168.1.254",
-			GdbPort:    1234,
-			IPAddress:  "192.168.0.1",
-			Mounts:     []string(nil),
-			NetMask:    "255.255.0.0",
-			Ports:      []string{"80", "81", "82-85"},
-			TapName:    "tap1",
-			Verbose:    true,
-		},
-	}
+		assert.Nil(t, err, nil)
 
-	assert.Equal(t, expected, c)
+		expected := &types.Config{
+			BuildDir:   "",
+			Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
+			Force:      true,
+			NoTrace:    []string{"a"},
+			RunConfig: types.RunConfig{
+				Accel:      true,
+				Bridged:    true,
+				BridgeName: "br1",
+				CPUs:       2,
+				Debug:      false,
+				Gateway:    "192.168.1.254",
+				GdbPort:    1234,
+				IPAddress:  "192.168.0.1",
+				Mounts:     []string(nil),
+				NetMask:    "255.255.0.0",
+				Ports:      []string{"80", "81", "82-85"},
+				TapName:    "tap1",
+				Verbose:    true,
+			},
+		}
+
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("should join existing ports with flags ports de-duplicated", func(t *testing.T) {
+		flagSet := pflag.NewFlagSet("test", 0)
+
+		cmd.PersistRunLocalInstanceCommandFlags(flagSet)
+
+		flagSet.Set("port", "80,81,82-85")
+
+		runLocalInstanceFlags := cmd.NewRunLocalInstanceCommandFlags(flagSet)
+
+		c := &types.Config{
+			RunConfig: types.RunConfig{
+				Ports: []string{"80", "90"},
+			},
+		}
+
+		err := runLocalInstanceFlags.MergeToConfig(c)
+
+		assert.Nil(t, err, nil)
+
+		expected := &types.Config{
+			Debugflags: []string{},
+			RunConfig: types.RunConfig{
+				Accel: true,
+				CPUs:  1,
+				Ports: []string{"80", "90", "81", "82-85"},
+			},
+		}
+
+		assert.Equal(t, expected, c)
+	})
 
 }
 
