@@ -41,6 +41,7 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, size, provider
 	if err != nil {
 		return vol, err
 	}
+	defer os.Remove(vol.Path)
 
 	err = o.uploadImage(imagesClient, image.ID, vol.Path)
 	if err != nil {

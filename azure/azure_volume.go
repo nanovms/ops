@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,7 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, size, provider str
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
+	defer os.Remove(vol.Path)
 
 	config.CloudConfig.ImageName = name
 

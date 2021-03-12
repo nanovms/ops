@@ -22,6 +22,7 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, size, provider st
 	if err != nil {
 		return lv, err
 	}
+	defer os.Remove(lv.Path)
 
 	link := filepath.Join(filepath.Dir(lv.Path), "disk.raw")
 	if _, err := os.Lstat(link); err == nil {
@@ -29,16 +30,19 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, size, provider st
 			return lv, fmt.Errorf("failed to unlink: %+v", err)
 		}
 	}
+	defer os.Remove(link)
+
 	err = os.Link(lv.Path, link)
 	if err != nil {
 		return lv, err
 	}
 	archPath := filepath.Join(filepath.Dir(lv.Path), arch)
-	// compress it into a tar.gz file
+
 	err = lepton.CreateArchive(archPath, []string{link})
 	if err != nil {
 		return lv, err
 	}
+	defer os.Remove(archPath)
 
 	err = g.Storage.CopyToBucket(config, archPath)
 	if err != nil {

@@ -3,6 +3,7 @@ package upcloud
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -17,6 +18,7 @@ func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, size, provider 
 	if err != nil {
 		return
 	}
+	defer os.Remove(vol.Path)
 
 	storageDetails, err := p.createStorage(ctx, name, vol.Path)
 	if err != nil {
