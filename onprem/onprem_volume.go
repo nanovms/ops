@@ -114,61 +114,35 @@ func GetVolumes(dir string, query map[string]string) ([]lepton.NanosVolume, erro
 			continue
 		}
 
+		label := strings.TrimSuffix(info.Name(), ".raw")
+		nl := strings.Split(strings.TrimSuffix(label, ".raw"), lepton.VolumeDelimiter)
+
+		if len(nl) > 1 {
+			continue
+		}
+
 		link, err := os.Readlink(path.Join(dir, info.Name()))
 		if err != nil {
 			continue
 		}
 
-		var id string
-		var label string
-		nl := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), lepton.VolumeDelimiter)
-		if len(nl) == 1 {
-			label = nl[0]
-		}
 		src, err := os.Stat(link)
 		// ignore dangling symlink
 		if err != nil {
 			continue
 		}
-		nu := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), lepton.VolumeDelimiter)
-		if len(nu) == 2 {
-			id = nu[1]
-		}
 
-		mvols[src.Name()] = lepton.NanosVolume{
+		volParts := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), lepton.VolumeDelimiter)
+
+		id := volParts[1]
+
+		mvols[label] = lepton.NanosVolume{
 			ID:        id,
 			Name:      label,
 			Label:     label,
 			Size:      lepton.Bytes2Human(src.Size()),
 			Path:      path.Join(dir, src.Name()),
 			CreatedAt: src.ModTime().String(),
-		}
-	}
-	for _, info := range fi {
-		if info.IsDir() {
-			continue
-		}
-
-		link, _ := os.Readlink(path.Join(dir, info.Name()))
-		if link != "" {
-			continue
-		}
-
-		_, ok := mvols[info.Name()]
-		if ok {
-			continue
-		}
-
-		var id string
-		nu := strings.Split(strings.TrimSuffix(info.Name(), ".raw"), lepton.VolumeDelimiter)
-		if len(nu) == 2 {
-			id = nu[1]
-		}
-		mvols[info.Name()] = lepton.NanosVolume{
-			ID:   id,
-			Name: nu[0],
-			Size: lepton.Bytes2Human(info.Size()),
-			Path: path.Join(dir, info.Name()),
 		}
 	}
 

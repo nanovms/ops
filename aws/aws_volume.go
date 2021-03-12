@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, size, provider strin
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
+	defer os.Remove(localVolume.Path)
 
 	config.CloudConfig.ImageName = localVolume.Name
 

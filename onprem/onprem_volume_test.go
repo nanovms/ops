@@ -167,6 +167,15 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 				t.Errorf("TempFile: %v", err)
 				return
 			}
+
+			src := path.Join(dir, fmt.Sprintf("%s:%s.raw", tt.name, tt.uuid))
+			dst := path.Join(dir, fmt.Sprintf("%s.raw", tt.name))
+
+			err = os.Symlink(src, dst)
+			if err != nil {
+				fmt.Println(err)
+			}
+
 			mounts = append(mounts, fmt.Sprintf("%s:%s", tt.mount, tt.mountAt))
 			err = onprem.AddMounts(mounts, config)
 			if err != nil {
