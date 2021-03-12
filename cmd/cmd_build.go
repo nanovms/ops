@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nanovms/ops/types"
+	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +37,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 
-	c := types.NewConfig()
+	c := lepton.NewConfig()
 
 	c.Program = args[0]
 	checkProgramExists(c.Program)

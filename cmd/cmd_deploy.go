@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
 
-	c := types.NewConfig()
+	c := lepton.NewConfig()
 
 	program := args[0]
 	c.Program = program
