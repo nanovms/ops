@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
 	api "github.com/nanovms/ops/lepton"
@@ -197,7 +198,7 @@ func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err err
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = types.NewConfig()
+	c = lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, providerFlags)
 	err = mergeContainer.Merge(c)

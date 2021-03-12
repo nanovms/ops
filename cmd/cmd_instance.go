@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
 	"github.com/spf13/cobra"
@@ -58,7 +59,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	providerFlags := NewProviderCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
 
-	c := types.NewConfig()
+	c := lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags, createInstanceFlags)
 	err := mergeContainer.Merge(c)
@@ -236,7 +237,7 @@ func getInstanceCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err e
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = types.NewConfig()
+	c = lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err = mergeContainer.Merge(c)
