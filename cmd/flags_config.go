@@ -47,7 +47,7 @@ func unWarpConfig(file string, c *types.Config) (err error) {
 	}
 	err = json.Unmarshal(data, &c)
 	if err != nil {
-		return fmt.Errorf("error config: %v\n", err)
+		return fmt.Errorf("error config: %v", err)
 	}
 
 	c.VolumesDir = lepton.LocalVolumeDir
