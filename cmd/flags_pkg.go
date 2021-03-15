@@ -50,7 +50,11 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		return errors.New("failed finding package manifest")
 	}
 
-	pkgConfig := unWarpConfig(manifestPath)
+	pkgConfig := &types.Config{}
+	err = unWarpConfig(manifestPath, pkgConfig)
+	if err != nil {
+		return err
+	}
 
 	c.Program = pkgConfig.Program
 	c.Version = pkgConfig.Version

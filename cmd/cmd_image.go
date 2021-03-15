@@ -7,6 +7,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
 
@@ -275,9 +276,15 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 	config, _ := cmd.Flags().GetString("config")
 	config = strings.TrimSpace(config)
 
-	c := unWarpConfig(config)
+	c := &types.Config{}
+
+	err := unWarpConfig(config, c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	globalFlags := NewGlobalCommandFlags(cmd.Flags())
-	err := globalFlags.MergeToConfig(c)
+	err = globalFlags.MergeToConfig(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -321,9 +328,14 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	config, _ := cmd.Flags().GetString("config")
-	conf := unWarpConfig(config)
+	conf := &types.Config{}
+	err := unWarpConfig(config, conf)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	globalFlags := NewGlobalCommandFlags(cmd.Flags())
-	err := globalFlags.MergeToConfig(conf)
+	err = globalFlags.MergeToConfig(conf)
 	if err != nil {
 		exitWithError(err.Error())
 	}
