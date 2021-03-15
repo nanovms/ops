@@ -22,7 +22,11 @@ type ConfigCommandFlags struct {
 func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.Config != "" {
 
-		*c = *unWarpConfig(flags.Config)
+		if c == nil {
+			c = &types.Config{}
+		}
+
+		unWarpConfig(flags.Config, c)
 
 		return
 	}
@@ -35,8 +39,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 }
 
 // unWarpConfig parses lepton config file from file
-func unWarpConfig(file string) *types.Config {
-	c := types.Config{}
+func unWarpConfig(file string, c *types.Config) (err error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
@@ -44,16 +47,15 @@ func unWarpConfig(file string) *types.Config {
 	}
 	err = json.Unmarshal(data, &c)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error config: %v\n", err)
 	}
 
 	c.VolumesDir = lepton.LocalVolumeDir
 	if c.Mounts != nil {
-		err = onprem.AddMountsFromConfig(&c)
+		err = onprem.AddMountsFromConfig(c)
 	}
 
-	return &c
+	return
 }
 
 // NewConfigCommandFlags returns an instance of ConfigCommandFlags

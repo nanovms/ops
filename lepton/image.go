@@ -381,7 +381,7 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 
 	err = mkfsCommand.Execute()
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	return nil
