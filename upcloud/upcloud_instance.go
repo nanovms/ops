@@ -330,7 +330,7 @@ func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (instance *le
 	return
 }
 
-// GetInstanceLogs reads content from named pipe file
+// GetInstanceLogs is a stub
 func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", errors.New("Unsupported")
 }

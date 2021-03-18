@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
 	"github.com/nanovms/ops/cmd"
@@ -18,7 +19,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 	buildImageFlagSet.Set("args", "test")
 	buildImageFlags := cmd.NewBuildImageCommandFlags(buildImageFlagSet)
 
-	configFileName := "test-" + String(5) + ".json"
+	configFileName := "test-" + testutils.String(5) + ".json"
 	configFile := &types.Config{
 		RunConfig: types.RunConfig{
 			Imagename: "config-image-name",

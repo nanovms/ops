@@ -9,6 +9,7 @@ import (
 	"github.com/nanovms/ops/gcp"
 	"github.com/nanovms/ops/hyperv"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/oci"
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/openstack"
 	"github.com/nanovms/ops/types"
@@ -42,6 +43,8 @@ func getCloudProvider(providerName string, c *types.ProviderConfig) (api.Provide
 		provider = hyperv.NewProvider()
 	case "upcloud":
 		provider = upcloud.NewProvider()
+	case "oci":
+		provider = oci.NewProvider()
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}

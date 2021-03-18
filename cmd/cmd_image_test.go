@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateImage(t *testing.T) {
-	basicProgram := buildBasicProgram()
+	basicProgram := testutils.BuildBasicProgram()
 	defer os.Remove(basicProgram)
 
 	createImageCmd := cmd.ImageCommands()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,7 @@ func TestConfigFlags(t *testing.T) {
 }
 
 func TestConfigFlagsMergeToConfig(t *testing.T) {
-	configFileName := "test-" + String(5) + ".json"
+	configFileName := "test-" + testutils.String(5) + ".json"
 	expected := &types.Config{
 		CloudConfig: types.ProviderConfig{
 			ProjectID:  "projectid",

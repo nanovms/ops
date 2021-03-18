@@ -9,6 +9,7 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +42,7 @@ func TestCreateImage(t *testing.T) {
 		DeleteStorage(&request.DeleteStorageRequest{UUID: storageUUID}).
 		Return(nil)
 
-	err := p.CreateImage(NewMockContext(), file.Name())
+	err := p.CreateImage(testutils.NewMockContext(), file.Name())
 
 	assert.Nil(t, err)
 }
@@ -53,7 +54,7 @@ func TestListImages(t *testing.T) {
 		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&upcloud.Storages{}, nil)
 
-	err := p.ListImages(NewMockContext())
+	err := p.ListImages(testutils.NewMockContext())
 
 	assert.Nil(t, err)
 }
@@ -65,7 +66,7 @@ func TestGetImages(t *testing.T) {
 		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&upcloud.Storages{}, nil)
 
-	images, err := p.GetImages(NewMockContext())
+	images, err := p.GetImages(testutils.NewMockContext())
 
 	assert.Nil(t, err)
 
@@ -90,7 +91,7 @@ func TestDeleteImage(t *testing.T) {
 		DeleteStorage(&request.DeleteStorageRequest{UUID: storageUUID}).
 		Return(nil)
 
-	err := p.DeleteImage(NewMockContext(), storageTitle)
+	err := p.DeleteImage(testutils.NewMockContext(), storageTitle)
 
 	assert.Nil(t, err)
 }

@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/cmd"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCmdBuild(t *testing.T) {
-	programPath := buildBasicProgram()
+	programPath := testutils.BuildBasicProgram()
 	defer os.Remove(programPath)
 
 	buildCmd := cmd.BuildCommand()

@@ -22,10 +22,12 @@ require (
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
+	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/schollz/progressbar/v2 v2.13.2
 	github.com/schollz/progressbar/v3 v3.7.3
 	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/spf13/afero v1.5.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.7.0

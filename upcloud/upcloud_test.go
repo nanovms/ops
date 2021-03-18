@@ -99,7 +99,3 @@ func NewProvider(t *testing.T) (*upcloud.Provider, *mock_upcloud.MockService) {
 
 	return upcloud.NewProviderWithService(service), service
 }
-
-func NewMockContext() *lepton.Context {
-	return lepton.NewContext(lepton.NewConfig())
-}

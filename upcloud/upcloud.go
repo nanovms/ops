@@ -37,7 +37,7 @@ func NewProviderWithService(service Service) *Provider {
 	return &Provider{upcloud: service}
 }
 
-// Initialize checks conditions to use hyper-v
+// Initialize checks conditions to use upcloud
 func (p *Provider) Initialize(c *types.ProviderConfig) error {
 	user := os.Getenv("UPCLOUD_USER")
 	if user == "" {

@@ -67,7 +67,7 @@ func NewProviderCommandFlags(cmdFlags *pflag.FlagSet) (flags *ProviderCommandFla
 
 // PersistProviderCommandFlags append a command the required flags to run an image
 func PersistProviderCommandFlags(cmdFlags *pflag.FlagSet) {
-	cmdFlags.StringP("target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, upcloud, hyper-v]")
+	cmdFlags.StringP("target-cloud", "t", "onprem", "cloud platform [gcp, aws, onprem, vultr, vsphere, azure, openstack, upcloud, hyper-v, oci]")
 	cmdFlags.StringP("projectid", "g", os.Getenv("GOOGLE_CLOUD_PROJECT"), "project-id for GCP or set env GOOGLE_CLOUD_PROJECT")
 	cmdFlags.StringP("zone", "z", os.Getenv("GOOGLE_CLOUD_ZONE"), "zone name for GCP or set env GOOGLE_CLOUD_ZONE")
 }

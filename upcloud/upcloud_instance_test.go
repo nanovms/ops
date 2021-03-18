@@ -7,6 +7,7 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,7 +69,7 @@ func TestCreateInstance(t *testing.T) {
 		TagServer(&request.TagServerRequest{UUID: serverID, Tags: []string{"OPS", "image-test"}}).
 		Return(&upcloud.ServerDetails{}, nil)
 
-	ctx := NewMockContext()
+	ctx := testutils.NewMockContext()
 	ctx.Config().CloudConfig.ImageName = imageName
 	ctx.Config().RunConfig.InstanceName = instanceName
 	err := p.CreateInstance(ctx)
@@ -91,7 +92,7 @@ func TestListInstances(t *testing.T) {
 		GetServers().
 		Return(&upcloud.Servers{}, nil)
 
-	err := p.ListInstances(NewMockContext())
+	err := p.ListInstances(testutils.NewMockContext())
 
 	assert.Nil(t, err)
 }
@@ -111,7 +112,7 @@ func TestGetInstances(t *testing.T) {
 		GetServers().
 		Return(&upcloud.Servers{}, nil)
 
-	instances, err := p.GetInstances(NewMockContext())
+	instances, err := p.GetInstances(testutils.NewMockContext())
 
 	assert.Nil(t, err)
 
@@ -144,7 +145,7 @@ func TestDeleteInstance(t *testing.T) {
 		DeleteServer(&request.DeleteServerRequest{UUID: serverID}).
 		Return(nil)
 
-	err := p.DeleteInstance(NewMockContext(), serverName)
+	err := p.DeleteInstance(testutils.NewMockContext(), serverName)
 
 	assert.Nil(t, err)
 }
