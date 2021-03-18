@@ -132,17 +132,5 @@ func (p *Provider) Initialize(providerConfig *types.ProviderConfig) (err error) 
 		p.availabilityDomain = *domains.Items[0].Name
 	}
 
-	// instanceID := "ocid1.instance.oc1.us-sanjose-1.anzwuljrltn4jiicpxtrukrjibwzvpxvhjcjvvt3kmxc3civ24vbmv3iskdq"
-
-	// ip, err := x.GetPublicIp(context.TODO(), core.GetPublicIpRequest{PublicIpId: &instanceID})
-	// fmt.Println(err)
-
-	// fmt.Println(ip)
-
-	// res, err := x.ListPrivateIps(context.TODO(), core.ListPrivateIpsRequest{VnicId: vnics.Items[0].Id})
-	// fmt.Println(err)
-
-	// fmt.Printf("%+v\n", res.Items)
-
 	return
 }
