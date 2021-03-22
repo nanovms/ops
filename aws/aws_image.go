@@ -147,45 +147,45 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 var (
 	// NitroInstanceTypes are the AWS virtualized types built on the Nitro system.
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
-	NitroInstanceTypes = []string{
-		"A1",
-		"C5",
-		"C5a",
-		"C5ad",
-		"C5d",
-		"C5n",
-		"C6g",
-		"C6gd",
-		"C6gn",
-		"D3",
-		"D3en",
-		"G4",
-		"I3en",
-		"Inf1",
-		"M5",
-		"M5a",
-		"M5ad",
-		"M5d",
-		"M5dn",
-		"M5n",
-		"M5zn",
-		"M6g",
-		"M6gd",
-		"p3dn",
-		"P4",
-		"R5",
-		"R5a",
-		"R5ad",
-		"R5b",
-		"R5d",
-		"R5dn",
-		"R5n",
-		"R6g",
-		"R6gd",
-		"T3",
-		"T3a",
-		"T4g",
-		"z1d",
+	NitroInstanceTypes = map[string]bool{
+		"a1":   true,
+		"c5":   true,
+		"c5a":  true,
+		"c5ad": true,
+		"c5d":  true,
+		"c5n":  true,
+		"c6g":  true,
+		"c6gd": true,
+		"c6gn": true,
+		"d3":   true,
+		"d3en": true,
+		"g4":   true,
+		"i3en": true,
+		"inf1": true,
+		"m5":   true,
+		"m5a":  true,
+		"m5ad": true,
+		"m5d":  true,
+		"m5dn": true,
+		"m5n":  true,
+		"m5zn": true,
+		"m6g":  true,
+		"m6gd": true,
+		"p3dn": true,
+		"p4":   true,
+		"r5":   true,
+		"r5a":  true,
+		"r5ad": true,
+		"r5b":  true,
+		"r5d":  true,
+		"r5dn": true,
+		"r5n":  true,
+		"r6g":  true,
+		"r6gd": true,
+		"t3":   true,
+		"t3a":  true,
+		"t4g":  true,
+		"z1d":  true,
 	}
 )
 
@@ -197,15 +197,10 @@ func GetEnaSupportForFlavor(flavor string) bool {
 
 	flavorParts := strings.Split(flavor, ".")
 
-	instanceFamily := strings.ToUpper(flavorParts[0])
+	instanceFamily := strings.ToLower(flavorParts[0])
 
-	for _, instanceType := range NitroInstanceTypes {
-		if instanceType == instanceFamily {
-			return true
-		}
-	}
-
-	return false
+	_, exists := NitroInstanceTypes[instanceFamily]
+	return exists
 }
 
 func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
