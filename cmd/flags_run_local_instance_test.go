@@ -57,6 +57,44 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 				BridgeName: "br1",
 				CPUs:       2,
 				Debug:      false,
+				Gateway:    "",
+				GdbPort:    1234,
+				IPAddress:  "",
+				Mounts:     []string(nil),
+				NetMask:    "",
+				Ports:      []string{"80", "81", "82-85"},
+				TapName:    "tap1",
+				Verbose:    true,
+			},
+		}
+
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("should clear ip/gateway/netmask if they are not valid ip addresses", func(t *testing.T) {
+		runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
+		runLocalInstanceFlags.Debug = false
+		runLocalInstanceFlags.IPAddress = "tomato"
+		runLocalInstanceFlags.Gateway = "potato"
+		runLocalInstanceFlags.Gateway = "cheese"
+
+		c := &types.Config{}
+
+		err := runLocalInstanceFlags.MergeToConfig(c)
+
+		assert.Nil(t, err, nil)
+
+		expected := &types.Config{
+			BuildDir:   "",
+			Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
+			Force:      true,
+			NoTrace:    []string{"a"},
+			RunConfig: types.RunConfig{
+				Accel:      true,
+				Bridged:    true,
+				BridgeName: "br1",
+				CPUs:       2,
+				Debug:      false,
 				Gateway:    "192.168.1.254",
 				GdbPort:    1234,
 				IPAddress:  "192.168.0.1",

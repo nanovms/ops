@@ -29,9 +29,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		unWarpConfig(flags.Config, c)
 
 		return
-	}
-
-	if c == nil {
+	} else if c == nil {
 		*c = *lepton.NewConfig()
 	}
 
@@ -53,6 +51,18 @@ func unWarpConfig(file string, c *types.Config) (err error) {
 	c.VolumesDir = lepton.LocalVolumeDir
 	if c.Mounts != nil {
 		err = onprem.AddMountsFromConfig(c)
+	}
+
+	if c.RunConfig.IPAddress != "" && !isIPAddressValid(c.RunConfig.IPAddress) {
+		c.RunConfig.IPAddress = ""
+	}
+
+	if c.RunConfig.Gateway != "" && !isIPAddressValid(c.RunConfig.Gateway) {
+		c.RunConfig.Gateway = ""
+	}
+
+	if c.RunConfig.NetMask != "" && !isIPAddressValid(c.RunConfig.NetMask) {
+		c.RunConfig.NetMask = ""
 	}
 
 	return
