@@ -3,7 +3,6 @@ package cmd
 import (
 	"debug/elf"
 	"fmt"
-	"net"
 	"strconv"
 
 	"github.com/nanovms/ops/types"
@@ -83,43 +82,26 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 		c.RunConfig.BridgeName = flags.BridgeName
 	}
 
-	c.RunConfig.Verbose = flags.Verbose
-	c.RunConfig.Bridged = flags.Bridged
-	c.RunConfig.Accel = flags.Accel
-	c.Force = flags.Force
-
-	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
+	if flags.IPAddress != "" {
 		c.RunConfig.IPAddress = flags.IPAddress
 	}
 
-	ipaddress := c.RunConfig.IPAddress
-	gateway := flags.Gateway
-	netmask := flags.Netmask
-
-	if ipaddress != "" && (gateway == "" || !isIPAddressValid(gateway)) {
-		// assumes the default gateway is the first or last IP in the network range
-		ip := net.ParseIP(ipaddress).To4()
-
-		if ip[3] == byte(1) {
-			ip[3] = byte(254)
-		} else {
-			ip[3] = byte(1)
-		}
-
-		c.RunConfig.Gateway = ip.String()
-	} else if ipaddress != "" {
-		c.RunConfig.Gateway = gateway
+	if flags.Gateway != "" {
+		c.RunConfig.Gateway = flags.Gateway
 	}
 
-	if ipaddress != "" && (netmask == "" || !isIPAddressValid(netmask)) {
-		c.RunConfig.NetMask = "255.255.255.0"
-	} else if ipaddress != "" {
-		c.RunConfig.NetMask = netmask
+	if flags.Netmask != "" {
+		c.RunConfig.NetMask = flags.Netmask
 	}
 
 	if len(flags.NoTrace) > 0 {
 		c.NoTrace = flags.NoTrace
 	}
+
+	c.RunConfig.Verbose = flags.Verbose
+	c.RunConfig.Bridged = flags.Bridged
+	c.RunConfig.Accel = flags.Accel
+	c.Force = flags.Force
 
 	ports, err := PrepareNetworkPorts(flags.Ports)
 	if err != nil {
@@ -267,13 +249,4 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
 	cmdFlags.Bool("syscall-summary", false, "print syscall summary on exit")
-}
-
-// isIPAddressValid checks whether IP address is valid
-func isIPAddressValid(ip string) bool {
-	if net.ParseIP(ip) == nil {
-		return false
-	}
-
-	return true
 }

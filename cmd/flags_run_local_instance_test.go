@@ -93,9 +93,10 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 		expected := &types.Config{
 			Debugflags: []string{},
 			RunConfig: types.RunConfig{
-				Accel: true,
-				CPUs:  1,
-				Ports: []string{"80", "90", "81", "82-85"},
+				Accel:   true,
+				CPUs:    1,
+				Ports:   []string{"80", "90", "81", "82-85"},
+				NetMask: "255.255.255.0",
 			},
 		}
 
