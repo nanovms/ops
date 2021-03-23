@@ -57,11 +57,11 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 				BridgeName: "br1",
 				CPUs:       2,
 				Debug:      false,
-				Gateway:    "",
+				Gateway:    "192.168.1.254",
 				GdbPort:    1234,
-				IPAddress:  "",
+				IPAddress:  "192.168.0.1",
 				Mounts:     []string(nil),
-				NetMask:    "",
+				NetMask:    "255.255.0.0",
 				Ports:      []string{"80", "81", "82-85"},
 				TapName:    "tap1",
 				Verbose:    true,
@@ -76,7 +76,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 		runLocalInstanceFlags.Debug = false
 		runLocalInstanceFlags.IPAddress = "tomato"
 		runLocalInstanceFlags.Gateway = "potato"
-		runLocalInstanceFlags.Gateway = "cheese"
+		runLocalInstanceFlags.Netmask = "cheese"
 
 		c := &types.Config{}
 
@@ -95,11 +95,8 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 				BridgeName: "br1",
 				CPUs:       2,
 				Debug:      false,
-				Gateway:    "192.168.1.254",
 				GdbPort:    1234,
-				IPAddress:  "192.168.0.1",
 				Mounts:     []string(nil),
-				NetMask:    "255.255.0.0",
 				Ports:      []string{"80", "81", "82-85"},
 				TapName:    "tap1",
 				Verbose:    true,
