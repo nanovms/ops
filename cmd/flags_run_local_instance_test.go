@@ -71,6 +71,41 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 		assert.Equal(t, expected, c)
 	})
 
+	t.Run("should clear ip/gateway/netmask if they are not valid ip addresses", func(t *testing.T) {
+		runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
+		runLocalInstanceFlags.Debug = false
+		runLocalInstanceFlags.IPAddress = "tomato"
+		runLocalInstanceFlags.Gateway = "potato"
+		runLocalInstanceFlags.Netmask = "cheese"
+
+		c := &types.Config{}
+
+		err := runLocalInstanceFlags.MergeToConfig(c)
+
+		assert.Nil(t, err, nil)
+
+		expected := &types.Config{
+			BuildDir:   "",
+			Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
+			Force:      true,
+			NoTrace:    []string{"a"},
+			RunConfig: types.RunConfig{
+				Accel:      true,
+				Bridged:    true,
+				BridgeName: "br1",
+				CPUs:       2,
+				Debug:      false,
+				GdbPort:    1234,
+				Mounts:     []string(nil),
+				Ports:      []string{"80", "81", "82-85"},
+				TapName:    "tap1",
+				Verbose:    true,
+			},
+		}
+
+		assert.Equal(t, expected, c)
+	})
+
 	t.Run("should join existing ports with flags ports de-duplicated", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"debug/elf"
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/nanovms/ops/types"
@@ -82,15 +83,15 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 		c.RunConfig.BridgeName = flags.BridgeName
 	}
 
-	if flags.IPAddress != "" {
+	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
 		c.RunConfig.IPAddress = flags.IPAddress
 	}
 
-	if flags.Gateway != "" {
+	if flags.Gateway != "" && isIPAddressValid(flags.Gateway) {
 		c.RunConfig.Gateway = flags.Gateway
 	}
 
-	if flags.Netmask != "" {
+	if flags.Netmask != "" && isIPAddressValid(flags.Netmask) {
 		c.RunConfig.NetMask = flags.Netmask
 	}
 
@@ -249,4 +250,13 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
 	cmdFlags.Bool("syscall-summary", false, "print syscall summary on exit")
+}
+
+// isIPAddressValid checks whether IP address is valid
+func isIPAddressValid(ip string) bool {
+	if net.ParseIP(ip) == nil {
+		return false
+	}
+
+	return true
 }
