@@ -96,6 +96,9 @@ type ProviderConfig struct {
 	// Flavor
 	Flavor string `cloud:"flavor"`
 
+	// ImageType
+	ImageType string `cloud:"imagetype"`
+
 	// ImageName
 	ImageName string `cloud:"imagename"`
 

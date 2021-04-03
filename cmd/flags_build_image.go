@@ -15,6 +15,7 @@ import (
 
 // BuildImageCommandFlags consolidates all command flags required to build an image in one struct
 type BuildImageCommandFlags struct {
+	Type       string
 	CmdArgs    []string
 	CmdEnvs    []string
 	ImageName  string
@@ -37,6 +38,10 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 
 	if flags.TargetRoot != "" {
 		c.TargetRoot = flags.TargetRoot
+	}
+
+	if flags.Type != "" {
+		c.CloudConfig.ImageType = flags.Type
 	}
 
 	if flags.ImageName != "" {
@@ -91,6 +96,11 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 	var err error
 	flags = &BuildImageCommandFlags{}
 
+	flags.Type, err = cmdFlags.GetString("type")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.CmdEnvs, err = cmdFlags.GetStringArray("envs")
 	if err != nil {
 		exitWithError(err.Error())
@@ -121,6 +131,7 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 
 // PersistBuildImageCommandFlags append a command the required flags to run an image
 func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
+	cmdFlags.String("type", "", "image type (target platform-specific)")
 	cmdFlags.StringArrayP("envs", "e", nil, "env arguments")
 	cmdFlags.StringP("target-root", "r", "", "target root")
 	cmdFlags.StringP("imagename", "i", "", "image name")
