@@ -230,13 +230,9 @@ func writeMBR(imgFile *os.File) error {
 	_ = binary.Read(bytes.NewBuffer(mbr[parts-12:parts-4]), binary.LittleEndian, &fsRegionLength)
 
 	fsOffset := sectorSize + fsRegionLength + klogDumpSize
-	bootFSPartEntry := parts + partitionBootFS*partitionEntrySize
-	mbrBootFSPart := mbr[bootFSPartEntry : bootFSPartEntry+partitionEntrySize]
-	writePartition(mbrBootFSPart, true, 0x83, fsOffset, bootFSSize)
+	writePartition(mbr, partitionBootFS, true, 0x83, fsOffset, bootFSSize)
 	fsOffset += bootFSSize
-	rootFSPartEntry := parts + partitionRootFS*partitionEntrySize
-	mbrRootFSPart := mbr[rootFSPartEntry : rootFSPartEntry+partitionEntrySize]
-	writePartition(mbrRootFSPart, true, 0x83, fsOffset, uint64(info.Size())-fsOffset)
+	writePartition(mbr, partitionRootFS, true, 0x83, fsOffset, uint64(info.Size())-fsOffset)
 
 	// Write MBR
 	n, err = imgFile.WriteAt(mbr, 0)
@@ -247,7 +243,9 @@ func writeMBR(imgFile *os.File) error {
 	return nil
 }
 
-func writePartition(part []byte, active bool, pType uint8, offset uint64, size uint64) {
+func writePartition(mbr []byte, index int, active bool, pType uint8, offset uint64, size uint64) {
+	partEntry := sectorSize - 2 - (4-index)*partitionEntrySize
+	part := mbr[partEntry : partEntry+partitionEntrySize]
 	if active {
 		part[0] = 0x80
 	} else {
