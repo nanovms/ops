@@ -12,6 +12,12 @@ type Config struct {
 	// Boot
 	Boot string
 
+	// Boot path of UEFI bootloader file
+	UefiBoot string
+
+	// Uefi indicates whether image should support booting via UEFI
+	Uefi bool
+
 	// BuildDir
 	BuildDir string
 

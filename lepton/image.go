@@ -377,6 +377,12 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 	}
 
 	mkfsCommand.SetBoot(c.Boot)
+	if c.Uefi {
+		if c.UefiBoot == "" {
+			return errors.New("this Nanos version does not support UEFI, consider changing image type")
+		}
+		mkfsCommand.SetUefi(c.UefiBoot)
+	}
 	mkfsCommand.SetFileSystemPath(c.RunConfig.Imagename)
 
 	err = mkfsCommand.Execute()

@@ -42,6 +42,7 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 		c := &types.Config{}
 		expected := &types.Config{
 			Boot:         path.Join(nightlyPath, "boot.img"),
+			UefiBoot:     path.Join(nightlyPath, "bootx64.efi"),
 			Kernel:       path.Join(nightlyPath, "/kernel.img"),
 			CloudConfig:  types.ProviderConfig{},
 			RunConfig:    types.RunConfig{},
@@ -69,6 +70,7 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 		}
 		expected := &types.Config{
 			Boot:         nightlyPath + "/boot.img",
+			UefiBoot:     path.Join(nightlyPath, "bootx64.efi"),
 			Kernel:       nightlyPath + "/kernel.img",
 			CloudConfig:  types.ProviderConfig{},
 			RunConfig:    types.RunConfig{},

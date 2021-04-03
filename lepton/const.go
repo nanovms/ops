@@ -219,6 +219,27 @@ func getKlibsDir(nightly bool) string {
 	return getLastReleaseLocalFolder() + "/klibs"
 }
 
+// GetUefiBoot retrieves UEFI bootloader file path, if found
+func GetUefiBoot(version string) string {
+	folder := getReleaseLocalFolder(version)
+	f, err := os.Open(folder)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	var files []os.FileInfo
+	files, err = f.Readdir(0)
+	if err != nil {
+		return ""
+	}
+	for _, file := range files {
+		if file.Mode().IsRegular() && strings.HasSuffix(file.Name(), ".efi") {
+			return path.Join(folder, file.Name())
+		}
+	}
+	return ""
+}
+
 const (
 	commonArchive = "https://storage.googleapis.com/nanos/common/common.tar.gz"
 	libDNS        = "/lib/x86_64-linux-gnu/libnss_dns.so.2"

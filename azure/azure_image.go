@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -16,6 +17,17 @@ import (
 // BuildImage to be upload on Azure
 func (a *Azure) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+	a.hyperVGen = compute.HyperVGenerationTypesV1
+	imageType := strings.ToLower(c.CloudConfig.ImageType)
+	if imageType != "" {
+		if imageType == "gen1" {
+		} else if imageType == "gen2" {
+			c.Uefi = true
+			a.hyperVGen = compute.HyperVGenerationTypesV2
+		} else {
+			return "", fmt.Errorf("invalid image type '%s'; available types: 'gen1', 'gen2'", c.CloudConfig.ImageType)
+		}
+	}
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
@@ -99,7 +111,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 					OsState: compute.Generalized,
 				},
 			},
-			HyperVGeneration: compute.HyperVGenerationTypesV1,
+			HyperVGeneration: a.hyperVGen,
 		},
 	}
 
