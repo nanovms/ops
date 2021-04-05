@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -48,6 +47,12 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	// 1) upload the image
 	// 2) create a snapshot
 	// 3) create an image
+	imageName := ctx.Config().CloudConfig.ImageName
+
+	i, _ := p.findImageByName(imageName)
+	if i != nil {
+		return fmt.Errorf("failed creating image: image with name %s already exists", imageName)
+	}
 
 	err := p.Storage.CopyToBucket(ctx.Config(), imagePath)
 	if err != nil {
@@ -304,37 +309,13 @@ func (p *AWS) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) 
 // DeleteImage deletes image from AWS by ami name
 func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 	// delete ami by ami name
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-	compute := ec2.New(svc)
-
-	ec2Filters := []*ec2.Filter{}
-	vals := []string{imagename}
-	ec2Filters = append(ec2Filters, &ec2.Filter{Name: aws.String("name"), Values: aws.StringSlice(vals)})
-
-	input := &ec2.DescribeImagesInput{
-		Filters: ec2Filters,
-	}
-
-	result, err := compute.DescribeImages(input)
+	image, err := p.findImageByName(imagename)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			fmt.Println(err.Error())
-		}
-		return err
-	}
-	if len(result.Images) == 0 {
-		return fmt.Errorf("Error running deregister image operation: image %v not found", imagename)
+		return fmt.Errorf("Error running deregister image operation: %s", err)
 	}
 
-	amiID := aws.StringValue(result.Images[0].ImageId)
-	snapID := aws.StringValue(result.Images[0].BlockDeviceMappings[0].Ebs.SnapshotId)
+	amiID := aws.StringValue(image.ImageId)
+	snapID := aws.StringValue(image.BlockDeviceMappings[0].Ebs.SnapshotId)
 
 	// grab snapshotid && grab image id
 
@@ -342,7 +323,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 		ImageId: aws.String(amiID),
 		DryRun:  aws.Bool(false),
 	}
-	_, err = compute.DeregisterImage(params)
+	_, err = p.ec2.DeregisterImage(params)
 	if err != nil {
 		return fmt.Errorf("Error running deregister image operation: %s", err)
 	}
@@ -352,12 +333,42 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 		SnapshotId: aws.String(snapID),
 		DryRun:     aws.Bool(false),
 	}
-	_, err = compute.DeleteSnapshot(params2)
+	_, err = p.ec2.DeleteSnapshot(params2)
 	if err != nil {
 		return fmt.Errorf("Error running snapshot delete: %s", err)
 	}
 
 	return nil
+}
+
+func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
+	ec2Filters := []*ec2.Filter{
+		{Name: aws.String("tag:Name"), Values: []*string{&name}},
+		{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+	}
+
+	input := &ec2.DescribeImagesInput{
+		Filters: ec2Filters,
+	}
+
+	result, err := p.ec2.DescribeImages(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			fmt.Println(err.Error())
+		}
+		return nil, err
+	}
+
+	if len(result.Images) == 0 {
+		return nil, fmt.Errorf("image %v not found", name)
+	}
+
+	return result.Images[0], nil
 }
 
 // SyncImage syncs image from provider to another provider
