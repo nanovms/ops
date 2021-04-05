@@ -26,12 +26,24 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		return fmt.Errorf(`image with name "%s" not found`, c.CloudConfig.ImageName)
 	}
 
+	var vmGeneration uint = 1
+	hdController := "IDE"
+	flavor := strings.ToLower(c.CloudConfig.Flavor)
+	if flavor != "" {
+		if flavor == "gen1" {
+		} else if flavor == "gen2" {
+			vmGeneration = 2
+			hdController = "SCSI"
+		} else {
+			return fmt.Errorf("invalid instance flavor '%s'; available flavors: 'gen1', 'gen2'", c.CloudConfig.Flavor)
+		}
+	}
 	windowsImagePath, err := convertPathFromWSLtoWindows(imagePath)
 	if err != nil {
 		return err
 	}
 
-	err = CreateVirtualMachineWithNoHD(vmName, int64(1024*math.Pow10(6)), 1)
+	err = CreateVirtualMachineWithNoHD(vmName, int64(1024*math.Pow10(6)), vmGeneration)
 	if err != nil {
 		return err
 	}
@@ -54,7 +66,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = AddVirtualMachineHardDiskDrive(vmName, windowsImagePath)
+	err = AddVirtualMachineHardDiskDrive(vmName, windowsImagePath, hdController, vmGeneration == 2)
 	if err != nil {
 		return err
 	}

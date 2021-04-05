@@ -42,6 +42,7 @@ type Azure struct {
 	locationDefault string
 	groupName       string
 	storageAccount  string
+	hyperVGen       compute.HyperVGenerationTypes
 
 	authorizer *autorest.Authorizer
 }

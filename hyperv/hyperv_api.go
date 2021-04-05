@@ -65,7 +65,11 @@ New-VM -Name $vmName -Path $path -MemoryStartupBytes $memoryStartupBytes -NewVHD
 `
 		var ps PowerShellCmd
 		err := ps.Run(script, vmName, path, strconv.FormatInt(ram, 10), strconv.FormatInt(diskSize, 10), switchName, strconv.FormatInt(int64(generation), 10))
-		return err
+		if err != nil {
+			return err
+		}
+
+		return SetVMSecureBoot(vmName, false)
 	}
 
 	var script = `
@@ -95,7 +99,11 @@ New-VM -Name $vmName -NoVHD -MemoryStartupBytes $memoryStartupBytes -Generation 
 `
 		var ps PowerShellCmd
 		err := ps.Run(script, vmName, strconv.FormatInt(ram, 10), strconv.FormatInt(int64(generation), 10))
-		return err
+		if err != nil {
+			return err
+		}
+
+		return SetVMSecureBoot(vmName, false)
 	}
 
 	var script = `
@@ -128,25 +136,54 @@ Hyper-V\Get-VMDvdDrive -VMName $vmName | Hyper-V\Remove-VMDvdDrive
 // Due to issues on using vhdx files located inside WSL it copies the image to a user directory
 // located at `~/vhdx-images` before attaching to the virtual machine.
 // See more details on https://github.com/MicrosoftDocs/windows-powershell-docs/issues/2286
-func AddVirtualMachineHardDiskDrive(vmName string, path string) error {
+func AddVirtualMachineHardDiskDrive(vmName string, path string, hdController string, setBootDev bool) error {
 
 	var script = `
-param([string]$vmName, [string]$path)
+param([string]$vmName, [string]$path, [string]$hdController)
 New-Item -ItemType Directory -Force -Path ~/vhdx-images
 $vhdx = $vmName + '.vhdx'
 $newPath = Join-Path -Path ~/vhdx-images -ChildPath $vhdx
 cp $path $newPath
 $newPath = Convert-Path $newPath
-Add-VMHardDiskDrive -VMName $vmName -Path $newPath -ControllerType IDE -ControllerNumber 0
+Add-VMHardDiskDrive -VMName $vmName -Path $newPath -ControllerType $hdController -ControllerNumber 0
 `
 
 	var ps PowerShellCmd
-	err := ps.Run(script, vmName, path)
+	err := ps.Run(script, vmName, path, hdController)
 	if err != nil {
 		return err
 	}
 
+	if setBootDev {
+		script = `
+param([string]$vmName, [string]$hdController)
+$hdDrive = Get-VMHardDiskDrive -VMName $vmName -ControllerType $hdController -ControllerNumber 0
+Set-VMFirmware -VMName $vmName -FirstBootDevice $hdDrive
+`
+		err = ps.Run(script, vmName, hdController)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+// SetVMSecureBoot enables or disables secure boot on a VM
+func SetVMSecureBoot(vmName string, enable bool) error {
+	var onOff string
+	if enable {
+		onOff = "On"
+	} else {
+		onOff = "Off"
+	}
+	var script = `
+param([string]$vmName, [string]$onOff)
+Set-VMFirmware -VMName $vmName -EnableSecureBoot $onOff
+`
+	var ps PowerShellCmd
+	err := ps.Run(script, vmName, onOff)
+	return err
 }
 
 // SetVMComPort sets com port with a named pipe with the same name of the vm

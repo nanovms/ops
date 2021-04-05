@@ -142,7 +142,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	var flavor compute.VirtualMachineSizeTypes
 	flavor = compute.VirtualMachineSizeTypes(ctx.Config().CloudConfig.Flavor)
 	if flavor == "" {
-		flavor = compute.VirtualMachineSizeTypesStandardA1V2
+		flavor = compute.VirtualMachineSizeTypesStandardB1s
 	}
 
 	tags := getAzureDefaultTags()

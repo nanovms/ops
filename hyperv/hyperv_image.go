@@ -2,6 +2,7 @@ package hyperv
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -20,6 +21,15 @@ var (
 // BuildImage creates and converts a raw image to vhdx
 func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+	imageType := strings.ToLower(c.CloudConfig.ImageType)
+	if imageType != "" {
+		if imageType == "gen1" {
+		} else if imageType == "gen2" {
+			c.Uefi = true
+		} else {
+			return "", fmt.Errorf("invalid image type '%s'; available types: 'gen1', 'gen2'", c.CloudConfig.ImageType)
+		}
+	}
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
