@@ -55,7 +55,7 @@ func buildInstance(imageName string) string {
 	instanceName := imageName + testutils.String(5)
 	createInstanceCmd := cmd.InstanceCommands()
 
-	createInstanceCmd.SetArgs([]string{"create", instanceName, "--imagename", imageName})
+	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName})
 
 	err := createInstanceCmd.Execute()
 	if err != nil {

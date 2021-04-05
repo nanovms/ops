@@ -45,8 +45,7 @@ func instanceCreateCommand() *cobra.Command {
 	}
 
 	PersistCreateInstanceFlags(cmdInstanceCreate.PersistentFlags())
-	cmdInstanceCreate.PersistentFlags().StringP("imagename", "i", "", "image name [required]")
-	cmdInstanceCreate.MarkPersistentFlagRequired("imagename")
+	cmdInstanceCreate.PersistentFlags().StringP("instance-name", "i", "", "instance name (overrides default instance name format)")
 
 	return cmdInstanceCreate
 }
@@ -67,15 +66,17 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	c.CloudConfig.ImageName, _ = cmd.Flags().GetString("imagename")
+	c.CloudConfig.ImageName = args[0]
 
-	if len(args) > 0 {
-		c.RunConfig.InstanceName = args[0]
-	} else if c.RunConfig.InstanceName == "" {
+	instanceName, _ := cmd.Flags().GetString("instance-name")
+
+	if instanceName == "" {
 		c.RunConfig.InstanceName = fmt.Sprintf("%v-%v",
 			strings.Split(filepath.Base(c.CloudConfig.ImageName), ".")[0],
 			strconv.FormatInt(time.Now().Unix(), 10),
 		)
+	} else {
+		c.RunConfig.InstanceName = instanceName
 	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
