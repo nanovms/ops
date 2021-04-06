@@ -17,7 +17,7 @@ func TestCreateInstance(t *testing.T) {
 
 	createInstanceCmd := cmd.InstanceCommands()
 
-	createInstanceCmd.SetArgs([]string{"create", instanceName, "--imagename", imageName})
+	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName})
 
 	err := createInstanceCmd.Execute()
 
