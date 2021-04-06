@@ -81,29 +81,21 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 }
 
 // StartInstance stops instance from AWS by ami name
-func (p *AWS) StartInstance(ctx *lepton.Context, instanceID string) error {
+func (p *AWS) StartInstance(ctx *lepton.Context, instanceName string) error {
 
-	if instanceID == "" {
-		return errors.New("Enter Instance ID")
+	if instanceName == "" {
+		return errors.New("Enter Instance Name")
 	}
 
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-
-	compute := ec2.New(svc)
-
-	if err != nil {
-		return errors.New("Invalid region")
-	}
+	instance, err := p.findInstanceByName(instanceName)
 
 	input := &ec2.StartInstancesInput{
 		InstanceIds: []*string{
-			aws.String(instanceID),
+			aws.String(*instance.InstanceId),
 		},
 	}
 
-	result, err := compute.StartInstances(input)
+	result, err := p.ec2.StartInstances(input)
 
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -125,29 +117,23 @@ func (p *AWS) StartInstance(ctx *lepton.Context, instanceID string) error {
 }
 
 // StopInstance stops instance from AWS by ami name
-func (p *AWS) StopInstance(ctx *lepton.Context, instanceID string) error {
-
-	if instanceID == "" {
-		return errors.New("Enter InstanceID")
+func (p *AWS) StopInstance(ctx *lepton.Context, instanceName string) error {
+	if instanceName == "" {
+		return errors.New("Enter Instance name")
 	}
 
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-
-	compute := ec2.New(svc)
-
+	instance, err := p.findInstanceByName(instanceName)
 	if err != nil {
-		return errors.New("Invalid region")
+		return err
 	}
 
 	input := &ec2.StopInstancesInput{
 		InstanceIds: []*string{
-			aws.String(instanceID),
+			aws.String(*instance.InstanceId),
 		},
 	}
 
-	result, err := compute.StopInstances(input)
+	result, err := p.ec2.StopInstances(input)
 
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -162,7 +148,7 @@ func (p *AWS) StopInstance(ctx *lepton.Context, instanceID string) error {
 	}
 
 	if result.StoppingInstances[0].InstanceId != nil {
-		fmt.Printf("Stopped instance %s", *result.StoppingInstances[0].InstanceId)
+		fmt.Printf("Stopped instance %s\n", *result.StoppingInstances[0].InstanceId)
 	}
 
 	return nil
@@ -361,19 +347,23 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 }
 
 // DeleteInstance deletes instance from AWS
-func (p *AWS) DeleteInstance(ctx *lepton.Context, instancename string) error {
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-	compute := ec2.New(svc)
+func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
+	if instanceName == "" {
+		return errors.New("Enter Instance name")
+	}
+
+	instance, err := p.findInstanceByName(instanceName)
+	if err != nil {
+		return err
+	}
 
 	input := &ec2.TerminateInstancesInput{
 		InstanceIds: []*string{
-			aws.String(instancename),
+			aws.String(*instance.InstanceId),
 		},
 	}
 
-	_, err = compute.TerminateInstances(input)
+	_, err = p.ec2.TerminateInstances(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -402,19 +392,23 @@ func (p *AWS) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch 
 }
 
 // GetInstanceLogs gets instance related logs
-func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-	compute := ec2.New(svc)
+func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string, error) {
+	if instanceName == "" {
+		return "", errors.New("Enter Instance name")
+	}
+
+	instance, err := p.findInstanceByName(instanceName)
+	if err != nil {
+		return "", err
+	}
 
 	// latest set to true is only avail on nitro (c5) instances
 	// otherwise last 64k
 	input := &ec2.GetConsoleOutputInput{
-		InstanceId: aws.String(instancename),
+		InstanceId: aws.String(*instance.InstanceId),
 	}
 
-	result, err := compute.GetConsoleOutput(input)
+	result, err := p.ec2.GetConsoleOutput(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -435,4 +429,25 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instancename string) (string,
 	l := string(data)
 
 	return l, nil
+}
+
+func (p *AWS) findInstanceByName(name string) (*ec2.Instance, error) {
+	filter := []*ec2.Filter{
+		{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})},
+		{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})},
+	}
+
+	request := ec2.DescribeInstancesInput{
+		Filters: filter,
+	}
+	result, err := p.ec2.DescribeInstances(&request)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting instances: %v", err)
+	}
+
+	if len(result.Reservations) == 0 || len(result.Reservations[0].Instances) == 0 {
+		return nil, fmt.Errorf("instance with name %s not found", name)
+	}
+
+	return result.Reservations[0].Instances[0], nil
 }

@@ -92,7 +92,12 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, size, provider strin
 func (a *AWS) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, error) {
 	vols := &[]lepton.NanosVolume{}
 
-	input := &ec2.DescribeVolumesInput{}
+	input := &ec2.DescribeVolumesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+		},
+	}
+
 	output, err := a.ec2.DescribeVolumes(input)
 	if err != nil {
 		return nil, err
@@ -130,10 +135,15 @@ func (a *AWS) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, error) 
 
 // DeleteVolume deletes a volume
 func (a *AWS) DeleteVolume(ctx *lepton.Context, name string) error {
-	input := &ec2.DeleteVolumeInput{
-		VolumeId: aws.String(name),
+	vol, err := a.findVolumeByName(name)
+	if err != nil {
+		return err
 	}
-	_, err := a.ec2.DeleteVolume(input)
+
+	input := &ec2.DeleteVolumeInput{
+		VolumeId: aws.String(*vol.VolumeId),
+	}
+	_, err = a.ec2.DeleteVolume(input)
 	if err != nil {
 		return err
 	}
@@ -142,13 +152,23 @@ func (a *AWS) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *AWS) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string) error {
+	vol, err := a.findVolumeByName(name)
+	if err != nil {
+		return err
+	}
+
+	instance, err := a.findInstanceByName(instanceName)
+	if err != nil {
+		return err
+	}
+
 	input := &ec2.AttachVolumeInput{
 		Device:     aws.String("/dev/sdf"),
-		InstanceId: aws.String(image),
-		VolumeId:   aws.String(name),
+		InstanceId: aws.String(*instance.InstanceId),
+		VolumeId:   aws.String(*vol.VolumeId),
 	}
-	_, err := a.ec2.AttachVolume(input)
+	_, err = a.ec2.AttachVolume(input)
 	if err != nil {
 		return err
 	}
@@ -157,16 +177,47 @@ func (a *AWS) AttachVolume(ctx *lepton.Context, image, name string) error {
 }
 
 // DetachVolume detachs a volume from an instance
-func (a *AWS) DetachVolume(ctx *lepton.Context, image, name string) error {
+func (a *AWS) DetachVolume(ctx *lepton.Context, instanceName, name string) error {
+	vol, err := a.findVolumeByName(name)
+	if err != nil {
+		return err
+	}
+
+	instance, err := a.findInstanceByName(instanceName)
+	if err != nil {
+		return err
+	}
+
 	input := &ec2.DetachVolumeInput{
 		Device:     aws.String("/dev/sdf"),
-		InstanceId: aws.String(image),
-		VolumeId:   aws.String(name),
+		InstanceId: aws.String(*instance.InstanceId),
+		VolumeId:   aws.String(*vol.VolumeId),
 	}
-	_, err := a.ec2.DetachVolume(input)
+
+	_, err = a.ec2.DetachVolume(input)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (a *AWS) findVolumeByName(name string) (*ec2.Volume, error) {
+	input := &ec2.DescribeVolumesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+			{Name: aws.String("tag:Name"), Values: []*string{aws.String(name)}},
+		},
+	}
+
+	output, err := a.ec2.DescribeVolumes(input)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(output.Volumes) == 0 {
+		return nil, fmt.Errorf("volume with name %s not found", name)
+	}
+
+	return output.Volumes[0], nil
 }
