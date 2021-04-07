@@ -42,5 +42,3 @@ require (
 	gopkg.in/ini.v1 v1.55.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )
-
-replace github.com/terra-farm/go-virtualbox => ../../terra-farm/go-virtualbox
