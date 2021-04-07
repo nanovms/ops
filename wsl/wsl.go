@@ -1,16 +1,17 @@
-package hyperv
+package wsl
 
 import (
 	"os/exec"
 	"strings"
 )
 
-func convertPathFromWSLtoWindows(path string) (windowsPath string, err error) {
-	_, err = exec.LookPath("wslpath")
-	if err != nil {
-		return
-	}
+func IsWSL() bool {
+	_, err := exec.LookPath("wslpath")
 
+	return err == nil
+}
+
+func ConvertPathFromWSLtoWindows(path string) (windowsPath string, err error) {
 	cmd := exec.Command("wslpath", "-w", path)
 
 	bytesWindowsPath, err := cmd.CombinedOutput()

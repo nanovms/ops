@@ -14,6 +14,7 @@ import (
 	"github.com/nanovms/ops/openstack"
 	"github.com/nanovms/ops/types"
 	"github.com/nanovms/ops/upcloud"
+	"github.com/nanovms/ops/vbox"
 	"github.com/nanovms/ops/vsphere"
 	"github.com/nanovms/ops/vultr"
 )
@@ -45,6 +46,8 @@ func getCloudProvider(providerName string, c *types.ProviderConfig) (api.Provide
 		provider = upcloud.NewProvider()
 	case "oci":
 		provider = oci.NewProvider()
+	case "vbox":
+		provider = vbox.NewProvider()
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}

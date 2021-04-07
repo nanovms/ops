@@ -31,13 +31,16 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.7.0
+	github.com/terra-farm/go-virtualbox v0.0.4
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
-	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
+	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
 	google.golang.org/api v0.30.0
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.55.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )
+
+replace github.com/terra-farm/go-virtualbox => ../../terra-farm/go-virtualbox
