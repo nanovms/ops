@@ -83,9 +83,9 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		return
 	}
 
-	modifyVm := exec.Command("VBoxManage", "modifyvm", vm.Name, "--memory", "1024")
+	modifyVM := exec.Command("VBoxManage", "modifyvm", vm.Name, "--memory", "1024")
 
-	err = modifyVm.Run()
+	err = modifyVM.Run()
 	if err != nil {
 		return
 	}
@@ -197,9 +197,9 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) (err e
 		return err
 	}
 
-	modifyVm := exec.Command("VBoxManage", "controlvm", vm.Name, "poweroff")
+	stopVMCmd := exec.Command("VBoxManage", "controlvm", vm.Name, "poweroff")
 
-	err = modifyVm.Run()
+	err = stopVMCmd.Run()
 
 	return
 }
