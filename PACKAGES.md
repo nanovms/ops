@@ -23,7 +23,7 @@ following:
 export PKGNAME=lua
 export PKGVERSION=5.2.4
 
-mkdir $PKGNAME_$PKGVERSION
+mkdir "$PKGNAME"_"$PKGVERSION"
 ```
 
 ### Populate it
@@ -88,7 +88,7 @@ using libc which will be necessary for ordinary applications.
 The name needs to reflect this format:
 
 ```
-tar czf $PKGNAME_PKGVERSION.tar.gz $PKGNAME_$PKGVERSION
+tar czf "$PKGNAME"_"$PKGVERSION".tar.gz "$PKGNAME"_"$PKGVERSION"
 ```
 
 ### Update the manifest.json
@@ -100,7 +100,7 @@ gsutil cp gs://packagehub/manifest.json .
 ```
 
 ```
-shasum -a 256 "$PKG_NAME"_"$PKGVERSION"
+shasum -a 256 "$PKGNAME"_"$PKGVERSION".tar.gz
 ```
 
 ```
