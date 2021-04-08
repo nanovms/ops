@@ -29,6 +29,8 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		return
 	}
 
+	vmPath = path.Join(vmPath, name)
+
 	imagesDir, err := findOrCreateVdiImagesDir()
 	if err != nil {
 		return
