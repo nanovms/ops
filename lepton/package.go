@@ -223,7 +223,9 @@ func ExtractPackage(archive string, dest string) {
 			if err != nil {
 				panic(err)
 			}
-
+			if err := f.Truncate(0); err != nil {
+				panic(err)
+			}
 			if _, err := io.Copy(f, tr); err != nil {
 				panic(err)
 			}
