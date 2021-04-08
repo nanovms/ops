@@ -1,41 +1,32 @@
-package hyperv
+package vbox
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
+
+	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
 
 var (
-	vhdxImagesDir = lepton.GetOpsHome() + "/vhdx-images"
+	vdiImagesDir = path.Join(lepton.GetOpsHome(), "vdi-images")
 )
 
-// BuildImage creates and converts a raw image to vhdx
+// BuildImage creates local image
 func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
-	imageType := strings.ToLower(c.CloudConfig.ImageType)
-	if imageType != "" {
-		if imageType == "gen1" {
-		} else if imageType == "gen2" {
-			c.Uefi = true
-		} else {
-			return "", fmt.Errorf("invalid image type '%s'; available types: 'gen1', 'gen2'", c.CloudConfig.ImageType)
-		}
-	}
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
 	}
 
-	imagePath, err := p.createVhdxImage(c)
+	imagePath, err := p.createVdiImage(c)
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +39,7 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 	return imagePath, nil
 }
 
-// BuildImageWithPackage creates and converts a raw image to vhdx using package image
+// BuildImageWithPackage creates local image using package image
 func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
@@ -56,7 +47,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	imagePath, err := p.createVhdxImage(c)
+	imagePath, err := p.createVdiImage(c)
 	if err != nil {
 		return "", err
 	}
@@ -69,36 +60,12 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 	return imagePath, nil
 }
 
-func (p *Provider) createVhdxImage(c *types.Config) (imagePath string, err error) {
-
-	vhdxImagesDir, err := findOrCreateHyperVImagesDir()
-	if err != nil {
-		return "", err
-	}
-
-	vhdxPath := path.Join(vhdxImagesDir, c.CloudConfig.ImageName+".vhdx")
-
-	args := []string{
-		"convert",
-		"-O", "vhdx",
-		c.RunConfig.Imagename, vhdxPath,
-	}
-
-	cmd := exec.Command("qemu-img", args...)
-	_, err = cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-
-	return vhdxPath, nil
-}
-
 // CreateImage is a stub
 func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
-// ListImages prints hyper-v images in table format
+// ListImages prints vcloud images in table format
 func (p *Provider) ListImages(ctx *lepton.Context) error {
 	images, err := p.GetImages(ctx)
 	if err != nil {
@@ -106,8 +73,9 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Path", "Size", "CreatedAt"})
+	table.SetHeader([]string{"UUID", "Name", "Status", "Size", "CreatedAt"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -115,8 +83,9 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 	table.SetRowLine(true)
 	for _, i := range images {
 		var row []string
+		row = append(row, i.ID)
 		row = append(row, i.Name)
-		row = append(row, i.Path)
+		row = append(row, i.Status)
 		row = append(row, lepton.Bytes2Human(i.Size))
 		row = append(row, lepton.Time2Human(i.Created))
 		table.Append(row)
@@ -125,13 +94,15 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetImages returns the list of images available to run hyper-v virtual machines
+// GetImages returns the list of images available
 func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err error) {
-	if _, err = os.Stat(vhdxImagesDir); os.IsNotExist(err) {
+	images = []lepton.CloudImage{}
+
+	if _, err = os.Stat(vdiImagesDir); os.IsNotExist(err) {
 		return
 	}
 
-	err = filepath.Walk(vhdxImagesDir, func(hostpath string, info os.FileInfo, err error) error {
+	err = filepath.Walk(vdiImagesDir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -140,9 +111,9 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 		}
 		name := info.Name()
 
-		if len(name) > 4 && strings.Contains(info.Name(), ".vhdx") {
+		if len(name) > 4 && strings.Contains(info.Name(), ".vdi") {
 			images = append(images, lepton.CloudImage{
-				Name:    strings.Replace(info.Name(), ".vhdx", "", 1),
+				Name:    strings.Replace(info.Name(), ".vdi", "", 1),
 				Path:    hostpath,
 				Size:    info.Size(),
 				Created: info.ModTime(),
@@ -154,14 +125,12 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 	return
 }
 
-// DeleteImage removes hyper-v image
-func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) error {
-	imgpath := path.Join(vhdxImagesDir, imagename+".vhdx")
-	err := os.Remove(imgpath)
-	if err != nil {
-		return err
-	}
-	return nil
+// DeleteImage removes VirtualBox image
+func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) (err error) {
+	imgpath := path.Join(vdiImagesDir, imagename+".vdi")
+	err = os.Remove(imgpath)
+
+	return
 }
 
 // ResizeImage is a stub
@@ -179,12 +148,35 @@ func (p *Provider) CustomizeImage(ctx *lepton.Context) (string, error) {
 	return "", errors.New("Unsupported")
 }
 
-func findOrCreateHyperVImagesDir() (string, error) {
-	if _, err := os.Stat(vhdxImagesDir); os.IsNotExist(err) {
-		os.MkdirAll(vhdxImagesDir, 0755)
+func (p *Provider) createVdiImage(c *types.Config) (imagePath string, err error) {
+	vdiImagesDir, err := findOrCreateVdiImagesDir()
+	if err != nil {
+		return
+	}
+
+	imagePath = path.Join(vdiImagesDir, c.CloudConfig.ImageName+".vdi")
+
+	args := []string{
+		"convert",
+		"-O", "vdi",
+		c.RunConfig.Imagename, imagePath,
+	}
+
+	cmd := exec.Command("qemu-img", args...)
+	_, err = cmd.CombinedOutput()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func findOrCreateVdiImagesDir() (string, error) {
+	if _, err := os.Stat(vdiImagesDir); os.IsNotExist(err) {
+		os.MkdirAll(vdiImagesDir, 0755)
 	} else if err != nil {
 		return "", err
 	}
 
-	return vhdxImagesDir, nil
+	return vdiImagesDir, nil
 }

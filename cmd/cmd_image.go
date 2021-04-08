@@ -77,11 +77,9 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(c.CloudConfig.BucketName) == 0 &&
-		c.CloudConfig.Platform != "onprem" &&
-		c.CloudConfig.Platform != "hyper-v" &&
-		c.CloudConfig.Platform != "upcloud" &&
-		c.CloudConfig.Platform != "openstack" &&
-		c.CloudConfig.Platform != "oci" {
+		(c.CloudConfig.Platform == "gcp" ||
+			c.CloudConfig.Platform == "aws" ||
+			c.CloudConfig.Platform == "azure") {
 		exitWithError("Please specify a cloud bucket in config")
 	}
 

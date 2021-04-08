@@ -5,6 +5,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
+	"github.com/nanovms/ops/wsl"
 )
 
 // Provider provides access to the Hyper-V API.
@@ -27,6 +28,10 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 		return err
 	} else if !isAdmin {
 		return errors.New("this feature is only supported on terminals with elevated privileges")
+	}
+
+	if !wsl.IsWSL() {
+		return errors.New("Hyper-v is only supported on WSL")
 	}
 
 	return nil

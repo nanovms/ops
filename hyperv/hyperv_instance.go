@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/wsl"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -38,7 +39,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 			return fmt.Errorf("invalid instance flavor '%s'; available flavors: 'gen1', 'gen2'", c.CloudConfig.Flavor)
 		}
 	}
-	windowsImagePath, err := convertPathFromWSLtoWindows(imagePath)
+	windowsImagePath, err := wsl.ConvertPathFromWSLtoWindows(imagePath)
 	if err != nil {
 		return err
 	}

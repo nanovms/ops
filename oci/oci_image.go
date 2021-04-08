@@ -84,7 +84,17 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	return ctx.Config().RunConfig.Imagename, nil
+	imagePath, err := p.createQcow2Image(c)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Remove(c.RunConfig.Imagename)
+	if err != nil {
+		return "", err
+	}
+
+	return imagePath, nil
 }
 
 // CreateImage creates a storage object and upload image
