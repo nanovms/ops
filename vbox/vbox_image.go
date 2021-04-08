@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/types"
+	"github.com/nanovms/ops/wsl"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
@@ -127,8 +128,25 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 
 // DeleteImage removes VirtualBox image
 func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) (err error) {
+
 	imgpath := path.Join(vdiImagesDir, imagename+".vdi")
-	err = os.Remove(imgpath)
+
+	if wsl.IsWSL() {
+		imgpath, err = wsl.ConvertPathFromWSLtoWindows(imgpath)
+		if err != nil {
+			return
+		}
+	}
+
+	cmd := exec.Command("VBoxManage", "closemedium", "disk", imgpath, "--delete")
+	if err != nil {
+		return
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		err = errors.New(string(output))
+	}
 
 	return
 }
