@@ -21,5 +21,6 @@ type CloudInstance struct {
 	Created    string // TODO: prob. should be datetime w/helpers for human formatting
 	PrivateIps []string
 	PublicIps  []string
+	Ports      []string
 	Image      string
 }

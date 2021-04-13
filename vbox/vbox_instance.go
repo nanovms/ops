@@ -12,6 +12,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/wsl"
 	"github.com/olekukonko/tablewriter"
+	"github.com/terra-farm/go-virtualbox"
 	vbox "github.com/terra-farm/go-virtualbox"
 )
 
@@ -106,6 +107,12 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		return
 	}
 
+	err = virtualbox.SetGuestProperty(vm.Name, "Image", imageName)
+	if err != nil {
+		ctx.Logger().Error("failed to set image as guest property")
+		return
+	}
+
 	err = vm.SetNIC(1, vbox.NIC{
 		Network:  vbox.NICNetNAT,
 		Hardware: vbox.VirtIO,
@@ -136,6 +143,15 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		}
 	}
 
+	// TODO: change go-virtualbox to read forwarding rules on listing instances instead of relying on a guest property
+	if len(ctx.Config().RunConfig.Ports) != 0 {
+		err = virtualbox.SetGuestProperty(vm.Name, "Ports", strings.Join(ctx.Config().RunConfig.Ports, ","))
+		if err != nil {
+			ctx.Logger().Error("failed to set ports as guest property")
+			return
+		}
+	}
+
 	return
 }
 
@@ -147,7 +163,7 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Name", "Status", "Private Ips", "Public Ips", "Image"})
+	table.SetHeader([]string{"ID", "Name", "Status", "Public Ips", "Ports", "Image"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -164,8 +180,8 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 		rows = append(rows, i.ID)
 		rows = append(rows, i.Name)
 		rows = append(rows, i.Status)
-		rows = append(rows, strings.Join(i.PrivateIps, ", "))
 		rows = append(rows, strings.Join(i.PublicIps, ", "))
+		rows = append(rows, strings.Join(i.Ports, ", "))
 		rows = append(rows, i.Image)
 
 		table.Append(rows)
@@ -186,10 +202,16 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 	}
 
 	for _, vm := range vms {
+		image, _ := virtualbox.GetGuestProperty(vm.Name, "Image")
+		ports, _ := virtualbox.GetGuestProperty(vm.Name, "Ports")
+
 		instances = append(instances, lepton.CloudInstance{
-			ID:     vm.UUID,
-			Name:   vm.Name,
-			Status: string(vm.State),
+			ID:        vm.UUID,
+			Name:      vm.Name,
+			PublicIps: []string{"127.0.0.1"},
+			Status:    string(vm.State),
+			Image:     image,
+			Ports:     []string{ports},
 		})
 	}
 
