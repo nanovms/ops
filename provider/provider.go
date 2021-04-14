@@ -19,6 +19,7 @@ import (
 	"github.com/nanovms/ops/vultr"
 )
 
+// CloudProvider is a factory that returns an existing provider based on provider type passed by argument
 func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provider, error) {
 	var provider lepton.Provider
 
