@@ -7,6 +7,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/provider"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
 )
@@ -293,8 +294,8 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 		c.CloudConfig.Zone = zone
 	}
 
-	provider, _ := cmd.Flags().GetString("target-cloud")
-	p, err := getCloudProvider(provider, &c.CloudConfig)
+	targetCloud, _ := cmd.Flags().GetString("target-cloud")
+	p, err := provider.CloudProvider(targetCloud, &c.CloudConfig)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -344,13 +345,13 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 		conf.CloudConfig.Zone = zone
 	}
 
-	src, err := getCloudProvider(source, &conf.CloudConfig)
+	src, err := provider.CloudProvider(source, &conf.CloudConfig)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
 	target, _ := cmd.Flags().GetString("target-cloud")
-	tar, err := getCloudProvider(target, &conf.CloudConfig)
+	tar, err := provider.CloudProvider(target, &conf.CloudConfig)
 	if err != nil {
 		exitWithError(err.Error())
 	}
