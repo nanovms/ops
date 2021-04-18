@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -42,6 +45,7 @@ func instanceCreateCommand() *cobra.Command {
 		Use:   "create <instance_name>",
 		Short: "create nanos instance",
 		Run:   instanceCreateCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
 	}
 
 	PersistCreateInstanceFlags(cmdInstanceCreate.PersistentFlags())
@@ -67,6 +71,14 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	c.CloudConfig.ImageName = args[0]
+
+	if matched, _ := regexp.Match(`.img$`, []byte(args[0])); !matched {
+		c.CloudConfig.ImageName = args[0] + ".img"
+	}
+
+	if _, err := os.Stat(path.Join(lepton.GetOpsHome(), "images", c.CloudConfig.ImageName)); os.IsNotExist(err) {
+		exitWithError(fmt.Sprintf("image \"%s\" not found", args[0]))
+	}
 
 	instanceName, _ := cmd.Flags().GetString("instance-name")
 
