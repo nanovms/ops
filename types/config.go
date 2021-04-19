@@ -181,6 +181,9 @@ type RunConfig struct {
 	// IPAddress
 	IPAddress string
 
+	// IPv6Address
+	IPv6Address string
+
 	// Klibs
 	Klibs []string
 

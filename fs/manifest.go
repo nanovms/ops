@@ -18,6 +18,7 @@ type link struct {
 // ManifestNetworkConfig has network configuration to set static IP
 type ManifestNetworkConfig struct {
 	IP      string
+	IPv6    string
 	Gateway string
 	NetMask string
 }
@@ -46,6 +47,7 @@ func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
 	m.root["ipaddr"] = networkConfig.IP
 	m.root["netmask"] = networkConfig.NetMask
 	m.root["gateway"] = networkConfig.Gateway
+	m.root["ip6addr"] = networkConfig.IPv6
 }
 
 // AddUserProgram adds user program

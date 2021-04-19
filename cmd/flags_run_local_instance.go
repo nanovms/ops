@@ -20,10 +20,7 @@ type RunLocalInstanceCommandFlags struct {
 	BridgeName     string
 	Debug          bool
 	Force          bool
-	Gateway        string
 	GDBPort        int
-	IPAddress      string
-	Netmask        string
 	NoTrace        []string
 	Ports          []string
 	SkipBuild      bool
@@ -81,18 +78,6 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 
 	if flags.BridgeName != "" {
 		c.RunConfig.BridgeName = flags.BridgeName
-	}
-
-	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
-		c.RunConfig.IPAddress = flags.IPAddress
-	}
-
-	if flags.Gateway != "" && isIPAddressValid(flags.Gateway) {
-		c.RunConfig.Gateway = flags.Gateway
-	}
-
-	if flags.Netmask != "" && isIPAddressValid(flags.Netmask) {
-		c.RunConfig.NetMask = flags.Netmask
 	}
 
 	if len(flags.NoTrace) > 0 {
@@ -163,22 +148,7 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
-	flags.Gateway, err = cmdFlags.GetString("gateway")
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
 	flags.GDBPort, err = cmdFlags.GetInt("gdbport")
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
-	flags.IPAddress, err = cmdFlags.GetString("ip-address")
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
-	flags.Netmask, err = cmdFlags.GetString("netmask")
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -243,9 +213,6 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.BoolP("bridged", "b", false, "bridge networking")
 	cmdFlags.StringP("bridgename", "", "", "bridge name")
 	cmdFlags.StringP("tapname", "t", "", "tap device name")
-	cmdFlags.String("ip-address", "", "static ip address")
-	cmdFlags.String("gateway", "", "network gateway")
-	cmdFlags.String("netmask", "255.255.255.0", "network mask")
 	cmdFlags.BoolP("skipbuild", "s", false, "skip building image")
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
