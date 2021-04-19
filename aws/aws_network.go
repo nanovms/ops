@@ -232,12 +232,18 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 		cidrBlocks = append(cidrBlocks, *v.CidrBlock)
 	}
 
-	_, err = svc.CreateVpc(&ec2.CreateVpcInput{
+	createInput := &ec2.CreateVpcInput{
 		CidrBlock: aws.String(network.AllocateNewCidrBlock(cidrBlocks)),
 		TagSpecifications: []*ec2.TagSpecification{
 			{Tags: tags, ResourceType: aws.String("vpc")},
 		},
-	})
+	}
+
+	if ctx.Config().CloudConfig.EnableIPv6 {
+		createInput.SetAmazonProvidedIpv6CidrBlock(true)
+	}
+
+	_, err = svc.CreateVpc(createInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
