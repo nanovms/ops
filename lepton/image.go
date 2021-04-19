@@ -289,9 +289,10 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 		m.AddMount(k, v)
 	}
 
-	if c.RunConfig.IPAddress != "" {
+	if c.RunConfig.IPAddress != "" || c.RunConfig.IPv6Address != "" {
 		m.AddNetworkConfig(&fs.ManifestNetworkConfig{
 			IP:      c.RunConfig.IPAddress,
+			IPv6:    c.RunConfig.IPv6Address,
 			Gateway: c.RunConfig.Gateway,
 			NetMask: c.RunConfig.NetMask,
 		})
@@ -320,9 +321,10 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		m.AddLibrary(libpath)
 	}
 
-	if c.RunConfig.IPAddress != "" {
+	if c.RunConfig.IPAddress != "" || c.RunConfig.IPv6Address != "" {
 		m.AddNetworkConfig(&fs.ManifestNetworkConfig{
 			IP:      c.RunConfig.IPAddress,
+			IPv6:    c.RunConfig.IPv6Address,
 			Gateway: c.RunConfig.Gateway,
 			NetMask: c.RunConfig.NetMask,
 		})

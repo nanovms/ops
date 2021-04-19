@@ -15,12 +15,16 @@ import (
 
 // BuildImageCommandFlags consolidates all command flags required to build an image in one struct
 type BuildImageCommandFlags struct {
-	Type       string
-	CmdArgs    []string
-	CmdEnvs    []string
-	ImageName  string
-	Mounts     []string
-	TargetRoot string
+	Type        string
+	CmdArgs     []string
+	CmdEnvs     []string
+	ImageName   string
+	Mounts      []string
+	TargetRoot  string
+	IPAddress   string
+	IPv6Address string
+	Netmask     string
+	Gateway     string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
@@ -88,6 +92,22 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		c.Args = append([]string{c.Program}, c.Args...)
 	}
 
+	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
+		c.RunConfig.IPAddress = flags.IPAddress
+	}
+
+	if flags.IPv6Address != "" {
+		c.RunConfig.IPv6Address = flags.IPv6Address
+	}
+
+	if flags.Gateway != "" && isIPAddressValid(flags.Gateway) {
+		c.RunConfig.Gateway = flags.Gateway
+	}
+
+	if flags.Netmask != "" && isIPAddressValid(flags.Netmask) {
+		c.RunConfig.NetMask = flags.Netmask
+	}
+
 	return
 }
 
@@ -126,6 +146,26 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 		exitWithError(err.Error())
 	}
 
+	flags.Gateway, err = cmdFlags.GetString("gateway")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.IPAddress, err = cmdFlags.GetString("ip-address")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.IPv6Address, err = cmdFlags.GetString("ipv6-address")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.Netmask, err = cmdFlags.GetString("netmask")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	return
 }
 
@@ -137,6 +177,10 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("imagename", "i", "", "image name")
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
+	cmdFlags.String("ip-address", "", "static ip address")
+	cmdFlags.String("ipv6-address", "", "static ipv6 address")
+	cmdFlags.String("gateway", "", "network gateway")
+	cmdFlags.String("netmask", "", "network mask")
 }
 
 func setNanosBaseImage(c *types.Config) {
