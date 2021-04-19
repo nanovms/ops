@@ -216,15 +216,14 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
-	var sg string
+	var sg *ec2.SecurityGroup
 
 	if ctx.Config().CloudConfig.SecurityGroup != "" && ctx.Config().CloudConfig.VPC != "" {
-		err = p.CheckValidSecurityGroup(ctx, svc)
+		sg, err = p.GetSecurityGroup(ctx, svc, vpc)
 		if err != nil {
 			return err
 		}
 
-		sg = ctx.Config().CloudConfig.SecurityGroup
 	} else {
 		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
 		if err != nil {
@@ -252,7 +251,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		MaxCount:     aws.Int64(1),
 		SubnetId:     aws.String(*subnet.SubnetId),
 		SecurityGroupIds: []*string{
-			aws.String(sg),
+			aws.String(*sg.GroupId),
 		},
 		TagSpecifications: []*ec2.TagSpecification{
 			{ResourceType: aws.String("instance"), Tags: tags},
