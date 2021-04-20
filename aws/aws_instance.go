@@ -208,17 +208,6 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	if vpc == nil && cloudConfig.VPC == "" {
-		return errors.New("no default vpc found")
-	} else if vpc == nil {
-		ctx.Logger().Debug("no vpc found")
-		ctx.Logger().Debug("creating VPC with name %s", cloudConfig.VPC)
-		vpc, err = p.CreateVPC(ctx, svc)
-		if err != nil {
-			return err
-		}
-	}
-
 	var sg *ec2.SecurityGroup
 
 	if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
