@@ -3,6 +3,7 @@ package aws
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -138,6 +139,14 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		}
 
 		if len(result.Vpcs) == 0 {
+			r, _ := regexp.Compile("^vpc-.*")
+
+			match := r.FindStringSubmatch(vpcName)
+
+			if len(match) == 0 {
+				return nil, nil
+			}
+
 			ctx.Logger().Debug("no vpcs with name %s found", vpcName)
 			ctx.Logger().Debug("getting vpcs filtered by id %s", vpcName)
 			input = &ec2.DescribeVpcsInput{
