@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -18,6 +19,16 @@ import (
 // assumes local
 func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	c := ctx.Config()
+
+	imageName := c.CloudConfig.ImageName
+
+	if matched, _ := regexp.Match(`.img$`, []byte(imageName)); !matched {
+		c.CloudConfig.ImageName = imageName + ".img"
+	}
+
+	if _, err := os.Stat(path.Join(lepton.GetOpsHome(), "images", c.CloudConfig.ImageName)); os.IsNotExist(err) {
+		return fmt.Errorf("image \"%s\" not found", imageName)
+	}
 
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {

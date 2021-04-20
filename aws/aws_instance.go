@@ -156,9 +156,11 @@ func (p *AWS) StopInstance(ctx *lepton.Context, instanceName string) error {
 
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *lepton.Context) error {
+	ctx.Logger().Debug("getting aws images")
 	result, err := getAWSImages(p.ec2)
 	if err != nil {
-		return errors.New("Invalid zone")
+		ctx.Logger().Error("failed getting images")
+		return err
 	}
 
 	imgName := ctx.Config().CloudConfig.ImageName
@@ -180,7 +182,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if image == nil {
-		return errors.New("can't find ami")
+		return fmt.Errorf("can't find ami with name %s", imgName)
 	}
 
 	ami = aws.StringValue(image.ImageId)
@@ -195,21 +197,22 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		last = t
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(ctx.Config().CloudConfig.Zone)},
-	)
-
-	// Create EC2 service client
-	svc := ec2.New(sess)
+	svc := p.ec2
+	cloudConfig := ctx.Config().CloudConfig
 
 	// create security group - could take a potential 'RemotePort' from
 	// config.json in future
+	ctx.Logger().Debug("getting vpc")
 	vpc, err := p.GetVPC(ctx, svc)
 	if err != nil {
 		return err
 	}
 
-	if vpc == nil {
+	if vpc == nil && cloudConfig.VPC == "" {
+		return errors.New("no default vpc found")
+	} else if vpc == nil {
+		ctx.Logger().Debug("no vpc found")
+		ctx.Logger().Debug("creating VPC with name %s", cloudConfig.VPC)
 		vpc, err = p.CreateVPC(ctx, svc)
 		if err != nil {
 			return err
@@ -218,35 +221,37 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	var sg *ec2.SecurityGroup
 
-	if ctx.Config().CloudConfig.SecurityGroup != "" && ctx.Config().CloudConfig.VPC != "" {
+	if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
+		ctx.Logger().Debug("getting security group with name %s", cloudConfig.SecurityGroup)
 		sg, err = p.GetSecurityGroup(ctx, svc, vpc)
 		if err != nil {
 			return err
 		}
-
 	} else {
+		ctx.Logger().Debug("creating new security group in vpc %s", *vpc.VpcId)
 		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
 		if err != nil {
 			return err
 		}
 	}
 
+	ctx.Logger().Debug("getting subnet")
 	subnet, err := p.GetSubnet(ctx, svc, *vpc.VpcId)
 	if err != nil {
 		return err
 	}
 
-	if ctx.Config().CloudConfig.Flavor == "" {
-		ctx.Config().CloudConfig.Flavor = "t2.micro"
+	if cloudConfig.Flavor == "" {
+		cloudConfig.Flavor = "t2.micro"
 	}
 
 	// Create tags to assign to the instance
-	tags, tagInstanceName := buildAwsTags(ctx.Config().CloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
+	tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
 	tags = append(tags, &ec2.Tag{Key: aws.String("image"), Value: &imgName})
 
 	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
-		InstanceType: aws.String(ctx.Config().CloudConfig.Flavor),
+		InstanceType: aws.String(cloudConfig.Flavor),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		SubnetId:     aws.String(*subnet.SubnetId),
@@ -260,6 +265,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	// Specify the details of the instance that you want to create.
+	ctx.Logger().Debug("running instance with input %v", instanceInput)
 	runResult, err := svc.RunInstances(instanceInput)
 
 	if err != nil {
@@ -270,12 +276,14 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
 
 	// create dns zones/records to associate DNS record to instance IP
-	if ctx.Config().CloudConfig.DomainName != "" {
+	if cloudConfig.DomainName != "" {
+		ctx.Logger().Debug("associating domain to the created instance")
 		pollCount := 60
 		for pollCount > 0 {
 			fmt.Printf(".")
 			time.Sleep(2 * time.Second)
 
+			ctx.Logger().Debug("getting instance")
 			instance, err := p.GetInstanceByID(ctx, tagInstanceName)
 			if err != nil {
 				pollCount--
@@ -283,6 +291,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			}
 
 			if len(instance.PublicIps) != 0 {
+				ctx.Logger().Debug("creating dns record %s with ip %s", cloudConfig.DomainName, instance.PublicIps[0])
 				err := lepton.CreateDNSRecord(ctx.Config(), instance.PublicIps[0], p)
 				if err != nil {
 					return err

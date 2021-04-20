@@ -117,12 +117,14 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 // GetVPC returns a vpc with the context vpc name or the default vpc
 func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	vpcName := ctx.Config().CloudConfig.VPC
+
 	var vpc *ec2.Vpc
 	var input *ec2.DescribeVpcsInput
 	var result *ec2.DescribeVpcsOutput
 	var err error
 
 	if vpcName != "" {
+		ctx.Logger().Debug("getting vpcs filtered by name %s", vpcName)
 		var filters []*ec2.Filter
 
 		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{vpcName})})
@@ -133,7 +135,11 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		result, err = svc.DescribeVpcs(input)
 		if err != nil {
 			return nil, fmt.Errorf("unable to describe VPCs, %v", err)
-		} else if len(result.Vpcs) == 0 {
+		}
+
+		if len(result.Vpcs) == 0 {
+			ctx.Logger().Debug("no vpcs with name %s found", vpcName)
+			ctx.Logger().Debug("getting vpcs filtered by id %s", vpcName)
 			input = &ec2.DescribeVpcsInput{
 				VpcIds: aws.StringSlice([]string{vpcName}),
 			}
@@ -142,34 +148,36 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 			}
 		}
+
+		ctx.Logger().Debug("found %d vpcs that match the criteria %s", len(result.Vpcs), vpcName)
+		vpc = result.Vpcs[0]
 	} else {
+		ctx.Logger().Debug("no vpc name specified")
+		ctx.Logger().Debug("getting all vpcs")
 		result, err = svc.DescribeVpcs(input)
 		if err != nil {
 			return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 		}
-	}
 
-	if len(result.Vpcs) == 0 && vpcName != "" {
-		return nil, nil
-	} else if len(result.Vpcs) == 0 {
-		return nil, errors.New("no VPCs found to associate security group with")
-	}
-
-	if vpcName != "" {
-		vpc = result.Vpcs[0]
-	} else {
 		// select default vpc
 		for i, s := range result.Vpcs {
 			isDefault := *s.IsDefault
 			if isDefault {
+				ctx.Logger().Debug("picking default vpc")
 				vpc = result.Vpcs[i]
 			}
 		}
 
 		// if there is no default VPC select the first vpc of the list
-		if vpc == nil {
+		if vpc == nil && len(result.Vpcs) != 0 {
+			ctx.Logger().Debug("no default vpc found")
 			vpc = result.Vpcs[0]
+			ctx.Logger().Debug("picking vpc %+v", vpc)
 		}
+	}
+
+	if vpc == nil {
+		return nil, errors.New("no VPCs found")
 	}
 
 	return vpc, nil
