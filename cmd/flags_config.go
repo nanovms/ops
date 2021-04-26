@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,13 @@ import (
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
+)
+
+var (
+	// ErrInvalidFileConfig is used when some error occurred on reading the configuration file. The message also provides instructions to search for how to set up configuration.
+	ErrInvalidFileConfig = func(err error) error {
+		return fmt.Errorf("failed converting configuration file: %v\nSee more details at https://nanovms.gitbook.io/ops/configuration", err)
+	}
 )
 
 // ConfigCommandFlags handles config file path flag and build configuration from the file
@@ -26,7 +34,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			c = &types.Config{}
 		}
 
-		unWarpConfig(flags.Config, c)
+		err = unWarpConfig(flags.Config, c)
 
 		return
 	} else if c == nil {
@@ -43,9 +51,18 @@ func unWarpConfig(file string, c *types.Config) (err error) {
 		fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
 		os.Exit(1)
 	}
-	err = json.Unmarshal(data, &c)
+
+	return ConvertJSONToConfig(data, c)
+}
+
+// ConvertJSONToConfig converts a byte array to an object of type configuration
+func ConvertJSONToConfig(data []byte, c *types.Config) (err error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+
+	err = dec.Decode(&c)
 	if err != nil {
-		return fmt.Errorf("error config: %v", err)
+		return ErrInvalidFileConfig(err)
 	}
 
 	c.VolumesDir = lepton.LocalVolumeDir
