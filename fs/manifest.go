@@ -369,6 +369,7 @@ func (m *Manifest) finalize() {
 			var ntpPort string
 			var ntpPollMin string
 			var ntpPollMax string
+			var ntpResetThreshold string
 
 			var pollMinNumber int
 			var pollMaxNumber int
@@ -395,6 +396,13 @@ func (m *Manifest) finalize() {
 				}
 			}
 
+			if val, ok := env["ntpResetThreshold"].(string); ok {
+				_, err = strconv.Atoi(val)
+				if err == nil {
+					ntpResetThreshold = val
+				}
+			}
+
 			if pollMinNumber != 0 && pollMaxNumber != 0 && pollMinNumber > pollMaxNumber {
 				ntpPollMin = ""
 				ntpPollMax = ""
@@ -414,6 +422,10 @@ func (m *Manifest) finalize() {
 
 			if ntpPollMax != "" {
 				m.root["ntp_poll_max"] = ntpPollMax
+			}
+
+			if ntpResetThreshold != "" {
+				m.root["ntp_reset_threshold"] = ntpResetThreshold
 			}
 		}
 	}
