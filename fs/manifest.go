@@ -358,6 +358,7 @@ func (m *Manifest) AddLibrary(path string) {
 	m.AddFileTo(node, parts[len(parts)-1], path)
 }
 
+// AddPassthrough to add key, value directly to manifest
 func (m *Manifest) AddPassthrough(key, value string) {
 	m.root[key] = value
 }
