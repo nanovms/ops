@@ -64,6 +64,9 @@ type Config struct {
 	// NoTrace
 	NoTrace []string
 
+	// Straight passthrough of options to manifest
+	ManifestPassthrough map[string]string
+
 	// Program
 	Program string
 

@@ -330,6 +330,10 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		})
 	}
 
+	for k, v := range c.ManifestPassthrough {
+		m.AddPassthrough(k, v)
+	}
+
 	return m, nil
 }
 
