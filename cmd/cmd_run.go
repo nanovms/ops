@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -38,12 +39,6 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	curdir, _ := os.Getwd()
 	c.ProgramPath = path.Join(curdir, c.Program)
 	checkProgramExists(c.Program)
-
-	if len(c.Args) == 0 {
-		c.Args = []string{c.Program}
-	} else {
-		c.Args = append([]string{c.Program}, c.Args...)
-	}
 
 	flags := cmd.Flags()
 

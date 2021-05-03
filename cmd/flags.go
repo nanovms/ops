@@ -1,6 +1,8 @@
 package cmd
 
-import "github.com/nanovms/ops/types"
+import (
+	"github.com/nanovms/ops/types"
+)
 
 // MergeConfigFlags are flags structures able to override ops configuration attributes
 type MergeConfigFlags interface {
