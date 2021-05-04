@@ -298,6 +298,10 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 		})
 	}
 
+	if len(c.RunConfig.Ports) != 0 {
+		m.AddEnvironmentVariable("OPS_PORT", strings.Join(c.RunConfig.Ports, ","))
+	}
+
 	return nil
 }
 
