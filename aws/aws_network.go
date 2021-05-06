@@ -222,10 +222,6 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		}
 	}
 
-	if vpc == nil {
-		return nil, errors.New("no VPCs found")
-	}
-
 	return vpc, nil
 }
 
