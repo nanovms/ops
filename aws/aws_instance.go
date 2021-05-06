@@ -233,9 +233,17 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	ctx.Logger().Debug("getting subnet")
-	subnet, err := p.GetSubnet(ctx, svc, *vpc.VpcId)
+	var subnet *ec2.Subnet
+	subnet, err = p.GetSubnet(ctx, svc, *vpc.VpcId)
 	if err != nil {
 		return err
+	}
+
+	if subnet == nil {
+		subnet, err = p.CreateSubnet(ctx, vpc)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cloudConfig.Flavor == "" {
@@ -261,16 +269,19 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		},
 	}
 
+	if ctx.Config().CloudConfig.EnableIPv6 {
+		instanceInput.SetIpv6AddressCount(1)
+	}
+
 	// Specify the details of the instance that you want to create.
 	ctx.Logger().Debug("running instance with input %v", instanceInput)
-	runResult, err := svc.RunInstances(instanceInput)
-
+	_, err = svc.RunInstances(instanceInput)
 	if err != nil {
 		fmt.Println("Could not create instance", err)
 		return err
 	}
 
-	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
+	fmt.Println("Created instance", tagInstanceName)
 
 	// create dns zones/records to associate DNS record to instance IP
 	if cloudConfig.DomainName != "" {
