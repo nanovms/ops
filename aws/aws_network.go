@@ -392,6 +392,84 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 	}
 
 	vpc, err = p.GetVPC(ctx, svc)
+	if err != nil {
+		return
+	}
+
+	// Add routes to allow external traffic
+	var routeTable *ec2.RouteTable
+	rtFilters := []*ec2.Filter{{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{*vpc.VpcId})}}
+	err = svc.DescribeRouteTablesPages(&ec2.DescribeRouteTablesInput{Filters: rtFilters}, func(page *ec2.DescribeRouteTablesOutput, lastPage bool) bool {
+		if len(page.RouteTables) != 0 {
+			routeTable = page.RouteTables[0]
+		}
+
+		return false
+	})
+	if err != nil {
+		return
+	}
+
+	if routeTable == nil {
+		// it's unlikely that there is no routeTable
+		// a route table is created and associated to the vpc when the vpc is created
+		err = errors.New("vpc does not have any route table associated")
+		return
+	}
+
+	var gw *ec2.InternetGateway
+	gwFilters := []*ec2.Filter{{Name: aws.String("attachment.vpc-id"), Values: aws.StringSlice([]string{*vpc.VpcId})}}
+	err = svc.DescribeInternetGatewaysPages(&ec2.DescribeInternetGatewaysInput{Filters: gwFilters}, func(page *ec2.DescribeInternetGatewaysOutput, lastPage bool) bool {
+		if len(page.InternetGateways) != 0 {
+			gw = page.InternetGateways[0]
+		}
+
+		return false
+	})
+	if err != nil {
+		return
+	}
+
+	if gw == nil {
+		gwInput := &ec2.CreateInternetGatewayInput{}
+		gwOutput, err := svc.CreateInternetGateway(gwInput)
+		if err != nil {
+			err = fmt.Errorf("failed creating an Internet Gateway: %v", err)
+			return nil, err
+		}
+
+		_, err = svc.AttachInternetGateway(&ec2.AttachInternetGatewayInput{VpcId: vpc.VpcId, InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId})
+		if err != nil {
+			err = fmt.Errorf("failed attaching an Internet Gateway to a VPC: %v", err)
+			return nil, err
+		}
+
+		gw = &ec2.InternetGateway{InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId}
+	}
+
+	if ctx.Config().CloudConfig.EnableIPv6 {
+		createRouteInput := &ec2.CreateRouteInput{
+			DestinationIpv6CidrBlock: aws.String("::/0"),
+			RouteTableId:             routeTable.RouteTableId,
+			GatewayId:                gw.InternetGatewayId,
+		}
+		_, err = svc.CreateRoute(createRouteInput)
+		if err != nil {
+			err = fmt.Errorf("failed creating ipv6 public route: %v", err)
+			return
+		}
+	}
+
+	createRouteInput := &ec2.CreateRouteInput{
+		DestinationCidrBlock: aws.String("0.0.0.0/24"),
+		RouteTableId:         routeTable.RouteTableId,
+		GatewayId:            gw.InternetGatewayId,
+	}
+	_, err = svc.CreateRoute(createRouteInput)
+	if err != nil {
+		err = fmt.Errorf("failed creating ipv4 public route: %v", err)
+		return
+	}
 
 	return
 }
