@@ -3,6 +3,7 @@ package aws
 import (
 	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -71,21 +72,31 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
 
 	if subnetName != "" {
-		result, err = svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
-			Filters: append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{subnetName})}),
-		})
-		if err != nil {
-			err = fmt.Errorf("unable to describe subnets, %v", err)
-			return nil, err
-		} else if len(result.Subnets) == 0 {
+		subnetIDRegexp, _ := regexp.Compile("^subnet-.+")
+
+		if subnetIDRegexp.Match([]byte(subnetName)) {
 			result, err = svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
 				SubnetIds: aws.StringSlice([]string{subnetName}),
 				Filters:   filters,
 			})
 			if err != nil {
+				err = fmt.Errorf("unable to describe subnets, %v", err)
+				return nil, err
+			}
+		} else {
+			result, err = svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
+				Filters: append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{subnetName})}),
+			})
+			if err != nil {
+				err = fmt.Errorf("unable to describe subnets, %v", err)
 				return nil, err
 			}
 		}
+
+		if len(result.Subnets) != 0 {
+			return result.Subnets[0], nil
+		}
+
 	} else {
 		input := &ec2.DescribeSubnetsInput{
 			Filters: filters,
@@ -99,20 +110,49 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 	}
 
 	if len(result.Subnets) == 0 && subnetName != "" {
-		return nil, fmt.Errorf("no subnets with name '%v' found to associate security group with", subnetName)
+		return nil, nil
 	} else if len(result.Subnets) == 0 {
-		return nil, errors.New("no subnets found to associate security group with")
+		return nil, nil
 	}
 
-	if subnetName != "" {
-		for _, subnet := range result.Subnets {
-			if *subnet.DefaultForAz {
-				return subnet, nil
-			}
+	for _, subnet := range result.Subnets {
+		if *subnet.DefaultForAz {
+			return subnet, nil
 		}
 	}
 
 	return result.Subnets[0], nil
+}
+
+// CreateSubnet creates a subnet on vpc
+func (p *AWS) CreateSubnet(ctx *lepton.Context, vpc *ec2.Vpc) (subnet *ec2.Subnet, err error) {
+	tags, _ := buildAwsTags([]types.Tag{}, ctx.Config().CloudConfig.Subnet)
+
+	createSubnetInput := &ec2.CreateSubnetInput{
+		VpcId:     vpc.VpcId,
+		CidrBlock: vpc.CidrBlock,
+		TagSpecifications: []*ec2.TagSpecification{
+			{Tags: tags, ResourceType: aws.String("subnet")},
+		},
+	}
+
+	// set an ipv6 CIDR block in subnet if associated vpc has a ipv6 CIDR range
+	if len(vpc.Ipv6CidrBlockAssociationSet) != 0 {
+		ipv6Addr, _, err := net.ParseCIDR(*vpc.Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock)
+		if err != nil {
+			return nil, err
+		}
+		createSubnetInput.Ipv6CidrBlock = types.StringPtr(ipv6Addr.String() + "/64")
+	}
+
+	result, err := p.ec2.CreateSubnet(createSubnetInput)
+	if err != nil {
+		return
+	}
+
+	subnet = result.Subnet
+
+	return
 }
 
 // GetVPC returns a vpc with the context vpc name or the default vpc
@@ -125,28 +165,9 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	var err error
 
 	if vpcName != "" {
-		ctx.Logger().Debug("getting vpcs filtered by name %s", vpcName)
-		var filters []*ec2.Filter
+		vpcIDRegexp, _ := regexp.Compile("^vpc-.+")
 
-		filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{vpcName})})
-		input = &ec2.DescribeVpcsInput{
-			Filters: filters,
-		}
-
-		result, err = svc.DescribeVpcs(input)
-		if err != nil {
-			return nil, fmt.Errorf("unable to describe VPCs, %v", err)
-		}
-
-		if len(result.Vpcs) == 0 {
-			r, _ := regexp.Compile("^vpc-.*")
-
-			match := r.FindStringSubmatch(vpcName)
-
-			if len(match) == 0 {
-				return nil, nil
-			}
-
+		if vpcIDRegexp.Match([]byte(vpcName)) {
 			ctx.Logger().Debug("no vpcs with name %s found", vpcName)
 			ctx.Logger().Debug("getting vpcs filtered by id %s", vpcName)
 			input = &ec2.DescribeVpcsInput{
@@ -156,10 +177,26 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 			if err != nil {
 				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 			}
+		} else {
+			ctx.Logger().Debug("getting vpcs filtered by name %s", vpcName)
+			var filters []*ec2.Filter
+
+			filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{vpcName})})
+			input = &ec2.DescribeVpcsInput{
+				Filters: filters,
+			}
+
+			result, err = svc.DescribeVpcs(input)
+			if err != nil {
+				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
+			}
 		}
 
 		ctx.Logger().Debug("found %d vpcs that match the criteria %s", len(result.Vpcs), vpcName)
-		vpc = result.Vpcs[0]
+
+		if len(result.Vpcs) != 0 {
+			return result.Vpcs[0], nil
+		}
 	} else {
 		ctx.Logger().Debug("no vpc name specified")
 		ctx.Logger().Debug("getting all vpcs")
@@ -185,18 +222,16 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		}
 	}
 
-	if vpc == nil {
-		return nil, errors.New("no VPCs found")
-	}
-
 	return vpc, nil
 }
 
-func (p AWS) buildFirewallRule(protocol string, port string) *ec2.IpPermission {
+func (p AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *ec2.IpPermission {
 	fromPort := port
 	toPort := port
 
-	if strings.Contains(port, "-") {
+	portsIntervalRegexp, _ := regexp.Compile(`\d+-\d+`)
+
+	if match := portsIntervalRegexp.FindStringSubmatch(port); len(match) != 0 {
 		rangeParts := strings.Split(port, "-")
 		fromPort = rangeParts[0]
 		toPort = rangeParts[1]
@@ -216,9 +251,18 @@ func (p AWS) buildFirewallRule(protocol string, port string) *ec2.IpPermission {
 	ec2Permission.SetIpProtocol(protocol)
 	ec2Permission.SetFromPort(int64(fromPortInt))
 	ec2Permission.SetToPort(int64(toPortInt))
-	ec2Permission.SetIpRanges([]*ec2.IpRange{
-		{CidrIp: aws.String("0.0.0.0/0")},
-	})
+
+	if ipv4 {
+		ec2Permission.SetIpRanges([]*ec2.IpRange{
+			{CidrIp: aws.String("0.0.0.0/0")},
+		})
+	}
+
+	if ipv6 {
+		ec2Permission.SetIpv6Ranges([]*ec2.Ipv6Range{
+			{CidrIpv6: aws.String("::/0")},
+		})
+	}
 
 	return ec2Permission
 }
@@ -257,13 +301,20 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, imgName string, vpcID 
 
 	var ec2Permissions []*ec2.IpPermission
 
+	var ipv6 bool
+	if ctx.Config().CloudConfig.EnableIPv6 {
+		rule := p.buildFirewallRule("icmpv6", "-1", false, true)
+		ec2Permissions = append(ec2Permissions, rule)
+		ipv6 = true
+	}
+
 	for _, port := range ctx.Config().RunConfig.Ports {
-		rule := p.buildFirewallRule("tcp", port)
+		rule := p.buildFirewallRule("tcp", port, true, ipv6)
 		ec2Permissions = append(ec2Permissions, rule)
 	}
 
 	for _, port := range ctx.Config().RunConfig.UDPPorts {
-		rule := p.buildFirewallRule("udp", port)
+		rule := p.buildFirewallRule("udp", port, true, ipv6)
 		ec2Permissions = append(ec2Permissions, rule)
 	}
 
@@ -341,18 +392,6 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 	}
 
 	vpc, err = p.GetVPC(ctx, svc)
-
-	if err == nil {
-		tags, _ = buildAwsTags([]types.Tag{}, ctx.Config().CloudConfig.Subnet)
-
-		_, err = svc.CreateSubnet(&ec2.CreateSubnetInput{
-			VpcId:     vpc.VpcId,
-			CidrBlock: vpc.CidrBlock,
-			TagSpecifications: []*ec2.TagSpecification{
-				{Tags: tags, ResourceType: aws.String("subnet")},
-			},
-		})
-	}
 
 	return
 }
