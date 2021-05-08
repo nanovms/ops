@@ -1,4 +1,4 @@
-package lepton
+package log
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type Logger struct {
 }
 
 // NewLogger returns an instance of Logger
-func NewLogger(output io.Writer) *Logger {
+func New(output io.Writer) *Logger {
 	return &Logger{output, false, false, false, false}
 }
 
