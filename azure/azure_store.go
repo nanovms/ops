@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -61,7 +61,7 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 	cmd := exec.Command("qemu-img", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	qi := &qemuInfo{}
@@ -73,19 +73,19 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32) {
 	in, err := os.Open(basePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 	defer in.Close()
 
 	out, err := os.Create(newPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	szstr := fmt.Sprint(resizeSz)
@@ -98,7 +98,7 @@ func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32)
 	cmd := exec.Command("qemu-img", args...)
 	_, err = cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 }
 
@@ -137,7 +137,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	cmd := exec.Command("qemu-img", args...)
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	ctx := context.Background()
@@ -147,7 +147,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 		fmt.Printf("Creating a container named %s\n", containerName)
 		_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 		}
 	}
 
@@ -155,13 +155,13 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 	file, err := os.Open(vhdPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 	defer file.Close()
 
 	fi, err := file.Stat()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	max := 4194304
@@ -176,7 +176,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	_, err = blobURL.Create(ctx, length, 0, azblob.BlobHTTPHeaders{},
 		azblob.Metadata{}, azblob.BlobAccessConditions{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
 	for i := 0; i < q; i++ {
@@ -185,8 +185,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err.Error())
 		}
 	}
 

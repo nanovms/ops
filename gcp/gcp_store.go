@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	storage "cloud.google.com/go/storage"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -20,9 +21,8 @@ func (s *Storage) CopyToBucket(config *types.Config, archPath string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
-		os.Exit(1)
+		log.Error(err.Error())
+		log.Fatal("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
 	}
 
 	defer client.Close()

@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -117,7 +118,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	} else {
 		fmt.Println("Image created")
 	}

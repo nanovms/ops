@@ -14,6 +14,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/pagination"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -24,7 +25,7 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	pager := servers.List(client, opts)
@@ -32,7 +33,7 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 	err = pager.EachPage(func(page pagination.Page) (bool, error) {
 		serverList, err := servers.ExtractServers(page)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 			return false, err
 		}
 
@@ -87,14 +88,14 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 func (o *OpenStack) CreateInstance(ctx *lepton.Context) error {
 	client, err := o.getComputeClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	imageName := ctx.Config().CloudConfig.ImageName
 
 	imageID, err := o.findImage(imageName)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return err
 	}
 
@@ -103,7 +104,7 @@ func (o *OpenStack) CreateInstance(ctx *lepton.Context) error {
 	flavorID, err := o.findFlavorByName(ctx.Config().CloudConfig.Flavor)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	fmt.Printf("Deploying flavorID %s\n", flavorID)
@@ -279,17 +280,17 @@ func (o *OpenStack) DeleteInstance(ctx *lepton.Context, instancename string) err
 func (o *OpenStack) StartInstance(ctx *lepton.Context, instancename string) error {
 	client, err := o.getComputeClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	server, err := o.findInstance(instancename)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	err = startstop.Start(client, server.ID).ExtractErr()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	return nil
@@ -299,17 +300,17 @@ func (o *OpenStack) StartInstance(ctx *lepton.Context, instancename string) erro
 func (o *OpenStack) StopInstance(ctx *lepton.Context, instancename string) error {
 	client, err := o.getComputeClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	server, err := o.findInstance(instancename)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	err = startstop.Stop(client, server.ID).ExtractErr()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	return nil
@@ -320,7 +321,7 @@ func (o *OpenStack) findInstance(name string) (volume *servers.Server, err error
 
 	client, err := o.getComputeClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	opts := servers.ListOpts{}
@@ -330,7 +331,7 @@ func (o *OpenStack) findInstance(name string) (volume *servers.Server, err error
 	err = pager.EachPage(func(page pagination.Page) (bool, error) {
 		serverList, err := servers.ExtractServers(page)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 			return false, err
 		}
 

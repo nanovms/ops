@@ -7,6 +7,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/provider"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
@@ -256,7 +257,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	for range imagesToDelete {
 		err = <-responses
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 		}
 	}
 }

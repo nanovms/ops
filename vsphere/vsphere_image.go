@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
@@ -66,7 +67,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return err
 	}
 
@@ -76,7 +77,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return err
 	}
 
@@ -94,7 +95,7 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return nil, err
 	}
 
@@ -111,12 +112,12 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 
 	task, err := search(context.TODO(), ds.Path(""), &spec)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	info, err := task.WaitForResult(context.TODO(), nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	switch r := info.Result.(type) {

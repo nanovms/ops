@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/wsl"
 	"github.com/olekukonko/tablewriter"
 )
@@ -142,7 +143,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 
 			date, err := time.Parse("02/01/2006 15:04:05", cols[2]+" "+cols[3])
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err.Error())
 				continue
 			}
 

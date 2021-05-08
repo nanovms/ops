@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -112,8 +113,7 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/snapshot/list", nil)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 	token := os.Getenv("TOKEN")
 
@@ -122,21 +122,19 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	var data map[string]vultrSnap
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)

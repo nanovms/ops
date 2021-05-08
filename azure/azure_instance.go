@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -213,7 +214,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 
 	_, err = future.Result(*vmClient)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	if ctx.Config().CloudConfig.DomainName != "" {
@@ -300,7 +301,7 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine, nicClie
 
 	pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 	publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
 
@@ -478,8 +479,7 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceView)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	// this is unique per vm || per boot?
