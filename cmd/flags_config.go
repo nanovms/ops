@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
@@ -51,8 +52,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 func unWarpConfig(file string, c *types.Config) (err error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
-		os.Exit(1)
+		log.Fatal("error reading config: %v\n", err)
 	}
 
 	return ConvertJSONToConfig(data, c)

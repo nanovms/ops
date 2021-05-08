@@ -152,8 +152,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 	file, err := os.Open(description)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 	defer file.Close()
 

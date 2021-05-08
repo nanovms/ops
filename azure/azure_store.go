@@ -221,14 +221,12 @@ func containerExists(containerURL azblob.ContainerURL) bool {
 func getContainerURL(containerName string) azblob.ContainerURL {
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
-		fmt.Println("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
-		os.Exit(1)
+		log.Fatal("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
 	}
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		fmt.Println("Invalid credentials with error: " + err.Error())
-		os.Exit(1)
+		log.Fatal("Invalid credentials with error: " + err.Error())
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 
