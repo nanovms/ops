@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/minio/minio-go"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -24,8 +25,7 @@ func (s *Spaces) getSignedURL(key string, bucket string, region string) string {
 
 	client, err := minio.New(endpoint, accessKey, secKey, ssl)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	reqParams := make(url.Values)
@@ -33,7 +33,7 @@ func (s *Spaces) getSignedURL(key string, bucket string, region string) string {
 	presignedURL, err := client.PresignedGetObject(bucket, key, time.Second*5*60, reqParams)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return ""
 	}
 
@@ -55,14 +55,12 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	client, err := s.getMinioClient(config)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	bucket := config.CloudConfig.BucketName
@@ -70,8 +68,7 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	n, err := client.PutObject(bucket, key, file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	fmt.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
@@ -94,13 +91,12 @@ func (s *Spaces) DeleteFromBucket(config *types.Config, key string) error {
 
 	client, err := s.getMinioClient(config)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	err = client.RemoveObject(bucket, key)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return err
 	}
 

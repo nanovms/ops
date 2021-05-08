@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 // PackageCommands gives package related commands
@@ -75,7 +75,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		packages, err = api.GetPackageList()
 	}
 	if err != nil {
-		log.Panicf("failed getting packages: %s", err)
+		log.Panic("failed getting packages: %s", err)
 	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
@@ -164,8 +164,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 }
 

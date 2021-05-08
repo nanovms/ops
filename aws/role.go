@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/nanovms/ops/log"
 )
 
 const vmiName = "vmimport"
@@ -115,7 +116,7 @@ func appendBucket(role string, bucket string) string {
 	rp := &RolePolicy{}
 	err := json.Unmarshal([]byte(role), rp)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	for i := 0; i < len(rp.Statement); i++ {
@@ -130,7 +131,7 @@ func appendBucket(role string, bucket string) string {
 
 	b, err := json.Marshal(rp)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	return string(b)
@@ -138,8 +139,8 @@ func appendBucket(role string, bucket string) string {
 }
 
 func roleError(bucket string, err error) {
-	fmt.Println(err)
-	fmt.Println(roleMsg)
+	log.Error(err.Error())
+	log.Error(roleMsg)
 
 	rp := strings.ReplaceAll(rolePolicy, "my-bucket", bucket)
 

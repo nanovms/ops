@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -149,15 +150,13 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 func sha256Of(filename string) string {
 	f, err := os.Open(filename)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -183,8 +182,7 @@ func ExtractPackage(archive string, dest string) {
 		}
 
 		if (*list)[fname].SHA256 != sha {
-			fmt.Println("This package doesn't match what is in the manifest.")
-			os.Exit(1)
+			log.Fatal("This package doesn't match what is in the manifest.")
 		}
 
 	}

@@ -10,11 +10,18 @@ import (
 
 var defaultLogger *Logger
 
+// Make sure default logger instantiated by default.
+func init() {
+	defaultLogger = New(os.Stdout)
+	defaultLogger.SetWarn(true)
+	defaultLogger.SetError(true)
+}
+
 // InitDefaultLogger creates default logger for package-level logging access.
 func InitDefault(output io.Writer, config *types.Config) {
 	defaultLogger = New(output)
 	if config == nil {
-		defaultLogger.SetInfo(true)
+		defaultLogger.SetWarn(true)
 		defaultLogger.SetError(true)
 		return
 	}

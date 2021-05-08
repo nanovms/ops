@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -60,9 +61,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	}
 	result, err := compute.DescribeInstances(&request)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("failed getting instances")
-		os.Exit(1)
+		log.Fatal("failed getting instances: ", err.Error())
 	}
 
 	var cinstances []lepton.CloudInstance

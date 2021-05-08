@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/qemu"
 	"github.com/olekukonko/tablewriter"
 )
@@ -69,12 +70,12 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 
 	d1, err := json.Marshal(i)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	return nil
@@ -200,7 +201,7 @@ func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error 
 
 	err = sysKill(pid)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 	}
 
 	opshome := lepton.GetOpsHome()
@@ -228,8 +229,7 @@ func (p *OnPrem) GetInstanceLogs(ctx *lepton.Context, instancename string) (stri
 
 	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 
 	return string(body), nil

@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -39,7 +40,7 @@ func newQemu() Hypervisor {
 func (q *qemu) Stop() {
 	if q.cmd != nil {
 		if err := q.cmd.Process.Kill(); err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 		}
 
 		// do not print errors as the command could be started with Run()
@@ -82,11 +83,11 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 		}
 	} else {
 		if err := q.cmd.Run(); err != nil {
-			fmt.Println(err)
+			log.Error(err.Error())
 		}
 	}
 

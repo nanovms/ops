@@ -13,23 +13,27 @@ import (
 func GetRootCommand() *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use: "ops",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			var config *types.Config
+
 			configFlag, _ := cmd.Flags().GetString("config")
 			configFlag = strings.TrimSpace(configFlag)
 
-			config := &types.Config{}
-			if err := unWarpConfig(configFlag, config); err != nil {
-				return err
-			}
+			if configFlag != "" {
+				config := &types.Config{}
+				if err := unWarpConfig(configFlag, config); err != nil {
+					return err
+				}
 
-			globalFlags := NewGlobalCommandFlags(cmd.Flags())
-			if err := globalFlags.MergeToConfig(config); err != nil {
-				return err
-			}
+				globalFlags := NewGlobalCommandFlags(cmd.Flags())
+				if err := globalFlags.MergeToConfig(config); err != nil {
+					return err
+				}
 
-			zone, _ := cmd.Flags().GetString("zone")
-			if zone != "" {
-				config.CloudConfig.Zone = zone
+				zone, _ := cmd.Flags().GetString("zone")
+				if zone != "" {
+					config.CloudConfig.Zone = zone
+				}
 			}
 
 			log.InitDefault(os.Stdout, config)

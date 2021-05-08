@@ -37,7 +37,6 @@ func BuildBasicProgram() (binaryPath string) {
 	cmd := exec.Command("go", "build", sourcePath)
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println(err)
 		log.Fatal(err)
 	}
 

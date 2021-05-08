@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/spf13/cobra"
 )
 
@@ -33,13 +34,11 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	if local == "0.0" || parseVersion(local, 4) != parseVersion(remote, 4) || os.IsNotExist(err) {
 		err = api.DownloadReleaseImages(remote)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err.Error())
 		}
 		err = api.DownloadCommonFiles()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err.Error())
 		}
 		api.UpdateLocalRelease(remote)
 		fmt.Printf("Update nanos to %s version.\n", remote)
