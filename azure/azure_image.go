@@ -201,7 +201,7 @@ func (a *Azure) DeleteImage(ctx *lepton.Context, imagename string) error {
 
 // SyncImage syncs image from provider to another provider
 func (a *Azure) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 
