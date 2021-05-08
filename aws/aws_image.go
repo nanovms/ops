@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 
@@ -373,7 +374,7 @@ func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
 
 // SyncImage syncs image from provider to another provider
 func (p *AWS) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 

@@ -169,7 +169,7 @@ func (v *Vultr) DeleteImage(ctx *lepton.Context, snapshotID string) error {
 
 // SyncImage syncs image from provider to another provider
 func (v *Vultr) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 
