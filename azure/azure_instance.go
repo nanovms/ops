@@ -202,14 +202,12 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		},
 	)
 	if err != nil {
-		fmt.Printf("cannot create vm: %v\n", err.Error())
-		os.Exit(1)
+		log.Fatal("cannot create vm: %v\n", err.Error())
 	}
 
 	err = future.WaitForCompletionRef(nctx, vmClient.Client)
 	if err != nil {
-		fmt.Printf("cannot get the vm create or update future response: %v\n", err.Error())
-		os.Exit(1)
+		log.Fatal("cannot get the vm create or update future response: %v\n", err.Error())
 	}
 
 	_, err = future.Result(*vmClient)

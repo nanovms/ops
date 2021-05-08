@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nanovms/ops/types"
-
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/ttacon/chalk"
 )
@@ -71,13 +71,11 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Kernel, err)
-		os.Exit(1)
+		log.Fatal("error: %v: %v\n", c.Kernel, err)
 	}
 
 	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "error: %v: %v\n", c.Boot, err)
-		os.Exit(1)
+		log.Fatal("error: %v: %v\n", c.Boot, err)
 	}
 
 	if c.NameServer == "" {

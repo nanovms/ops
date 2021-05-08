@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 func checkProgramExists(program string) {
@@ -13,7 +13,6 @@ func checkProgramExists(program string) {
 	_, err1 := os.Stat(program)
 
 	if os.IsNotExist(err) && os.IsNotExist(err1) {
-		fmt.Fprintf(os.Stderr, "error: %v: %v\n", program, err)
-		os.Exit(1)
+		log.Fatal("error: %v: %v\n", program, err)
 	}
 }

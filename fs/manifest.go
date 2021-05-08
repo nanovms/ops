@@ -302,8 +302,7 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 
 	s, err := os.Readlink(hostpath)
 	if err != nil {
-		fmt.Println("bad link")
-		os.Exit(1)
+		log.Fatal("bad link")
 	}
 
 	node[parts[len(parts)-1]] = link{path: s}
