@@ -54,12 +54,12 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		log.Panic(err.Error())
 	}
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 }
 
 func (v *Vultr) destroyImage(snapshotid string) {
@@ -82,7 +82,7 @@ func (v *Vultr) destroyImage(snapshotid string) {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 }
 
 // CreateImage - Creates image on v using nanos images

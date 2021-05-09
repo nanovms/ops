@@ -311,7 +311,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 	vm, err := f.VirtualMachine(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			fmt.Println("can't find vm " + instancename)
+			log.Error("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}
@@ -411,9 +411,9 @@ func (v *Vsphere) iphackEnabled() bool {
 
 func (v *Vsphere) setGuestIPHack() {
 	if v.iphackEnabled() {
-		fmt.Println("ip hack enabled")
+		log.Info("ip hack enabled")
 	} else {
-		fmt.Println("setting ip hack")
+		log.Info("setting ip hack")
 
 		args := []string{"system", "settings", "advanced", "set", "-o", "/Net/GuestIPHack", "-i", "1"}
 
@@ -425,11 +425,9 @@ func (v *Vsphere) setGuestIPHack() {
 		debug := false // FIXME: should have a debug log throughout OPS
 		if debug {
 			for _, val := range res.Values {
-				fmt.Println(val)
+				log.Debug(fmt.Sprint(val))
 			}
-
 		}
-
 	}
 
 	fmt.Println("IP hack has been enabled for all new ARP requests, however, for existing hosts the easiest way to trigger that is to simply reboot the vm.")
@@ -451,7 +449,7 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			fmt.Println("can't find vm " + instancename)
+			log.Error("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}
@@ -498,7 +496,7 @@ func (v *Vsphere) StartInstance(ctx *lepton.Context, instancename string) error 
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			fmt.Println("can't find vm " + instancename)
+			log.Error("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}

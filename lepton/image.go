@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -513,7 +514,7 @@ func DownloadFileWithProgress(filepath string, url string, timeout int) error {
 
 // DownloadFile downloads file using URL
 func DownloadFile(filepath string, url string, timeout int, showProgress bool) error {
-	fmt.Println("Downloading..", url)
+	log.Info("Downloading..", url)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err

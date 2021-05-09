@@ -48,7 +48,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 
 	return nil
 }
@@ -140,7 +140,7 @@ func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 	return nil
 }
 
@@ -165,7 +165,7 @@ func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 	return nil
 }
 
@@ -190,7 +190,7 @@ func (v *Vultr) StopInstance(ctx *lepton.Context, instanceID string) error {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 	return nil
 }
 

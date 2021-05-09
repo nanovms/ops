@@ -276,11 +276,11 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("running instance with input %v", instanceInput)
 	_, err = svc.RunInstances(instanceInput)
 	if err != nil {
-		fmt.Println("Could not create instance", err)
+		log.Error("Could not create instance", err)
 		return err
 	}
 
-	fmt.Println("Created instance", tagInstanceName)
+	log.Info("Created instance", tagInstanceName)
 
 	// create dns zones/records to associate DNS record to instance IP
 	if cloudConfig.DomainName != "" {
@@ -383,10 +383,10 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err.Error())
 		}
 		return err
 	}
@@ -428,10 +428,10 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err.Error())
 		}
 		return "", err
 	}

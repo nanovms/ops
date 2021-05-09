@@ -357,10 +357,10 @@ func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err.Error())
 		}
 		return nil, err
 	}
@@ -400,7 +400,7 @@ func (p *AWS) waitSnapshotToBeReady(config *types.Config, importTaskID *string) 
 		return nil, err
 	}
 
-	fmt.Println("waiting for snapshot - can take like 5 min...")
+	log.Info("waiting for snapshot - can take like 5 min...")
 
 	waitStartTime := time.Now()
 	bar := progressbar.New(100)

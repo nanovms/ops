@@ -22,12 +22,12 @@ func UpdateCommand() *cobra.Command {
 }
 
 func updateCommandHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("Checking for updates...")
+	log.Info("Checking for updates...")
 	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, runtime.GOOS))
 	if err != nil {
-		fmt.Println("Failed to update.", err)
+		log.Error("Failed to update.", err)
 	} else {
-		fmt.Println("Updates ops to latest release.")
+		log.Info("Updates ops to latest release.")
 	}
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
 	_, err = os.Stat(path.Join(api.GetOpsHome(), local))
