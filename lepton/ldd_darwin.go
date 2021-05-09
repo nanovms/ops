@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"debug/elf"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
