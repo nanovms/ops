@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -219,15 +220,31 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
-
 	pkgFlags.Package = args[0]
-
 	c := lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
+	}
+
+	// Validate local package
+	packageFolder := filepath.Base(pkgFlags.PackagePath())
+	executableName := c.Program
+	if strings.Contains(executableName, packageFolder) {
+		executableName = filepath.Base(executableName)
+	}
+	executablePath := filepath.Join(pkgFlags.PackagePath(), executableName)
+
+	if runtime.GOOS == "linux" {
+		valid, err := lepton.IsELF(executablePath)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+		if !valid {
+			exitWithError(fmt.Sprintf("package %s has invalid executable", packageFolder))
+		}
 	}
 
 	if !runLocalInstanceFlags.SkipBuild {
