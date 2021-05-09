@@ -122,7 +122,8 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	pool, err := f.ResourcePoolOrDefault(context.TODO(), v.resourcePool)
 	if err != nil {
 		log.Error(err.Error())
-		log.Fatal("Did you set the correct Resource Pool? https://nanovms.gitbook.io/ops/vsphere#create-instance ")
+		fmt.Println("Did you set the correct Resource Pool? https://nanovms.gitbook.io/ops/vsphere#create-instance ")
+		os.Exit(1)
 	}
 
 	task, err := folder.CreateVM(context.TODO(), *spec, pool, nil)
@@ -311,7 +312,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 	vm, err := f.VirtualMachine(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			log.Error("can't find vm " + instancename)
+			fmt.Println("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}
@@ -449,7 +450,7 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			log.Error("can't find vm " + instancename)
+			fmt.Println("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}
@@ -496,7 +497,7 @@ func (v *Vsphere) StartInstance(ctx *lepton.Context, instancename string) error 
 	vms, err := f.VirtualMachineList(context.TODO(), instancename)
 	if err != nil {
 		if _, ok := err.(*find.NotFoundError); ok {
-			log.Error("can't find vm " + instancename)
+			fmt.Println("can't find vm " + instancename)
 		}
 		log.Error(err.Error())
 	}
