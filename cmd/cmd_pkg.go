@@ -266,7 +266,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 			if pid != "" {
 				message += fmt.Sprintf(" (PID %s)", pid)
 			}
-			exitWithError(message + "\n")
+			exitWithError(message)
 		}
 	}
 
