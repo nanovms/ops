@@ -254,7 +254,7 @@ func VerifyRole(zone string, bucket string) {
 }
 
 func createRole(svc *iam.IAM, bucket string) error {
-	fmt.Println("creating a vmimport role for bucket " + bucket)
+	log.Info("creating a vmimport role for bucket " + bucket)
 
 	ri := &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(vmieDoc),

@@ -120,7 +120,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 	if err != nil {
 		log.Error(err.Error())
 	} else {
-		fmt.Println("Image created")
+		log.Info("Image created")
 	}
 
 	return nil

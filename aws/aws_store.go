@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -40,7 +41,7 @@ func (s *S3) CopyToBucket(config *types.Config, archPath string) error {
 	}
 
 	fileStats, _ := file.Stat()
-	fmt.Println("Uploading image with", fmt.Sprintf("%fMB", float64(fileStats.Size())/math.Pow(10, 6)))
+	log.Info("Uploading image with", fmt.Sprintf("%fMB", float64(fileStats.Size())/math.Pow(10, 6)))
 
 	uploader := s3manager.NewUploader(sess)
 	_, err = uploader.Upload(&s3manager.UploadInput{
@@ -80,10 +81,10 @@ func (s *S3) DeleteFromBucket(config *types.Config, key string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err.Error())
 		}
 		return err
 	}

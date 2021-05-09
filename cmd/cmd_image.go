@@ -223,7 +223,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if len(imagesToDelete) == 0 {
-		fmt.Println("There are no images to delete")
+		log.Info("There are no images to delete")
 		return
 	}
 

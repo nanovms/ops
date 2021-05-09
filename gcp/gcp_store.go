@@ -31,12 +31,12 @@ func (s *Storage) CopyToBucket(config *types.Config, archPath string) error {
 	_, err = bucket.Attrs(ctx)
 	if err != nil {
 		// Creates the new bucket.
-		fmt.Println("creating bucket:", config.CloudConfig.BucketName)
+		log.Info("creating bucket:", config.CloudConfig.BucketName)
 		if err := bucket.Create(ctx, config.CloudConfig.ProjectID, nil); err != nil {
 			return fmt.Errorf("failed to create bucket: %+v", err)
 		}
 	} else {
-		fmt.Println("bucket found:", config.CloudConfig.BucketName)
+		log.Info("bucket found:", config.CloudConfig.BucketName)
 	}
 
 	wr := bucket.Object(filepath.Base(archPath)).NewWriter(ctx)

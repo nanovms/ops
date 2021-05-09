@@ -42,7 +42,7 @@ func (v *Vsphere) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (st
 }
 
 func (v *Vsphere) createImage(key string, bucket string, region string) {
-	fmt.Println("un-implemented")
+	log.Warn("un-implemented")
 }
 
 // CreateImage - Creates image on vsphere using nanos images
@@ -134,7 +134,7 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 			}
 		}
 	case vmwareTypes.ArrayOfHostDatastoreBrowserSearchResults:
-		fmt.Println("un-implemented")
+		log.Warn("un-implemented")
 	}
 
 	return cimages, nil
@@ -173,7 +173,7 @@ func (v *Vsphere) ListImages(ctx *lepton.Context) error {
 
 // DeleteImage deletes image from VSphere
 func (v *Vsphere) DeleteImage(ctx *lepton.Context, imagename string) error {
-	fmt.Println("un-implemented")
+	log.Warn("un-implemented")
 	return nil
 }
 

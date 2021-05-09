@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -68,7 +69,7 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 // with the given volume label
 // label can refer to volume UUID or volume label
 func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string) error {
-	fmt.Println("not implemented")
+	log.Warn("not implemented")
 	fmt.Println("use <ops run> or <ops pkg load> with --mounts flag instead")
 	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
 	fmt.Println("and run it with <ops instance create -t onprem>")
@@ -77,7 +78,7 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string) error {
 
 // DetachVolume detaches volume
 func (op *OnPrem) DetachVolume(ctx *lepton.Context, image, name string) error {
-	fmt.Println("not implemented")
+	log.Warn("not implemented")
 	return nil
 }
 

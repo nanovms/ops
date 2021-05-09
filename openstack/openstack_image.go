@@ -113,7 +113,7 @@ func (o *OpenStack) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	imgName = strings.ReplaceAll(imgName, "-image", "")
 
-	fmt.Println("creating image:\t" + imgName)
+	log.Info("creating image:\t" + imgName)
 
 	imagesClient, err := o.getImagesClient()
 	if err != nil {

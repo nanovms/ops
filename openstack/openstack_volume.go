@@ -10,6 +10,7 @@ import (
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -76,7 +77,7 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, size, provider
 		return vol, err
 	}
 
-	fmt.Println("creating volume...")
+	log.Info("creating volume...")
 	err = volumes.WaitForStatus(volumesClient, r.ID, "available", 60)
 	if err != nil {
 		return vol, err

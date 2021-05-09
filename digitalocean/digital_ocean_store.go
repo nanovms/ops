@@ -71,9 +71,9 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
+	log.Info("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 
-	fmt.Printf("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
+	log.Info("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
 
 	policy := `{"Version": "2012-10-17","Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": {"AWS": ["*"]},"Resource": ["arn:aws:s3:::ops/` + key + `"],"Sid": ""}]}`
 

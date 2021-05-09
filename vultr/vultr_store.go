@@ -1,7 +1,6 @@
 package vultr
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"time"
@@ -19,8 +18,7 @@ func (s *Objects) getSignedURL(key string, bucket string, region string) string 
 	secKey := os.Getenv("VULTR_SECRET")
 
 	if accessKey == "" || secKey == "" {
-		fmt.Println("danger will robinson - can not find VULTR_ACCESS || VULTR_SECRET env vars")
-		os.Exit(1)
+		log.Fatal("danger will robinson - can not find VULTR_ACCESS || VULTR_SECRET env vars")
 	}
 
 	endpoint := region + ".vultrobjects.com"
@@ -78,9 +76,9 @@ func (s *Objects) CopyToBucket(config *types.Config, archPath string) error {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
+	log.Info("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 
-	fmt.Printf("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
+	log.Info("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
 
 	return nil
 }
