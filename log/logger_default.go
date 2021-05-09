@@ -13,28 +13,29 @@ var defaultLogger *Logger
 // Make sure default logger instantiated by default.
 func init() {
 	defaultLogger = New(os.Stdout)
-	defaultLogger.SetWarn(true)
-	defaultLogger.SetError(true)
 }
 
 // InitDefaultLogger creates default logger for package-level logging access.
 func InitDefault(output io.Writer, config *types.Config) {
 	defaultLogger = New(output)
-	defaultLogger.SetError(true)
 
 	if config == nil {
-		defaultLogger.SetWarn(true)
 		return
 	}
 
 	if config.RunConfig.ShowDebug {
 		defaultLogger.SetDebug(true)
 		defaultLogger.SetWarn(true)
+		defaultLogger.SetError(true)
 		defaultLogger.SetInfo(true)
 	}
 
 	if config.RunConfig.ShowWarnings {
 		defaultLogger.SetWarn(true)
+	}
+
+	if config.RunConfig.ShowErrors {
+		defaultLogger.SetError(true)
 	}
 
 	if config.RunConfig.Verbose {
