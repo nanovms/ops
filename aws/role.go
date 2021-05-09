@@ -140,7 +140,7 @@ func appendBucket(role string, bucket string) string {
 
 func roleError(bucket string, err error) {
 	log.Error(err.Error())
-	log.Error(roleMsg)
+	fmt.Println(roleMsg)
 
 	rp := strings.ReplaceAll(rolePolicy, "my-bucket", bucket)
 
