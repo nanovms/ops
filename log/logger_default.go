@@ -20,25 +20,21 @@ func init() {
 // InitDefaultLogger creates default logger for package-level logging access.
 func InitDefault(output io.Writer, config *types.Config) {
 	defaultLogger = New(output)
+	defaultLogger.SetError(true)
+
 	if config == nil {
 		defaultLogger.SetWarn(true)
-		defaultLogger.SetError(true)
 		return
 	}
 
 	if config.RunConfig.ShowDebug {
 		defaultLogger.SetDebug(true)
-		defaultLogger.SetError(true)
 		defaultLogger.SetWarn(true)
 		defaultLogger.SetInfo(true)
 	}
 
 	if config.RunConfig.ShowWarnings {
 		defaultLogger.SetWarn(true)
-	}
-
-	if config.RunConfig.ShowErrors {
-		defaultLogger.SetError(true)
 	}
 
 	if config.RunConfig.Verbose {
