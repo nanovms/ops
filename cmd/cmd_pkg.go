@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -219,8 +221,19 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
-
 	pkgFlags.Package = args[0]
+
+	for _, port := range runLocalInstanceFlags.Ports {
+		conn, err := net.DialTimeout("tcp", ":"+port, time.Second)
+		if err != nil {
+			continue // assume port is not being used
+		}
+
+		if conn != nil {
+			conn.Close()
+			exitWithError(fmt.Sprintf("Port %v is being used by other application\n", port))
+		}
+	}
 
 	c := lepton.NewConfig()
 
