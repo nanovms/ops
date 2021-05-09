@@ -6,9 +6,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -230,7 +232,40 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 		if conn != nil {
 			conn.Close()
-			exitWithError(fmt.Sprintf("Port %v is being used by other application\n", port))
+
+			var (
+				pid     string
+				message = fmt.Sprintf("Port %v is being used by other application", port)
+			)
+
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				cmd := exec.Command("lsof", "-i", ":"+port)
+				out, err := cmd.Output()
+				if err == nil {
+					scanner := bufio.NewScanner(strings.NewReader(string(out)))
+					scanner.Scan() // check header first
+					cols := excludeWhitespaces(strings.Split(scanner.Text(), " "))
+					headerIdx := -1
+					for i, v := range cols {
+						if strings.ToLower(v) == "pid" {
+							headerIdx = i
+							break
+						}
+					}
+
+					scanner.Scan()
+					line := strings.Trim(scanner.Text(), " ")
+					if line != "" {
+						cols = excludeWhitespaces(strings.Split(line, " "))
+						pid = cols[headerIdx]
+					}
+				}
+			}
+
+			if pid != "" {
+				message += fmt.Sprintf(" (PID %s)", pid)
+			}
+			exitWithError(message + "\n")
 		}
 	}
 
@@ -252,4 +287,15 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+}
+
+func excludeWhitespaces(arr []string) []string {
+	result := make([]string, 0)
+	for _, h := range arr {
+		if h == "" {
+			continue
+		}
+		result = append(result, h)
+	}
+	return result
 }
