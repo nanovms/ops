@@ -15,7 +15,7 @@ func init() {
 	defaultLogger = New(os.Stdout)
 }
 
-// InitDefaultLogger creates default logger for package-level logging access.
+// InitDefault creates default logger for package-level logging access.
 func InitDefault(output io.Writer, config *types.Config) {
 	defaultLogger = New(output)
 

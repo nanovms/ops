@@ -14,7 +14,7 @@ type Logger struct {
 	debug  bool
 }
 
-// NewLogger returns an instance of Logger
+// New returns an instance of Logger
 func New(output io.Writer) *Logger {
 	return &Logger{output, false, false, false, false}
 }
