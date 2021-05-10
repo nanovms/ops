@@ -326,9 +326,9 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	} else {
 		q.addOption("-machine", "virt")
 
-		q.addOption("-machine", "gic-version=3")
+		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
-		q.addOption("-kernel", "/home/ubuntu/.ops/0.1.31/kernel.img")
+		q.addOption("-kernel", "./kernel.img")
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
 
