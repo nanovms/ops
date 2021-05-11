@@ -29,11 +29,6 @@ func GetRootCommand() *cobra.Command {
 				if err := globalFlags.MergeToConfig(config); err != nil {
 					return err
 				}
-
-				zone, _ := cmd.Flags().GetString("zone")
-				if zone != "" {
-					config.CloudConfig.Zone = zone
-				}
 			}
 
 			log.InitDefault(os.Stdout, config)
