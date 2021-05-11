@@ -70,12 +70,12 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 
 	d1, err := json.Marshal(i)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	return nil
@@ -201,7 +201,7 @@ func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error 
 
 	err = sysKill(pid)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	opshome := lepton.GetOpsHome()

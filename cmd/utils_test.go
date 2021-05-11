@@ -58,7 +58,7 @@ func buildInstance(imageName string) string {
 
 	err := createInstanceCmd.Execute()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	return instanceName

@@ -29,13 +29,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
 	subnet, err := p.GetSubnet(ctx)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed getting subnet")
 	}
 
 	sg, err := p.CreateNetworkSecurityGroup(ctx, *subnet.VcnId)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed creating network security group")
 	}
 
@@ -67,7 +67,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		},
 	})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed launching instance")
 	}
 
@@ -83,7 +83,7 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 
 	err = p.AddInstancesNetworkDetails(ctx, &instances)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		err = errors.New("failed getting instances network details")
 		return
 	}
@@ -129,7 +129,7 @@ func (p *Provider) AddInstancesNetworkDetails(ctx *lepton.Context, instances *[]
 		instance := (*instances)[i]
 		vnicsAttachments, err := p.computeClient.ListVnicAttachments(context.TODO(), core.ListVnicAttachmentsRequest{CompartmentId: &p.compartmentID, InstanceId: &instance.ID})
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			responses <- errors.New("failed getting vnic attachments of instance " + instance.ID + "\n")
 			return
 		}
@@ -137,7 +137,7 @@ func (p *Provider) AddInstancesNetworkDetails(ctx *lepton.Context, instances *[]
 		for _, vnic := range vnicsAttachments.Items {
 			vnicDetails, err := p.networkClient.GetVnic(context.TODO(), core.GetVnicRequest{VnicId: vnic.VnicId})
 			if err != nil {
-				ctx.Logger().Error(err.Error())
+				ctx.Logger().Error(err)
 				responses <- errors.New("failed getting details of vnic " + *vnic.VnicId + "\n")
 				return
 			}
@@ -216,13 +216,13 @@ func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (instance *le
 func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	instance, err := p.GetInstanceByID(ctx, instancename)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")
 	}
 
 	_, err = p.computeClient.TerminateInstance(context.TODO(), core.TerminateInstanceRequest{InstanceId: &instance.ID})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed terminate instance")
 	}
 
@@ -233,13 +233,13 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) erro
 func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error {
 	instance, err := p.GetInstanceByID(ctx, instancename)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")
 	}
 
 	_, err = p.computeClient.InstanceAction(context.TODO(), core.InstanceActionRequest{Action: core.InstanceActionActionStop, InstanceId: &instance.ID})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed terminate instance")
 	}
 
@@ -250,13 +250,13 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error 
 func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error {
 	instance, err := p.GetInstanceByID(ctx, instancename)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")
 	}
 
 	_, err = p.computeClient.InstanceAction(context.TODO(), core.InstanceActionRequest{Action: core.InstanceActionActionStart, InstanceId: &instance.ID})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed terminate instance")
 	}
 

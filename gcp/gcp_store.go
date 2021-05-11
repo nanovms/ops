@@ -21,7 +21,7 @@ func (s *Storage) CopyToBucket(config *types.Config, archPath string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		log.Fatal("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
 	}
 

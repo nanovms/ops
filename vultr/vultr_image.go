@@ -134,7 +134,7 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)

@@ -67,14 +67,14 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	if configVPC != "" {
 		vnet, err = a.GetVPC(configVPC)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return fmt.Errorf("error getting virtual network with id %s", configVPC)
 		}
 	} else {
 		ctx.Logger().Info("creating virtual network with id %s", vmName)
 		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("error creating virtual network")
 		}
 	}
@@ -85,14 +85,14 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	if configSecurityGroup != "" {
 		nsg, err = a.GetNetworkSecurityGroup(context.TODO(), configSecurityGroup)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("error getting security group")
 		}
 	} else {
 		ctx.Logger().Info("creating network security group with id %s", vmName)
 		nsg, err = a.CreateNetworkSecurityGroup(context.TODO(), location, vmName, c)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("error creating network security group")
 		}
 	}
@@ -103,14 +103,14 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	if configSubnet != "" {
 		subnet, err = a.GetVirtualNetworkSubnet(context.TODO(), *vnet.Name, configSubnet)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("error getting subnet")
 		}
 	} else {
 		ctx.Logger().Info("creating subnet with id %s", vmName)
 		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("error creating subnet")
 		}
 	}
@@ -119,7 +119,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Info("creating public ip with id %s", vmName)
 	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("error creating public ip")
 	}
 
@@ -128,7 +128,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Info("creating network interface controller with id %s", vmName)
 	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("error creating network interface controller")
 	}
 
@@ -212,7 +212,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 
 	_, err = future.Result(*vmClient)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	if ctx.Config().CloudConfig.DomainName != "" {
@@ -299,7 +299,7 @@ func (a *Azure) convertToCloudInstance(instance *compute.VirtualMachine, nicClie
 
 	pubip, err := ipClient.Get(context.TODO(), a.groupName, cinstance.Name, "")
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 	publicIP = *(*pubip.PublicIPAddressPropertiesFormat).IPAddress
 
@@ -358,13 +358,13 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	ctx.Logger().Info("Deleting vm with ID %s...", instancename)
 	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("Unable to delete instance")
 	}
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("error waiting for vm deletion")
 	}
 
@@ -378,7 +378,7 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 
 		nic, err := nicClient.Get(context.TODO(), a.groupName, nicID, "")
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			return errors.New("failed getting nic")
 		}
 
@@ -416,7 +416,7 @@ func (a *Azure) StartInstance(ctx *lepton.Context, instancename string) error {
 	fmt.Printf("Starting instance %s", instancename)
 	_, err := vmClient.Start(context.TODO(), a.groupName, instancename)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed starting virtual machine")
 	}
 

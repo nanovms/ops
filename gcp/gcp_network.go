@@ -48,14 +48,14 @@ func (p *GCloud) findOrCreateVPC(ctx *lepton.Context, computeService *compute.Se
 		ctx.Logger().Info("Creating vpc with name %s", vpcName)
 		network, err = p.CreateVPC(computeService, c.CloudConfig.ProjectID, vpcName)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			ctx.Logger().Error(err)
 			err = fmt.Errorf("failed creating vpc %s", vpcName)
 			return
 		}
 		ctx.Logger().Info("vpc created")
 
 	} else if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		err = fmt.Errorf("failed getting vpc %s", vpcName)
 	}
 
@@ -126,7 +126,7 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 				err = fmt.Errorf("make sure you have subnet \"%s\" under vpc \"%s\" in region \"%s\"", subnetName, vpcName, region)
 				return
 			} else if err != nil {
-				ctx.Logger().Error(err.Error())
+				ctx.Logger().Error(err)
 				err = fmt.Errorf("failed getting subnet %s", subnetName)
 				return
 			}

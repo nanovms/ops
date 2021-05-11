@@ -35,7 +35,7 @@ func (s *Objects) getSignedURL(key string, bucket string, region string) string 
 	presignedURL, err := client.PresignedGetObject(bucket, key, time.Second*5*60, reqParams)
 
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return ""
 	}
 

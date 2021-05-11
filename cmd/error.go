@@ -15,14 +15,14 @@ func exitWithError(errs string) {
 }
 
 func exitForCmd(cmd *cobra.Command, errs string) {
-	log.Error(fmt.Sprintf(constants.ErrorColor, errs))
+	log.Errorf(constants.ErrorColor, errs)
 	cmd.Help()
 	os.Exit(1)
 }
 
 func panicOnError(err error) {
 	if err != nil {
-		log.Error(err.(*errors.Error).ErrorStack())
+		log.Errorf(err.(*errors.Error).ErrorStack())
 		panic(err)
 	}
 }

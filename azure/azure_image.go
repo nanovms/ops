@@ -118,7 +118,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	} else {
 		log.Info("Image created")
 	}

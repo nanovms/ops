@@ -88,7 +88,7 @@ func getImageTempDir(c *types.Config) string {
 	if c.BuildDir == "" {
 		dir, err := ioutil.TempDir("", temp)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 
 		c.BuildDir = dir

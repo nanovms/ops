@@ -19,7 +19,7 @@ func SubtractTimeNotation(date time.Time, notation string) (newDate time.Time, e
 
 	n, err := strconv.Atoi(groups[1])
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return newDate, err
 	}
 

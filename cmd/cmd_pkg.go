@@ -146,7 +146,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 	description := path.Join(expackage, "README.md")
 	if _, err := os.Stat(description); err != nil {
-		log.Error("Error: Package information not provided.")
+		log.Errorf("Error: Package information not provided.")
 		return
 	}
 

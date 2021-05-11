@@ -39,7 +39,7 @@ func newQemu() Hypervisor {
 func (q *qemu) Stop() {
 	if q.cmd != nil {
 		if err := q.cmd.Process.Kill(); err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 
 		// do not print errors as the command could be started with Run()
@@ -82,11 +82,11 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	} else {
 		if err := q.cmd.Run(); err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	}
 

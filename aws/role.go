@@ -116,7 +116,7 @@ func appendBucket(role string, bucket string) string {
 	rp := &RolePolicy{}
 	err := json.Unmarshal([]byte(role), rp)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	for i := 0; i < len(rp.Statement); i++ {
@@ -131,7 +131,7 @@ func appendBucket(role string, bucket string) string {
 
 	b, err := json.Marshal(rp)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	return string(b)
@@ -139,7 +139,7 @@ func appendBucket(role string, bucket string) string {
 }
 
 func roleError(bucket string, err error) {
-	log.Error(err.Error())
+	log.Error(err)
 	fmt.Println(roleMsg)
 
 	rp := strings.ReplaceAll(rolePolicy, "my-bucket", bucket)

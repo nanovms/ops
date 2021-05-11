@@ -48,7 +48,7 @@ func (o *OpenStack) findImage(name string) (id string, err error) {
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	listOpts := images.ListOpts{
@@ -117,12 +117,12 @@ func (o *OpenStack) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	imagesClient, err := o.getImagesClient()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	image, err := o.createImage(imagesClient, imgName)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	imagePath = lepton.LocalImageDir + "/" + imgName + ".img"
@@ -142,7 +142,7 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	listOpts := images.ListOpts{
@@ -156,7 +156,7 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 
 	allImages, err := images.ExtractImages(allPages)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	for _, image := range allImages {
@@ -212,18 +212,18 @@ func (o *OpenStack) deleteImage(imagesClient *gophercloud.ServiceClient, imageID
 func (o *OpenStack) DeleteImage(ctx *lepton.Context, imagename string) error {
 	imageID, err := o.findImage(imagename)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return err
 	}
 
 	imageClient, err := o.getImagesClient()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	err = images.Delete(imageClient, imageID).ExtractErr()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return err
 	}
 

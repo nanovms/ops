@@ -25,7 +25,7 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	log.Info("Checking for updates...")
 	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, runtime.GOOS))
 	if err != nil {
-		log.Error("Failed to update.", err)
+		log.Errorf("Failed to update.", err)
 	} else {
 		log.Info("Updates ops to latest release.")
 	}

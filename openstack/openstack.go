@@ -41,7 +41,7 @@ func (o *OpenStack) Initialize(config *types.ProviderConfig) error {
 func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 	client, err := o.getComputeClient()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	listOpts := flavors.ListOpts{

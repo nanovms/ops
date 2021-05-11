@@ -192,7 +192,7 @@ func (m *Manifest) AddDirectory(dir string, workDir string) error {
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
 					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
-					log.Error(err.Error())
+					log.Error(err)
 					return err
 				}
 				node = node[parts[i]].(map[string]interface{})
@@ -244,7 +244,7 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
 					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
-					log.Error(err.Error())
+					log.Error(err)
 					return err
 				}
 				node = node[parts[i]].(map[string]interface{})
@@ -292,7 +292,7 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
 		err := fmt.Errorf("file %s overriding an existing directory", filepath)
-		log.Error(err.Error())
+		log.Error(err)
 		return err
 	}
 

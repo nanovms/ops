@@ -36,7 +36,7 @@ func (p *Profile) save() {
 
 	err := ioutil.WriteFile(local, []byte(str), 0644)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 }
 
@@ -47,7 +47,7 @@ func (p *Profile) setProfile() {
 
 	qv, err := qemu.Version()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	p.QemuVersion = qv
@@ -70,7 +70,7 @@ func (p *Profile) virtualized() bool {
 
 	content, err := ioutil.ReadFile(s)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	text := string(content)

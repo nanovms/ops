@@ -61,7 +61,7 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 	cmd := exec.Command("qemu-img", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	qi := &qemuInfo{}
@@ -73,19 +73,19 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32) {
 	in, err := os.Open(basePath)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 	defer in.Close()
 
 	out, err := os.Create(newPath)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	szstr := fmt.Sprint(resizeSz)
@@ -98,7 +98,7 @@ func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32)
 	cmd := exec.Command("qemu-img", args...)
 	_, err = cmd.Output()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 }
 
@@ -137,7 +137,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	cmd := exec.Command("qemu-img", args...)
 	err := cmd.Run()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	ctx := context.Background()
@@ -147,7 +147,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 		fmt.Printf("Creating a container named %s\n", containerName)
 		_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	}
 
@@ -155,13 +155,13 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 	file, err := os.Open(vhdPath)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 	defer file.Close()
 
 	fi, err := file.Stat()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	max := 4194304

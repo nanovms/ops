@@ -113,13 +113,13 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 
 	image, err := p.fileSystem.Open(imagePath)
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return fmt.Errorf("failed reading file %s", imagePath)
 	}
 
 	imageStats, err := image.Stat()
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return fmt.Errorf("failed getting file stats of %s", imagePath)
 	}
 
@@ -133,7 +133,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		PutObjectBody: image,
 	})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed uploading image")
 	}
 
@@ -152,7 +152,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		},
 	})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return errors.New("failed importing image from storage")
 	}
 
@@ -221,7 +221,7 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 
 	imagesList, err := p.computeClient.ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr(p.compartmentID)})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		return nil, errors.New("failed getting images")
 	}
 
