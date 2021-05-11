@@ -51,17 +51,21 @@ func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
 }
 
 // AddUserProgram adds user program
-func (m *Manifest) AddUserProgram(imgpath string) {
+func (m *Manifest) AddUserProgram(imgpath string) (err error) {
 	parts := strings.Split(imgpath, "/")
 	if parts[0] == "." {
 		parts = parts[1:]
 	}
 	program := path.Join("/", path.Join(parts...))
-	err := m.AddFile(program, imgpath)
+
+	err = m.AddFile(program, imgpath)
 	if err != nil {
-		panic(err)
+		return
 	}
+
 	m.SetProgram(program)
+
+	return
 }
 
 // SetProgram sets user program

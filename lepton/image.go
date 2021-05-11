@@ -313,8 +313,12 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 
 	addCommonFilesToManifest(m)
 
-	m.AddUserProgram(c.Program)
-	err := setManifestFromConfig(m, c)
+	err := m.AddUserProgram(c.Program)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setManifestFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
