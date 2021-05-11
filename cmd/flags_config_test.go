@@ -39,7 +39,8 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 				NetMask:   "255.255.255.0",
 				Gateway:   "192.168.1.254",
 			},
-			VolumesDir: lepton.LocalVolumeDir,
+			VolumesDir:                lepton.LocalVolumeDir,
+			LocalFilesParentDirectory: ".",
 		}
 
 		writeConfigToFile(expected, configFileName)
@@ -67,7 +68,8 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 			RunConfig: types.RunConfig{
 				Memory: "2G",
 			},
-			VolumesDir: lepton.LocalVolumeDir,
+			VolumesDir:                lepton.LocalVolumeDir,
+			LocalFilesParentDirectory: ".",
 		}
 		config := &types.Config{
 			CloudConfig: types.ProviderConfig{

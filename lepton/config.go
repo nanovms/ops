@@ -50,6 +50,7 @@ func NewConfig() *types.Config {
 	c.RunConfig.Accel = true
 	c.RunConfig.Memory = "2G"
 	c.VolumesDir = LocalVolumeDir
+	c.LocalFilesParentDirectory = "."
 
 	return c
 }

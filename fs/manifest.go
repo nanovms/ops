@@ -51,17 +51,21 @@ func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
 }
 
 // AddUserProgram adds user program
-func (m *Manifest) AddUserProgram(imgpath string) {
+func (m *Manifest) AddUserProgram(imgpath string) (err error) {
 	parts := strings.Split(imgpath, "/")
 	if parts[0] == "." {
 		parts = parts[1:]
 	}
 	program := path.Join("/", path.Join(parts...))
-	err := m.AddFile(program, imgpath)
+
+	err = m.AddFile(program, imgpath)
 	if err != nil {
-		panic(err)
+		return
 	}
+
 	m.SetProgram(program)
+
+	return
 }
 
 // SetProgram sets user program
@@ -142,7 +146,11 @@ func (m *Manifest) AddKernel(path string) {
 }
 
 // AddDirectory adds all files in dir to image
-func (m *Manifest) AddDirectory(dir string) error {
+func (m *Manifest) AddDirectory(dir string, workDir string) error {
+	if err := os.Chdir(workDir); err != nil {
+		return err
+	}
+
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
