@@ -82,7 +82,7 @@ type Config struct {
 	RunConfig RunConfig
 
 	// LocalFilesParentDirectory is the parent directory of the files/directories specified in Files and Dirs
-	// The default value is the directory from where the ops command is run
+	// The default value is the directory from where the ops command is running
 	LocalFilesParentDirectory string
 
 	// TargetRoot
