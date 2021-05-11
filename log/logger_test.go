@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 )
 
@@ -87,7 +88,7 @@ func TestLogger(t *testing.T) {
 		var b bytes.Buffer
 		logger := New(&b)
 
-		logger.Error("test %d,%d,%d", 1, 2, 3)
+		logger.Errorf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ""
@@ -102,7 +103,7 @@ func TestLogger(t *testing.T) {
 		logger := New(&b)
 
 		logger.SetError(true)
-		logger.Error("test %d,%d,%d", 1, 2, 3)
+		logger.Errorf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ConsoleColors.Red() + "test 1,2,3" + ConsoleColors.White() + newline
@@ -135,6 +136,38 @@ func TestLogger(t *testing.T) {
 
 		got := b.String()
 		want := ConsoleColors.Cyan() + "test 1,2,3" + ConsoleColors.White() + newline
+
+		if got != want {
+			t.Errorf("got %v want %v", got, want)
+		}
+	})
+}
+
+func TestLoggerError(t *testing.T) {
+	t.Run("Log Error should print error string to output", func(t *testing.T) {
+		var b bytes.Buffer
+		logger := New(&b)
+		logger.SetError(true)
+
+		logger.Error(errors.New("something wrong is happening!!"))
+
+		got := b.String()
+		want := ConsoleColors.Red() + "something wrong is happening!!" + ConsoleColors.White() + newline
+
+		if got != want {
+			t.Errorf("got %v want %v", got, want)
+		}
+	})
+
+	t.Run("Log Errorf should print formatted string to output", func(t *testing.T) {
+		var b bytes.Buffer
+		logger := New(&b)
+		logger.SetError(true)
+
+		logger.Errorf("something %s is happening!!", "fishy")
+
+		got := b.String()
+		want := ConsoleColors.Red() + "something fishy is happening!!" + ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)

@@ -53,20 +53,25 @@ func Warn(message string, a ...interface{}) {
 	defaultLogger.Warn(message, a...)
 }
 
+// Errorf logs error-level formatted string message using default logger.
+func Errorf(message string, a ...interface{}) {
+	defaultLogger.Errorf(message, a...)
+}
+
 // Error logs error-level message using default logger.
-func Error(message string, a ...interface{}) {
-	defaultLogger.Error(message, a...)
+func Error(err error) {
+	defaultLogger.Error(err)
 }
 
 // Fatal logs error-level message using default logger then calls os.Exit(1).
 func Fatal(message string, a ...interface{}) {
-	defaultLogger.Error(message, a...)
+	defaultLogger.Errorf(message, a...)
 	os.Exit(1)
 }
 
 // Panic logs error-level message using default logger then calls panic().
 func Panic(message string, a ...interface{}) {
-	defaultLogger.Error(message, a...)
+	defaultLogger.Errorf(message, a...)
 	panic(fmt.Sprintf(message+"\n", a...))
 }
 
