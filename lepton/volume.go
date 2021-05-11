@@ -125,7 +125,7 @@ func symlinkVolume(dir, name, uuid string) error {
 
 	err = os.Symlink(src, dst)
 	if err != nil {
-		fmt.Println(msg)
+		log.Error(msg)
 		log.Error(err.Error())
 		return err
 	}
