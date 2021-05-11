@@ -302,7 +302,7 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 
 	s, err := os.Readlink(hostpath)
 	if err != nil {
-		log.Fatal("bad link")
+		log.Fatalf("bad link")
 	}
 
 	node[parts[len(parts)-1]] = link{path: s}
@@ -329,7 +329,7 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
 		err := fmt.Errorf("file '%s' overriding an existing directory", filepath)
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && pathtest != hostpath {

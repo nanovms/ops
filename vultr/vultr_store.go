@@ -18,7 +18,7 @@ func (s *Objects) getSignedURL(key string, bucket string, region string) string 
 	secKey := os.Getenv("VULTR_SECRET")
 
 	if accessKey == "" || secKey == "" {
-		log.Fatal("danger will robinson - can not find VULTR_ACCESS || VULTR_SECRET env vars")
+		log.Fatalf("danger will robinson - can not find VULTR_ACCESS || VULTR_SECRET env vars")
 	}
 
 	endpoint := region + ".vultrobjects.com"
@@ -27,7 +27,7 @@ func (s *Objects) getSignedURL(key string, bucket string, region string) string 
 
 	client, err := minio.New(endpoint, accessKey, secKey, ssl)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	reqParams := make(url.Values)
@@ -63,17 +63,17 @@ func (s *Objects) CopyToBucket(config *types.Config, archPath string) error {
 
 	client, err := minio.New(endpoint, accessKey, secKey, ssl)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	n, err := client.PutObject(bucket, config.CloudConfig.ImageName+".img", file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	log.Info("Uploaded", "my-objectname", " of size: ", n, "Successfully.")

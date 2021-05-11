@@ -26,7 +26,7 @@ func buildNodejsProgram() (path string) {
 
 	err := ioutil.WriteFile(path, program, 0644)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic(err)
 	}
 
 	return
@@ -128,6 +128,6 @@ func writeConfigToFile(config *types.Config, fileName string) {
 
 	err := ioutil.WriteFile(fileName, json, 0666)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic(err)
 	}
 }

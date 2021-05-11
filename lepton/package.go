@@ -150,13 +150,13 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 func sha256Of(filename string) string {
 	f, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -182,7 +182,7 @@ func ExtractPackage(archive string, dest string) {
 		}
 
 		if (*list)[fname].SHA256 != sha {
-			log.Fatal("This package doesn't match what is in the manifest.")
+			log.Fatalf("This package doesn't match what is in the manifest.")
 		}
 
 	}

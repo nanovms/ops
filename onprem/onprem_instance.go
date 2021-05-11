@@ -229,7 +229,7 @@ func (p *OnPrem) GetInstanceLogs(ctx *lepton.Context, instancename string) (stri
 
 	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	return string(body), nil

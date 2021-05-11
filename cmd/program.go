@@ -13,6 +13,6 @@ func checkProgramExists(program string) {
 	_, err1 := os.Stat(program)
 
 	if os.IsNotExist(err) && os.IsNotExist(err1) {
-		log.Fatal("error: %v: %v\n", program, err)
+		log.Fatalf("error: %v: %v\n", program, err)
 	}
 }

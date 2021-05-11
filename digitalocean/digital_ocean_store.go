@@ -25,7 +25,7 @@ func (s *Spaces) getSignedURL(key string, bucket string, region string) string {
 
 	client, err := minio.New(endpoint, accessKey, secKey, ssl)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	reqParams := make(url.Values)
@@ -55,12 +55,12 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	client, err := s.getMinioClient(config)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	bucket := config.CloudConfig.BucketName
@@ -68,7 +68,7 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	n, err := client.PutObject(bucket, key, file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	log.Info("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
@@ -91,7 +91,7 @@ func (s *Spaces) DeleteFromBucket(config *types.Config, key string) error {
 
 	client, err := s.getMinioClient(config)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	err = client.RemoveObject(bucket, key)

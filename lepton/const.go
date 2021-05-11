@@ -169,7 +169,7 @@ func getLatestRelVersion() string {
 	if err != nil {
 		fmt.Printf(constants.WarningColor, "version lookup failed, using local.\n")
 		if LocalReleaseVersion == "0.0" {
-			log.Fatal(constants.ErrorColor, "No local build found.")
+			log.Fatalf(constants.ErrorColor, "No local build found.")
 		}
 		return LocalReleaseVersion
 	}

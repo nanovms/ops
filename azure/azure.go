@@ -143,7 +143,7 @@ func (a *Azure) getLocation(config *types.Config) string {
 		location = a.locationDefault
 	}
 	if location == "" {
-		log.Fatal("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
+		log.Fatalf("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
 	}
 	return location
 }

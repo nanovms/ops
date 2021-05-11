@@ -71,11 +71,11 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
-		log.Fatal("error: %v: %v\n", c.Kernel, err)
+		log.Fatalf("error: %v: %v\n", c.Kernel, err)
 	}
 
 	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
-		log.Fatal("error: %v: %v\n", c.Boot, err)
+		log.Fatalf("error: %v: %v\n", c.Boot, err)
 	}
 
 	if c.NameServer == "" {

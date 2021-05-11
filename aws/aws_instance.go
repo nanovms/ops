@@ -61,7 +61,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	}
 	result, err := compute.DescribeInstances(&request)
 	if err != nil {
-		log.Fatal("failed getting instances: ", err.Error())
+		log.Fatalf("failed getting instances: ", err.Error())
 	}
 
 	var cinstances []lepton.CloudInstance

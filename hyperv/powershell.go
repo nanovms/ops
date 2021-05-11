@@ -115,7 +115,7 @@ func (ps *PowerShellCmd) getPowerShellPath() (string, error) {
 	powershellAvailable, path, err := IsPowershellAvailable()
 
 	if !powershellAvailable {
-		log.Fatal("Cannot find PowerShell in the path")
+		log.Fatalf("Cannot find PowerShell in the path")
 		return "", err
 	}
 

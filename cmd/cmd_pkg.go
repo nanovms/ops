@@ -75,7 +75,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		packages, err = api.GetPackageList()
 	}
 	if err != nil {
-		log.Panic("failed getting packages: %s", err)
+		log.Panicf("failed getting packages: %s", err)
 	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
@@ -152,7 +152,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 	file, err := os.Open(description)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 	defer file.Close()
 
@@ -163,7 +163,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 }
 
