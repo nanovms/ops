@@ -118,7 +118,7 @@ func symlinkVolume(dir, name, uuid string) error {
 		}
 	}
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println(msg)
+		log.Error(msg)
 		log.Error(err.Error())
 		return err
 	}
