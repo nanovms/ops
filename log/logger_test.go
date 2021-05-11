@@ -149,10 +149,10 @@ func TestLoggerError(t *testing.T) {
 		logger := New(&b)
 		logger.SetError(true)
 
-		logger.Error(errors.New("something wrong is happening!!"))
+		logger.Error(errors.New("something wrong is happening"))
 
 		got := b.String()
-		want := ConsoleColors.Red() + "something wrong is happening!!" + ConsoleColors.White() + newline
+		want := ConsoleColors.Red() + "something wrong is happening" + ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -164,10 +164,10 @@ func TestLoggerError(t *testing.T) {
 		logger := New(&b)
 		logger.SetError(true)
 
-		logger.Errorf("something %s is happening!!", "fishy")
+		logger.Errorf("something %s is happening", "fishy")
 
 		got := b.String()
-		want := ConsoleColors.Red() + "something fishy is happening!!" + ConsoleColors.White() + newline
+		want := ConsoleColors.Red() + "something fishy is happening" + ConsoleColors.White() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
