@@ -233,7 +233,9 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddKlibs(c.RunConfig.Klibs)
 
 	for _, f := range c.Files {
-		err := m.AddFile(f, f)
+		hostPath := path.Join(c.LocalFilesParentDirectory, f)
+		filePath := f
+		err := m.AddFile(filePath, hostPath)
 		if err != nil {
 			return err
 		}
@@ -247,7 +249,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	}
 
 	for _, d := range c.Dirs {
-		err := m.AddDirectory(d)
+		err := m.AddDirectory(d, c.LocalFilesParentDirectory)
 		if err != nil {
 			return err
 		}

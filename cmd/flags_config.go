@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
@@ -35,6 +36,8 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		}
 
 		err = unWarpConfig(flags.Config, c)
+
+		c.LocalFilesParentDirectory = path.Dir(flags.Config)
 
 		return
 	} else if c == nil {

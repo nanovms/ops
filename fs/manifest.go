@@ -142,7 +142,11 @@ func (m *Manifest) AddKernel(path string) {
 }
 
 // AddDirectory adds all files in dir to image
-func (m *Manifest) AddDirectory(dir string) error {
+func (m *Manifest) AddDirectory(dir string, workDir string) error {
+	if err := os.Chdir(workDir); err != nil {
+		return err
+	}
+
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
