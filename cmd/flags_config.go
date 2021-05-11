@@ -52,7 +52,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 func unWarpConfig(file string, c *types.Config) (err error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Fatal("error reading config: %v\n", err)
+		log.Fatalf("error reading config: %v\n", err)
 	}
 
 	return ConvertJSONToConfig(data, c)

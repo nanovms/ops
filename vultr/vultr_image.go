@@ -54,7 +54,7 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic(err)
 	}
 	defer resp.Body.Close()
 
@@ -113,7 +113,7 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/snapshot/list", nil)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 	token := os.Getenv("TOKEN")
 
@@ -122,12 +122,12 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	var data map[string]vultrSnap

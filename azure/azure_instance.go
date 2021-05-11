@@ -202,12 +202,12 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		},
 	)
 	if err != nil {
-		log.Fatal("cannot create vm: %v\n", err.Error())
+		log.Fatalf("cannot create vm: %v\n", err.Error())
 	}
 
 	err = future.WaitForCompletionRef(nctx, vmClient.Client)
 	if err != nil {
-		log.Fatal("cannot get the vm create or update future response: %v\n", err.Error())
+		log.Fatalf("cannot get the vm create or update future response: %v\n", err.Error())
 	}
 
 	_, err = future.Result(*vmClient)
@@ -477,7 +477,7 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceView)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	// this is unique per vm || per boot?

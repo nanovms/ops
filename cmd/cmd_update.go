@@ -34,11 +34,11 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 	if local == "0.0" || parseVersion(local, 4) != parseVersion(remote, 4) || os.IsNotExist(err) {
 		err = api.DownloadReleaseImages(remote)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal(err)
 		}
 		err = api.DownloadCommonFiles()
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal(err)
 		}
 		api.UpdateLocalRelease(remote)
 		fmt.Printf("Update nanos to %s version.\n", remote)

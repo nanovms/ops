@@ -176,7 +176,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	_, err = blobURL.Create(ctx, length, 0, azblob.BlobHTTPHeaders{},
 		azblob.Metadata{}, azblob.BlobAccessConditions{})
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	for i := 0; i < q; i++ {
@@ -185,7 +185,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal(err)
 		}
 	}
 
@@ -221,12 +221,12 @@ func containerExists(containerURL azblob.ContainerURL) bool {
 func getContainerURL(containerName string) azblob.ContainerURL {
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
-		log.Fatal("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
+		log.Fatalf("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
 	}
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		log.Fatal("Invalid credentials with error: " + err.Error())
+		log.Fatalf("Invalid credentials with error: " + err.Error())
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 

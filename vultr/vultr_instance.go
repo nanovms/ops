@@ -70,7 +70,7 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/server/list", nil)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 	token := os.Getenv("TOKEN")
 
@@ -79,12 +79,12 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	var data map[string]vultrServer

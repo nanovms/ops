@@ -34,11 +34,11 @@ func NewConfig() *types.Config {
 		if _, err = os.Stat(conf); err == nil {
 			data, err := ioutil.ReadFile(conf)
 			if err != nil {
-				log.Fatal("error reading config: %v\n", err)
+				log.Fatalf("error reading config: %v\n", err)
 			}
 			err = json.Unmarshal(data, &c)
 			if err != nil {
-				log.Fatal("error config: %v\n", err)
+				log.Fatalf("error config: %v\n", err)
 			}
 		}
 	}

@@ -22,7 +22,7 @@ func (s *Storage) CopyToBucket(config *types.Config, archPath string) error {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		log.Error(err)
-		log.Fatal("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
+		log.Fatalf("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
 	}
 
 	defer client.Close()

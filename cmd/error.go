@@ -11,7 +11,7 @@ import (
 )
 
 func exitWithError(errs string) {
-	log.Fatal(fmt.Sprintf(constants.ErrorColor, errs))
+	log.Fatalf(fmt.Sprintf(constants.ErrorColor, errs))
 }
 
 func exitForCmd(cmd *cobra.Command, errs string) {

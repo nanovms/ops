@@ -62,7 +62,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		return nil, errors.WrapPrefix(err, path, 0)
 	}
 	if !isELF {
-		log.Fatal(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
+		log.Fatalf(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
 	}
 
 	if _, err := os.Stat(path); err != nil {

@@ -21,20 +21,20 @@ func downloadPackage(pkg string) string {
 func downloadAndExtractPackage(packagesDirPath, pkg string) string {
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	expackage := path.Join(packagesDirPath, pkg)
 	opsPackage, err := api.DownloadPackage(pkg)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	api.ExtractPackage(opsPackage, packagesDirPath)
 
 	err = os.Remove(opsPackage)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	return expackage
