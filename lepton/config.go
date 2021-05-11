@@ -18,11 +18,11 @@ func NewConfig() *types.Config {
 	if conf != "" {
 		data, err := ioutil.ReadFile(conf)
 		if err != nil {
-			log.Error("error reading config: %v\n", err)
+			log.Errorf("error reading config: %v\n", err)
 		}
 		err = json.Unmarshal(data, &c)
 		if err != nil {
-			log.Error("error config: %v\n", err)
+			log.Errorf("error config: %v\n", err)
 		}
 	} else {
 		usr, err := user.Current()

@@ -81,10 +81,10 @@ func (s *S3) DeleteFromBucket(config *types.Config, key string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				log.Error(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 		return err
 	}

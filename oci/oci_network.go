@@ -45,7 +45,7 @@ func (p *Provider) CreateNetworkSecurityGroup(ctx *lepton.Context, vcnID string)
 		},
 	})
 	if err != nil {
-		ctx.Logger().Error(err.Error())
+		ctx.Logger().Error(err)
 		err = errors.New("failed creating security group")
 		return
 	}

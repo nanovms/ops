@@ -174,7 +174,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 
 			err = os.Symlink(src, dst)
 			if err != nil {
-				log.Error(err.Error())
+				log.Error(err)
 			}
 
 			mounts = append(mounts, fmt.Sprintf("%s:%s", tt.mount, tt.mountAt))

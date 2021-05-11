@@ -112,21 +112,21 @@ func symlinkVolume(dir, name, uuid string) error {
 	if err == nil {
 		err := os.Remove(dst)
 		if err != nil {
-			log.Error(msg)
-			log.Error(err.Error())
+			log.Errorf(msg)
+			log.Error(err)
 			return err
 		}
 	}
 	if err != nil && !os.IsNotExist(err) {
-		log.Error(msg)
-		log.Error(err.Error())
+		log.Errorf(msg)
+		log.Error(err)
 		return err
 	}
 
 	err = os.Symlink(src, dst)
 	if err != nil {
-		log.Error(msg)
-		log.Error(err.Error())
+		log.Errorf(msg)
+		log.Error(err)
 		return err
 	}
 	return nil

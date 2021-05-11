@@ -143,7 +143,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 
 			date, err := time.Parse("02/01/2006 15:04:05", cols[2]+" "+cols[3])
 			if err != nil {
-				log.Error(err.Error())
+				log.Error(err)
 				continue
 			}
 

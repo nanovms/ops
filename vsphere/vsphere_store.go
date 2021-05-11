@@ -27,7 +27,7 @@ func (s *Datastores) CopyToBucket(config *types.Config, archPath string) error {
 	cmd := exec.Command("qemu-img", args...)
 	err := cmd.Run()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	return nil

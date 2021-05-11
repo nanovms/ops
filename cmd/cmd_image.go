@@ -257,7 +257,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	for range imagesToDelete {
 		err = <-responses
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	}
 }

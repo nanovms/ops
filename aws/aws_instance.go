@@ -158,7 +158,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("getting aws images")
 	result, err := getAWSImages(p.ec2)
 	if err != nil {
-		ctx.Logger().Error("failed getting images")
+		ctx.Logger().Errorf("failed getting images")
 		return err
 	}
 
@@ -276,7 +276,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("running instance with input %v", instanceInput)
 	_, err = svc.RunInstances(instanceInput)
 	if err != nil {
-		log.Error("Could not create instance", err)
+		log.Errorf("Could not create instance", err)
 		return err
 	}
 
@@ -383,10 +383,10 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				log.Error(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 		return err
 	}
@@ -428,10 +428,10 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				log.Error(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 		return "", err
 	}

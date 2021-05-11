@@ -67,7 +67,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return err
 	}
 
@@ -95,7 +95,7 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return nil, err
 	}
 
@@ -112,12 +112,12 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 
 	task, err := search(context.TODO(), ds.Path(""), &spec)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	info, err := task.WaitForResult(context.TODO(), nil)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 
 	switch r := info.Result.(type) {
