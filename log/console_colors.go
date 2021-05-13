@@ -1,4 +1,4 @@
-package lepton
+package log
 
 // ConsoleColorsType has a set of methods that return the color directive to change console color
 type ConsoleColorsType struct{}

@@ -2,10 +2,10 @@ package openstack
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 
 	"github.com/gophercloud/gophercloud"
@@ -41,7 +41,7 @@ func (o *OpenStack) Initialize(config *types.ProviderConfig) error {
 func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 	client, err := o.getComputeClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	listOpts := flavors.ListOpts{

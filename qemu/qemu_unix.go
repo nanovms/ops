@@ -18,7 +18,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -39,7 +39,7 @@ func newQemu() Hypervisor {
 func (q *qemu) Stop() {
 	if q.cmd != nil {
 		if err := q.cmd.Process.Kill(); err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 
 		// do not print errors as the command could be started with Run()
@@ -49,7 +49,7 @@ func (q *qemu) Stop() {
 
 func logv(rconfig *types.RunConfig, msg string) {
 	if rconfig.Verbose {
-		fmt.Println(msg)
+		log.Info(msg)
 	}
 }
 
@@ -82,11 +82,11 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 	} else {
 		if err := q.cmd.Run(); err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 	}
 
@@ -232,13 +232,13 @@ func (q *qemu) setAccel(rconfig *types.RunConfig) {
 	if supportedErr != nil {
 		msg, terminate := qemuAccelWarningMessage(supportedErr)
 		if msg != "" {
-			fmt.Println(msg)
+			log.Warn(msg)
 		}
 		if terminate {
 			os.Exit(1)
 		}
 		if isAdded {
-			fmt.Printf(constants.WarningColor, "Anyway, we will try to enable hardware acceleration\n")
+			log.Warn("Anyway, we will try to enable hardware acceleration\n")
 		}
 	}
 }

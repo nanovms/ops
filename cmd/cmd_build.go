@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/spf13/cobra"
 )
 
@@ -58,8 +58,7 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	var imagePath string
 
 	if imagePath, err = p.BuildImage(ctx); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	fmt.Printf("Bootable image file:%s\n", imagePath)
 }

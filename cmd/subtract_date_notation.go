@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/log"
 )
 
 // SubtractTimeNotation subtracts time notation timestamp from date passed by argument
@@ -19,7 +19,7 @@ func SubtractTimeNotation(date time.Time, notation string) (newDate time.Time, e
 
 	n, err := strconv.Atoi(groups[1])
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return newDate, err
 	}
 

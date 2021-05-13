@@ -2,9 +2,7 @@ package cmd_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -13,6 +11,7 @@ import (
 
 	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +58,7 @@ func buildInstance(imageName string) string {
 
 	err := createInstanceCmd.Execute()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return instanceName
@@ -129,6 +128,6 @@ func writeConfigToFile(config *types.Config, fileName string) {
 
 	err := ioutil.WriteFile(fileName, json, 0666)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 }

@@ -82,7 +82,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	if c.CloudConfig.DomainName != "" {
 		instance, err := p.Service.Instances.Get(c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceName).Do()
 		if err != nil {
-			ctx.Logger().Error("failed getting instance")
+			ctx.Logger().Errorf("failed getting instance")
 			return err
 		}
 
@@ -104,7 +104,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
 		if err != nil {
-			ctx.Logger().Error("%v", err)
+			ctx.Logger().Errorf("%v", err)
 			return errors.New("Failed to add Firewall rule")
 		}
 	}
@@ -115,7 +115,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
 		if err != nil {
-			ctx.Logger().Error("%v", err)
+			ctx.Logger().Errorf("%v", err)
 			return errors.New("Failed to add Firewall rule")
 		}
 	}

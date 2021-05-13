@@ -1,10 +1,10 @@
 package vsphere
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -27,7 +27,7 @@ func (s *Datastores) CopyToBucket(config *types.Config, archPath string) error {
 	cmd := exec.Command("qemu-img", args...)
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return nil

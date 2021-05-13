@@ -2,11 +2,11 @@ package lepton
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -18,13 +18,11 @@ func NewConfig() *types.Config {
 	if conf != "" {
 		data, err := ioutil.ReadFile(conf)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
-			os.Exit(1)
+			log.Errorf("error reading config: %v\n", err)
 		}
 		err = json.Unmarshal(data, &c)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error config: %v\n", err)
-			os.Exit(1)
+			log.Errorf("error config: %v\n", err)
 		}
 	} else {
 		usr, err := user.Current()
@@ -36,13 +34,11 @@ func NewConfig() *types.Config {
 		if _, err = os.Stat(conf); err == nil {
 			data, err := ioutil.ReadFile(conf)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error reading config: %v\n", err)
-				os.Exit(1)
+				log.Fatalf("error reading config: %v\n", err)
 			}
 			err = json.Unmarshal(data, &c)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error config: %v\n", err)
-				os.Exit(1)
+				log.Fatalf("error config: %v\n", err)
 			}
 		}
 	}

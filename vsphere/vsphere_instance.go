@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/govc/host/esxcli"
@@ -45,7 +46,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	// add disk
 	scsi, err := devices.CreateSCSIController("pvscsi")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	devices = append(devices, scsi)
@@ -53,13 +54,13 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 
 	dcontroller, err := devices.FindDiskController(controller)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -75,24 +76,24 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	// infer network stub
 	net, err := f.NetworkOrDefault(context.TODO(), v.network)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	backing, err := net.EthernetCardBackingInfo(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	device, err := object.EthernetCardTypes().CreateEthernetCard("vmxnet3", backing)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	devices = append(devices, device)
 
 	deviceChange, err := devices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	spec.DeviceChange = deviceChange
@@ -103,13 +104,13 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
 	folders, err := dc.Folders(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	spec.Files = &types.VirtualMachineFileInfo{
@@ -120,14 +121,14 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 
 	pool, err := f.ResourcePoolOrDefault(context.TODO(), v.resourcePool)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		fmt.Println("Did you set the correct Resource Pool? https://nanovms.gitbook.io/ops/vsphere#create-instance ")
 		os.Exit(1)
 	}
 
 	task, err := folder.CreateVM(context.TODO(), *spec, pool, nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -135,7 +136,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	if err != nil {
 		fmt.Printf("%+v", info)
 		fmt.Printf("%+v", info.Reason)
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -149,7 +150,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	// add serial for logs
 	serial, err := devices.CreateSerialPort()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	err = vm.AddDevice(context.TODO(), serial)
@@ -179,7 +180,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 
 	err = vm.EditDevice(context.TODO(), devices.ConnectSerialPort(d, uri, false, ""))
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return nil
@@ -303,7 +304,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	f.SetDatacenter(dc)
@@ -313,7 +314,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 		if _, ok := err.(*find.NotFoundError); ok {
 			fmt.Println("can't find vm " + instancename)
 		}
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	var get func(*object.VirtualMachine) (string, error) = func(vm *object.VirtualMachine) (string, error) {
@@ -335,7 +336,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 
 				ip, err := guest.IpAddress(vm)
 				if err != nil {
-					fmt.Println(err)
+					log.Error(err)
 					return "", err
 				}
 
@@ -351,7 +352,7 @@ func (v *Vsphere) ipFor(instancename string) string {
 
 	ip, err := get(vm)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return ip
@@ -361,14 +362,14 @@ func (v *Vsphere) findHostPath() string {
 	f := find.NewFinder(v.client, true)
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	f.SetDatacenter(dc)
 
 	host, err := f.DefaultHostSystem(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return host.InventoryPath
@@ -380,12 +381,12 @@ func (v *Vsphere) runCLI(args []string) (*esxcli.Response, error) {
 	hostPath := v.findHostPath()
 	host, err := f.HostSystemOrDefault(context.TODO(), hostPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	e, err := esxcli.NewExecutor(v.client, host)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return e.Run(args)
@@ -395,7 +396,7 @@ func (v *Vsphere) iphackEnabled() bool {
 	args := []string{"system", "settings", "advanced", "list", "-o", "/Net/GuestIPHack"}
 	res, err := v.runCLI(args)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	for _, val := range res.Values {
@@ -411,25 +412,23 @@ func (v *Vsphere) iphackEnabled() bool {
 
 func (v *Vsphere) setGuestIPHack() {
 	if v.iphackEnabled() {
-		fmt.Println("ip hack enabled")
+		log.Info("ip hack enabled")
 	} else {
-		fmt.Println("setting ip hack")
+		log.Info("setting ip hack")
 
 		args := []string{"system", "settings", "advanced", "set", "-o", "/Net/GuestIPHack", "-i", "1"}
 
 		res, err := v.runCLI(args)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 
 		debug := false // FIXME: should have a debug log throughout OPS
 		if debug {
 			for _, val := range res.Values {
-				fmt.Println(val)
+				log.Debug(fmt.Sprint(val))
 			}
-
 		}
-
 	}
 
 	fmt.Println("IP hack has been enabled for all new ARP requests, however, for existing hosts the easiest way to trigger that is to simply reboot the vm.")
@@ -442,7 +441,7 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -453,14 +452,14 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 		if _, ok := err.(*find.NotFoundError); ok {
 			fmt.Println("can't find vm " + instancename)
 		}
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	vm := vms[0]
 
 	task, err := vm.PowerOff(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	// Ignore error since the VM may already been in powered off
@@ -489,7 +488,7 @@ func (v *Vsphere) StartInstance(ctx *lepton.Context, instancename string) error 
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -500,12 +499,12 @@ func (v *Vsphere) StartInstance(ctx *lepton.Context, instancename string) error 
 		if _, ok := err.(*find.NotFoundError); ok {
 			fmt.Println("can't find vm " + instancename)
 		}
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	task, err := vms[0].PowerOn(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	_, err = task.WaitForResult(context.TODO(), nil)
@@ -520,7 +519,7 @@ func (v *Vsphere) StopInstance(ctx *lepton.Context, instancename string) error {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -531,12 +530,12 @@ func (v *Vsphere) StopInstance(ctx *lepton.Context, instancename string) error {
 		if _, ok := err.(*find.NotFoundError); ok {
 			fmt.Println("can't find vm " + instancename)
 		}
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	task, err := vms[0].PowerOff(context.TODO())
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	_, err = task.WaitForResult(context.TODO(), nil)

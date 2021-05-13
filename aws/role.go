@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/nanovms/ops/log"
 )
 
 const vmiName = "vmimport"
@@ -115,7 +116,7 @@ func appendBucket(role string, bucket string) string {
 	rp := &RolePolicy{}
 	err := json.Unmarshal([]byte(role), rp)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	for i := 0; i < len(rp.Statement); i++ {
@@ -130,7 +131,7 @@ func appendBucket(role string, bucket string) string {
 
 	b, err := json.Marshal(rp)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	return string(b)
@@ -138,7 +139,7 @@ func appendBucket(role string, bucket string) string {
 }
 
 func roleError(bucket string, err error) {
-	fmt.Println(err)
+	log.Error(err)
 	fmt.Println(roleMsg)
 
 	rp := strings.ReplaceAll(rolePolicy, "my-bucket", bucket)
@@ -253,7 +254,7 @@ func VerifyRole(zone string, bucket string) {
 }
 
 func createRole(svc *iam.IAM, bucket string) error {
-	fmt.Println("creating a vmimport role for bucket " + bucket)
+	log.Info("creating a vmimport role for bucket " + bucket)
 
 	ri := &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(vmieDoc),

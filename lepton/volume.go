@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -111,18 +112,21 @@ func symlinkVolume(dir, name, uuid string) error {
 	if err == nil {
 		err := os.Remove(dst)
 		if err != nil {
-			fmt.Println(msg)
+			log.Errorf(msg)
+			log.Error(err)
 			return err
 		}
 	}
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println(msg)
+		log.Errorf(msg)
+		log.Error(err)
 		return err
 	}
 
 	err = os.Symlink(src, dst)
 	if err != nil {
-		fmt.Println(msg)
+		log.Errorf(msg)
+		log.Error(err)
 		return err
 	}
 	return nil

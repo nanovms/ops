@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 )
@@ -173,7 +174,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 
 			err = os.Symlink(src, dst)
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err)
 			}
 
 			mounts = append(mounts, fmt.Sprintf("%s:%s", tt.mount, tt.mountAt))

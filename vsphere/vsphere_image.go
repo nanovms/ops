@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vmware/govmomi/find"
@@ -41,7 +42,7 @@ func (v *Vsphere) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (st
 }
 
 func (v *Vsphere) createImage(key string, bucket string, region string) {
-	fmt.Println("un-implemented")
+	log.Warn("un-implemented")
 }
 
 // CreateImage - Creates image on vsphere using nanos images
@@ -66,7 +67,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -76,7 +77,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -94,7 +95,7 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -111,12 +112,12 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 
 	task, err := search(context.TODO(), ds.Path(""), &spec)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	info, err := task.WaitForResult(context.TODO(), nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	switch r := info.Result.(type) {
@@ -133,7 +134,7 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 			}
 		}
 	case vmwareTypes.ArrayOfHostDatastoreBrowserSearchResults:
-		fmt.Println("un-implemented")
+		log.Warn("un-implemented")
 	}
 
 	return cimages, nil
@@ -172,13 +173,13 @@ func (v *Vsphere) ListImages(ctx *lepton.Context) error {
 
 // DeleteImage deletes image from VSphere
 func (v *Vsphere) DeleteImage(ctx *lepton.Context, imagename string) error {
-	fmt.Println("un-implemented")
+	log.Warn("un-implemented")
 	return nil
 }
 
 // SyncImage syncs image from provider to another provider
 func (v *Vsphere) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 

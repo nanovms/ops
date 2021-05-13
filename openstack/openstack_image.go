@@ -11,6 +11,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -47,7 +48,7 @@ func (o *OpenStack) findImage(name string) (id string, err error) {
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	listOpts := images.ListOpts{
@@ -112,16 +113,16 @@ func (o *OpenStack) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	imgName = strings.ReplaceAll(imgName, "-image", "")
 
-	fmt.Println("creating image:\t" + imgName)
+	log.Info("creating image:\t" + imgName)
 
 	imagesClient, err := o.getImagesClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	image, err := o.createImage(imagesClient, imgName)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	imagePath = lepton.LocalImageDir + "/" + imgName + ".img"
@@ -141,7 +142,7 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	listOpts := images.ListOpts{
@@ -155,7 +156,7 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 
 	allImages, err := images.ExtractImages(allPages)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	for _, image := range allImages {
@@ -211,18 +212,18 @@ func (o *OpenStack) deleteImage(imagesClient *gophercloud.ServiceClient, imageID
 func (o *OpenStack) DeleteImage(ctx *lepton.Context, imagename string) error {
 	imageID, err := o.findImage(imagename)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
 	imageClient, err := o.getImagesClient()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	err = images.Delete(imageClient, imageID).ExtractErr()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
 
@@ -231,7 +232,7 @@ func (o *OpenStack) DeleteImage(ctx *lepton.Context, imagename string) error {
 
 // SyncImage syncs image from provider to another provider
 func (o *OpenStack) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 

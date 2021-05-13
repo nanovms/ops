@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -53,12 +54,12 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 }
 
 func (v *Vultr) destroyImage(snapshotid string) {
@@ -81,7 +82,7 @@ func (v *Vultr) destroyImage(snapshotid string) {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	log.Info("response Body:", string(body))
 }
 
 // CreateImage - Creates image on v using nanos images
@@ -112,8 +113,7 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/snapshot/list", nil)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	token := os.Getenv("TOKEN")
 
@@ -122,21 +122,19 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	var data map[string]vultrSnap
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -171,7 +169,7 @@ func (v *Vultr) DeleteImage(ctx *lepton.Context, snapshotID string) error {
 
 // SyncImage syncs image from provider to another provider
 func (v *Vultr) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 

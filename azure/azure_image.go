@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -117,9 +118,9 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	} else {
-		fmt.Println("Image created")
+		log.Info("Image created")
 	}
 
 	return nil
@@ -200,7 +201,7 @@ func (a *Azure) DeleteImage(ctx *lepton.Context, imagename string) error {
 
 // SyncImage syncs image from provider to another provider
 func (a *Azure) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 

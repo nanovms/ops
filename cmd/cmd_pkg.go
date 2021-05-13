@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 // PackageCommands gives package related commands
@@ -146,14 +146,13 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 	description := path.Join(expackage, "README.md")
 	if _, err := os.Stat(description); err != nil {
-		fmt.Println("Error: Package information not provided.")
+		log.Errorf("Error: Package information not provided.")
 		return
 	}
 
 	file, err := os.Open(description)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	defer file.Close()
 
@@ -164,8 +163,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
