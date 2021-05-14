@@ -217,7 +217,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
-
 	pkgFlags.Package = args[0]
 
 	c := lepton.NewConfig()

@@ -14,21 +14,20 @@ func GetRootCommand() *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use: "ops",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			var config *types.Config
+			config := &types.Config{}
 
 			configFlag, _ := cmd.Flags().GetString("config")
 			configFlag = strings.TrimSpace(configFlag)
 
 			if configFlag != "" {
-				config := &types.Config{}
 				if err := unWarpConfig(configFlag, config); err != nil {
 					return err
 				}
+			}
 
-				globalFlags := NewGlobalCommandFlags(cmd.Flags())
-				if err := globalFlags.MergeToConfig(config); err != nil {
-					return err
-				}
+			globalFlags := NewGlobalCommandFlags(cmd.Flags())
+			if err := globalFlags.MergeToConfig(config); err != nil {
+				return err
 			}
 
 			log.InitDefault(os.Stdout, config)
