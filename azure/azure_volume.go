@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 // CreateVolume uploads the volume raw file and creates a disk from it
@@ -172,7 +173,7 @@ func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string) error {
 		return fmt.Errorf("cannot update vm: %v", err)
 	}
 
-	fmt.Println("attaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
+	log.Info("attaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {
@@ -206,7 +207,7 @@ func (a *Azure) DetachVolume(ctx *lepton.Context, image, name string) error {
 		return fmt.Errorf("cannot update vm: %v", err)
 	}
 
-	fmt.Println("detaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
+	log.Info("detaching the volume - this can take a few minutes - you can ctrl-c this after a bit")
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
 	if err != nil {

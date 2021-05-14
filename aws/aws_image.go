@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 
@@ -356,10 +357,10 @@ func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err)
 		}
 		return nil, err
 	}
@@ -373,7 +374,7 @@ func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
 
 // SyncImage syncs image from provider to another provider
 func (p *AWS) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	fmt.Println("not yet implemented")
+	log.Warn("not yet implemented")
 	return nil
 }
 
@@ -399,7 +400,7 @@ func (p *AWS) waitSnapshotToBeReady(config *types.Config, importTaskID *string) 
 		return nil, err
 	}
 
-	fmt.Println("waiting for snapshot - can take like 5 min...")
+	log.Info("waiting for snapshot - can take like 5 min...")
 
 	waitStartTime := time.Now()
 	bar := progressbar.New(100)

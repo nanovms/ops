@@ -27,20 +27,20 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 
 	vmPath, err := findOrCreateVmsDir()
 	if err != nil {
-		ctx.Logger().Error("failed converting vms path")
+		ctx.Logger().Errorf("failed converting vms path")
 		return
 	}
 
 	vmPath = path.Join(vmPath, name)
 	err = os.Mkdir(vmPath, 0755)
 	if err != nil {
-		ctx.Logger().Error("failed creating vm directory")
+		ctx.Logger().Errorf("failed creating vm directory")
 		return
 	}
 
 	imagesDir, err := findOrCreateVdiImagesDir()
 	if err != nil {
-		ctx.Logger().Error("failed converting vdi images dir")
+		ctx.Logger().Errorf("failed converting vdi images dir")
 		return
 	}
 
@@ -51,13 +51,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	if wsl.IsWSL() {
 		vmPath, err = wsl.ConvertPathFromWSLtoWindows(vmPath)
 		if err != nil {
-			ctx.Logger().Error("failed converting vm path")
+			ctx.Logger().Errorf("failed converting vm path")
 			return
 		}
 
 		imagePath, err = wsl.ConvertPathFromWSLtoWindows(imagePath)
 		if err != nil {
-			ctx.Logger().Error("failed converting image path %s", imagePath)
+			ctx.Logger().Errorf("failed converting image path %s", imagePath)
 			return
 		}
 
@@ -66,13 +66,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 
 	err = vbox.CloneHD(imagePath, vmImagePath)
 	if err != nil {
-		ctx.Logger().Error("failed cloning hdd")
+		ctx.Logger().Errorf("failed cloning hdd")
 		return
 	}
 
 	vm, err := vbox.CreateMachine(name, vmPath)
 	if err != nil {
-		ctx.Logger().Error("failed creating machine")
+		ctx.Logger().Errorf("failed creating machine")
 		return
 	}
 
@@ -84,7 +84,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		Bootable:    true,
 	})
 	if err != nil {
-		ctx.Logger().Error("failed adding storage controller")
+		ctx.Logger().Errorf("failed adding storage controller")
 		return
 	}
 
@@ -95,7 +95,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		Medium:    vmImagePath,
 	})
 	if err != nil {
-		ctx.Logger().Error("failed attaching storage")
+		ctx.Logger().Errorf("failed attaching storage")
 		return
 	}
 
@@ -103,13 +103,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 
 	err = modifyVM.Run()
 	if err != nil {
-		ctx.Logger().Error("failed changing vm memory")
+		ctx.Logger().Errorf("failed changing vm memory")
 		return
 	}
 
 	err = virtualbox.SetGuestProperty(vm.Name, "Image", imageName)
 	if err != nil {
-		ctx.Logger().Error("failed to set image as guest property")
+		ctx.Logger().Errorf("failed to set image as guest property")
 		return
 	}
 
@@ -118,13 +118,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		Hardware: vbox.VirtIO,
 	})
 	if err != nil {
-		ctx.Logger().Error("failed setting NIC")
+		ctx.Logger().Errorf("failed setting NIC")
 		return
 	}
 
 	err = vm.Start()
 	if err != nil {
-		ctx.Logger().Error("failed started vm")
+		ctx.Logger().Errorf("failed started vm")
 		return
 	}
 
@@ -137,7 +137,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 				GuestPort: uint16(port),
 			})
 			if err != nil {
-				ctx.Logger().Error("failed creating port forward rule")
+				ctx.Logger().Errorf("failed creating port forward rule")
 				return err
 			}
 		}
@@ -147,7 +147,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	if len(ctx.Config().RunConfig.Ports) != 0 {
 		err = virtualbox.SetGuestProperty(vm.Name, "Ports", strings.Join(ctx.Config().RunConfig.Ports, ","))
 		if err != nil {
-			ctx.Logger().Error("failed to set ports as guest property")
+			ctx.Logger().Errorf("failed to set ports as guest property")
 			return
 		}
 	}

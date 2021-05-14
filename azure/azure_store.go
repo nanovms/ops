@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -61,7 +61,7 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 	cmd := exec.Command("qemu-img", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	qi := &qemuInfo{}
@@ -73,19 +73,19 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32) {
 	in, err := os.Open(basePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 	defer in.Close()
 
 	out, err := os.Create(newPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	szstr := fmt.Sprint(resizeSz)
@@ -98,7 +98,7 @@ func (az *Storage) resizeImage(basePath string, newPath string, resizeSz uint32)
 	cmd := exec.Command("qemu-img", args...)
 	_, err = cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 }
 
@@ -137,7 +137,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	cmd := exec.Command("qemu-img", args...)
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	ctx := context.Background()
@@ -147,7 +147,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 		fmt.Printf("Creating a container named %s\n", containerName)
 		_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 	}
 
@@ -155,13 +155,13 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 	file, err := os.Open(vhdPath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 	defer file.Close()
 
 	fi, err := file.Stat()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	max := 4194304
@@ -185,8 +185,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 
 		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 	}
 
@@ -222,14 +221,12 @@ func containerExists(containerURL azblob.ContainerURL) bool {
 func getContainerURL(containerName string) azblob.ContainerURL {
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT"), os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	if len(accountName) == 0 || len(accountKey) == 0 {
-		fmt.Println("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
-		os.Exit(1)
+		log.Fatalf("Either the AZURE_STORAGE_ACCOUNT or AZURE_STORAGE_ACCESS_KEY environment variable is not set")
 	}
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		fmt.Println("Invalid credentials with error: " + err.Error())
-		os.Exit(1)
+		log.Fatalf("Invalid credentials with error: " + err.Error())
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 

@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -142,8 +143,7 @@ func (a *Azure) getLocation(config *types.Config) string {
 		location = a.locationDefault
 	}
 	if location == "" {
-		fmt.Println("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
-		os.Exit(1)
+		log.Fatalf("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
 	}
 	return location
 }

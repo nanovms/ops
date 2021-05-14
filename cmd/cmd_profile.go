@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/qemu"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ func (p *Profile) save() {
 
 	err := ioutil.WriteFile(local, []byte(str), 0644)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 }
 
@@ -46,7 +47,7 @@ func (p *Profile) setProfile() {
 
 	qv, err := qemu.Version()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	p.QemuVersion = qv
@@ -69,7 +70,7 @@ func (p *Profile) virtualized() bool {
 
 	content, err := ioutil.ReadFile(s)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 
 	text := string(content)

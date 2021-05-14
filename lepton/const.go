@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/constants"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -87,7 +88,7 @@ func getImageTempDir(c *types.Config) string {
 	if c.BuildDir == "" {
 		dir, err := ioutil.TempDir("", temp)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 
 		c.BuildDir = dir
@@ -168,8 +169,7 @@ func getLatestRelVersion() string {
 	if err != nil {
 		fmt.Printf(constants.WarningColor, "version lookup failed, using local.\n")
 		if LocalReleaseVersion == "0.0" {
-			fmt.Printf(constants.ErrorColor, "No local build found.")
-			os.Exit(1)
+			log.Fatalf(constants.ErrorColor, "No local build found.")
 		}
 		return LocalReleaseVersion
 	}

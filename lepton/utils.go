@@ -2,7 +2,7 @@ package lepton
 
 import (
 	"fmt"
-	"os"
+	"log"
 	"strconv"
 	"unicode/utf8"
 
@@ -10,8 +10,7 @@ import (
 )
 
 func exitWithError(errs string) {
-	fmt.Println(fmt.Sprintf(constants.ErrorColor, errs))
-	os.Exit(1)
+	log.Fatal(fmt.Sprintf(constants.ErrorColor, errs))
 }
 
 // isDomainValid returns an error if the domain name is not valid

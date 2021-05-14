@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
 
@@ -116,7 +117,7 @@ func CreateDNSRecord(config *types.Config, aRecordIP string, dnsService DNSServi
 // Context captures required info for provider operation
 type Context struct {
 	config *types.Config
-	logger *Logger
+	logger *log.Logger
 }
 
 // Config returns context configuration
@@ -125,7 +126,7 @@ func (c Context) Config() *types.Config {
 }
 
 // Logger returns logger
-func (c Context) Logger() *Logger {
+func (c Context) Logger() *log.Logger {
 	return c.logger
 }
 
@@ -133,7 +134,7 @@ func (c Context) Logger() *Logger {
 // valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *types.Config) *Context {
 
-	logger := NewLogger(os.Stdout)
+	logger := log.New(os.Stdout)
 
 	if c.RunConfig.ShowDebug {
 		logger.SetDebug(true)

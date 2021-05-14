@@ -1,4 +1,4 @@
-package lepton
+package log
 
 import (
 	"fmt"
@@ -14,8 +14,8 @@ type Logger struct {
 	debug  bool
 }
 
-// NewLogger returns an instance of Logger
-func NewLogger(output io.Writer) *Logger {
+// New returns an instance of Logger
+func New(output io.Writer) *Logger {
 	return &Logger{output, false, false, false, false}
 }
 
@@ -58,10 +58,17 @@ func (l *Logger) Warn(message string, a ...interface{}) {
 	}
 }
 
-// Error checks error level is activated to write the message
-func (l *Logger) Error(message string, a ...interface{}) {
+// Errorf checks error level is activated to write the formatted message
+func (l *Logger) Errorf(message string, a ...interface{}) {
 	if l.err == true {
 		l.Log(ConsoleColors.Red()+message+ConsoleColors.White(), a...)
+	}
+}
+
+// Error checks error level is activated to write error object
+func (l *Logger) Error(err error) {
+	if l.err == true {
+		l.Log(ConsoleColors.Red() + err.Error() + ConsoleColors.White())
 	}
 }
 

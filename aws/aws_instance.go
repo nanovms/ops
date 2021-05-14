@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -60,9 +61,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	}
 	result, err := compute.DescribeInstances(&request)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("failed getting instances")
-		os.Exit(1)
+		log.Fatalf("failed getting instances: ", err.Error())
 	}
 
 	var cinstances []lepton.CloudInstance
@@ -159,7 +158,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("getting aws images")
 	result, err := getAWSImages(p.ec2)
 	if err != nil {
-		ctx.Logger().Error("failed getting images")
+		ctx.Logger().Errorf("failed getting images")
 		return err
 	}
 
@@ -277,11 +276,11 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("running instance with input %v", instanceInput)
 	_, err = svc.RunInstances(instanceInput)
 	if err != nil {
-		fmt.Println("Could not create instance", err)
+		log.Errorf("Could not create instance", err)
 		return err
 	}
 
-	fmt.Println("Created instance", tagInstanceName)
+	log.Info("Created instance", tagInstanceName)
 
 	// create dns zones/records to associate DNS record to instance IP
 	if cloudConfig.DomainName != "" {
@@ -384,10 +383,10 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err)
 		}
 		return err
 	}
@@ -429,10 +428,10 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				log.Error(aerr)
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err)
 		}
 		return "", err
 	}

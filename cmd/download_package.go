@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path"
 
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 func downloadLocalPackage(pkg string) string {
@@ -21,23 +21,20 @@ func downloadPackage(pkg string) string {
 func downloadAndExtractPackage(packagesDirPath, pkg string) string {
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	expackage := path.Join(packagesDirPath, pkg)
 	opsPackage, err := api.DownloadPackage(pkg)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	api.ExtractPackage(opsPackage, packagesDirPath)
 
 	err = os.Remove(opsPackage)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	return expackage
