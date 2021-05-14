@@ -245,14 +245,3 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 }
-
-func excludeWhitespaces(arr []string) []string {
-	result := make([]string, 0)
-	for _, h := range arr {
-		if h == "" {
-			continue
-		}
-		result = append(result, h)
-	}
-	return result
-}
