@@ -1,16 +1,22 @@
 package aws
 
 import (
+	"bytes"
+	"crypto/sha256"
+	b64 "encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/ebs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -40,13 +46,9 @@ func (p *AWS) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string
 	return p.CustomizeImage(ctx)
 }
 
-// CreateImage - Creates image on AWS using nanos images
-// TODO : re-use and cache DefaultClient and instances.
+// CreateImage creates image on AWS using nanos images.
+// First a snapshot in AWS is created from a image in local machine and, then the snapshot is used to create an AMI.
 func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
-	// this is a really convulted setup
-	// 1) upload the image
-	// 2) create a snapshot
-	// 3) create an image
 	imageName := ctx.Config().CloudConfig.ImageName
 
 	i, _ := p.findImageByName(imageName)
@@ -54,52 +56,41 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return fmt.Errorf("failed creating image: image with name %s already exists", imageName)
 	}
 
-	err := p.Storage.CopyToBucket(ctx.Config(), imagePath)
-	if err != nil {
-		return err
-	}
-
 	c := ctx.Config()
 
-	bucket := c.CloudConfig.BucketName
 	key := c.CloudConfig.ImageName
 
-	input := &ec2.ImportSnapshotInput{
-		Description: aws.String("NanoVMs test"),
-		DiskContainer: &ec2.SnapshotDiskContainer{
-			Description: aws.String("NanoVMs test"),
-			Format:      aws.String("raw"),
-			UserBucket: &ec2.UserBucket{
-				S3Bucket: aws.String(bucket),
-				S3Key:    aws.String(key),
-			},
-		},
-	}
+	bar := progressbar.New(100)
 
-	ctx.Logger().Info("Importing snapshot from s3 image file")
-	res, err := p.ec2.ImportSnapshot(input)
+	go func() {
+		for {
+			time.Sleep(2 * time.Second)
+
+			bar.Add64(1)
+			bar.RenderBlank()
+
+			if bar.State().CurrentPercent == 99 {
+				break
+			}
+		}
+	}()
+
+	ctx.Logger().Info("Creating snapshot")
+	snapshotID, err := p.createSnapshot(imagePath)
 	if err != nil {
 		return err
 	}
 
-	snapshotID, err := p.waitSnapshotToBeReady(c, res.ImportTaskId)
-	if err != nil {
-		return err
-	}
-
-	// delete the tmp s3 image
-	ctx.Logger().Info("Deleting s3 image file")
-	err = p.Storage.DeleteFromBucket(c, key)
-	if err != nil {
-		return err
-	}
+	bar.Set(100)
+	bar.Finish()
+	fmt.Println()
 
 	// tag the volume
 	tags, _ := buildAwsTags(c.CloudConfig.Tags, key)
 
-	ctx.Logger().Log("Tagging snapshot")
+	ctx.Logger().Info("Tagging snapshot")
 	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{snapshotID},
+		Resources: aws.StringSlice([]string{snapshotID}),
 		Tags:      tags,
 	})
 	if err != nil {
@@ -122,7 +113,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 				DeviceName: aws.String("/dev/sda1"),
 				Ebs: &ec2.EbsBlockDevice{
 					DeleteOnTermination: aws.Bool(false),
-					SnapshotId:          snapshotID,
+					SnapshotId:          aws.String(snapshotID),
 					VolumeType:          aws.String("gp2"),
 				},
 			},
@@ -145,8 +136,109 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Resources: []*string{resreg.ImageId},
 		Tags:      tags,
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
+	snapshotOutput, err := p.volumeService.StartSnapshot(&ebs.StartSnapshotInput{
+		Tags:       []*ebs.Tag{},
+		VolumeSize: aws.Int64(1),
+	})
+	if err != nil {
+		return
+	}
+
+	snapshotID = *snapshotOutput.SnapshotId
+
+	f, err := os.Open(imagePath)
+	if err != nil {
+		return
+	}
+
+	blockIndex := int64(0)
+	snapshotBlocksChecksums := []byte{}
+	wg := sync.WaitGroup{}
+	awsErrors := make(chan error)
+	errors := []error{}
+
+	go func() {
+		err := <-awsErrors
+		errors = append(errors, err)
+	}()
+
+	for {
+		block := make([]byte, 524288)
+		_, err = f.Read(block)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return
+		}
+
+		h := sha256.New()
+		h.Write(block)
+		checksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
+		snapshotBlocksChecksums = append(snapshotBlocksChecksums, h.Sum(nil)...)
+
+		putSnapshotBlockInput := &ebs.PutSnapshotBlockInput{
+			BlockData:         aws.ReadSeekCloser(bytes.NewReader(block)),
+			BlockIndex:        aws.Int64(blockIndex),
+			Checksum:          aws.String(checksum),
+			ChecksumAlgorithm: aws.String("SHA256"),
+			DataLength:        aws.Int64(524288),
+			SnapshotId:        snapshotOutput.SnapshotId,
+		}
+
+		wg.Add(1)
+
+		go p.writeToBlock(putSnapshotBlockInput, &wg, awsErrors)
+
+		blockIndex++
+	}
+
+	wg.Wait()
+
+	if len(errors) != 0 {
+		err = errors[0]
+		return
+	}
+
+	h := sha256.New()
+	h.Write(snapshotBlocksChecksums)
+	snapshotChecksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	_, err = p.volumeService.CompleteSnapshot(&ebs.CompleteSnapshotInput{
+		ChangedBlocksCount:        &blockIndex,
+		Checksum:                  aws.String(snapshotChecksum),
+		ChecksumAggregationMethod: aws.String("LINEAR"),
+		ChecksumAlgorithm:         aws.String("SHA256"),
+		SnapshotId:                snapshotOutput.SnapshotId,
+	})
+	if err != nil {
+		return
+	}
+
+	err = p.ec2.WaitUntilSnapshotCompleted(&ec2.DescribeSnapshotsInput{
+		SnapshotIds: aws.StringSlice([]string{*snapshotOutput.SnapshotId}),
+	})
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, errors chan error) {
+	defer wg.Done()
+
+	_, err := p.volumeService.PutSnapshotBlock(input)
+	if err != nil {
+		errors <- err
+	}
 }
 
 var (
