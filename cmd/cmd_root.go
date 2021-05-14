@@ -31,6 +31,27 @@ func GetRootCommand() *cobra.Command {
 				}
 			}
 
+			showErrors, err := cmd.Flags().GetBool("show-errors")
+			if err != nil {
+				return err
+			}
+			showDebug, err := cmd.Flags().GetBool("show-debug")
+			if err != nil {
+				return err
+			}
+			showWarnings, err := cmd.Flags().GetBool("show-warnings")
+			if err != nil {
+				return err
+			}
+			if showErrors || showDebug || showWarnings {
+				if config == nil {
+					config = &types.Config{}
+				}
+				config.RunConfig.ShowErrors = showErrors
+				config.RunConfig.ShowDebug = showDebug
+				config.RunConfig.ShowWarnings = showWarnings
+			}
+
 			log.InitDefault(os.Stdout, config)
 			return nil
 		},

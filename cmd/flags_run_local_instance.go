@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/nanovms/ops/types"
 
@@ -32,7 +33,7 @@ type RunLocalInstanceCommandFlags struct {
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
-func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err error) {
+func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error {
 	c.Debugflags = []string{}
 
 	if flags.Trace {
@@ -46,9 +47,9 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 
 		var elfFile *elf.File
 
-		elfFile, err = api.GetElfFileInfo(c.ProgramPath)
+		elfFile, err := api.GetElfFileInfo(c.ProgramPath)
 		if err != nil {
-			return
+			return err
 		}
 
 		if api.IsDynamicLinked(elfFile) {
@@ -91,8 +92,7 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 
 	ports, err := PrepareNetworkPorts(flags.Ports)
 	if err != nil {
-		exitWithError(err.Error())
-		return
+		return err
 	}
 
 	for _, p := range ports {
@@ -116,7 +116,28 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) (err e
 
 	}
 
-	return
+	for _, port := range flags.Ports {
+		conn, err := net.DialTimeout("tcp", ":"+port, time.Second)
+		if err != nil {
+			continue // assume port is not being used
+		}
+
+		if conn != nil {
+			conn.Close()
+
+			message := fmt.Sprintf("Port %v is being used by other application", port)
+			pid, err := checkPortUserPID(port)
+			if err != nil {
+				return err
+			}
+			if pid != "" {
+				message += fmt.Sprintf(" (PID %s)", pid)
+			}
+			return errors.New(message)
+		}
+	}
+
+	return nil
 }
 
 // NewRunLocalInstanceCommandFlags returns an instance of RunLocalInstanceCommandFlags initialized with command flags values
