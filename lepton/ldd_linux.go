@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/constants"
 )
 
 // GetElfFileInfo returns an object with elf information of the path program
@@ -56,14 +55,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		return nil, err
 	}
 
-	// Check file is a valid ELF
-	isELF, err := isELF(path)
-	if err != nil {
-		return nil, errors.WrapPrefix(err, path, 0)
-	}
-	if !isELF {
-		log.Fatalf(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
-	}
+	ValidateELF(path)
 
 	if _, err := os.Stat(path); err != nil {
 		return nil, errors.Wrap(err, 1)
