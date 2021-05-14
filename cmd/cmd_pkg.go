@@ -3,17 +3,12 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
-	"net"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -223,51 +218,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
-
-	for _, port := range runLocalInstanceFlags.Ports {
-		conn, err := net.DialTimeout("tcp", ":"+port, time.Second)
-		if err != nil {
-			continue // assume port is not being used
-		}
-
-		if conn != nil {
-			conn.Close()
-
-			var (
-				pid     string
-				message = fmt.Sprintf("Port %v is being used by other application", port)
-			)
-
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-				cmd := exec.Command("lsof", "-i", ":"+port)
-				out, err := cmd.Output()
-				if err == nil {
-					scanner := bufio.NewScanner(strings.NewReader(string(out)))
-					scanner.Scan() // check header first
-					cols := excludeWhitespaces(strings.Split(scanner.Text(), " "))
-					headerIdx := -1
-					for i, v := range cols {
-						if strings.ToLower(v) == "pid" {
-							headerIdx = i
-							break
-						}
-					}
-
-					scanner.Scan()
-					line := strings.Trim(scanner.Text(), " ")
-					if line != "" {
-						cols = excludeWhitespaces(strings.Split(line, " "))
-						pid = cols[headerIdx]
-					}
-				}
-			}
-
-			if pid != "" {
-				message += fmt.Sprintf(" (PID %s)", pid)
-			}
-			exitWithError(message)
-		}
-	}
 
 	c := lepton.NewConfig()
 
