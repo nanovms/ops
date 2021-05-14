@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"debug/elf"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
