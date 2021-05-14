@@ -55,7 +55,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	}
 
 	// Check file is a valid ELF
-	ValidateExecutable(path)
+	ValidateELF(path)
 
 	if _, err := os.Stat(path); err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -119,28 +119,4 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 		}
 	}
 	return deps, nil
-}
-
-// isELF returns true if file is valid ELF
-func isELF(path string) (bool, error) {
-	fd, err := elf.Open(path)
-	if err != nil {
-		if strings.Contains(err.Error(), "bad magic number") {
-			return false, nil
-		}
-		return false, err
-	}
-	fd.Close()
-	return true, nil
-}
-
-// ValidateExecutable validates ELF executable format
-func ValidateExecutable(executablePath string) {
-	valid, err := isELF(executablePath)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-	if !valid {
-		exitWithError(fmt.Sprintf(`only ELF binaries are supported. Is thia a Linux binary? run "file %s" on it`, executablePath))
-	}
 }

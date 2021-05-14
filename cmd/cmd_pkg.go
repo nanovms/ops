@@ -234,7 +234,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if strings.Contains(executableName, packageFolder) {
 		executableName = filepath.Base(executableName)
 	}
-	lepton.ValidateExecutable(filepath.Join(pkgFlags.PackagePath(), executableName))
+	lepton.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
