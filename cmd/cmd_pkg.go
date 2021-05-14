@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -229,23 +228,13 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	// Validate local package
+	// Validate executable
 	packageFolder := filepath.Base(pkgFlags.PackagePath())
 	executableName := c.Program
 	if strings.Contains(executableName, packageFolder) {
 		executableName = filepath.Base(executableName)
 	}
-	executablePath := filepath.Join(pkgFlags.PackagePath(), executableName)
-
-	if runtime.GOOS == "linux" {
-		valid, err := lepton.IsELF(executablePath)
-		if err != nil {
-			exitWithError(err.Error())
-		}
-		if !valid {
-			exitWithError(fmt.Sprintf("package %s has invalid executable", packageFolder))
-		}
-	}
+	lepton.ValidateExecutable(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {

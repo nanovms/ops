@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/constants"
 )
 
 // GetElfFileInfo returns an object with elf information of the path program
@@ -56,14 +55,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	}
 
 	// Check file is a valid ELF
-	isELF, err := IsELF(path)
-	if err != nil {
-		return nil, errors.WrapPrefix(err, path, 0)
-	}
-	if !isELF {
-		fmt.Printf(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Linux binary? run 'file "+path+"' on it\n")
-		os.Exit(1)
-	}
+	ValidateExecutable(path)
 
 	if _, err := os.Stat(path); err != nil {
 		return nil, errors.Wrap(err, 1)
@@ -129,8 +121,8 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	return deps, nil
 }
 
-// IsELF returns true if file is valid ELF
-func IsELF(path string) (bool, error) {
+// isELF returns true if file is valid ELF
+func isELF(path string) (bool, error) {
 	fd, err := elf.Open(path)
 	if err != nil {
 		if strings.Contains(err.Error(), "bad magic number") {
@@ -140,4 +132,14 @@ func IsELF(path string) (bool, error) {
 	}
 	fd.Close()
 	return true, nil
+}
+
+func ValidateExecutable(executablePath string) {
+	valid, err := isELF(executablePath)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if !valid {
+		exitWithError(fmt.Sprintf(`only ELF binaries are supported. Is thia a Linux binary? run "file %s" on it`, executablePath))
+	}
 }
