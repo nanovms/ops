@@ -169,3 +169,16 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	}
 	return unique(libs), nil
 }
+
+// isELF returns true if file is valid ELF
+func isELF(path string) (bool, error) {
+	fd, err := elf.Open(path)
+	if err != nil {
+		if strings.Contains(err.Error(), "bad magic number") {
+			return false, nil
+		}
+		return false, err
+	}
+	fd.Close()
+	return true, nil
+}
