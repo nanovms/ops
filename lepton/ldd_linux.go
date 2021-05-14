@@ -134,6 +134,7 @@ func isELF(path string) (bool, error) {
 	return true, nil
 }
 
+// ValidateExecutable validates ELF executable format
 func ValidateExecutable(executablePath string) {
 	valid, err := isELF(executablePath)
 	if err != nil {
