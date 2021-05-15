@@ -174,7 +174,7 @@ func TestGetInstanceByID(t *testing.T) {
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
 		Return(defaultInstancesList(), nil)
 
-	instance, err := p.GetInstanceByID(ctx, "instance-2")
+	instance, err := p.GetInstance(ctx, "instance-2")
 
 	assert.NilError(t, err)
 

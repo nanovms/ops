@@ -319,6 +319,16 @@ func (p *AWS) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) 
 	return cinstances, nil
 }
 
+// GetInstance returns instance with given name
+func (p *AWS) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+	for _, instance := range getAWSInstances(ctx.Config().CloudConfig.Zone, nil) {
+		if instance.Name == name {
+			return &instance, nil
+		}
+	}
+	return nil, nil
+}
+
 // ListInstances lists instances on AWS
 func (p *AWS) ListInstances(ctx *lepton.Context) error {
 	instances, err := p.GetInstances(ctx)

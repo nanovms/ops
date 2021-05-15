@@ -36,7 +36,7 @@ type Provider interface {
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
 	GetInstances(ctx *Context) ([]CloudInstance, error)
-	GetInstanceByID(ctx *Context, id string) (*CloudInstance, error)
+	GetInstance(ctx *Context, name string) (*CloudInstance, error)
 	DeleteInstance(ctx *Context, instancename string) error
 	StopInstance(ctx *Context, instancename string) error
 	StartInstance(ctx *Context, instancename string) error
