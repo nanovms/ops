@@ -174,9 +174,9 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error
 	return StartVirtualMachine(instancename)
 }
 
-// GetInstanceByID return a hyper-v virtual machine details with ID specified
-func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
-	output, err := GetVirtualMachineByName(id)
+// GetInstance returns hyper-v virtual machine with given name
+func (p *Provider) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+	output, err := GetVirtualMachineByName(name)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.Clou
 			Created: lepton.Time2Human(date),
 		}, nil
 	}
-	return nil, fmt.Errorf(`vm with name "%s" not found`, id)
+	return nil, fmt.Errorf(`vm with name "%s" not found`, name)
 }
 
 // GetInstanceLogs reads content from named pipe file

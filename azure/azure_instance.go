@@ -225,14 +225,14 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (a *Azure) GetInstanceByID(ctx *lepton.Context, id string) (vm *lepton.CloudInstance, err error) {
+// GetInstance returns instance with given name
+func (a *Azure) GetInstance(ctx *lepton.Context, name string) (vm *lepton.CloudInstance, err error) {
 	vmClient := a.getVMClient()
 
 	nicClient := a.getNicClient()
 	ipClient := a.getIPClient()
 
-	result, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
+	result, err := vmClient.Get(context.TODO(), a.groupName, name, compute.InstanceView)
 	if err != nil {
 		return nil, err
 	}

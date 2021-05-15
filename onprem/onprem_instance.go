@@ -81,20 +81,20 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the instance name passed by argument if it exists
-func (p *OnPrem) GetInstanceByID(ctx *lepton.Context, instanceName string) (*lepton.CloudInstance, error) {
+// GetInstance returns instance with given name
+func (p *OnPrem) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, i := range instances {
-		if i.Name == instanceName {
+		if i.Name == name {
 			return &i, nil
 		}
 	}
 
-	return nil, fmt.Errorf("instance with name \"%s\" not found", instanceName)
+	return nil, fmt.Errorf("instance with name \"%s\" not found", name)
 }
 
 // GetInstances return all instances on prem
@@ -187,7 +187,7 @@ func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
 func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error {
 
 	var pid int
-	instance, err := p.GetInstanceByID(ctx, instancename)
+	instance, err := p.GetInstance(ctx, instancename)
 	if err != nil {
 		return err
 	}
