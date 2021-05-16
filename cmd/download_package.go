@@ -13,9 +13,12 @@ func downloadLocalPackage(pkg string) string {
 	return downloadAndExtractPackage(packagesDirPath, pkg)
 }
 
+func packageDirectoryPath() string {
+	return path.Join(api.GetOpsHome(), "packages")
+}
+
 func downloadPackage(pkg string) string {
-	packagesDirPath := path.Join(api.GetOpsHome(), "packages")
-	return downloadAndExtractPackage(packagesDirPath, pkg)
+	return downloadAndExtractPackage(packageDirectoryPath(), pkg)
 }
 
 func downloadAndExtractPackage(packagesDirPath, pkg string) string {
