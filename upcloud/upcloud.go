@@ -49,9 +49,12 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 		return errors.New(`"UPCLOUD_PASSWORD" not set`)
 	}
 
-	p.zone = os.Getenv("UPCLOUD_ZONE")
+	p.zone = c.Zone
 	if p.zone == "" {
-		return errors.New(`"UPCLOUD_ZONE" not set`)
+		p.zone = os.Getenv("UPCLOUD_ZONE")
+		if p.zone == "" {
+			return errors.New(`"UPCLOUD_ZONE" not set`)
+		}
 	}
 
 	if p.upcloud == nil {
