@@ -142,7 +142,10 @@ func cmdGetPackage(cmd *cobra.Command, args []string) {
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
-	expackage := downloadPackage(args[0])
+	expackage := filepath.Join(packageDirectoryPath(), args[0])
+	if _, err := os.Stat(expackage); os.IsNotExist(err) {
+		expackage = downloadPackage(args[0])
+	}
 
 	description := path.Join(expackage, "README.md")
 	if _, err := os.Stat(description); err != nil {
