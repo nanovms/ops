@@ -291,7 +291,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			time.Sleep(2 * time.Second)
 
 			ctx.Logger().Debug("getting instance")
-			instance, err := p.GetInstanceByID(ctx, tagInstanceName)
+			instance, err := p.GetInstanceByName(ctx, tagInstanceName)
 			if err != nil {
 				pollCount--
 				continue
@@ -321,12 +321,13 @@ func (p *AWS) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) 
 
 // GetInstance returns instance with given name
 func (p *AWS) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	for _, instance := range getAWSInstances(ctx.Config().CloudConfig.Zone, nil) {
-		if instance.Name == name {
-			return &instance, nil
-		}
+	var filters []*ec2.Filter
+	filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})})
+	instances := getAWSInstances(ctx.Config().CloudConfig.Zone, filters)
+	if len(instances) == 0 {
+		return nil, lepton.ErrInstanceNotFound(name)
 	}
-	return nil, nil
+	return &instances[0], nil
 }
 
 // ListInstances lists instances on AWS
