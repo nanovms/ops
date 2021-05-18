@@ -54,7 +54,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstance returns instance with given name
-func (v *Vultr) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	return nil, errors.New("un-implemented")
 }
 

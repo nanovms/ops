@@ -82,7 +82,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstance returns instance with given name
-func (p *OnPrem) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
 func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error {
 
 	var pid int
-	instance, err := p.GetInstance(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}

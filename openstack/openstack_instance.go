@@ -142,7 +142,7 @@ func (o *OpenStack) CreateInstance(ctx *lepton.Context) error {
 			fmt.Printf(".")
 			time.Sleep(2 * time.Second)
 
-			instance, err := o.GetInstance(ctx, server.Name)
+			instance, err := o.GetInstanceByName(ctx, server.Name)
 			if err != nil || len(instance.PublicIps) == 0 {
 				pollCount--
 				continue
@@ -184,7 +184,7 @@ func (o *OpenStack) addBootFromVolumeParams(
 }
 
 // GetInstance returns instance with given name
-func (o *OpenStack) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (o *OpenStack) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	opts := servers.ListOpts{
 		Name: name,
 	}

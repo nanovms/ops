@@ -175,7 +175,7 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error
 }
 
 // GetInstance returns hyper-v virtual machine with given name
-func (p *Provider) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	output, err := GetVirtualMachineByName(name)
 	if err != nil {
 		return nil, err

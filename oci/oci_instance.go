@@ -195,7 +195,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 }
 
 // GetInstance returns oci instance with given name
-func (p *Provider) GetInstance(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
+func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return
@@ -214,7 +214,7 @@ func (p *Provider) GetInstance(ctx *lepton.Context, name string) (instance *lept
 
 // DeleteInstance removes an instance
 func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := p.GetInstance(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")
@@ -231,7 +231,7 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) erro
 
 // StopInstance stops an instance
 func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := p.GetInstance(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")
@@ -248,7 +248,7 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error 
 
 // StartInstance starts an instance
 func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := p.GetInstance(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("failed getting instance")

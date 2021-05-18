@@ -226,7 +226,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstance returns instance with given name
-func (a *Azure) GetInstance(ctx *lepton.Context, name string) (vm *lepton.CloudInstance, err error) {
+func (a *Azure) GetInstanceByName(ctx *lepton.Context, name string) (vm *lepton.CloudInstance, err error) {
 	vmClient := a.getVMClient()
 
 	nicClient := a.getNicClient()

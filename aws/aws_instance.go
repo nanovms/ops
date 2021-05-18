@@ -320,7 +320,7 @@ func (p *AWS) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) 
 }
 
 // GetInstance returns instance with given name
-func (p *AWS) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (p *AWS) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	for _, instance := range getAWSInstances(ctx.Config().CloudConfig.Zone, nil) {
 		if instance.Name == name {
 			return &instance, nil

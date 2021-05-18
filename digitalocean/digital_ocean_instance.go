@@ -55,7 +55,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstance returns instance with given name
-func (do *DigitalOcean) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (do *DigitalOcean) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	droplets, err := do.GetInstances(ctx)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (do *DigitalOcean) ListInstances(ctx *lepton.Context) error {
 
 // DeleteInstance deletes instance from DO
 func (do *DigitalOcean) DeleteInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstance(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (do *DigitalOcean) DeleteInstance(ctx *lepton.Context, instancename string)
 
 // StartInstance starts an instance in DO
 func (do *DigitalOcean) StartInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstance(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (do *DigitalOcean) StartInstance(ctx *lepton.Context, instancename string) 
 
 // StopInstance deletes instance from DO
 func (do *DigitalOcean) StopInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstance(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}

@@ -187,7 +187,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstance returns instance with given name
-func (v *Vsphere) GetInstance(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (v *Vsphere) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	m := view.NewManager(v.client)
 
 	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
