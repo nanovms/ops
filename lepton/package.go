@@ -228,6 +228,10 @@ func ExtractPackage(archive string, dest string) {
 				panic(err)
 			}
 			f.Close()
+		case tar.TypeSymlink:
+			if err := os.Symlink(header.Linkname, target); err != nil {
+				log.Warn(err.Error())
+			}
 		}
 	}
 }
