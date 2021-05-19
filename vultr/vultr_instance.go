@@ -53,8 +53,8 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (v *Vultr) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
+// GetInstanceByName returns instance with given name
+func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	return nil, errors.New("un-implemented")
 }
 

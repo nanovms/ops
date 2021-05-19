@@ -54,25 +54,24 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (do *DigitalOcean) GetInstanceByID(ctx *lepton.Context, id string) (droplet *lepton.CloudInstance, err error) {
+// GetInstanceByName returns instance with given name
+func (do *DigitalOcean) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	droplets, err := do.GetInstances(ctx)
 	if err != nil {
-		return
+		return nil, err
+	}
+
+	if len(droplets) == 0 {
+		return nil, lepton.ErrInstanceNotFound(name)
 	}
 
 	for _, d := range droplets {
-		if d.Name == id {
-			droplet = &d
+		if d.Name == name {
+			return &d, nil
 		}
 	}
 
-	if droplet == nil {
-		err = fmt.Errorf(`droplet with name "%s" not found`, id)
-		return
-	}
-
-	return
+	return nil, lepton.ErrInstanceNotFound(name)
 }
 
 // GetInstances return all instances on DigitalOcean
@@ -157,7 +156,7 @@ func (do *DigitalOcean) ListInstances(ctx *lepton.Context) error {
 
 // DeleteInstance deletes instance from DO
 func (do *DigitalOcean) DeleteInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstanceByID(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}
@@ -174,7 +173,7 @@ func (do *DigitalOcean) DeleteInstance(ctx *lepton.Context, instancename string)
 
 // StartInstance starts an instance in DO
 func (do *DigitalOcean) StartInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstanceByID(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}
@@ -191,7 +190,7 @@ func (do *DigitalOcean) StartInstance(ctx *lepton.Context, instancename string) 
 
 // StopInstance deletes instance from DO
 func (do *DigitalOcean) StopInstance(ctx *lepton.Context, instancename string) error {
-	instance, err := do.GetInstanceByID(ctx, instancename)
+	instance, err := do.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return err
 	}

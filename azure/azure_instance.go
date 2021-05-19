@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
@@ -225,15 +226,18 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (a *Azure) GetInstanceByID(ctx *lepton.Context, id string) (vm *lepton.CloudInstance, err error) {
+// GetInstanceByName returns instance with given name
+func (a *Azure) GetInstanceByName(ctx *lepton.Context, name string) (vm *lepton.CloudInstance, err error) {
 	vmClient := a.getVMClient()
 
 	nicClient := a.getNicClient()
 	ipClient := a.getIPClient()
 
-	result, err := vmClient.Get(context.TODO(), a.groupName, id, compute.InstanceView)
+	result, err := vmClient.Get(context.TODO(), a.groupName, name, compute.InstanceView)
 	if err != nil {
+		if management.IsResourceNotFoundError(err) {
+			return nil, lepton.ErrInstanceNotFound(name)
+		}
 		return nil, err
 	}
 

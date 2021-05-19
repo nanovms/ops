@@ -120,21 +120,6 @@ func (p *AWS) getNameTag(tags []*ec2.Tag) *ec2.Tag {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (p *AWS) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
-	var filters []*ec2.Filter
-
-	filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{id})})
-
-	instances := getAWSInstances(ctx.Config().CloudConfig.Zone, filters)
-
-	if len(instances) == 0 {
-		return nil, lepton.ErrInstanceNotFound(id)
-	}
-
-	return &instances[0], nil
-}
-
 // GetStorage returns storage interface for cloud provider
 func (p *AWS) GetStorage() lepton.Storage {
 	return p.Storage

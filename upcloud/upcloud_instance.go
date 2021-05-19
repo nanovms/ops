@@ -2,7 +2,6 @@ package upcloud
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -180,7 +179,7 @@ func (p *Provider) asyncGetInstance(ctx *lepton.Context, id string, instancesCh 
 
 // DeleteInstance removes server
 func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) (err error) {
-	instance, err := p.getInstanceByName(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return
 	}
@@ -209,7 +208,7 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) (err
 
 // StopInstance stops server in upcloud
 func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) (err error) {
-	instance, err := p.getInstanceByName(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return
 	}
@@ -232,7 +231,7 @@ func (p *Provider) stopServer(uuid string) (err error) {
 
 // StartInstance initiates server in upcloud
 func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) (err error) {
-	instance, err := p.getInstanceByName(ctx, instancename)
+	instance, err := p.GetInstanceByName(ctx, instancename)
 	if err != nil {
 		return
 	}
@@ -254,7 +253,8 @@ func (p *Provider) startServer(uuid string) (err error) {
 	return
 }
 
-func (p *Provider) getInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
+// GetInstanceByName returns upcloud instance with given name
+func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
 	ctx.Logger().Debug(`getting instance by name "%s"`, name)
 	server, err := p.getServerByName(ctx, name)
 	if err != nil {
@@ -281,8 +281,7 @@ func (p *Provider) getServerByName(ctx *lepton.Context, name string) (server *up
 		}
 	}
 
-	err = fmt.Errorf(`server with title "%s" not found`, name)
-
+	err = lepton.ErrInstanceNotFound(name)
 	return
 }
 

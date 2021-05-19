@@ -155,13 +155,17 @@ func (p *GCloud) ListInstances(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (p *GCloud) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
-	req := p.Service.Instances.Get(ctx.Config().CloudConfig.ProjectID, ctx.Config().CloudConfig.Zone, id)
+// GetInstanceByName returns instance with given name
+func (p *GCloud) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+	req := p.Service.Instances.Get(ctx.Config().CloudConfig.ProjectID, ctx.Config().CloudConfig.Zone, name)
 
 	instance, err := req.Do()
 	if err != nil {
 		return nil, err
+	}
+
+	if instance == nil {
+		return nil, lepton.ErrInstanceNotFound(name)
 	}
 
 	return p.convertToCloudInstance(instance), nil

@@ -186,8 +186,8 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstanceByID returns the instance with the id passed by argument if it exists
-func (v *Vsphere) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.CloudInstance, error) {
+// GetInstanceByName returns instance with given name
+func (v *Vsphere) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	m := view.NewManager(v.client)
 
 	cv, err := m.CreateContainerView(context.TODO(), v.client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
@@ -198,13 +198,13 @@ func (v *Vsphere) GetInstanceByID(ctx *lepton.Context, id string) (*lepton.Cloud
 	defer cv.Destroy(context.TODO())
 
 	var vms []mo.VirtualMachine
-	err = cv.RetrieveWithFilter(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms, property.Filter{"name": id})
+	err = cv.RetrieveWithFilter(context.TODO(), []string{"VirtualMachine"}, []string{"summary"}, &vms, property.Filter{"name": name})
 	if err != nil {
 		return nil, err
 	}
 
 	if len(vms) == 0 {
-		return nil, lepton.ErrInstanceNotFound(id)
+		return nil, lepton.ErrInstanceNotFound(name)
 	}
 
 	return v.convertToCloudInstance(&vms[0]), nil
