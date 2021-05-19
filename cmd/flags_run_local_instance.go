@@ -22,6 +22,7 @@ type RunLocalInstanceCommandFlags struct {
 	Debug          bool
 	Force          bool
 	GDBPort        int
+	MissingFiles   bool
 	NoTrace        []string
 	Ports          []string
 	SkipBuild      bool
@@ -63,6 +64,10 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.SyscallSummary {
 		c.Debugflags = append(c.Debugflags, "syscall_summary")
+	}
+
+	if flags.MissingFiles {
+		c.Debugflags = append(c.Debugflags, "missing_files")
 	}
 
 	if flags.Smp > 0 {
@@ -174,6 +179,11 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
+	flags.MissingFiles, err = cmdFlags.GetBool("missing-files")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.NoTrace, err = cmdFlags.GetStringArray("no-trace")
 	if err != nil {
 		exitWithError(err.Error())
@@ -238,6 +248,7 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
 	cmdFlags.Bool("syscall-summary", false, "print syscall summary on exit")
+	cmdFlags.Bool("missing-files", false, "print list of files not found on image at exit")
 }
 
 // isIPAddressValid checks whether IP address is valid
