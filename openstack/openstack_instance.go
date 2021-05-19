@@ -183,7 +183,7 @@ func (o *OpenStack) addBootFromVolumeParams(
 	}
 }
 
-// GetInstance returns instance with given name
+// GetInstanceByName returns instance with given name
 func (o *OpenStack) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	opts := servers.ListOpts{
 		Name: name,

@@ -54,7 +54,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstance returns instance with given name
+// GetInstanceByName returns instance with given name
 func (do *DigitalOcean) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	droplets, err := do.GetInstances(ctx)
 	if err != nil {

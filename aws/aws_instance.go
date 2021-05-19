@@ -319,7 +319,7 @@ func (p *AWS) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) 
 	return cinstances, nil
 }
 
-// GetInstance returns instance with given name
+// GetInstanceByName returns instance with given name
 func (p *AWS) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	var filters []*ec2.Filter
 	filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})})

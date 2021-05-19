@@ -186,7 +186,7 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstance returns instance with given name
+// GetInstanceByName returns instance with given name
 func (v *Vsphere) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	m := view.NewManager(v.client)
 

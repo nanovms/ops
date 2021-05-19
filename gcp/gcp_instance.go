@@ -155,7 +155,7 @@ func (p *GCloud) ListInstances(ctx *lepton.Context) error {
 	return nil
 }
 
-// GetInstance returns instance with given name
+// GetInstanceByName returns instance with given name
 func (p *GCloud) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	req := p.Service.Instances.Get(ctx.Config().CloudConfig.ProjectID, ctx.Config().CloudConfig.Zone, name)
 

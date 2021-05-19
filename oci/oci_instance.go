@@ -194,7 +194,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 	return
 }
 
-// GetInstance returns oci instance with given name
+// GetInstanceByName returns oci instance with given name
 func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {

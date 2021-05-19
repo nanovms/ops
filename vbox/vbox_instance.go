@@ -257,7 +257,7 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) (err 
 	return
 }
 
-// GetInstance returns VirtualBox vm with given name
+// GetInstanceByName returns VirtualBox vm with given name
 func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
 	return
 }

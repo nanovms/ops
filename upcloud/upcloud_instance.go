@@ -253,7 +253,7 @@ func (p *Provider) startServer(uuid string) (err error) {
 	return
 }
 
-// GetInstance returns upcloud instance with given name
+// GetInstanceByName returns upcloud instance with given name
 func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
 	ctx.Logger().Debug(`getting instance by name "%s"`, name)
 	server, err := p.getServerByName(ctx, name)
