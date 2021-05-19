@@ -94,7 +94,7 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 		}
 	}
 
-	return nil, fmt.Errorf("instance with name \"%s\" not found", name)
+	return nil, lepton.ErrInstanceNotFound(name)
 }
 
 // GetInstances return all instances on prem

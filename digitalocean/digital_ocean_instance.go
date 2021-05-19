@@ -61,13 +61,17 @@ func (do *DigitalOcean) GetInstanceByName(ctx *lepton.Context, name string) (*le
 		return nil, err
 	}
 
+	if len(droplets) == 0 {
+		return nil, lepton.ErrInstanceNotFound(name)
+	}
+
 	for _, d := range droplets {
 		if d.Name == name {
 			return &d, nil
 		}
 	}
 
-	return nil, fmt.Errorf(`droplet with name "%s" not found`, name)
+	return nil, lepton.ErrInstanceNotFound(name)
 }
 
 // GetInstances return all instances on DigitalOcean

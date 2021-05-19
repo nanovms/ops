@@ -209,7 +209,7 @@ func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.
 			Created: lepton.Time2Human(date),
 		}, nil
 	}
-	return nil, fmt.Errorf(`vm with name "%s" not found`, name)
+	return nil, lepton.ErrInstanceNotFound(name)
 }
 
 // GetInstanceLogs reads content from named pipe file

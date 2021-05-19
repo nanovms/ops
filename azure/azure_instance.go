@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
@@ -234,6 +235,9 @@ func (a *Azure) GetInstanceByName(ctx *lepton.Context, name string) (vm *lepton.
 
 	result, err := vmClient.Get(context.TODO(), a.groupName, name, compute.InstanceView)
 	if err != nil {
+		if management.IsResourceNotFoundError(err) {
+			return nil, lepton.ErrInstanceNotFound(name)
+		}
 		return nil, err
 	}
 

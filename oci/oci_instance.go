@@ -208,7 +208,7 @@ func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance
 		}
 	}
 
-	err = errors.New("instance not found")
+	err = lepton.ErrInstanceNotFound(name)
 	return
 }
 

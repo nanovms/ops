@@ -10,13 +10,11 @@ import (
 )
 
 var (
-	// ErrInstanceNotFound is used when an instance doesn't exist in provider
-	ErrInstanceNotFound = func(id string) error { return fmt.Errorf("Instance with id %v not found", id) }
-)
-
-var (
 	// TTLDefault is the default ttl value used to create DNS records
 	TTLDefault = 300
+
+	// Prefix message for instance not found error
+	errPrefixInstanceNotFound = "instance not found"
 )
 
 // Provider is an interface that provider must implement
@@ -44,6 +42,16 @@ type Provider interface {
 	PrintInstanceLogs(ctx *Context, instancename string, watch bool) error
 
 	VolumeService
+}
+
+// ErrInstanceNotFound creates new error stating instance with given name cannot be found
+func ErrInstanceNotFound(name string) error {
+	return fmt.Errorf("%s: %s", errPrefixInstanceNotFound, name)
+}
+
+// IsInstanceNotFoundError checks if given error is an ErrInstanceNotFound
+func IsInstanceNotFoundError(err error) bool {
+	return strings.HasPrefix(err.Error(), errPrefixInstanceNotFound)
 }
 
 // Storage is an interface that provider's storage must implement

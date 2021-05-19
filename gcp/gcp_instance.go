@@ -164,6 +164,10 @@ func (p *GCloud) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 		return nil, err
 	}
 
+	if instance == nil {
+		return nil, lepton.ErrInstanceNotFound(name)
+	}
+
 	return p.convertToCloudInstance(instance), nil
 }
 

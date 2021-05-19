@@ -2,7 +2,6 @@ package upcloud
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -282,8 +281,7 @@ func (p *Provider) getServerByName(ctx *lepton.Context, name string) (server *up
 		}
 	}
 
-	err = fmt.Errorf(`server with title "%s" not found`, name)
-
+	err = lepton.ErrInstanceNotFound(name)
 	return
 }
 
