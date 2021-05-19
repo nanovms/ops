@@ -138,7 +138,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
-	downloadLocalPackage(args[0])
+	downloadPackage(args[0])
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
