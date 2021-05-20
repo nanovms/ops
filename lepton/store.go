@@ -50,7 +50,7 @@ func (s *JSONStore) Get(id string) (NanosVolume, error) {
 			return vol, nil
 		}
 	}
-	return vol, errVolumeNotFound(id)
+	return vol, ErrVolumeNotFound(id)
 }
 
 // GetAll gets all volume data
@@ -107,7 +107,7 @@ func (s *JSONStore) Update(v NanosVolume) error {
 		volumes = append(volumes, cur)
 	}
 	if vol.ID == "" {
-		return errVolumeNotFound(v.ID)
+		return ErrVolumeNotFound(v.ID)
 	}
 	f.Close()
 
@@ -152,7 +152,7 @@ func (s *JSONStore) Delete(id string) (NanosVolume, error) {
 		volumes = append(volumes, cur)
 	}
 	if vol.ID == "" {
-		return vol, errVolumeNotFound(id)
+		return vol, ErrVolumeNotFound(id)
 	}
 	f.Close()
 

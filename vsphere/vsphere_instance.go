@@ -183,6 +183,16 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 		log.Error(err)
 	}
 
+	task, err = vm.PowerOn(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	_, err = task.WaitForResult(context.TODO())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

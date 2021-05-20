@@ -35,7 +35,8 @@ const (
 )
 
 var (
-	errVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
+	// ErrVolumeNotFound is error returned when a volume with a given id does not exist
+	ErrVolumeNotFound = func(id string) error { return errors.Errorf("volume with UUID %s not found", id) }
 )
 
 // CreateLocalVolume creates volume on ops directory
