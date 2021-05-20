@@ -62,6 +62,8 @@ func GetOpsHome() string {
 	instances := path.Join(opshome, "instances")
 	manifests := path.Join(opshome, "manifests")
 	volumes := path.Join(opshome, "volumes")
+	localPackages := path.Join(opshome, "local_packages")
+	packages := path.Join(opshome, "packages")
 
 	if _, err := os.Stat(images); os.IsNotExist(err) {
 		os.MkdirAll(images, 0755)
@@ -77,6 +79,14 @@ func GetOpsHome() string {
 
 	if _, err := os.Stat(volumes); os.IsNotExist(err) {
 		os.MkdirAll(volumes, 0755)
+	}
+
+	if _, err := os.Stat(localPackages); os.IsNotExist(err) {
+		os.MkdirAll(localPackages, 0755)
+	}
+
+	if _, err := os.Stat(packages); os.IsNotExist(err) {
+		os.MkdirAll(packages, 0755)
 	}
 
 	return opshome
