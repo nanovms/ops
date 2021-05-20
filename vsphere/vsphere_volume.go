@@ -55,15 +55,12 @@ func (v *Vsphere) CreateVolume(ctx *lepton.Context, name, data, size, provider s
 		return vol, err
 	}
 
-	// TODO: Implement an alternative solution to register the disk using the object manager.
-	// The advantages are the simplification of operations like getting attachments and deleting
-	// I could not having this working due to the error stated in https://github.com/vmware/govmomi/issues/2174.
-	// objectManager := vslm.NewObjectManager(ds.Client())
+	objectManager := vslm.NewObjectManager(ds.Client())
 
-	// _, err = objectManager.RegisterDisk(context.TODO(), ds.NewURL("volumes/"+vol.Name+".vmdk").String(), vol.Name)
-	// if err != nil {
-	// return vol, fmt.Errorf("register disk: %v", err)
-	// }
+	_, err = objectManager.RegisterDisk(context.TODO(), ds.NewURL("volumes/"+vol.Name+".vmdk").String(), vol.Name)
+	if err != nil {
+		return vol, fmt.Errorf("register disk: %v", err)
+	}
 
 	return vol, nil
 }
@@ -132,45 +129,44 @@ func (v *Vsphere) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, err
 	}
 
 	// TODO: use object manager to get all volumes listed and convert them to nanos volumes, blocked by https://github.com/vmware/govmomi/issues/2174
-	// disks, err := v.getAllVolumes(ds)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("get all volumes: %v", disks)
-	// }
+	disks, err := v.getAllVolumes(ds)
+	if err != nil {
+		return nil, fmt.Errorf("get all volumes: %v", disks)
+	}
 
 	return vols, nil
 }
 
-// DeleteVolume is a stub to satisfy VolumeService interface
-func (v *Vsphere) DeleteVolume(ctx *lepton.Context, name string) error {
-	// TODO: Blocked by https://github.com/vmware/govmomi/issues/2174
-	// f := find.NewFinder(v.client, true)
-	// ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
-	// if err != nil {
-	// 	return err
-	// }
+// DeleteVolume deletes a volume on vsphere
+func (v *Vsphere) DeleteVolume(ctx *lepton.Context, name string) (err error) {
+	f := find.NewFinder(v.client, true)
+	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
+	if err != nil {
+		return err
+	}
 
-	// objectManager := vslm.NewObjectManager(ds.Client())
+	objectManager := vslm.NewObjectManager(ds.Client())
 
-	// disks, err := v.getAllVolumes(ds)
-	// if err != nil {
-	// 	return fmt.Errorf("get all volumes: %v", disks)
-	// }
+	disks, err := v.getAllVolumes(ds)
+	if err != nil {
+		return fmt.Errorf("get all volumes: %v", disks)
+	}
 
-	// for _, disk := range *disks {
-	// 	if disk.Config.Name == name {
-	// 		task, err := objectManager.Delete(context.TODO(), ds, disk.Config.Id.Id)
-	// 		if err != nil {
-	// 			return err
-	// 		}
+	for _, disk := range *disks {
+		if disk.Config.Name == name {
+			task, err := objectManager.Delete(context.TODO(), ds, disk.Config.Id.Id)
+			if err != nil {
+				return err
+			}
 
-	// 		err = task.Wait(context.TODO())
-	// 		if err != nil {
-	// 			return fmt.Errorf("deleting %s: %v", disk.Config.Id.Id, err)
-	// 		}
-	// 	}
-	// }
+			err = task.Wait(context.TODO())
+			if err != nil {
+				return fmt.Errorf("deleting %s: %v", disk.Config.Id.Id, err)
+			}
+		}
+	}
 
-	return fmt.Errorf("un-implemented")
+	return
 }
 
 // AttachVolume attaches a volume to an instance
