@@ -24,6 +24,7 @@ bold="\e[1m"
 dim="\e[2m"
 
 RELEASES_URL="https://storage.googleapis.com/cli"
+REPOSITORY_URL="https://raw.githubusercontent.com/nanovms/ops/master"
 
 
 initArch() {
@@ -64,8 +65,6 @@ download_file() {
 }
 
 ops_download() {
-
-
   # determine install directory if required
   if [ -z "$INSTALL_DIRECTORY" ]; then
       INSTALL_DIRECTORY="$HOME/.ops"
@@ -77,6 +76,7 @@ ops_download() {
 
   # assemble expected release URL
 
+  # Download ops
   if [ "$ARCH" = "aarch64" ]; then
     BINARY_URL="$RELEASES_URL/${OS}/${ARCH}/ops"
   else 
@@ -87,12 +87,21 @@ ops_download() {
 
   download_file "$BINARY_URL" "$DOWNLOAD_FILE"
   printf "\033[2A$cyan> Downloading latest release... ✓$reset\033[K\n"
-  printf "\033[K\n\033[1A"
   chmod +x "$DOWNLOAD_FILE"
 
   INSTALL_NAME="ops"
   mkdir -p $INSTALL_DIRECTORY/bin
   mv "$DOWNLOAD_FILE" "$INSTALL_DIRECTORY/bin/$INSTALL_NAME"
+
+  # Download bash completion script
+  DOWNLOAD_FILE=$(mktemp -t bash_completion.XXXXXXXXXX)
+  download_file "${REPOSITORY_URL}/bash_completion.sh" "$DOWNLOAD_FILE"
+  printf "\033[K\n\033[1A"
+  chmod +x "$DOWNLOAD_FILE"
+
+  INSTALL_PATH="${INSTALL_DIRECTORY}/scripts/bash_completion.sh"
+  mkdir -p "${INSTALL_DIRECTORY}/scripts"
+  mv "$DOWNLOAD_FILE" "$INSTALL_PATH"
 }
 
 
@@ -268,7 +277,9 @@ ops_set_user_permissions(){
 ops_link() {
   printf "$cyan> Adding to bash profile...$reset\n"
   OPS_PROFILE="$(ops_detect_profile)"
-  SOURCE_STR="# OPS config\nexport OPS_DIR=\"\$HOME/.ops\"\nexport PATH=\"\$HOME/.ops/bin:\$PATH\"\n"
+  SOURCE_STR="# OPS config\nexport OPS_DIR=\"\$HOME/.ops\"\nexport PATH=\"\$HOME/.ops/bin:\$PATH\"\nsource \"\$HOME/.ops/scripts/bash_completion.sh\""
+
+  echo "------------- ${OPS_PROFILE}"
 
   # Create the ops.sh file
   echo "$SOURCE_STR" > "$HOME/.ops/ops.sh"
