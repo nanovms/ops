@@ -243,7 +243,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	}
 
 	for k, v := range c.MapDirs {
-		err := addMappedFiles(k, v, m)
+		err := addMappedFiles(k, v, c.LocalFilesParentDirectory, m)
 		if err != nil {
 			return err
 		}
@@ -348,18 +348,25 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 	return m, nil
 }
 
-func addMappedFiles(src string, dest string, m *fs.Manifest) error {
+func addMappedFiles(src string, dest string, workDir string, m *fs.Manifest) error {
 	dir, pattern := filepath.Split(src)
+	parentDir := filepath.Base(dir)
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+
+		if hostpath == dir {
 			return nil
 		}
+
 		hostdir, filename := filepath.Split(hostpath)
 		matched, _ := filepath.Match(pattern, filename)
 		if matched {
+			if info.IsDir() {
+				return m.AddDirectory(filepath.Join(parentDir, filepath.Base(hostpath)), workDir)
+			}
+
 			reldir, err := filepath.Rel(dir, hostdir)
 			if err != nil {
 				return err
