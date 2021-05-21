@@ -356,15 +356,16 @@ func addMappedFiles(src string, dest string, workDir string, m *fs.Manifest) err
 			return err
 		}
 
-		if hostpath == dir {
-			return nil
-		}
-
 		hostdir, filename := filepath.Split(hostpath)
 		matched, _ := filepath.Match(pattern, filename)
 		if matched {
 			if info.IsDir() {
-				return m.AddDirectory(filepath.Join(parentDir, filepath.Base(hostpath)), workDir)
+				addedDir := parentDir
+				hostBase := filepath.Base(hostpath)
+				if hostBase != parentDir {
+					filepath.Join(parentDir, hostBase)
+				}
+				return m.AddDirectory(addedDir, workDir)
 			}
 
 			reldir, err := filepath.Rel(dir, hostdir)
