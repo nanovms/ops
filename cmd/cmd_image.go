@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -194,17 +195,43 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	// Check if image being used
+	images, err := p.GetImages(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	imageMap := make(map[string]string)
+	for _, name := range args {
+		for _, img := range images {
+			if img.Name == name {
+				imageMap[name] = img.Path
+				break
+			}
+		}
+	}
+
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	if len(instances) > 0 {
+		for imgName, imgPath := range imageMap {
+			for _, is := range instances {
+				if is.Image == imgPath {
+					fmt.Printf("image '%s' is being used\n", imgName)
+					os.Exit(1)
+				}
+			}
+		}
+	}
+
 	imagesToDelete := []string{}
 
 	if lru != "" {
 		olderThanDate, err := SubtractTimeNotation(time.Now(), lru)
 		if err != nil {
 			exitWithError(fmt.Errorf("failed getting date from lru flag: %s", err).Error())
-		}
-
-		images, err := p.GetImages(ctx)
-		if err != nil {
-			exitWithError(err.Error())
 		}
 
 		for _, image := range images {
