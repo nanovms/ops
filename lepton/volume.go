@@ -24,6 +24,7 @@ type NanosVolume struct {
 	Status     string `json:"status"`
 }
 
+// MatchedByQueries returns true if this volume matched one or more given query.
 func (v NanosVolume) MatchedByQueries(query map[string]string) bool {
 	matched := false
 	for key, value := range query {
