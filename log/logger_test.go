@@ -84,35 +84,6 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
-	t.Run("Error should not print to output by default", func(t *testing.T) {
-		var b bytes.Buffer
-		logger := New(&b)
-
-		logger.Errorf("test %d,%d,%d", 1, 2, 3)
-
-		got := b.String()
-		want := ""
-
-		if got != want {
-			t.Errorf("got %v want %v", got, want)
-		}
-	})
-
-	t.Run("Error should print if set", func(t *testing.T) {
-		var b bytes.Buffer
-		logger := New(&b)
-
-		logger.SetError(true)
-		logger.Errorf("test %d,%d,%d", 1, 2, 3)
-
-		got := b.String()
-		want := ConsoleColors.Red() + "test 1,2,3" + ConsoleColors.White() + newline
-
-		if got != want {
-			t.Errorf("got %v want %v", got, want)
-		}
-	})
-
 	t.Run("Debug should not print to output by default", func(t *testing.T) {
 		var b bytes.Buffer
 		logger := New(&b)
