@@ -1,7 +1,6 @@
 package onprem
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -41,7 +40,6 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 	}
 
 	buildDir := ctx.Config().VolumesDir
-
 	volumes, err := GetVolumes(buildDir, query)
 	if err != nil {
 		return err
@@ -50,11 +48,6 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 	if len(volumes) == 1 {
 		volumePath := path.Join(volumes[0].Path)
 		err := os.Remove(volumePath)
-		if err != nil {
-			return err
-		}
-		symlinkPath := path.Join(buildDir, volumes[0].Name+".raw")
-		err = os.Remove(symlinkPath)
 		if err != nil {
 			return err
 		}
@@ -101,91 +94,49 @@ func (op *OnPrem) parseSize(vol lepton.NanosVolume) string {
 // TODO might be better to interface this
 func GetVolumes(dir string, query map[string]string) ([]lepton.NanosVolume, error) {
 	var vols []lepton.NanosVolume
-	mvols := make(map[string]lepton.NanosVolume)
 
-	fi, err := ioutil.ReadDir(dir)
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return vols, err
 	}
 
-	// this scans the directory twice, which can be improved
-	// looking for symlink first
-	for _, info := range fi {
+	for _, info := range files {
 		if info.IsDir() {
 			continue
 		}
 
-		label := strings.TrimSuffix(info.Name(), ".raw")
-		nl := strings.Split(strings.TrimSuffix(label, ".raw"), lepton.VolumeDelimiter)
-
-		if len(nl) > 1 {
+		filename := strings.TrimSuffix(info.Name(), ".raw")
+		nameParts := strings.Split(filename, lepton.VolumeDelimiter)
+		if len(nameParts) < 2 { // invalid file name
 			continue
 		}
 
-		link, err := os.Readlink(path.Join(dir, info.Name()))
-		if err != nil {
-			continue
-		}
-
-		src, err := os.Stat(link)
-		// ignore dangling symlink
-		if err != nil {
-			continue
-		}
-
-		volParts := strings.Split(strings.TrimSuffix(src.Name(), ".raw"), lepton.VolumeDelimiter)
-
-		id := volParts[1]
-
-		mvols[label] = lepton.NanosVolume{
-			ID:        id,
-			Name:      label,
-			Label:     label,
-			Size:      lepton.Bytes2Human(src.Size()),
-			Path:      path.Join(dir, src.Name()),
-			CreatedAt: src.ModTime().String(),
-		}
+		vols = append(vols, lepton.NanosVolume{
+			ID:        nameParts[1],
+			Name:      nameParts[0],
+			Label:     nameParts[0],
+			Size:      lepton.Bytes2Human(info.Size()),
+			Path:      path.Join(dir, info.Name()),
+			CreatedAt: info.ModTime().String(),
+		})
 	}
 
-	for _, vol := range mvols {
-		vols = append(vols, vol)
-	}
-	if query == nil {
-		return vols, nil
-	}
-
-	vols = filterVolume(vols, query)
-	return vols, nil
+	return filterVolume(vols, query)
 }
 
-// emulate kv store to easily extend query terms
-// although multiple marshals/unmarshals makes this too convoluted
-// another approach is to simply filter by designated field and repeat
-// each time we need to query another field
-func filterVolume(all []lepton.NanosVolume, query map[string]string) []lepton.NanosVolume {
-	var vols []lepton.NanosVolume
-	b, _ := json.Marshal(all)
-	// empty slice and repopulate with filtered results
-	all = nil
-	var tmpVols []map[string]interface{}
-	json.Unmarshal(b, &tmpVols)
-	for k, v := range query {
-		var vol lepton.NanosVolume
-		for _, tmp := range tmpVols {
-			// check if key is queried
-			vv, ok := tmp[k]
-			if !ok {
-				continue
-			}
+// Filter given volumes to match given query
+func filterVolume(all []lepton.NanosVolume, query map[string]string) ([]lepton.NanosVolume, error) {
+	if len(query) == 0 {
+		return all, nil
+	}
 
-			if vv == v {
-				b, _ := json.Marshal(tmp)
-				json.Unmarshal(b, &vol)
-				vols = append(vols, vol)
-			}
+	var vols []lepton.NanosVolume
+	for _, vol := range all {
+		if vol.MatchedByQueries(query) {
+			vols = append(vols, vol)
 		}
 	}
-	return vols
+	return vols, nil
 }
 
 // AddMounts adds Mounts and RunConfig.Mounts to image from flags

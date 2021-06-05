@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
-	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -23,6 +22,34 @@ type NanosVolume struct {
 	AttachedTo string `json:"attached_to"`
 	CreatedAt  string `json:"created_at"`
 	Status     string `json:"status"`
+}
+
+// MatchedByQueries returns true if this volume matched one or more given query.
+func (v NanosVolume) MatchedByQueries(query map[string]string) bool {
+	matched := false
+	for key, value := range query {
+		switch key {
+		case "id":
+			matched = matched || (value == v.ID)
+		case "name":
+			matched = matched || (value == v.Name)
+		case "label":
+			matched = matched || (value == v.Label)
+		case "data":
+			matched = matched || (value == v.Data)
+		case "size":
+			matched = matched || (value == v.Size)
+		case "path":
+			matched = matched || (value == v.Path)
+		case "attached_to":
+			matched = matched || (value == v.AttachedTo)
+		case "created_at":
+			matched = matched || (value == v.CreatedAt)
+		case "status":
+			matched = matched || (value == v.Status)
+		}
+	}
+	return matched
 }
 
 const (
@@ -85,8 +112,6 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 		fmt.Printf("volume: UUID: failed adding UUID info for volume %s\n", name)
 		fmt.Printf("rename the file to %s%s%s should you want to attach it by UUID\n", name, VolumeDelimiter, uuid)
 		fmt.Printf("symlink the file to %s should you want to attach it by label\n", name)
-	} else {
-		symlinkVolume(config.VolumesDir, name, uuid)
 	}
 
 	vol = NanosVolume{
@@ -97,40 +122,6 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 		Path:  rawPath,
 	}
 	return vol, nil
-}
-
-// symlinkVolume creates a symlink to volume that acts as volume label
-// if label of the same name exists for a volume, removes the label from the older volume
-// and assigns it to the newly created volume
-func symlinkVolume(dir, name, uuid string) error {
-	msg := fmt.Sprintf("volume: label: failed adding label info for volume %s\n", name)
-	msg = fmt.Sprintf("%vsymlink the file to %s should you want to attach it by label\n", msg, name)
-
-	src := path.Join(dir, fmt.Sprintf("%s%s%s.raw", name, VolumeDelimiter, uuid))
-	dst := path.Join(dir, fmt.Sprintf("%s.raw", name))
-
-	_, err := os.Lstat(dst)
-	if err == nil {
-		err := os.Remove(dst)
-		if err != nil {
-			log.Errorf(msg)
-			log.Error(err)
-			return err
-		}
-	}
-	if err != nil && !os.IsNotExist(err) {
-		log.Errorf(msg)
-		log.Error(err)
-		return err
-	}
-
-	err = os.Symlink(src, dst)
-	if err != nil {
-		log.Errorf(msg)
-		log.Error(err)
-		return err
-	}
-	return nil
 }
 
 // buildVolumeManifest builds manifests for non-empty volume
