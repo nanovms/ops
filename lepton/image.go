@@ -165,11 +165,12 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 			return err
 		}
 
+		filePath := strings.Split(hostpath, rootPath)
 		if info.IsDir() {
+			m.MkdirPath(strings.TrimPrefix(filePath[1], string(filepath.Separator)))
 			return nil
 		}
 
-		filePath := strings.Split(hostpath, rootPath)
 		err = m.AddFile(filePath[1], hostpath)
 		if err != nil {
 			return err

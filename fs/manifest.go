@@ -503,6 +503,11 @@ func mkDir(parent map[string]interface{}, dir string) map[string]interface{} {
 	return newDir
 }
 
+// MkdirPath is mkDirPath() using root directory as parent
+func (m *Manifest) MkdirPath(path string) {
+	mkDirPath(m.rootDir(), path)
+}
+
 func mkDirPath(parent map[string]interface{}, path string) map[string]interface{} {
 	parts := strings.Split(path, "/")
 	for _, element := range parts {
