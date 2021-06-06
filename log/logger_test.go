@@ -48,7 +48,7 @@ func TestLogger(t *testing.T) {
 		logger.Info("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := ConsoleColors.Blue() + "test 1,2,3" + ConsoleColors.White() + newline
+		want := ConsoleColors.Blue() + "test 1,2,3" + ConsoleColors.Reset() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -77,36 +77,7 @@ func TestLogger(t *testing.T) {
 		logger.Warn("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := ConsoleColors.Yellow() + "test 1,2,3" + ConsoleColors.White() + newline
-
-		if got != want {
-			t.Errorf("got %v want %v", got, want)
-		}
-	})
-
-	t.Run("Error should not print to output by default", func(t *testing.T) {
-		var b bytes.Buffer
-		logger := New(&b)
-
-		logger.Errorf("test %d,%d,%d", 1, 2, 3)
-
-		got := b.String()
-		want := ""
-
-		if got != want {
-			t.Errorf("got %v want %v", got, want)
-		}
-	})
-
-	t.Run("Error should print if set", func(t *testing.T) {
-		var b bytes.Buffer
-		logger := New(&b)
-
-		logger.SetError(true)
-		logger.Errorf("test %d,%d,%d", 1, 2, 3)
-
-		got := b.String()
-		want := ConsoleColors.Red() + "test 1,2,3" + ConsoleColors.White() + newline
+		want := ConsoleColors.Yellow() + "test 1,2,3" + ConsoleColors.Reset() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -135,7 +106,7 @@ func TestLogger(t *testing.T) {
 		logger.Debug("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
-		want := ConsoleColors.Cyan() + "test 1,2,3" + ConsoleColors.White() + newline
+		want := ConsoleColors.Cyan() + "test 1,2,3" + ConsoleColors.Reset() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -152,7 +123,7 @@ func TestLoggerError(t *testing.T) {
 		logger.Error(errors.New("something wrong is happening"))
 
 		got := b.String()
-		want := ConsoleColors.Red() + "something wrong is happening" + ConsoleColors.White() + newline
+		want := ConsoleColors.Red() + "something wrong is happening" + ConsoleColors.Reset() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
@@ -167,7 +138,7 @@ func TestLoggerError(t *testing.T) {
 		logger.Errorf("something %s is happening", "fishy")
 
 		got := b.String()
-		want := ConsoleColors.Red() + "something fishy is happening" + ConsoleColors.White() + newline
+		want := ConsoleColors.Red() + "something fishy is happening" + ConsoleColors.Reset() + newline
 
 		if got != want {
 			t.Errorf("got %v want %v", got, want)
