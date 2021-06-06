@@ -47,30 +47,30 @@ func (l *Logger) Log(message string, a ...interface{}) {
 // Info checks info level is activated to write the message
 func (l *Logger) Info(message string, a ...interface{}) {
 	if l.info == true {
-		l.Log(ConsoleColors.Blue()+message+ConsoleColors.White(), a...)
+		l.Log(ConsoleColors.Blue()+message+ConsoleColors.Reset(), a...)
 	}
 }
 
 // Warn checks warn level is activated to write the message
 func (l *Logger) Warn(message string, a ...interface{}) {
 	if l.warn == true {
-		l.Log(ConsoleColors.Yellow()+message+ConsoleColors.White(), a...)
+		l.Log(ConsoleColors.Yellow()+message+ConsoleColors.Reset(), a...)
 	}
 }
 
 // Errorf checks error level is activated to write the formatted message
 func (l *Logger) Errorf(message string, a ...interface{}) {
-	l.Log(ConsoleColors.Red()+message+ConsoleColors.White(), a...)
+	l.Log(ConsoleColors.Red()+message+ConsoleColors.Reset(), a...)
 }
 
 // Error checks error level is activated to write error object
 func (l *Logger) Error(err error) {
-	l.Log(ConsoleColors.Red() + err.Error() + ConsoleColors.White())
+	l.Log(ConsoleColors.Red() + err.Error() + ConsoleColors.Reset())
 }
 
 // Debug checks debug level is activated to write the message
 func (l *Logger) Debug(message string, a ...interface{}) {
 	if l.debug == true {
-		l.Log(ConsoleColors.Cyan()+message+ConsoleColors.White(), a...)
+		l.Log(ConsoleColors.Cyan()+message+ConsoleColors.Reset(), a...)
 	}
 }

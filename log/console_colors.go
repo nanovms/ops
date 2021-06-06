@@ -38,6 +38,11 @@ func (ConsoleColorsType) White() string {
 	return "\033[37m"
 }
 
+// Reset returns original color directive
+func (ConsoleColorsType) Reset() string {
+	return "\033[0m"
+}
+
 var (
 	// ConsoleColors is a ConsoleColorsType singleton, which has a set of methods that return the color directive to change console color
 	ConsoleColors = ConsoleColorsType{}
