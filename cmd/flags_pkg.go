@@ -59,6 +59,10 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	c.Program = pkgConfig.Program
 	c.Version = pkgConfig.Version
 
+	c.Language = pkgConfig.Language
+	c.Runtime = pkgConfig.Runtime
+	c.Description = pkgConfig.Description
+
 	c.Args = append(pkgConfig.Args, c.Args...)
 	c.Dirs = append(pkgConfig.Dirs, c.Dirs...)
 	c.Files = append(pkgConfig.Files, c.Files...)
