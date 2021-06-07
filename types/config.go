@@ -91,6 +91,15 @@ type Config struct {
 	// Version
 	Version string
 
+	// Language
+	Language string
+
+	// Runtime
+	Runtime string
+
+	// Description
+	Description string
+
 	// VolumesDir is the directory used to store and fetch volumes
 	VolumesDir string
 }
