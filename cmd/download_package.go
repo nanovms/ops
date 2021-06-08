@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mholt/archiver/v3"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
@@ -20,26 +19,6 @@ func downloadLocalPackage(pkg string) string {
 
 func localPackageDirectoryPath() string {
 	return path.Join(api.GetOpsHome(), "local_packages")
-}
-
-func endsWith(str string, suffixes []string) bool {
-	for _, suffix := range suffixes {
-		if strings.HasSuffix(str, suffix) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func startsWith(str string, prefixes []string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(str, prefix) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func packageDirectoryPath() string {
@@ -113,13 +92,11 @@ func extractFilePackage(pkg string, name string) string {
 
 	if err == nil {
 		if !f.IsDir() {
-			supportedFormats := []string{".zip", ".tar", ".tar.gz", ".rar"}
-
-			if endsWith(pkg, supportedFormats) {
-				return extractZippedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
+			if strings.HasSuffix(pkg, ".tar.gz") {
+				return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
 			}
 
-			log.Fatalf("Unsupported file format. Supported formats: ", strings.Join(supportedFormats, ", "))
+			log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
 		}
 
 		tempDirectory, err := ioutil.TempDir("", "*")
@@ -135,17 +112,13 @@ func extractFilePackage(pkg string, name string) string {
 	return ""
 }
 
-func extractZippedPackage(pkg string, target string) string {
+func extractArchivedPackage(pkg string, target string) string {
 	tempDirectory, err := ioutil.TempDir("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = archiver.Unarchive(pkg, tempDirectory)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	api.ExtractPackage(pkg, tempDirectory)
 	return movePackageFiles(tempDirectory, target)
 }
 
