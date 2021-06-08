@@ -113,6 +113,9 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 	progressCounter := NewWriteCounter(int(srcStat.Size()))
 	progressCounter.Start()
 	_, err = io.Copy(destFile, io.TeeReader(srcFile, progressCounter))
+	if err != nil {
+		return "", err
+	}
 	progressCounter.Finish()
 
 	return packagepath, nil
