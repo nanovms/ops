@@ -70,7 +70,7 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 
 	// Check environment variable override
 	ePkgBaseURL := os.Getenv("OPS_PACKAGE_BASE_URL")
-	if len(ePkgBaseURL) > 0 {
+	if ePkgBaseURL != "" {
 		pkgBaseURL = ePkgBaseURL
 	}
 
@@ -137,7 +137,7 @@ func GetPackageList(config *types.Config) (*map[string]Package, error) {
 
 	// Check environment var override
 	ePkgManifestURL := os.Getenv("OPS_PACKAGE_MANIFEST_URL")
-	if len(ePkgManifestURL) > 0 {
+	if ePkgManifestURL != "" {
 		pkgManifestURL = ePkgManifestURL
 	}
 
