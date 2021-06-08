@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -76,8 +75,6 @@ func extractZippedPackage(pkg string, target string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(tempDirectory)
 
 	err = archiver.Unarchive(pkg, tempDirectory)
 	if err != nil {
