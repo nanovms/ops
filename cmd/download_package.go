@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -10,7 +11,6 @@ import (
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
-	"github.com/otiai10/copy"
 )
 
 func downloadLocalPackage(pkg string) string {
@@ -50,6 +50,64 @@ func downloadPackage(pkg string) string {
 	return downloadAndExtractPackage(packageDirectoryPath(), pkg)
 }
 
+func copyFile(src, dst string) error {
+	var err error
+	var srcfd *os.File
+	var dstfd *os.File
+	var srcinfo os.FileInfo
+
+	if srcfd, err = os.Open(src); err != nil {
+		return err
+	}
+	defer srcfd.Close()
+
+	if dstfd, err = os.Create(dst); err != nil {
+		return err
+	}
+	defer dstfd.Close()
+
+	if _, err = io.Copy(dstfd, srcfd); err != nil {
+		return err
+	}
+	if srcinfo, err = os.Stat(src); err != nil {
+		return err
+	}
+	return os.Chmod(dst, srcinfo.Mode())
+}
+
+func copyDirectory(src string, dst string) error {
+	var err error
+	var fds []os.FileInfo
+	var srcinfo os.FileInfo
+
+	if srcinfo, err = os.Stat(src); err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(dst, srcinfo.Mode()); err != nil {
+		return err
+	}
+
+	if fds, err = ioutil.ReadDir(src); err != nil {
+		return err
+	}
+	for _, fd := range fds {
+		srcfp := path.Join(src, fd.Name())
+		dstfp := path.Join(dst, fd.Name())
+
+		if fd.IsDir() {
+			if err = copyDirectory(srcfp, dstfp); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			if err = copyFile(srcfp, dstfp); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	return nil
+}
+
 func extractFilePackage(pkg string, name string) string {
 	f, err := os.Stat(pkg)
 
@@ -69,7 +127,7 @@ func extractFilePackage(pkg string, name string) string {
 			log.Fatal(err)
 		}
 
-		copy.Copy(pkg, tempDirectory)
+		copyDirectory(pkg, tempDirectory)
 		return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
 	}
 
