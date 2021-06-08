@@ -86,7 +86,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	if local {
 		packages, err = api.GetLocalPackageList()
 	} else {
-		packages, err = api.GetPackageList()
+		packages, err = api.GetPackageList(lepton.NewConfig())
 	}
 	if err != nil {
 		log.Panicf("failed getting packages: %s", err)
@@ -152,13 +152,13 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
-	downloadPackage(args[0])
+	downloadPackage(args[0], lepton.NewConfig())
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	expackage := filepath.Join(packageDirectoryPath(), args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0])
+		expackage = downloadPackage(args[0], lepton.NewConfig())
 	}
 
 	description := path.Join(expackage, "README.md")
@@ -187,7 +187,7 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 func cmdPackageContents(cmd *cobra.Command, args []string) {
 	expackage := filepath.Join(packageDirectoryPath(), args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0])
+		expackage = downloadPackage(args[0], lepton.NewConfig())
 	}
 
 	filepath.Walk(expackage, func(hostpath string, info os.FileInfo, err error) error {
@@ -232,7 +232,7 @@ func cmdAddPackage(cmd *cobra.Command, args []string) {
 		name = token
 	}
 
-	extractFilePackage(args[0], name)
+	extractFilePackage(args[0], name, lepton.NewConfig())
 
 	fmt.Println(name)
 }

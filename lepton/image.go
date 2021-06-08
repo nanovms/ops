@@ -134,7 +134,7 @@ func addCommonFilesToManifest(m *fs.Manifest) error {
 			return err
 		}
 	}
-	ExtractPackage(localtar, commonPath)
+	ExtractPackage(localtar, commonPath, NewConfig())
 
 	localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
 	if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
@@ -452,7 +452,7 @@ func DownloadNightlyImages(c *types.Config) error {
 		}
 		// update local timestamp
 		updateLocalTimestamp(remote)
-		ExtractPackage(localtar, NightlyLocalFolder)
+		ExtractPackage(localtar, NightlyLocalFolder, c)
 	}
 
 	return nil
@@ -472,7 +472,7 @@ func DownloadCommonFiles() error {
 	if err != nil {
 		return err
 	}
-	ExtractPackage(localtar, commonPath)
+	ExtractPackage(localtar, commonPath, NewConfig())
 	return nil
 }
 
@@ -504,7 +504,7 @@ func DownloadReleaseImages(version string) error {
 		os.MkdirAll(localFolder, 0755)
 	}
 
-	ExtractPackage(localtar, localFolder)
+	ExtractPackage(localtar, localFolder, NewConfig())
 
 	// FIXME hack to rename stage3.img to kernel.img
 	oldKernel := path.Join(localFolder, "stage3.img")

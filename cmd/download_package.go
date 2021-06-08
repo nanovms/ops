@@ -12,9 +12,9 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-func downloadLocalPackage(pkg string) string {
+func downloadLocalPackage(pkg string, config *types.Config) string {
 	packagesDirPath := localPackageDirectoryPath()
-	return downloadAndExtractPackage(packagesDirPath, pkg)
+	return downloadAndExtractPackage(packagesDirPath, pkg, config)
 }
 
 func localPackageDirectoryPath() string {
@@ -25,8 +25,8 @@ func packageDirectoryPath() string {
 	return path.Join(api.GetOpsHome(), "packages")
 }
 
-func downloadPackage(pkg string) string {
-	return downloadAndExtractPackage(packageDirectoryPath(), pkg)
+func downloadPackage(pkg string, config *types.Config) string {
+	return downloadAndExtractPackage(packageDirectoryPath(), pkg, config)
 }
 
 func copyFile(src, dst string) error {
@@ -87,7 +87,7 @@ func copyDirectory(src string, dst string) error {
 	return nil
 }
 
-func extractFilePackage(pkg string, name string) string {
+func extractFilePackage(pkg string, name string, config *types.Config) string {
 	f, err := os.Stat(pkg)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +95,7 @@ func extractFilePackage(pkg string, name string) string {
 
 	if !f.IsDir() {
 		if strings.HasSuffix(pkg, ".tar.gz") {
-			return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
+			return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name), config)
 		}
 
 		log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
@@ -110,13 +110,13 @@ func extractFilePackage(pkg string, name string) string {
 	return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
 }
 
-func extractArchivedPackage(pkg string, target string) string {
+func extractArchivedPackage(pkg string, target string, config *types.Config) string {
 	tempDirectory, err := ioutil.TempDir("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	api.ExtractPackage(pkg, tempDirectory)
+	api.ExtractPackage(pkg, tempDirectory, config)
 	return movePackageFiles(tempDirectory, target)
 }
 
@@ -147,19 +147,19 @@ func movePackageFiles(origin string, target string) string {
 	return target
 }
 
-func downloadAndExtractPackage(packagesDirPath, pkg string) string {
+func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) string {
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	expackage := path.Join(packagesDirPath, pkg)
-	opsPackage, err := api.DownloadPackage(pkg)
+	opsPackage, err := api.DownloadPackage(pkg, config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	api.ExtractPackage(opsPackage, packagesDirPath)
+	api.ExtractPackage(opsPackage, packagesDirPath, config)
 
 	err = os.Remove(opsPackage)
 	if err != nil {
