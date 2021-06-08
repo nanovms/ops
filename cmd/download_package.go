@@ -89,27 +89,25 @@ func copyDirectory(src string, dst string) error {
 
 func extractFilePackage(pkg string, name string) string {
 	f, err := os.Stat(pkg)
-
-	if err == nil {
-		if !f.IsDir() {
-			if strings.HasSuffix(pkg, ".tar.gz") {
-				return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
-			}
-
-			log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
-		}
-
-		tempDirectory, err := ioutil.TempDir("", "*")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		copyDirectory(pkg, tempDirectory)
-		return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	log.Fatal(err)
-	return ""
+	if !f.IsDir() {
+		if strings.HasSuffix(pkg, ".tar.gz") {
+			return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
+		}
+
+		log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
+	}
+
+	tempDirectory, err := ioutil.TempDir("", "*")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	copyDirectory(pkg, tempDirectory)
+	return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
 }
 
 func extractArchivedPackage(pkg string, target string) string {
