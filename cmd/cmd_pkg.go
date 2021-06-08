@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
@@ -47,19 +49,31 @@ func PackageCommands() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Run:   cmdPackageContents,
 	}
+
+	var cmdAddPackage = &cobra.Command{
+		Use:   "add [package]",
+		Short: "push a folder or a zipped package to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdAddPackage,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "load"},
+		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
 	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
+
+	cmdAddPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
+
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdGetPackage)
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
+	cmdPkg.AddCommand(cmdAddPackage)
 	cmdPkg.AddCommand(LoadCommand())
 	return cmdPkg
 }
@@ -192,6 +206,35 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 		return nil
 	})
+}
+
+func randomToken(n int) (string, error) {
+	bytes := make([]byte, n)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
+}
+
+func cmdAddPackage(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	name, _ := flags.GetString("name")
+
+	if name == "" {
+		token, err := randomToken(8)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		name = token
+	}
+
+	extractFilePackage(args[0], name)
+
+	fmt.Println(name)
 }
 
 // LoadCommand helps you to run application with package
