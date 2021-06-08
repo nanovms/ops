@@ -58,12 +58,12 @@ func extractFilePackage(pkg string, name string) string {
 
 			if endsWith(pkg, supportedFormats) {
 				return extractZippedPackage(pkg, path.Join(localPackageDirectoryPath(), name))
-			} else {
-				log.Fatalf("Unsupported file format. Supported formats: ", strings.Join(supportedFormats, ", "))
 			}
-		} else {
-			return movePackageFiles(pkg, path.Join(localPackageDirectoryPath(), name))
+
+			log.Fatalf("Unsupported file format. Supported formats: ", strings.Join(supportedFormats, ", "))
 		}
+
+		return movePackageFiles(pkg, path.Join(localPackageDirectoryPath(), name))
 	}
 
 	log.Fatal(err)
