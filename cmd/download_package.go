@@ -10,6 +10,7 @@ import (
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
+	"github.com/otiai10/copy"
 )
 
 func downloadLocalPackage(pkg string) string {
@@ -63,7 +64,13 @@ func extractFilePackage(pkg string, name string) string {
 			log.Fatalf("Unsupported file format. Supported formats: ", strings.Join(supportedFormats, ", "))
 		}
 
-		return movePackageFiles(pkg, path.Join(localPackageDirectoryPath(), name))
+		tempDirectory, err := ioutil.TempDir("", "*")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		copy.Copy(pkg, tempDirectory)
+		return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
 	}
 
 	log.Fatal(err)

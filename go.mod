@@ -24,6 +24,7 @@ require (
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
+	github.com/otiai10/copy v1.6.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/schollz/progressbar/v2 v2.13.2
 	github.com/schollz/progressbar/v3 v3.7.3
