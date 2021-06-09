@@ -102,6 +102,12 @@ type Config struct {
 
 	// VolumesDir is the directory used to store and fetch volumes
 	VolumesDir string
+
+	// PackageBaseURL gives URL for downloading of packages
+	PackageBaseURL string
+
+	// PackageManifestURL stores info about all packages
+	PackageManifestURL string
 }
 
 // ProviderConfig give provider details

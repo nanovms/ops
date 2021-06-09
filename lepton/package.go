@@ -37,8 +37,8 @@ type Package struct {
 }
 
 // DownloadPackage downloads package by name
-func DownloadPackage(name string) (string, error) {
-	packages, err := GetPackageList()
+func DownloadPackage(name string, config *types.Config) (string, error) {
+	packages, err := GetPackageList(config)
 	if err != nil {
 		return "", nil
 	}
@@ -49,24 +49,122 @@ func DownloadPackage(name string) (string, error) {
 
 	archivename := name + ".tar.gz"
 	packagepath := path.Join(PackagesCache, archivename)
-	if _, err := os.Stat(packagepath); os.IsNotExist(err) {
-		if err = DownloadFileWithProgress(packagepath,
-			fmt.Sprintf(PackageBaseURL, archivename), 600); err != nil {
-			return "", err
+	_, err = os.Stat(packagepath)
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+
+	if err == nil {
+		return packagepath, nil
+	}
+
+	pkgBaseURL := PackageBaseURL
+
+	// Check config override
+	if config != nil {
+		cPkgBaseURL := strings.Trim(config.PackageBaseURL, " ")
+		if len(cPkgBaseURL) > 0 {
+			pkgBaseURL = cPkgBaseURL
 		}
 	}
+
+	// Check environment variable override
+	ePkgBaseURL := os.Getenv("OPS_PACKAGE_BASE_URL")
+	if ePkgBaseURL != "" {
+		pkgBaseURL = ePkgBaseURL
+	}
+
+	isNetworkRepo := !strings.HasPrefix(pkgBaseURL, "file://")
+	if isNetworkRepo {
+		var fileURL string
+		if strings.HasSuffix(pkgBaseURL, "/") {
+			fileURL = pkgBaseURL + archivename
+		} else {
+			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivename)
+		}
+
+		if err = DownloadFileWithProgress(packagepath, fileURL, 600); err != nil {
+			return "", err
+		}
+
+		return packagepath, nil
+	}
+
+	pkgBaseURL = strings.TrimPrefix(pkgBaseURL, "file://")
+	srcPath := filepath.Join(pkgBaseURL, archivename)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return "", err
+	}
+	defer srcFile.Close()
+
+	srcStat, err := srcFile.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	destFile, err := os.Create(packagepath)
+	if err != nil {
+		return "", err
+	}
+	defer destFile.Close()
+
+	progressCounter := NewWriteCounter(int(srcStat.Size()))
+	progressCounter.Start()
+	_, err = io.Copy(destFile, io.TeeReader(srcFile, progressCounter))
+	if err != nil {
+		return "", err
+	}
+	progressCounter.Finish()
+
 	return packagepath, nil
 }
 
 // GetPackageList provides list of packages
-func GetPackageList() (*map[string]Package, error) {
+func GetPackageList(config *types.Config) (*map[string]Package, error) {
 	var err error
 
+	pkgManifestURL := PackageManifestURL
+
+	// Check config override
+	if config != nil {
+		cPkgManifestURL := strings.Trim(config.PackageManifestURL, " ")
+		if len(cPkgManifestURL) > 0 {
+			pkgManifestURL = cPkgManifestURL
+		}
+	}
+
+	// Check environment var override
+	ePkgManifestURL := os.Getenv("OPS_PACKAGE_MANIFEST_URL")
+	if ePkgManifestURL != "" {
+		pkgManifestURL = ePkgManifestURL
+	}
+
 	packageManifest := GetPackageManifestFile()
-	stat, err := os.Stat(packageManifest)
-	if os.IsNotExist(err) || PackageManifestChanged(stat, PackageManifestURL) {
-		if err = DownloadFile(packageManifest, PackageManifestURL, 10, false); err != nil {
+	if strings.HasPrefix(pkgManifestURL, "file://") {
+		destFile, err := os.OpenFile(packageManifest, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
+		if err != nil {
 			return nil, err
+		}
+		defer destFile.Close()
+
+		pkgManifestURL = strings.TrimPrefix(pkgManifestURL, "file://")
+		srcFile, err := os.Open(pkgManifestURL)
+		if err != nil {
+			return nil, err
+		}
+		defer srcFile.Close()
+
+		if _, err := io.Copy(destFile, srcFile); err != nil {
+			return nil, err
+		}
+	} else {
+		stat, err := os.Stat(packageManifest)
+		if os.IsNotExist(err) || PackageManifestChanged(stat, pkgManifestURL) {
+			if err = DownloadFile(packageManifest, pkgManifestURL, 10, false); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -164,7 +262,7 @@ func sha256Of(filename string) string {
 
 // ExtractPackage extracts package in ops home.
 // This function is currently over-loaded.
-func ExtractPackage(archive string, dest string) {
+func ExtractPackage(archive, dest string, config *types.Config) {
 	sha := sha256Of(archive)
 
 	// hack
@@ -176,7 +274,7 @@ func ExtractPackage(archive string, dest string) {
 		fname := filepath.Base(archive)
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
 
-		list, err := GetPackageList()
+		list, err := GetPackageList(config)
 		if err != nil {
 			panic(err)
 		}

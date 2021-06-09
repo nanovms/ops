@@ -26,7 +26,7 @@ const releaseBaseURL string = "https://storage.googleapis.com/nanos/release/"
 const nightlyReleaseBaseURL string = "https://storage.googleapis.com/nanos/release/nightly/"
 
 // PackageBaseURL gives URL for downloading of packages
-const PackageBaseURL string = "https://storage.googleapis.com/packagehub/%v"
+const PackageBaseURL string = "https://storage.googleapis.com/packagehub"
 
 // PackageManifestURL stores info about all packages
 const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"

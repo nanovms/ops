@@ -42,7 +42,7 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			return fmt.Errorf("No local package with the name %s found", flags.Package)
 		}
 
-		downloadPackage(flags.Package)
+		downloadPackage(flags.Package, c)
 	}
 
 	manifestPath := path.Join(packagePath, "package.manifest")
