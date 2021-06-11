@@ -22,6 +22,9 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+// PackageSysRootFolderName is the name of package root folder
+const PackageSysRootFolderName = "sysroot"
+
 // PackageList contains a list of known packages.
 type PackageList struct {
 	list map[string]Package
