@@ -56,8 +56,14 @@ func GetOpsHome() string {
 	if err != nil {
 		panic(err)
 	}
-
 	opshome := path.Join(home, ".ops")
+
+	// Check home folder override via OPS_HOME environment variable
+	envOpsHome := os.Getenv("OPS_HOME")
+	if envOpsHome != "" {
+		opshome = envOpsHome
+	}
+
 	images := path.Join(opshome, "images")
 	instances := path.Join(opshome, "instances")
 	manifests := path.Join(opshome, "manifests")
