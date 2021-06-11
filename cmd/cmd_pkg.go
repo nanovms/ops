@@ -280,6 +280,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	executableName := c.Program
 	if strings.Contains(executableName, packageFolder) {
 		executableName = filepath.Base(executableName)
+	} else {
+		executableName = filepath.Join(lepton.PackageSysRootFolderName, executableName)
 	}
 	lepton.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
