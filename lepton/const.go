@@ -56,8 +56,24 @@ func GetOpsHome() string {
 	if err != nil {
 		panic(err)
 	}
-
 	opshome := path.Join(home, ".ops")
+
+	// Check home directory override via OPS_HOME environment variable.
+	// OPS_HOME should not point to .ops directory replacement,
+	// but should point to the parent directory in which .ops directory located,
+	// so the homedir path after OPS_HOME set should be OPS_HOME/.ops.
+	envOpsHome := os.Getenv("OPS_HOME")
+	if envOpsHome != "" {
+		altHomeDir := filepath.Join(envOpsHome, ".ops")
+		if _, err := os.Stat(altHomeDir); os.IsNotExist(err) {
+			if err = os.MkdirAll(altHomeDir, 0755); err != nil {
+				fmt.Println("failed to create OPS home directory at ", altHomeDir)
+				exitWithError(err.Error())
+			}
+		}
+		opshome = altHomeDir
+	}
+
 	images := path.Join(opshome, "images")
 	instances := path.Join(opshome, "instances")
 	manifests := path.Join(opshome, "manifests")

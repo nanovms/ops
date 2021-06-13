@@ -267,12 +267,13 @@ func sha256Of(filename string) string {
 // This function is currently over-loaded.
 func ExtractPackage(archive, dest string, config *types.Config) {
 	sha := sha256Of(archive)
+	homeDirName := filepath.Base(GetOpsHome())
 
 	// hack
 	// this only verifies for packages - unfortunately this function is
 	// used for extracting releases (which currently don't have
 	// checksums)
-	if strings.Contains(archive, ".ops/packages") {
+	if strings.Contains(archive, filepath.Join(homeDirName, "packages")) {
 
 		fname := filepath.Base(archive)
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
