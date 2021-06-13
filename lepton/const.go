@@ -66,7 +66,7 @@ func GetOpsHome() string {
 	if envOpsHome != "" {
 		altHomeDir := filepath.Join(envOpsHome, ".ops")
 		if _, err := os.Stat(altHomeDir); os.IsNotExist(err) {
-			if err = os.MkdirAll(altHomeDir, os.ModePerm); err != nil {
+			if err = os.MkdirAll(altHomeDir, 0755); err != nil {
 				fmt.Println("failed to create OPS home directory at ", altHomeDir)
 				exitWithError(err.Error())
 			}
