@@ -173,7 +173,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 
 		err = m.AddFile(filePath[1], hostpath)
 		if err != nil {
-			return err
+			log.Error(err)
 		}
 		return nil
 	})
@@ -195,7 +195,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
 		err = m.AddFile(vmpath, hostpath)
 		if err != nil {
-			return err
+			log.Error(err)
 		}
 		return nil
 	})
