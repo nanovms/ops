@@ -367,7 +367,7 @@ func (m *Manifest) AddLibrary(path string) {
 }
 
 // AddPassthrough to add key, value directly to manifest
-func (m *Manifest) AddPassthrough(key, value string) {
+func (m *Manifest) AddPassthrough(key string, value interface{}) {
 	m.root[key] = value
 }
 
