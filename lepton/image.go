@@ -355,7 +355,6 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 
 func addMappedFiles(src string, dest string, workDir string, m *fs.Manifest) error {
 	dir, pattern := filepath.Split(src)
-	parentDir := filepath.Base(dir)
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -364,24 +363,21 @@ func addMappedFiles(src string, dest string, workDir string, m *fs.Manifest) err
 		hostdir, filename := filepath.Split(hostpath)
 		matched, _ := filepath.Match(pattern, filename)
 		if matched {
-			if info.IsDir() {
-				addedDir := parentDir
-				hostBase := filepath.Base(hostpath)
-				if hostBase != parentDir {
-					filepath.Join(parentDir, hostBase)
-				}
-				return m.AddDirectory(addedDir, workDir)
-			}
-
 			reldir, err := filepath.Rel(dir, hostdir)
 			if err != nil {
 				return err
 			}
 			vmpath := filepath.Join(dest, reldir, filename)
-			err = m.AddFile(vmpath, hostpath)
-			if err != nil {
-				return err
+
+			if info.IsDir() {
+				m.MkdirPath(vmpath)
+				return nil
 			}
+
+			if (info.Mode() & os.ModeSymlink) == os.ModeSymlink {
+				return m.AddLink(vmpath, hostpath)
+			}
+			return m.AddFile(vmpath, hostpath)
 		}
 		return nil
 	})
