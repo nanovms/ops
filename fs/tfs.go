@@ -141,6 +141,15 @@ func (t *tfs) encodeMetadata(name string, value interface{}) {
 		t.encodeTuple(tuple)
 		return
 	}
+	slice, isSlice := value.([]interface{})
+	if isSlice {
+		tuple := make(map[string]interface{})
+		for i, val := range slice {
+			tuple[strconv.Itoa(i)] = val
+		}
+		t.encodeTuple(tuple)
+		return
+	}
 	t.encodeTuple(value.(map[string]interface{}))
 }
 
