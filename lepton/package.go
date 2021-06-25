@@ -209,6 +209,8 @@ func GetLocalPackageList() (*map[string]Package, error) {
 			var pkg Package
 			err = json.Unmarshal(data, &pkg)
 			if err != nil {
+				fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
+				os.Exit(1)
 				return nil, err
 			}
 
