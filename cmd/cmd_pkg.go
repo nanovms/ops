@@ -52,7 +52,7 @@ func PackageCommands() *cobra.Command {
 
 	var cmdAddPackage = &cobra.Command{
 		Use:   "add [package]",
-		Short: "push a folder or a zipped package to the local cache",
+		Short: "push a folder or a .tar.gz archived package to the local cache",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   cmdAddPackage,
 	}
