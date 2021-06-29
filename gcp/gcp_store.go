@@ -15,9 +15,31 @@ import (
 // Storage provides GCP storage related operations
 type Storage struct{}
 
+// DeleteFromBucket delete archive from bucket
+func (s *Storage) DeleteFromBucket(config *types.Config, archPath string) error {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Error(err)
+		log.Fatalf("Have you set GOOGLE_APPLICATION_CREDENTIALS?")
+	}
+	defer client.Close()
+
+	bucket := client.Bucket(config.CloudConfig.BucketName)
+	_, err = bucket.Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("bucket not found: %s", config.CloudConfig.BucketName)
+	}
+
+	obj := bucket.Object(filepath.Base(archPath))
+	if err := obj.Delete(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // CopyToBucket copies archive to bucket
 func (s *Storage) CopyToBucket(config *types.Config, archPath string) error {
-
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {

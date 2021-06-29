@@ -76,6 +76,10 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		p.Storage.DeleteFromBucket(ctx.Config(), imagePath)
+		defer os.Remove(imagePath)
+	}()
 
 	c := ctx.Config()
 	context := context.TODO()
@@ -100,6 +104,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("Image creation succeeded %s.\n", c.CloudConfig.ImageName)
 	return nil
 }
