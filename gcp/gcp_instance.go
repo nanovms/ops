@@ -228,6 +228,23 @@ func (p *GCloud) convertToCloudInstance(instance *compute.Instance) *lepton.Clou
 func (p *GCloud) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	context := context.TODO()
 	cloudConfig := ctx.Config().CloudConfig
+	runConfig := ctx.Config().RunConfig
+	if len(runConfig.Ports) != 0 {
+		rule := p.buildFirewallRule("tcp", runConfig.Ports, instancename)
+		_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
+		if err != nil {
+			ctx.Logger().Errorf("%v", err)
+			return errors.New("Failed to delete firewall rule")
+		}
+	}
+	if len(runConfig.UDPPorts) != 0 {
+		rule := p.buildFirewallRule("udp", runConfig.UDPPorts, instancename)
+		_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
+		if err != nil {
+			ctx.Logger().Errorf("%v", err)
+			return errors.New("Failed to delete firewall rule")
+		}
+	}
 	op, err := p.Service.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
 	if err != nil {
 		return err
