@@ -48,6 +48,7 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, size, provider st
 	if err != nil {
 		return lv, err
 	}
+	defer g.Storage.DeleteFromBucket(config, filepath.Base(archPath))
 
 	img := &compute.Image{
 		Name: name,
