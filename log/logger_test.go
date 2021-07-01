@@ -15,7 +15,7 @@ func TestLogger(t *testing.T) {
 		var b bytes.Buffer
 		logger := New(&b)
 
-		logger.Log("test %d,%d,%d", 1, 2, 3)
+		logger.Logf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := "test 1,2,3" + newline
@@ -30,7 +30,7 @@ func TestLogger(t *testing.T) {
 		logger := New(&b)
 
 		logger.SetInfo(false)
-		logger.Info("test %d,%d,%d", 1, 2, 3)
+		logger.Infof("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ""
@@ -45,7 +45,7 @@ func TestLogger(t *testing.T) {
 		logger := New(&b)
 
 		logger.SetInfo(true)
-		logger.Info("test %d,%d,%d", 1, 2, 3)
+		logger.Infof("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ConsoleColors.Blue() + "test 1,2,3" + ConsoleColors.Reset() + newline
@@ -59,7 +59,7 @@ func TestLogger(t *testing.T) {
 		var b bytes.Buffer
 		logger := New(&b)
 
-		logger.Warn("test %d,%d,%d", 1, 2, 3)
+		logger.Warnf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ""
@@ -74,7 +74,7 @@ func TestLogger(t *testing.T) {
 		logger := New(&b)
 
 		logger.SetWarn(true)
-		logger.Warn("test %d,%d,%d", 1, 2, 3)
+		logger.Warnf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ConsoleColors.Yellow() + "test 1,2,3" + ConsoleColors.Reset() + newline
@@ -88,7 +88,7 @@ func TestLogger(t *testing.T) {
 		var b bytes.Buffer
 		logger := New(&b)
 
-		logger.Debug("test %d,%d,%d", 1, 2, 3)
+		logger.Debugf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ""
@@ -103,7 +103,7 @@ func TestLogger(t *testing.T) {
 		logger := New(&b)
 
 		logger.SetDebug(true)
-		logger.Debug("test %d,%d,%d", 1, 2, 3)
+		logger.Debugf("test %d,%d,%d", 1, 2, 3)
 
 		got := b.String()
 		want := ConsoleColors.Cyan() + "test 1,2,3" + ConsoleColors.Reset() + newline

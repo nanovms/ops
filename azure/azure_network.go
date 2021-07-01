@@ -100,7 +100,7 @@ func (a *Azure) DeleteNIC(ctx *lepton.Context, nic *network.Interface) error {
 
 	nicClient := a.getNicClient()
 
-	logger.Info("Deleting %s...", *nic.ID)
+	logger.Infof("Deleting %s...", *nic.ID)
 	nicName := getAzureResourceNameFromID(*nic.ID)
 	nicDeleteTask, err := nicClient.Delete(context.TODO(), a.groupName, nicName)
 	if err != nil {
@@ -125,7 +125,7 @@ func (a *Azure) DeleteIP(ctx *lepton.Context, ipConfiguration *network.Interface
 
 	ipClient := a.getIPClient()
 
-	logger.Info("Deleting public IP %s...", ipID)
+	logger.Infof("Deleting public IP %s...", ipID)
 	deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
 	if err != nil {
 		logger.Error(err)
@@ -167,7 +167,7 @@ func (a *Azure) DeleteNetworkSecurityGroup(ctx *lepton.Context, securityGroupID 
 	} else if securityGroup.Subnets != nil && len(*securityGroup.Subnets) != 0 {
 		return errors.New("existing subnetworks are using this security group")
 	} else {
-		logger.Info("Deleting %s...", *securityGroup.ID)
+		logger.Infof("Deleting %s...", *securityGroup.ID)
 		nsgTask, err := nsgClient.Delete(context.TODO(), a.groupName, *securityGroup.Name)
 		if err != nil {
 			logger.Error(err)
@@ -214,7 +214,7 @@ func (a *Azure) DeleteSubnetwork(ctx *lepton.Context, subnetID string) error {
 	}
 
 	if hasAzureOpsTags(virtualNetwork.Tags) && (subnet.IPConfigurations == nil || len(*subnet.IPConfigurations) == 0) {
-		logger.Info("Deleting %s...", *subnet.ID)
+		logger.Infof("Deleting %s...", *subnet.ID)
 		subnetDeleteTask, err := subnetsClient.Delete(context.TODO(), a.groupName, subnetName, subnetName)
 		if err != nil {
 			logger.Error(err)
@@ -227,7 +227,7 @@ func (a *Azure) DeleteSubnetwork(ctx *lepton.Context, subnetID string) error {
 			return errors.New("error waiting for subnet deletion")
 		}
 
-		logger.Info("Deleting virtualNetworks/%s", vnName)
+		logger.Infof("Deleting virtualNetworks/%s", vnName)
 		vnDeleteTask, err := vnetClient.Delete(context.TODO(), a.groupName, vnName)
 		if err != nil {
 			logger.Error(err)

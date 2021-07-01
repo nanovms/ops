@@ -126,7 +126,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 
 	for _, i := range instances {
 		if i.Image == c.CloudConfig.ImageName {
-			ctx.Logger().Debug("deleting instance %s", i.Name)
+			ctx.Logger().Debugf("deleting instance %s", i.Name)
 			err := p.DeleteInstance(ctx, i.Name)
 			if err != nil {
 				exitWithError(err.Error())
