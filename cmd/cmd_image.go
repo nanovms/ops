@@ -157,7 +157,7 @@ func imageDeleteCommand() *cobra.Command {
 		Use:   "delete <image_name>",
 		Short: "delete images from provider",
 		Run:   imageDeleteCommandHandler,
-		Args:  cobra.MinimumNArgs(0),
+		Args:  cobra.MinimumNArgs(1),
 	}
 
 	cmdImageDelete.PersistentFlags().StringP("lru", "", "", "clean least recently used images with a time notation. Use \"1w\" notation to delete images older than one week. Other notation examples are 300d, 3w, 1m and 2y.")
