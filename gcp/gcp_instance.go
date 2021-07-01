@@ -89,7 +89,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		cinstance := p.convertToCloudInstance(instance)
 
 		if len(cinstance.PublicIps) != 0 {
-			ctx.Logger().Info("Assigning IP %s to %s", cinstance.PublicIps[0], c.CloudConfig.DomainName)
+			ctx.Logger().Infof("Assigning IP %s to %s", cinstance.PublicIps[0], c.CloudConfig.DomainName)
 			err := lepton.CreateDNSRecord(ctx.Config(), cinstance.PublicIps[0], p)
 			if err != nil {
 				return err

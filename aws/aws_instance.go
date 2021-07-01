@@ -208,7 +208,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if vpc == nil {
-		ctx.Logger().Debug("creating vpc with name %s", cloudConfig.VPC)
+		ctx.Logger().Debugf("creating vpc with name %s", cloudConfig.VPC)
 		vpc, err = p.CreateVPC(ctx, svc)
 		if err != nil {
 			return err
@@ -218,13 +218,13 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	var sg *ec2.SecurityGroup
 
 	if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
-		ctx.Logger().Debug("getting security group with name %s", cloudConfig.SecurityGroup)
+		ctx.Logger().Debugf("getting security group with name %s", cloudConfig.SecurityGroup)
 		sg, err = p.GetSecurityGroup(ctx, svc, vpc)
 		if err != nil {
 			return err
 		}
 	} else {
-		ctx.Logger().Debug("creating new security group in vpc %s", *vpc.VpcId)
+		ctx.Logger().Debugf("creating new security group in vpc %s", *vpc.VpcId)
 		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
 		if err != nil {
 			return err
@@ -273,10 +273,10 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	// Specify the details of the instance that you want to create.
-	ctx.Logger().Debug("running instance with input %v", instanceInput)
+	ctx.Logger().Debugf("running instance with input %v", instanceInput)
 	_, err = svc.RunInstances(instanceInput)
 	if err != nil {
-		log.Errorf("Could not create instance", err)
+		log.Errorf("Could not create instance %v", err)
 		return err
 	}
 
@@ -298,7 +298,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			}
 
 			if len(instance.PublicIps) != 0 {
-				ctx.Logger().Debug("creating dns record %s with ip %s", cloudConfig.DomainName, instance.PublicIps[0])
+				ctx.Logger().Debugf("creating dns record %s with ip %s", cloudConfig.DomainName, instance.PublicIps[0])
 				err := lepton.CreateDNSRecord(ctx.Config(), instance.PublicIps[0], p)
 				if err != nil {
 					return err

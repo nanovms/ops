@@ -45,7 +45,7 @@ func (p *GCloud) findOrCreateVPC(ctx *lepton.Context, computeService *compute.Se
 	if err != nil && strings.Contains(err.Error(), "notFound") {
 		ctx.Logger().Warn(err.Error())
 
-		ctx.Logger().Info("Creating vpc with name %s", vpcName)
+		ctx.Logger().Infof("Creating vpc with name %s", vpcName)
 		network, err = p.CreateVPC(computeService, c.CloudConfig.ProjectID, vpcName)
 		if err != nil {
 			ctx.Logger().Error(err)

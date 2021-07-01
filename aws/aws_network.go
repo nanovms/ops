@@ -168,8 +168,8 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		vpcIDRegexp, _ := regexp.Compile("^vpc-.+")
 
 		if vpcIDRegexp.Match([]byte(vpcName)) {
-			ctx.Logger().Debug("no vpcs with name %s found", vpcName)
-			ctx.Logger().Debug("getting vpcs filtered by id %s", vpcName)
+			ctx.Logger().Debugf("no vpcs with name %s found", vpcName)
+			ctx.Logger().Debugf("getting vpcs filtered by id %s", vpcName)
 			input = &ec2.DescribeVpcsInput{
 				VpcIds: aws.StringSlice([]string{vpcName}),
 			}
@@ -178,7 +178,7 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 			}
 		} else {
-			ctx.Logger().Debug("getting vpcs filtered by name %s", vpcName)
+			ctx.Logger().Debugf("getting vpcs filtered by name %s", vpcName)
 			var filters []*ec2.Filter
 
 			filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{vpcName})})
@@ -192,7 +192,7 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 			}
 		}
 
-		ctx.Logger().Debug("found %d vpcs that match the criteria %s", len(result.Vpcs), vpcName)
+		ctx.Logger().Debugf("found %d vpcs that match the criteria %s", len(result.Vpcs), vpcName)
 
 		if len(result.Vpcs) != 0 {
 			return result.Vpcs[0], nil
@@ -218,7 +218,7 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		if vpc == nil && len(result.Vpcs) != 0 {
 			ctx.Logger().Debug("no default vpc found")
 			vpc = result.Vpcs[0]
-			ctx.Logger().Debug("picking vpc %+v", vpc)
+			ctx.Logger().Debugf("picking vpc %+v", vpc)
 		}
 	}
 
