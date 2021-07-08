@@ -5,6 +5,9 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+// ProviderName is the name of the cloud platform provider.
+const ProviderName = "onprem"
+
 // OnPrem provider for ops
 type OnPrem struct{}
 

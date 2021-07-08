@@ -9,6 +9,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/provider"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
@@ -218,7 +219,14 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	if len(instances) > 0 {
 		for imgName, imgPath := range imageMap {
 			for _, is := range instances {
-				if is.Image == imgPath {
+				var matchedImage bool
+				if c.CloudConfig.Platform == onprem.ProviderName {
+					matchedImage = (is.Image == imgPath)
+				} else {
+					matchedImage = (is.Image == imgName)
+				}
+
+				if matchedImage {
 					fmt.Printf("image '%s' is being used\n", imgName)
 					os.Exit(1)
 				}
