@@ -57,11 +57,18 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdAddPackage,
 	}
 
+	var cmdFromDockerPackage = &cobra.Command{
+		Use:   "from-docker [image]",
+		Short: "create a package from an executable of a docker image",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdFromDockerPackage,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load"},
+		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
@@ -69,11 +76,18 @@ func PackageCommands() *cobra.Command {
 
 	cmdAddPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
 
+	cmdFromDockerPackage.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
+	cmdFromDockerPackage.PersistentFlags().Bool("verbose", false, "verbose mode")
+	cmdFromDockerPackage.PersistentFlags().StringP("file", "f", "", "target executable")
+	cmdFromDockerPackage.MarkPersistentFlagRequired("file")
+	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
+
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdGetPackage)
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
+	cmdPkg.AddCommand(cmdFromDockerPackage)
 	cmdPkg.AddCommand(LoadCommand())
 	return cmdPkg
 }
@@ -235,6 +249,19 @@ func cmdAddPackage(cmd *cobra.Command, args []string) {
 	extractFilePackage(args[0], name, lepton.NewConfig())
 
 	fmt.Println(name)
+}
+
+func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	imageName := args[0]
+	quiet, _ := flags.GetBool("quiet")
+	verbose, _ := flags.GetBool("verbose")
+	packageName, _ := flags.GetString("name")
+	targetExecutable, _ := flags.GetString("file")
+
+	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose)
+	fmt.Println(packageName)
 }
 
 // LoadCommand helps you to run application with package
