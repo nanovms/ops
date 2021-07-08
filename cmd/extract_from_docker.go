@@ -22,6 +22,7 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+// ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
 func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool) (string, string) {
 	var err error
 
@@ -246,15 +247,16 @@ func copyFromContainer(cli *dockerClient.Client, containerID string, containerPa
 	return nil
 }
 
-func ImageNameToPackageName(image_name string) (string, error) {
-	matches := reference.ReferenceRegexp.FindStringSubmatch(image_name)
+// ImageNameToPackageName converts a Docker image name to a package name
+func ImageNameToPackageName(imageName string) (string, error) {
+	matches := reference.ReferenceRegexp.FindStringSubmatch(imageName)
 
 	if matches == nil {
-		if image_name == "" {
+		if imageName == "" {
 			return "", reference.ErrNameEmpty
 		}
 
-		if reference.ReferenceRegexp.FindStringSubmatch(strings.ToLower(image_name)) != nil {
+		if reference.ReferenceRegexp.FindStringSubmatch(strings.ToLower(imageName)) != nil {
 			return "", reference.ErrNameContainsUppercase
 		}
 
@@ -265,9 +267,9 @@ func ImageNameToPackageName(image_name string) (string, error) {
 		return "", reference.ErrNameTooLong
 	}
 
-	name_matches := regexp.MustCompile(`(.*\/)?(.*)$`).FindStringSubmatch(matches[1])
+	nameMatches := regexp.MustCompile(`(.*\/)?(.*)$`).FindStringSubmatch(matches[1])
 
-	name := name_matches[2]
+	name := nameMatches[2]
 	tag := matches[2]
 
 	return name + "-" + tag, nil

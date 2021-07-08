@@ -120,6 +120,7 @@ func extractArchivedPackage(pkg string, target string, config *types.Config) str
 	return MovePackageFiles(tempDirectory, target)
 }
 
+// MovePackageFiles moves a package from a directory to another
 func MovePackageFiles(origin string, target string) string {
 	manifestPath := path.Join(origin, "package.manifest")
 	pkgConfig := &types.Config{}
