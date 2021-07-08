@@ -107,7 +107,7 @@ func extractFilePackage(pkg string, name string, config *types.Config) string {
 	}
 
 	copyDirectory(pkg, tempDirectory)
-	return movePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
+	return MovePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
 }
 
 func extractArchivedPackage(pkg string, target string, config *types.Config) string {
@@ -117,10 +117,11 @@ func extractArchivedPackage(pkg string, target string, config *types.Config) str
 	}
 
 	api.ExtractPackage(pkg, tempDirectory, config)
-	return movePackageFiles(tempDirectory, target)
+	return MovePackageFiles(tempDirectory, target)
 }
 
-func movePackageFiles(origin string, target string) string {
+// MovePackageFiles moves a package from a directory to another
+func MovePackageFiles(origin string, target string) string {
 	manifestPath := path.Join(origin, "package.manifest")
 	pkgConfig := &types.Config{}
 
