@@ -74,6 +74,8 @@ func PackageCommands() *cobra.Command {
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
 	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
 
+	cmdPackageContents.PersistentFlags().BoolP("local", "l", false, "local package")
+
 	cmdAddPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
 
 	cmdFromDockerPackage.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
@@ -199,7 +201,15 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 }
 
 func cmdPackageContents(cmd *cobra.Command, args []string) {
-	expackage := filepath.Join(packageDirectoryPath(), args[0])
+	flags := cmd.Flags()
+
+	directoryPath := packageDirectoryPath()
+
+	if local, _ := flags.GetBool("local"); local {
+		directoryPath = localPackageDirectoryPath()
+	}
+
+	expackage := filepath.Join(directoryPath, args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], lepton.NewConfig())
 	}
