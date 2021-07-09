@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -109,6 +110,25 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 
 	for _, f := range files {
 		fullpath := path.Join(instancesPath, f.Name())
+
+		pid, err := strconv.ParseInt(f.Name(), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		process, err := os.FindProcess(int(pid))
+		if err != nil {
+			return nil, err
+		}
+		if err = process.Signal(syscall.Signal(0)); err != nil {
+			errMsg := strings.ToLower(err.Error())
+			if strings.Contains(errMsg, "already finished") ||
+				strings.Contains(errMsg, "already released") ||
+				strings.Contains(errMsg, "not initialized") {
+				os.Remove(fullpath)
+				continue
+			}
+		}
+
 		body, err := ioutil.ReadFile(fullpath)
 		if err != nil {
 			return nil, err
