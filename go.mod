@@ -14,12 +14,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/UpCloudLtd/upcloud-go-api v0.0.0-20210127073406-2964ed7e5972
 	github.com/aws/aws-sdk-go v1.35.20
-<<<<<<< HEAD
-	github.com/containerd/containerd v1.5.2 // indirect
-=======
->>>>>>> b8ffe14... Fixed module config
 	github.com/bramvdbogaerde/go-scp v1.0.0
-	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/containerd/containerd v1.5.2 // indirect
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.7.1+incompatible
@@ -48,7 +43,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/terra-farm/go-virtualbox v0.0.4
-	github.com/tj/go-spin v1.1.0 // indirect
+	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
