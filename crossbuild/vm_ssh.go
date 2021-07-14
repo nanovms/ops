@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -48,6 +49,10 @@ func (cmd *virtualMachineCommand) executeCommand(username, password string) erro
 	commandLine := cmd.command
 	for _, arg := range cmd.arguments {
 		commandLine += fmt.Sprintf(" %v", arg)
+	}
+
+	if strings.Contains(commandLine, "$OPS") {
+		commandLine = strings.ReplaceAll(commandLine, "$OPS", fmt.Sprintf("/home/%s/.ops/bin/ops", VMUsername))
 	}
 
 	if cmd.StdOut == nil {

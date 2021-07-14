@@ -27,7 +27,14 @@ func (env *Environment) InstallDependencies() error {
 
 		if dep.Type == "command" {
 			vmCmd := env.vm.NewStdOutCommand(dep.Command)
-			if err := vmCmd.ExecuteAsSuperUser(); err != nil {
+			if dep.AsAdmin {
+				if err := vmCmd.ExecuteAsSuperUser(); err != nil {
+					return err
+				}
+				continue
+			}
+
+			if err := vmCmd.Execute(); err != nil {
 				return err
 			}
 			continue

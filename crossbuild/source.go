@@ -16,6 +16,7 @@ type sourceDependency struct {
 	Type    string `json:"type"`
 	Name    string `json:"name"`
 	Command string `json:"command"`
+	AsAdmin bool   `json:"as_admin"`
 }
 
 // Source code command configurations.
