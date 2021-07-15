@@ -18,6 +18,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/qemu"
 )
 
 // PackageCommands gives package related commands
@@ -295,6 +296,15 @@ func LoadCommand() *cobra.Command {
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
+	// Check if qemu being used is supported.
+	supported, err := qemu.CheckIfVersionSupported()
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if !supported {
+		return
+	}
+
 	flags := cmd.Flags()
 
 	configFlags := NewConfigCommandFlags(flags)
@@ -308,7 +318,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	c := lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
-	err := mergeContainer.Merge(c)
+	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}

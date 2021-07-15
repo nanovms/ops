@@ -6,6 +6,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/qemu"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,14 @@ func RunCommand() *cobra.Command {
 }
 
 func runCommandHandler(cmd *cobra.Command, args []string) {
+	// Check if qemu being used is supported.
+	supported, err := qemu.CheckIfVersionSupported()
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if !supported {
+		return
+	}
 
 	c := lepton.NewConfig()
 
@@ -49,7 +58,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags)
-	err := mergeContainer.Merge(c)
+	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
