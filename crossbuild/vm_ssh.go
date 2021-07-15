@@ -15,10 +15,21 @@ type virtualMachineCommand struct {
 	SupressOutput bool
 
 	command      string
+	preCommand   string
 	arguments    []interface{}
 	port         int
 	outputBuffer bytes.Buffer
 	errorBuffer  bytes.Buffer
+}
+
+// After set given command to be executed before main command.
+func (cmd *virtualMachineCommand) After(command string, args ...interface{}) *virtualMachineCommand {
+	commandLine := cmd.command
+	for _, arg := range cmd.arguments {
+		commandLine += fmt.Sprintf(" %v", arg)
+	}
+	cmd.preCommand = commandLine
+	return cmd
 }
 
 // CombinedOutput returns combined string of standard output and error.
@@ -58,6 +69,10 @@ func (cmd *virtualMachineCommand) executeCommand(username, password string) erro
 
 	if strings.Contains(commandLine, "$OPS") {
 		commandLine = strings.ReplaceAll(commandLine, "$OPS", fmt.Sprintf("/home/%s/.ops/bin/ops", VMUsername))
+	}
+
+	if cmd.preCommand != "" {
+		commandLine = cmd.preCommand + " && " + commandLine
 	}
 
 	session.Stdin = os.Stdin

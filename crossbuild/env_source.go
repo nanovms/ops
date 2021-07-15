@@ -26,7 +26,7 @@ func (env *Environment) InstallDependencies() error {
 		}
 
 		if dep.Type == "command" {
-			vmCmd := env.vm.NewCommand(dep.Command)
+			vmCmd := env.vm.NewCommand(dep.Command).After("cd " + env.vmDirPath())
 			if dep.AsAdmin {
 				if err := vmCmd.ExecuteAsSuperUser(); err != nil {
 					return err
