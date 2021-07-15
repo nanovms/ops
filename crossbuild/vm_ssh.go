@@ -78,20 +78,11 @@ func (cmd *virtualMachineCommand) executeCommand(username, password string) erro
 // NewCommand creates new command.
 func (vm *virtualMachine) NewCommand(command string, args ...interface{}) *virtualMachineCommand {
 	return &virtualMachineCommand{
-		command:   fmt.Sprintf("cd %s && %s", vm.workingDirPath, command),
+		command:   command,
 		arguments: args,
 		port:      vm.ForwardPort,
 	}
 }
-
-// NewCommand creates new command that redirect output message to stdout.
-// func (vm *virtualMachine) NewStdOutCommand(command string, args ...interface{}) *virtualMachineCommand {
-// 	vmCmd := vm.NewCommand(command, args...)
-// 	vmCmd.StdOut = os.Stdout
-// 	vmCmd.StdIn = os.Stdin
-// 	vmCmd.StdErr = os.Stderr
-// 	return vmCmd
-// }
 
 // Creates new ssh client connected to given port using given credentials.
 func newSSHClient(port int, username, password string) (*ssh.Client, error) {
