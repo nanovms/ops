@@ -18,7 +18,7 @@ func (env *Environment) InstallDependencies() error {
 
 	for _, dep := range env.source.Dependencies {
 		if dep.Type == "package" {
-			vmCmd := env.vm.NewStdOutCommand("apt-get", "install", dep.Name, "-y")
+			vmCmd := env.vm.NewCommand("apt-get", "install", dep.Name, "-y")
 			if err := vmCmd.ExecuteAsSuperUser(); err != nil {
 				return err
 			}
@@ -26,7 +26,7 @@ func (env *Environment) InstallDependencies() error {
 		}
 
 		if dep.Type == "command" {
-			vmCmd := env.vm.NewStdOutCommand(dep.Command)
+			vmCmd := env.vm.NewCommand(dep.Command)
 			if dep.AsAdmin {
 				if err := vmCmd.ExecuteAsSuperUser(); err != nil {
 					return err
@@ -53,6 +53,6 @@ func (env *Environment) Run() error {
 		return err
 	}
 
-	vmCmd := env.vm.NewStdOutCommand(fmt.Sprintf("cd %s && %s", env.vmDirPath(), env.source.Commands.Run))
+	vmCmd := env.vm.NewCommand(fmt.Sprintf("cd %s && %s", env.vmDirPath(), env.source.Commands.Run))
 	return vmCmd.Execute()
 }

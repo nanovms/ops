@@ -1,6 +1,7 @@
 package crossbuild
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -11,14 +12,18 @@ import (
 
 // Represents a command to be executed inside VM.
 type virtualMachineCommand struct {
-	StdOut io.Writer
-	StdIn  io.Reader
-	StdErr io.Writer
-	Output string
+	SupressOutput bool
 
-	command   string
-	arguments []interface{}
-	port      int
+	command      string
+	arguments    []interface{}
+	port         int
+	outputBuffer bytes.Buffer
+	errorBuffer  bytes.Buffer
+}
+
+// CombinedOutput returns combined string of standard output and error.
+func (cmd *virtualMachineCommand) CombinedOutput() string {
+	return cmd.outputBuffer.String() + cmd.errorBuffer.String()
 }
 
 // Execute executes command in VM as regular user.
@@ -55,18 +60,15 @@ func (cmd *virtualMachineCommand) executeCommand(username, password string) erro
 		commandLine = strings.ReplaceAll(commandLine, "$OPS", fmt.Sprintf("/home/%s/.ops/bin/ops", VMUsername))
 	}
 
-	if cmd.StdOut == nil {
-		output, err := session.CombinedOutput(commandLine)
-		if err != nil {
-			return err
-		}
-		cmd.Output = string(output)
-		return nil
+	session.Stdin = os.Stdin
+	if cmd.SupressOutput {
+		session.Stdout = &cmd.outputBuffer
+		session.Stderr = &cmd.errorBuffer
+	} else {
+		session.Stdout = io.MultiWriter(os.Stdout, &cmd.outputBuffer)
+		session.Stderr = io.MultiWriter(os.Stderr, &cmd.errorBuffer)
 	}
 
-	session.Stdout = cmd.StdOut
-	session.Stdin = cmd.StdIn
-	session.Stderr = cmd.StdErr
 	if err = session.Run(commandLine); err != nil {
 		return err
 	}
@@ -83,13 +85,13 @@ func (vm *virtualMachine) NewCommand(command string, args ...interface{}) *virtu
 }
 
 // NewCommand creates new command that redirect output message to stdout.
-func (vm *virtualMachine) NewStdOutCommand(command string, args ...interface{}) *virtualMachineCommand {
-	vmCmd := vm.NewCommand(command, args...)
-	vmCmd.StdOut = os.Stdout
-	vmCmd.StdIn = os.Stdin
-	vmCmd.StdErr = os.Stderr
-	return vmCmd
-}
+// func (vm *virtualMachine) NewStdOutCommand(command string, args ...interface{}) *virtualMachineCommand {
+// 	vmCmd := vm.NewCommand(command, args...)
+// 	vmCmd.StdOut = os.Stdout
+// 	vmCmd.StdIn = os.Stdin
+// 	vmCmd.StdErr = os.Stderr
+// 	return vmCmd
+// }
 
 // Creates new ssh client connected to given port using given credentials.
 func newSSHClient(port int, username, password string) (*ssh.Client, error) {

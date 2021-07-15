@@ -86,8 +86,9 @@ func (vm *virtualMachine) Download() error {
 func (vm *virtualMachine) Alive() bool {
 	if vm.PID > 0 {
 		vmCmd := vm.NewCommand("ls /")
+		vmCmd.SupressOutput = true
 		err := vmCmd.Execute()
-		return err == nil && vmCmd.Output != ""
+		return err == nil && vmCmd.CombinedOutput() != ""
 	}
 	return false
 }
@@ -151,7 +152,8 @@ func (vm *virtualMachine) Start() error {
 			}
 
 			vmCmd := vm.NewCommand("ls /")
-			if err := vmCmd.Execute(); err == nil && vmCmd.Output != "" {
+			vmCmd.SupressOutput = true
+			if err := vmCmd.Execute(); err == nil && vmCmd.CombinedOutput() != "" {
 				break
 			}
 		}

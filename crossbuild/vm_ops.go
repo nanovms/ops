@@ -8,6 +8,6 @@ import (
 func (vm *virtualMachine) ExecuteOPS(args ...interface{}) error {
 	opsHomeDirPath := filepath.Join("/home", VMUsername, ".ops")
 	executablePath := filepath.Join(opsHomeDirPath, "bin", "ops")
-	vmCmd := vm.NewStdOutCommand(executablePath, args...)
+	vmCmd := vm.NewCommand(executablePath, args...)
 	return vmCmd.Execute()
 }
