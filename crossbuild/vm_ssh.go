@@ -76,7 +76,7 @@ func (cmd *virtualMachineCommand) executeCommand(username, password string) erro
 // NewCommand creates new command.
 func (vm *virtualMachine) NewCommand(command string, args ...interface{}) *virtualMachineCommand {
 	return &virtualMachineCommand{
-		command:   command,
+		command:   fmt.Sprintf("cd %s && %s", vm.workingDirPath, command),
 		arguments: args,
 		port:      vm.ForwardPort,
 	}

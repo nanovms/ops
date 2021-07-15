@@ -185,6 +185,7 @@ func LoadEnvironment() (*Environment, error) {
 	if err != nil {
 		return nil, err
 	}
+	vm.workingDirPath = env.vmDirPath()
 	env.vm = vm
 
 	return env, nil

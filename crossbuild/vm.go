@@ -51,6 +51,8 @@ type virtualMachine struct {
 	Name        string `json:"name"`
 	ForwardPort int    `json:"forward_port"`
 	PID         int    `json:"-"`
+
+	workingDirPath string `json:"-"`
 }
 
 // ImageFilePath returns path to VM image file.
