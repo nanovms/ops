@@ -94,9 +94,15 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 }
 
 func (q *qemu) addDrive(id, image, ifaceType string) {
+	format := "raw"
+	ext := filepath.Ext(image)
+	if ext == ".qcow2" {
+		format = "qcow2"
+	}
+
 	drv := drive{
 		path:   image,
-		format: "raw",
+		format: format,
 		iftype: ifaceType,
 		ID:     id,
 	}
@@ -300,6 +306,11 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		pciBus = "pcie.0"
 	}
 
+	display := os.Getenv("OPS_DISPLAY")
+	if display == "" {
+		display = "none"
+	}
+
 	// pcie root ports need to come before virtio/scsi devices
 	if isx86() {
 		q.addOption("-machine", "q35")
@@ -314,7 +325,9 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
 		q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
 
-		q.addOption("-vga", "none")
+		if display == "" {
+			q.addOption("-vga", "none")
+		}
 
 		if rconfig.CPUs > 0 {
 			q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
@@ -352,9 +365,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	q.setAccel(rconfig)
-
 	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)
-	q.addDisplay("none")
+	q.addDisplay(display)
 
 	if rconfig.Background {
 		q.addSerial("file:/tmp/" + rconfig.InstanceName + ".log")

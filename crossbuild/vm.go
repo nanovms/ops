@@ -18,6 +18,8 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/qemu"
+	"github.com/nanovms/ops/types"
 	"github.com/nanovms/ops/util"
 )
 
@@ -96,21 +98,19 @@ func (vm *virtualMachine) Alive() bool {
 // Starts this virtual machine.
 // If the image does not exists, it will be downloaded.
 func (vm *virtualMachine) Start() error {
-	hypervisor := "qemu-system-x86_64"
-	envHypervisor := os.Getenv("OPS_HYPERVISOR")
-	if envHypervisor != "" {
-		hypervisor = envHypervisor
+	hypervisor := qemu.HypervisorInstance()
+	if hypervisor == nil {
+		return errors.New("no hypervisor found in PATH")
 	}
 
-	cmd := exec.Command(
-		hypervisor,
-		"-hda", vm.ImageFilePath(),
-		"-m", "2048", // TODO: use configurable memory size
-		"-netdev", "user,id=eth0",
-		"-device", "e1000,netdev=eth0",
-		"-net", fmt.Sprintf("user,hostfwd=tcp::%d-:22", vm.ForwardPort),
-		"-net", "nic",
-	)
+	cmd := hypervisor.Command(&types.RunConfig{
+		Accel:     true,
+		Imagename: vm.ImageFilePath(),
+		Memory:    "2G",
+		Ports: []string{
+			fmt.Sprintf("%d-%d", vm.ForwardPort, 22),
+		},
+	})
 
 	if err := cmd.Start(); err != nil {
 		return err
