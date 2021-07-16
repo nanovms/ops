@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"os"
 )
 
 // Logger filters and prints messages to a destination
@@ -95,6 +96,15 @@ func (l *Logger) Error(err error) {
 // Errorf checks error level is activated to write the formatted message
 func (l *Logger) Errorf(format string, a ...interface{}) {
 	l.Logf(ConsoleColors.Red()+format+ConsoleColors.Reset(), a...)
+}
+
+// Fail prints message to stdout, calls Error(), and exit with code 1.
+func (l *Logger) Fail(message string, err error) {
+	fmt.Println(message)
+	if err != nil {
+		l.Error(err)
+	}
+	os.Exit(1)
 }
 
 // Debug checks debug level is activated to write the message

@@ -73,9 +73,14 @@ func Error(err error) {
 	defaultLogger.Error(err)
 }
 
-// Fatalf logs formatted error-level formatted string message using default logger then calls os.Exit(1).
-func Fatalf(format string, a ...interface{}) {
-	defaultLogger.Errorf(format, a...)
+// Fail calls default logger's Fail().
+func Fail(message string, err error) {
+	defaultLogger.Fail(message, err)
+}
+
+// Fatalf logs error-level formatted string message using default logger then calls os.Exit(1).
+func Fatalf(message string, a ...interface{}) {
+	defaultLogger.Errorf(message, a...)
 	os.Exit(1)
 }
 
