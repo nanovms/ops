@@ -2,7 +2,6 @@ package crossbuild
 
 import (
 	"errors"
-	"fmt"
 )
 
 var (
@@ -53,6 +52,6 @@ func (env *Environment) Run() error {
 		return err
 	}
 
-	vmCmd := env.vm.NewCommand(fmt.Sprintf("cd %s && %s", env.vmDirPath(), env.source.Commands.Run))
+	vmCmd := env.vm.NewCommand(env.source.Commands.Run).After("cd " + env.vmDirPath())
 	return vmCmd.Execute()
 }
