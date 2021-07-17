@@ -186,8 +186,8 @@ func (vm *virtualMachine) Start() error {
 
 // Shutdown stops this VM, if running.
 func (vm *virtualMachine) Shutdown() error {
-	vmCmd := vm.NewCommand("shutdown", "-hP", "now")
-	if err := vmCmd.ExecuteAsSuperUser(); err != nil {
+	vmCmd := vm.NewCommand("shutdown", "-hP", "now").AsAdmin()
+	if err := vmCmd.Execute(); err != nil {
 		return err
 	}
 

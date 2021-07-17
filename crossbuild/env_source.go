@@ -17,20 +17,28 @@ func (env *Environment) InstallDependencies() error {
 
 	for _, dep := range env.source.Dependencies {
 		if dep.Type == "package" {
-			vmCmd := env.vm.NewCommand("apt-get", "install", dep.Name, "-y")
-			if err := vmCmd.ExecuteAsSuperUser(); err != nil {
+			if dep.Name == "nodejs" || dep.Name == "npm" {
+				prepCmd := env.vm.NewCommand(
+					"apt-get install curl software-properties-common -y",
+				).Then("apt-get update -y").AsAdmin()
+				if err := prepCmd.Execute(); err != nil {
+					return err
+				}
+
+				dep.Name = "nodejs"
+			}
+
+			vmCmd := env.vm.NewCommand("apt-get", "install", dep.Name, "-y").AsAdmin()
+			if err := vmCmd.Execute(); err != nil {
 				return err
 			}
 			continue
 		}
 
 		if dep.Type == "command" {
-			vmCmd := env.vm.NewCommand(dep.Command).After("cd " + env.vmDirPath())
+			vmCmd := env.vm.NewCommandf("cd %s && %s", env.vmDirPath(), dep.Command)
 			if dep.AsAdmin {
-				if err := vmCmd.ExecuteAsSuperUser(); err != nil {
-					return err
-				}
-				continue
+				vmCmd.AsAdmin()
 			}
 
 			if err := vmCmd.Execute(); err != nil {
@@ -52,6 +60,6 @@ func (env *Environment) Run() error {
 		return err
 	}
 
-	vmCmd := env.vm.NewCommand(env.source.Commands.Run).After("cd " + env.vmDirPath())
+	vmCmd := env.vm.NewCommandf("cd %s && %s", env.vmDirPath(), env.source.Commands.Run)
 	return vmCmd.Execute()
 }
