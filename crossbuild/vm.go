@@ -53,6 +53,7 @@ type virtualMachine struct {
 	Name        string `json:"name"`
 	ForwardPort int    `json:"forward_port"`
 	PID         int    `json:"-"`
+	MemorySize  string `json:"memory_size"`
 
 	workingDirPath string `json:"-"`
 }
@@ -110,7 +111,7 @@ func (vm *virtualMachine) Start() error {
 	cmd := hypervisor.Command(&types.RunConfig{
 		Accel:     true,
 		Imagename: vm.ImageFilePath(),
-		Memory:    "2G",
+		Memory:    vm.MemorySize,
 		Ports: []string{
 			fmt.Sprintf("%d-%d", vm.ForwardPort, 22),
 		},
@@ -306,6 +307,10 @@ func loadVM(name string) (*virtualMachine, error) {
 		if err := config.Save(); err != nil {
 			return nil, err
 		}
+	}
+
+	if vm.MemorySize == "" {
+		vm.MemorySize = "2G"
 	}
 
 	// Check running process.
