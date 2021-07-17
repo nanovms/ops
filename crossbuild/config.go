@@ -30,7 +30,7 @@ func (cfg *Configuration) Save() error {
 }
 
 func (cfg *Configuration) newForwardPort() int {
-	port := 60000
+	port := 20000
 	for {
 		if _, used := cfg.usedVMPorts[port]; !used {
 			break

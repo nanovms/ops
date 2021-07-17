@@ -89,8 +89,12 @@ func (vm *virtualMachine) Alive() bool {
 	if vm.PID > 0 {
 		vmCmd := vm.NewCommand("ls /")
 		vmCmd.SupressOutput = true
-		err := vmCmd.Execute()
-		return err == nil && vmCmd.CombinedOutput() != ""
+		if err := vmCmd.Execute(); err != nil {
+			log.Warn(err)
+			return false
+		}
+
+		return vmCmd.CombinedOutput() != ""
 	}
 	return false
 }
@@ -116,6 +120,19 @@ func (vm *virtualMachine) Start() error {
 		return err
 	}
 
+	if cmd.Process == nil {
+		return errors.New("VM fail to start")
+	}
+
+	vm.PID = cmd.Process.Pid
+	pid := strconv.Itoa(cmd.Process.Pid)
+	if err := ioutil.WriteFile(vm.ImagePIDFilePath(), []byte(pid), 0655); err != nil {
+		if err := cmd.Process.Kill(); err != nil {
+			log.Warn(err)
+		}
+		return err
+	}
+
 	var (
 		wg           = &sync.WaitGroup{}
 		timedOut     = false
@@ -137,7 +154,7 @@ func (vm *virtualMachine) Start() error {
 
 	go func() {
 		for {
-			time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Millisecond * 100)
 
 			if !keepChecking {
 				break
@@ -151,9 +168,7 @@ func (vm *virtualMachine) Start() error {
 				processAlive = true
 			}
 
-			vmCmd := vm.NewCommand("ls /")
-			vmCmd.SupressOutput = true
-			if err := vmCmd.Execute(); err == nil && vmCmd.CombinedOutput() != "" {
+			if vm.Alive() {
 				break
 			}
 		}
@@ -170,17 +185,9 @@ func (vm *virtualMachine) Start() error {
 	}
 
 	if timedOut {
-		return errors.New("no response from VM, probably it is not started or the ssh server is not running.")
+		return errors.New("no response from VM, probably it is not started or the ssh server is not running")
 	}
 
-	pid := strconv.Itoa(cmd.Process.Pid)
-	if err := ioutil.WriteFile(vm.ImagePIDFilePath(), []byte(pid), 0655); err != nil {
-		if err := cmd.Process.Kill(); err != nil {
-			log.Warn(err)
-		}
-		return err
-	}
-	vm.PID = cmd.Process.Pid
 	return nil
 }
 
