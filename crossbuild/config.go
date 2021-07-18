@@ -13,8 +13,9 @@ var (
 
 // Configuration is configurable crossbuild settings.
 type Configuration struct {
-	VirtualMachines []*VM        `json:"virtual_machines"`
-	usedVMPorts     map[int]bool `json:"-"`
+	DefaultEnvironment string              `json:"default_environment"`
+	Environments       []EnvironmentConfig `json:"environments"`
+	usedVMPorts        map[int]bool        `json:"-"`
 }
 
 // Save writes configuration to file located at OPS_HOME_DIR/crossbuild/config.json.
@@ -30,15 +31,18 @@ func (cfg *Configuration) Save() error {
 	return nil
 }
 
-func (cfg *Configuration) newForwardPort() int {
-	port := 20000
-	for {
-		if _, used := cfg.usedVMPorts[port]; !used {
-			break
-		}
-		port++
+// FindEnvironment returns environment configuration identified by given id, if any.
+func (cfg *Configuration) FindEnvironment(id string) *EnvironmentConfig {
+	if len(cfg.Environments) == 0 {
+		return nil
 	}
-	return port
+
+	for _, env := range cfg.Environments {
+		if env.ID == id {
+			return &env
+		}
+	}
+	return nil
 }
 
 // LoadConfiguration reads configuration file located at OPS_HOME_DIR/crossbuild/config.json.
@@ -54,10 +58,21 @@ func LoadConfiguration() (*Configuration, error) {
 	}
 
 	usedPorts := make(map[int]bool)
-	vmCount := len(cfg.VirtualMachines)
+	vmCount := len(cfg.Environments)
 	for i := 0; i < vmCount; i++ {
-		usedPorts[cfg.VirtualMachines[i].ForwardPort] = true
+		usedPorts[cfg.Environments[i].Port] = true
 	}
 	cfg.usedVMPorts = usedPorts
 	return cfg, nil
+}
+
+func (cfg *Configuration) newForwardPort() int {
+	port := 20000
+	for {
+		if _, used := cfg.usedVMPorts[port]; !used {
+			break
+		}
+		port++
+	}
+	return port
 }

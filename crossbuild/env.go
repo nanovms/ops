@@ -1,82 +1,192 @@
 package crossbuild
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
+	"os/exec"
+	"os/signal"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 
-	"github.com/rs/xid"
+	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/qemu"
+	"github.com/nanovms/ops/types"
+	"github.com/nanovms/ops/util"
 )
 
 const (
-	// Environment home directory name.
-	envDirName = ".opsenv"
+	// EnvironmentDownloadBaseURL is the base url to download environment image.
+	EnvironmentDownloadBaseURL = "storage.googleapis.com/nanos-build-envs"
 
-	// Environment configuration file name.
-	envConfigFileName = "environment.json"
+	// SupportedEnvironmentsFileName is name of the file that list supported environments.
+	SupportedEnvironmentsFileName = "environments.json"
+
+	// EnvironmentImageFileExtension is extension for environment image file.
+	EnvironmentImageFileExtension = ".qcow2"
+
+	// EnvironmentPIDFileExtension is extension for environment process id file.
+	EnvironmentPIDFileExtension = ".pid"
+
+	// EnvironmentUsername is username for regular account.
+	EnvironmentUsername = "user"
+
+	// EnvironmentUserPassword is password for regular account.
+	EnvironmentUserPassword = "user"
+
+	// EnvironmentRootPassword is password for admin account.
+	EnvironmentRootPassword = "root"
 )
 
-// Environment is a crossbuild configuration.
+var (
+	// EnvironmentImageDirPath is path to directory that keeps environment images.
+	EnvironmentImageDirPath = filepath.Join(CrossBuildHomeDirPath, "images")
+)
+
+// Environment is a virtualized crossbuild operating system.
 type Environment struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	vm     *VM    `json:"-"`
-	source source `json:"-"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	Version          string             `json:"version"`
+	IsDefault        bool               `json:"is_default"`
+	Config           *EnvironmentConfig `json:"-"`
+	PID              int                `json:"-"`
+	WorkingDirectory string             `json:"-"`
 }
 
-// Remove removes environment from local directory and VM.
-func (env *Environment) Remove() error {
-	if err := os.RemoveAll(envDirName); err != nil {
+// Download pulls environment images from remote storage.
+func (env *Environment) Download() error {
+	compressedImgFileName := env.ID + ".zip"
+	compressedImgFilePath := filepath.Join(EnvironmentImageDirPath, compressedImgFileName)
+	downloadURL := "https://" + path.Join(EnvironmentDownloadBaseURL, compressedImgFileName)
+	if err := lepton.DownloadFile(compressedImgFilePath, downloadURL, 600, true); err != nil {
 		return err
 	}
 
-	if err := env.vm.RemoveDir(env.vmDirPath()); err != nil {
+	if err := util.Unzip(compressedImgFilePath, EnvironmentImageDirPath); err != nil {
 		return err
+	}
+
+	if err := os.Remove(compressedImgFilePath); err != nil {
+		log.Warn(err)
 	}
 	return nil
 }
 
-// Resize changes VM disk size by given size.
-func (env *Environment) Resize(size string) error {
-	if err := env.vm.Resize(size); err != nil {
+// Boot starts environment VM.
+func (env *Environment) Boot() error {
+	if env.PID > 0 {
+		return nil // Environment is running
+	}
+
+	hypervisor := qemu.HypervisorInstance()
+	if hypervisor == nil {
+		return errors.New("no hypervisor found in PATH")
+	}
+
+	cmd := hypervisor.Command(&types.RunConfig{
+		Accel:     true,
+		Imagename: filepath.Join(EnvironmentImageDirPath, env.ID+EnvironmentImageFileExtension),
+		Memory:    env.Config.Memory,
+		Ports: []string{
+			fmt.Sprintf("%d-%d", env.Config.Port, 22),
+		},
+	})
+
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-	return nil
-}
 
-// Writes configuration to file.
-func (env *Environment) Save() error {
-	props := map[string]interface{}{
-		envConfigFileName:    env,
-		sourceConfigFileName: env.source,
+	errBootFailure := errors.New("environment boot failure")
+	if cmd.Process == nil {
+		return errBootFailure
 	}
+	env.PID = cmd.Process.Pid
 
-	for fileName, prop := range props {
-		content, err := json.MarshalIndent(prop, "", "    ")
-		if err != nil {
-			return err
+	var (
+		wg         = &sync.WaitGroup{}
+		timedOut   = false
+		checkCount = 0
+
+		keepChecking    = true
+		interruptSignal = make(chan os.Signal, 1)
+		interrupted     = false
+	)
+	wg.Add(1)
+	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-interruptSignal
+		interrupted = true
+		keepChecking = false
+	}()
+
+	go func() {
+		for {
+			time.Sleep(time.Second)
+
+			if !keepChecking {
+				break
+			}
+
+			if env.IsReady() {
+				break
+			}
+
+			checkCount++
+			if checkCount >= 60 {
+				timedOut = true
+				break
+			}
 		}
+		wg.Done()
+	}()
+	wg.Wait()
 
-		filePath := filepath.Join(envDirName, fileName)
-		if err = ioutil.WriteFile(filePath, content, 0655); err != nil {
-			return err
-		}
+	if interrupted {
+		return errBootFailure
 	}
+
+	if timedOut {
+		return errors.New("environment is not responding")
+	}
+
 	return nil
+}
+
+// Shutdown stops this environment, if running.
+func (env *Environment) Shutdown() error {
+	vmCmd := env.NewCommand("shutdown", "-hP", "now").AsAdmin()
+	return vmCmd.Execute()
+}
+
+// IsReady returns true if environment can establish communication.
+func (env *Environment) IsReady() bool {
+	vmCmd := env.NewCommand("ls /")
+	vmCmd.SupressOutput = true
+	if err := vmCmd.Execute(); err != nil {
+		log.Warn(err)
+		return false
+	}
+	return vmCmd.CombinedOutput() != ""
 }
 
 // Sync synchronizes local environment with its copy in VM.
 func (env *Environment) Sync() error {
-	vmDirPath := env.vmDirPath()
-	if err := env.vm.MkdirAll(vmDirPath); err != nil {
+	vmSourcePath := env.vmSourcePath()
+	if err := env.vmMkdirAll(vmSourcePath); err != nil {
 		return err
 	}
 
-	sshClient, err := newSSHClient(env.vm.ForwardPort, VMUsername, VMUserPassword)
+	sshClient, err := newSSHClient(env.Config.Port, EnvironmentUsername, EnvironmentUserPassword)
 	if err != nil {
 		return err
 	}
@@ -89,16 +199,25 @@ func (env *Environment) Sync() error {
 
 	if err := filepath.Walk(currentDir, func(path string, info fs.FileInfo, err error) error {
 		relpath := strings.TrimPrefix(path, currentDir)
-		vmpath := filepath.Join(vmDirPath, relpath)
+		vmpath := filepath.Join(vmSourcePath, relpath)
 
 		if info.IsDir() {
-			if err := env.vm.MkdirAll(vmpath); err != nil {
+			if filepath.Base(path) == "bin" {
+				return nil
+			}
+
+			if err := env.vmMkdirAll(vmpath); err != nil {
 				return err
 			}
 			return nil
 		}
 
-		if err := env.vm.CopyFile(sshClient, path, vmpath, info.Mode()); err != nil {
+		parentDir := filepath.Base(filepath.Dir(path))
+		if parentDir == "bin" {
+			return nil
+		}
+
+		if err := env.vmCopyFile(sshClient, path, vmpath, info.Mode()); err != nil {
 			return err
 		}
 		return nil
@@ -108,140 +227,166 @@ func (env *Environment) Sync() error {
 	return nil
 }
 
-// Start starts environment.
-func (env *Environment) Start() error {
-	return env.vm.Start()
-}
+// Resize changes disk size by given size.
+// The value of size follows the rule of 'qemu-img resize' input.
+func (env *Environment) Resize(size string) error {
+	imgFilePath := filepath.Join(EnvironmentImageDirPath, env.ID+EnvironmentImageFileExtension)
+	resizedImgFilePath := filepath.Join(EnvironmentImageDirPath, env.ID+"-resized"+EnvironmentImageFileExtension)
 
-// Shutdown shuts down environment.
-func (env *Environment) Shutdown() error {
-	return env.vm.Shutdown()
-}
+	defer os.Remove(resizedImgFilePath)
 
-// Running returns true if environment is runnning, otherwise false.
-func (env *Environment) Running() bool {
-	return env.vm.Alive()
-}
-
-// Exists returns true if environment image exists, otherwise false.
-func (env *Environment) Exists() bool {
-	if _, err := os.Stat(env.vm.ImageFilePath()); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-// Download pulls environment image from remote storage.
-func (env *Environment) Download() error {
-	return env.vm.Download()
-}
-
-// Returns path to environment directory inside VM.
-func (env *Environment) vmDirPath() string {
-	return filepath.Join("/home", VMUsername, "environments", env.ID)
-}
-
-// LoadEnvironment returns existing environment, or creates one if not exists.
-func LoadEnvironment() (*Environment, error) {
-	if err := os.MkdirAll(envDirName, 0755); err != nil {
-		return nil, err
-	}
-
-	configFilePath := filepath.Join(envDirName, envConfigFileName)
-	_, err := os.Stat(configFilePath)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
-
-	env := &Environment{}
-
+	_, err := os.Stat(resizedImgFilePath)
 	if err == nil {
-		content, err := ioutil.ReadFile(configFilePath)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(content, env); err != nil {
-			return nil, err
-		}
-
-		// Load source config
-		content, err = ioutil.ReadFile(filepath.Join(envDirName, sourceConfigFileName))
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(content, &env.source); err != nil {
-			return nil, err
-		}
-	} else {
-		env.ID = xid.New().String()
-		env.Name = DefaultVMName
-		env.source.Dependencies = make([]sourceDependency, 0)
-		if err = env.Save(); err != nil {
-			return nil, err
+		if err = os.Remove(resizedImgFilePath); err != nil {
+			return err
 		}
 	}
 
-	vm, err := loadVM(env.Name)
+	imgFile, err := os.Open(imgFilePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	vm.WorkingDirPath = env.vmDirPath()
-	env.vm = vm
+	defer imgFile.Close()
 
-	return env, nil
-}
+	resizedImgFile, err := os.Create(resizedImgFilePath)
+	if err != nil {
+		return err
+	}
+	defer resizedImgFile.Close()
 
-// InstallDependencies installs configured source dependencies in VM.
-func (env *Environment) InstallDependencies() error {
-	if len(env.source.Dependencies) == 0 {
-		return errors.New("there are no dependencies configured")
+	if _, err := io.Copy(resizedImgFile, imgFile); err != nil {
+		return err
 	}
 
-	for _, dep := range env.source.Dependencies {
-		if dep.Type == "package" {
-			if dep.Name == "nodejs" || dep.Name == "npm" {
-				prepCmd := env.vm.NewCommand(
-					"apt-get install curl software-properties-common -y",
-				).Then("apt-get update -y").AsAdmin()
-				if err := prepCmd.Execute(); err != nil {
-					return err
-				}
+	resizedImgFile.Close()
+	imgFile.Close()
 
-				dep.Name = "nodejs"
-			}
+	isShrink := strings.HasPrefix(size, "-")
 
-			vmCmd := env.vm.NewCommand("apt-get", "install", dep.Name, "-y").AsAdmin()
-			if err := vmCmd.Execute(); err != nil {
-				return err
-			}
-			continue
-		}
+	args := []string{"resize"}
+	if isShrink {
+		args = append(args, "--shrink")
+	}
+	args = append(args, imgFilePath, size)
+	cmd := exec.Command("qemu-img", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		// log.Errorf("%s", string(output))
+		return err
+	}
 
-		if dep.Type == "command" {
-			vmCmd := env.vm.NewCommandf("cd %s && %s", env.vmDirPath(), dep.Command)
-			if dep.AsAdmin {
-				vmCmd.AsAdmin()
-			}
+	op := "--expand"
+	if isShrink {
+		op = "--shrink"
+	}
+	cmd = exec.Command("sudo", "virt-resize", op, "/dev/sda1", imgFilePath, resizedImgFilePath)
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		// log.Errorf("%s", string(output))
+		return err
+	}
+	// log.Info(string(output))
 
-			if err := vmCmd.Execute(); err != nil {
-				return err
-			}
-			continue
-		}
+	if err := os.Remove(imgFilePath); err != nil {
+		return err
+	}
+
+	if err := os.Rename(resizedImgFilePath, imgFilePath); err != nil {
+		return err
 	}
 	return nil
 }
 
-// Run executes run command inside VM.
-func (env *Environment) Run() error {
-	if env.source.Commands.Run == "" {
-		return errors.New("run command is not configured")
+// DefaultEnvironment returns default environment.
+func DefaultEnvironment() (*Environment, error) {
+	config, err := LoadConfiguration()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := env.Sync(); err != nil {
-		return err
+	if config.DefaultEnvironment != "" {
+		return LoadEnvironment(config.DefaultEnvironment)
 	}
 
-	vmCmd := env.vm.NewCommandf("cd %s && %s", env.vmDirPath(), env.source.Commands.Run)
-	return vmCmd.Execute()
+	environments, err := SupportedEnvironments()
+	if err != nil {
+		return nil, err
+	}
+	envDefault := environments.Default()
+	return LoadEnvironment(envDefault.ID)
+}
+
+// LoadEnvironment loads environment identified with given id.
+func LoadEnvironment(id string) (*Environment, error) {
+	environments, err := SupportedEnvironments()
+	if err != nil {
+		return nil, err
+	}
+
+	env := environments.Find(id)
+	if env == nil {
+		return nil, errors.New("requested environment is not supported")
+	}
+
+	config, err := LoadConfiguration()
+	if err != nil {
+		return nil, err
+	}
+	envConfig := config.FindEnvironment(id)
+	if envConfig == nil {
+		envConfig = &EnvironmentConfig{
+			ID:     env.ID,
+			Port:   config.newForwardPort(),
+			Memory: "2G",
+		}
+
+		config.Environments = append(config.Environments, *envConfig)
+		if err = config.Save(); err != nil {
+			return nil, err
+		}
+	}
+	env.Config = envConfig
+
+	imageFilePath := filepath.Join(EnvironmentImageDirPath, envConfig.ID+".qcow2")
+	if _, err = os.Stat(imageFilePath); os.IsNotExist(err) {
+		fmt.Println("Download environment: ", envConfig.ID)
+		if err = env.Download(); err != nil {
+			return nil, err
+		}
+	}
+
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	env.WorkingDirectory = strings.TrimPrefix(currentDir, userHomeDir)
+
+	pid, err := environmentProcessID(env)
+	if err != nil {
+		return nil, err
+	}
+	if pid == 0 {
+		return env, nil
+	}
+	env.PID = pid
+
+	if !env.IsReady() {
+		pidStr := strconv.Itoa(env.PID)
+		cmd := exec.Command("kill", "-9", pidStr)
+		if err := cmd.Run(); err != nil {
+			return nil, errors.New("environment is not responding and cannot be killed, please do it manually for PID " + pidStr)
+		}
+		log.Warn("environment is not responding and succesfully killed")
+	}
+	return env, nil
 }

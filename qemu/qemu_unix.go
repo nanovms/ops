@@ -55,8 +55,8 @@ func logv(rconfig *types.RunConfig, msg string) {
 
 func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
-	logv(rconfig, qemuBaseCommand+" "+strings.Join(args, " "))
-	q.cmd = exec.Command(qemuBaseCommand, args...)
+	logv(rconfig, BaseCommand+" "+strings.Join(args, " "))
+	q.cmd = exec.Command(BaseCommand, args...)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
@@ -400,7 +400,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 }
 
 func (q *qemu) isInstalled() bool {
-	qemuCommand := qemuBaseCommand
+	qemuCommand := BaseCommand
 	if filepath.Base(qemuCommand) == qemuCommand {
 		lp, err := exec.LookPath(qemuCommand)
 		if err != nil {
@@ -469,7 +469,7 @@ func generateMac() string {
 
 // Version gives the version of qemu running locally.
 func Version() (string, error) {
-	versionData, err := exec.Command(qemuBaseCommand, "--version").Output()
+	versionData, err := exec.Command(BaseCommand, "--version").Output()
 	if err != nil {
 		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
 	}

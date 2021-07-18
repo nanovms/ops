@@ -19,7 +19,7 @@ var (
 func init() {
 	directories := []string{
 		CrossBuildHomeDirPath,
-		VMImageDirPath,
+		EnvironmentImageDirPath,
 	}
 	for _, dir := range directories {
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -30,8 +30,17 @@ func init() {
 	}
 
 	if _, err := os.Stat(ConfigFilePath); os.IsNotExist(err) {
-		conf := &Configuration{}
+		conf := &Configuration{
+			Environments: make([]EnvironmentConfig, 0),
+		}
 		if err := conf.Save(); err != nil {
+			log.Fail(ErrMsgEnvironmentInitFailed, err)
+		}
+	}
+
+	listFilePath := filepath.Join(CrossBuildHomeDirPath, SupportedEnvironmentsFileName)
+	if _, err := os.Stat(listFilePath); os.IsNotExist(err) {
+		if err = downloadManifest(); err != nil {
 			log.Fail(ErrMsgEnvironmentInitFailed, err)
 		}
 	}
