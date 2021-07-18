@@ -21,6 +21,21 @@ func (env *Environment) InstallPackage(name string) error {
 	return nil
 }
 
+// UninstallPackage removes OS's software package with given name.
+func (env *Environment) UninstallPackage(name string) error {
+	if name == PackageNameNPM {
+		name = PackageNameNodeJS
+	}
+
+	vmCmd := env.NewCommand("apt-get", "purge", name, "-y").
+		Then("apt-get", "autoremove", "-y").
+		Then("apt-get", "clean", "-y").AsAdmin()
+	if err := vmCmd.Execute(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // InstallNPMPackage installs npm package with given name.
 func (env *Environment) InstallNPMPackage(name string) error {
 	exists, err := env.isExecutableExists(PackageNameNPM)
@@ -35,6 +50,26 @@ func (env *Environment) InstallNPMPackage(name string) error {
 	}
 
 	vmCmd := env.NewCommand("npm", "install", name, "-g", "-y").AsAdmin()
+	if err := vmCmd.Execute(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UninstallNPMPackage removes npm package with given name.
+func (env *Environment) UninstallNPMPackage(name string) error {
+	exists, err := env.isExecutableExists(PackageNameNPM)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		if err := env.InstallPackage(PackageNameNodeJS); err != nil {
+			return err
+		}
+	}
+
+	vmCmd := env.NewCommand("npm", "uninstall", name, "-g", "-y").AsAdmin()
 	if err := vmCmd.Execute(); err != nil {
 		return err
 	}

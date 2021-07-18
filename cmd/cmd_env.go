@@ -181,7 +181,11 @@ func envDependencies(cmd *cobra.Command, args []string) {
 	}
 	if npmRequested {
 		for _, name := range args {
-			if !shouldUninstall {
+			if shouldUninstall {
+				if err := env.UninstallNPMPackage(name); err != nil {
+					log.Fail(errorMsg, err)
+				}
+			} else {
 				if err := env.InstallNPMPackage(name); err != nil {
 					log.Fail(errorMsg, err)
 				}
@@ -191,7 +195,11 @@ func envDependencies(cmd *cobra.Command, args []string) {
 	}
 
 	for _, name := range args {
-		if !shouldUninstall {
+		if shouldUninstall {
+			if err := env.UninstallPackage(name); err != nil {
+				log.Fail(errorMsg, err)
+			}
+		} else {
 			if err := env.InstallPackage(name); err != nil {
 				log.Fail(errorMsg, err)
 			}
