@@ -7,13 +7,14 @@ import (
 )
 
 var (
-	configFilePath = filepath.Join(crossBuildHomeDirPath, "config.json")
+	// ConfigFilePath is path to crossbuild configuration file.
+	ConfigFilePath = filepath.Join(CrossBuildHomeDirPath, "config.json")
 )
 
 // Configuration is configurable crossbuild settings.
 type Configuration struct {
-	VirtualMachines []*virtualMachine `json:"virtual_machines"`
-	usedVMPorts     map[int]bool      `json:"-"`
+	VirtualMachines []*VM        `json:"virtual_machines"`
+	usedVMPorts     map[int]bool `json:"-"`
 }
 
 // Save writes configuration to file located at OPS_HOME_DIR/crossbuild/config.json.
@@ -23,7 +24,7 @@ func (cfg *Configuration) Save() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(configFilePath, content, 0655); err != nil {
+	if err := ioutil.WriteFile(ConfigFilePath, content, 0655); err != nil {
 		return err
 	}
 	return nil
@@ -42,7 +43,7 @@ func (cfg *Configuration) newForwardPort() int {
 
 // LoadConfiguration reads configuration file located at OPS_HOME_DIR/crossbuild/config.json.
 func LoadConfiguration() (*Configuration, error) {
-	content, err := ioutil.ReadFile(configFilePath)
+	content, err := ioutil.ReadFile(ConfigFilePath)
 	if err != nil {
 		return nil, err
 	}

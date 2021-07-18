@@ -168,10 +168,6 @@ func envInstallDependencies(cmd *cobra.Command, args []string) {
 	defer progress.Close()
 
 	if err := env.InstallDependencies(); err != nil {
-		if err == crossbuild.ErrNoDependenciesConfigured {
-			fmt.Println("You have no dependencies configured")
-			return
-		}
 		log.Fail("Failed to install dependencies", err)
 	}
 }

@@ -1,9 +1,11 @@
 package crossbuild
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,11 +18,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bramvdbogaerde/go-scp"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/qemu"
 	"github.com/nanovms/ops/types"
 	"github.com/nanovms/ops/util"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -45,39 +49,38 @@ const (
 
 var (
 	// Path to directory that stores VM images.
-	vmImageDirPath = filepath.Join(crossBuildHomeDirPath, "vm_images")
+	VMImageDirPath = filepath.Join(CrossBuildHomeDirPath, "vm_images")
 )
 
-// Virtualized OS for crossbuild execution, a.k.a VM.
-type virtualMachine struct {
-	Name        string `json:"name"`
-	ForwardPort int    `json:"forward_port"`
-	PID         int    `json:"-"`
-	MemorySize  string `json:"memory_size"`
-
-	workingDirPath string `json:"-"`
+// VM is a virtualized OS for crossbuild execution.
+type VM struct {
+	Name           string `json:"name"`
+	ForwardPort    int    `json:"forward_port"`
+	PID            int    `json:"-"`
+	MemorySize     string `json:"memory_size"`
+	WorkingDirPath string `json:"-"`
 }
 
 // ImageFilePath returns path to VM image file.
-func (vm *virtualMachine) ImageFilePath() string {
-	return filepath.Join(vmImageDirPath, vm.Name+VMImageFileExtension)
+func (vm *VM) ImageFilePath() string {
+	return filepath.Join(VMImageDirPath, vm.Name+VMImageFileExtension)
 }
 
 // ImagePIDFilePath returns path to VM PID file.
-func (vm *virtualMachine) ImagePIDFilePath() string {
-	return filepath.Join(vmImageDirPath, vm.Name+".pid")
+func (vm *VM) ImagePIDFilePath() string {
+	return filepath.Join(VMImageDirPath, vm.Name+".pid")
 }
 
 // Download VM image, if not exists.
-func (vm *virtualMachine) Download() error {
+func (vm *VM) Download() error {
 	compressedImgFileName := vm.Name + ".zip"
-	compressedImgFilePath := filepath.Join(vmImageDirPath, compressedImgFileName)
+	compressedImgFilePath := filepath.Join(VMImageDirPath, compressedImgFileName)
 	downloadURL := "https://" + path.Join(VMImageDownloadBaseURL, compressedImgFileName)
 	if err := lepton.DownloadFile(compressedImgFilePath, downloadURL, 600, true); err != nil {
 		return err
 	}
 
-	if err := util.Unzip(compressedImgFilePath, vmImageDirPath); err != nil {
+	if err := util.Unzip(compressedImgFilePath, VMImageDirPath); err != nil {
 		return err
 	}
 
@@ -86,7 +89,7 @@ func (vm *virtualMachine) Download() error {
 }
 
 // Alive returns true if VM is running and can establish communication.
-func (vm *virtualMachine) Alive() bool {
+func (vm *VM) Alive() bool {
 	if vm.PID > 0 {
 		vmCmd := vm.NewCommand("ls /")
 		vmCmd.SupressOutput = true
@@ -102,7 +105,7 @@ func (vm *virtualMachine) Alive() bool {
 
 // Starts this virtual machine.
 // If the image does not exists, it will be downloaded.
-func (vm *virtualMachine) Start() error {
+func (vm *VM) Start() error {
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		return errors.New("no hypervisor found in PATH")
@@ -193,7 +196,7 @@ func (vm *virtualMachine) Start() error {
 }
 
 // Shutdown stops this VM, if running.
-func (vm *virtualMachine) Shutdown() error {
+func (vm *VM) Shutdown() error {
 	vmCmd := vm.NewCommand("shutdown", "-hP", "now").AsAdmin()
 	if err := vmCmd.Execute(); err != nil {
 		return err
@@ -224,7 +227,7 @@ func (vm *virtualMachine) Shutdown() error {
 
 // Resize changes disk size by given size.
 // The value of size follows the rule of 'qemu-img resize' input.
-func (vm *virtualMachine) Resize(size string) error {
+func (vm *VM) Resize(size string) error {
 	imgFilePath := vm.ImageFilePath()
 	imgFilePathWithoutExt := strings.TrimSuffix(imgFilePath, VMImageFileExtension)
 	resizedImgFilePath := imgFilePathWithoutExt + "-resized" + VMImageFileExtension
@@ -283,14 +286,71 @@ func (vm *virtualMachine) Resize(size string) error {
 	return nil
 }
 
+// MkdirAll executes 'mkdir -p' command in VM.
+func (vm *VM) MkdirAll(dirpath string) error {
+	vmCmd := vm.NewCommand("mkdir", "-p", dirpath)
+	return vmCmd.Execute()
+}
+
+// RemoveDir removed directory recursively given its path.
+func (vm *VM) RemoveDir(dirpath string) error {
+	vmCmd := vm.NewCommand("rm", "-rf", dirpath)
+	return vmCmd.Execute()
+}
+
+// CopyFile copies file from srcpath in local filesystem to destpath in VM.
+func (vm *VM) CopyFile(client *ssh.Client, srcpath, destpath string, permissions fs.FileMode) error {
+	scpClient, err := scp.NewClientBySSH(client)
+	if err != nil {
+		return err
+	}
+	defer scpClient.Close()
+
+	file, err := os.Open(srcpath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	perm := fmt.Sprintf("%04o", uint32(permissions))
+	if err := scpClient.CopyFile(file, destpath, perm); err != nil {
+		return err
+	}
+	return nil
+}
+
+// NewCommand creates new command to be executed using user account.
+func (vm *VM) NewCommand(command string, args ...interface{}) *VMCommand {
+	return &VMCommand{
+		CommandLines: []string{
+			formatCommand(command, args...),
+		},
+		Username: VMUsername,
+		Password: VMUserPassword,
+		Port:     vm.ForwardPort,
+	}
+}
+
+// NewCommandf creates new formatted command to be executed using user account.
+func (vm *VM) NewCommandf(format string, args ...interface{}) *VMCommand {
+	return &VMCommand{
+		CommandLines: []string{
+			fmt.Sprintf(format, args...),
+		},
+		Username: VMUsername,
+		Password: VMUserPassword,
+		Port:     vm.ForwardPort,
+	}
+}
+
 // Loads existing VM configuration, or creates one if doesn't exist.
-func loadVM(name string) (*virtualMachine, error) {
+func loadVM(name string) (*VM, error) {
 	config, err := LoadConfiguration()
 	if err != nil {
 		return nil, err
 	}
 
-	var vm *virtualMachine
+	var vm *VM
 	for _, v := range config.VirtualMachines {
 		if v.Name == name {
 			vm = v
@@ -299,7 +359,7 @@ func loadVM(name string) (*virtualMachine, error) {
 	}
 
 	if vm == nil {
-		vm = &virtualMachine{
+		vm = &VM{
 			Name:        name,
 			ForwardPort: config.newForwardPort(),
 		}
@@ -350,4 +410,79 @@ func loadVM(name string) (*virtualMachine, error) {
 		os.Remove(pidFilePath)
 	}
 	return vm, nil
+}
+
+// VMCommand is one or more command lines to be executed inside VM.
+type VMCommand struct {
+	SupressOutput bool
+	CommandLines  []string
+	Username      string
+	Password      string
+	Port          int
+	OutputBuffer  bytes.Buffer
+	ErrorBuffer   bytes.Buffer
+}
+
+// CombinedOutput returns combined string of standard output and error.
+func (cmd *VMCommand) CombinedOutput() string {
+	return cmd.OutputBuffer.String() + cmd.ErrorBuffer.String()
+}
+
+// Execute executes command in VM as regular user, or as admin if given asAdmin is true.
+func (cmd *VMCommand) Execute() error {
+	client, err := newSSHClient(cmd.Port, cmd.Username, cmd.Password)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	for _, cmdLine := range cmd.CommandLines {
+		if err := cmd.executeCommand(client, cmdLine); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Then adds given command line after last-added one.
+func (cmd *VMCommand) Then(command string, args ...interface{}) *VMCommand {
+	cmd.CommandLines = append(cmd.CommandLines, formatCommand(command, args...))
+	return cmd
+}
+
+// AsAdmin modified this command to use admin account.
+func (cmd *VMCommand) AsAdmin() *VMCommand {
+	cmd.Username = "root"
+	cmd.Password = VMRootPassword
+	return cmd
+}
+
+// Executes a single command.
+func (cmd *VMCommand) executeCommand(client *ssh.Client, cmdLine string) error {
+	session, err := client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	session.Stdin = os.Stdin
+	if cmd.SupressOutput {
+		session.Stdout = &cmd.OutputBuffer
+		session.Stderr = &cmd.ErrorBuffer
+	} else {
+		session.Stdout = io.MultiWriter(os.Stdout, &cmd.OutputBuffer)
+		session.Stderr = io.MultiWriter(os.Stderr, &cmd.ErrorBuffer)
+	}
+
+	if strings.Contains(cmdLine, "$OPS") {
+		cmdLine = strings.ReplaceAll(cmdLine, "$OPS", fmt.Sprintf("/home/%s/.ops/bin/ops", cmd.Username))
+	}
+	return session.Run(cmdLine)
+}
+
+// Formats given command and arguments as a single string.
+func formatCommand(command string, args ...interface{}) string {
+	line := []interface{}{command}
+	line = append(line, args...)
+	return fmt.Sprintln(line...)
 }
