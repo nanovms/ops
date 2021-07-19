@@ -159,7 +159,7 @@ func (env *Environment) Boot() error {
 		return errors.New("environment is not responding")
 	}
 
-	return nil
+	return env.vmMkdirAll(env.vmSourcePath())
 }
 
 // Shutdown stops this environment, if running.

@@ -38,18 +38,8 @@ func (env *Environment) UninstallPackage(name string) error {
 
 // InstallNPMPackage installs npm package with given name.
 func (env *Environment) InstallNPMPackage(name string) error {
-	exists, err := env.isExecutableExists(PackageNameNPM)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		if err := env.InstallPackage(PackageNameNodeJS); err != nil {
-			return err
-		}
-	}
-
-	vmCmd := env.NewCommand("npm", "install", name, "-g", "-y").AsAdmin()
+	// vmCmd := env.NewCommand("npm", "install", name, "-g", "-y").AsAdmin()
+	vmCmd := env.NewCommandf("cd %s && npm install %s -y --save", env.vmSourcePath(), name)
 	if err := vmCmd.Execute(); err != nil {
 		return err
 	}
@@ -58,30 +48,9 @@ func (env *Environment) InstallNPMPackage(name string) error {
 
 // UninstallNPMPackage removes npm package with given name.
 func (env *Environment) UninstallNPMPackage(name string) error {
-	exists, err := env.isExecutableExists(PackageNameNPM)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		if err := env.InstallPackage(PackageNameNodeJS); err != nil {
-			return err
-		}
-	}
-
-	vmCmd := env.NewCommand("npm", "uninstall", name, "-g", "-y").AsAdmin()
+	vmCmd := env.NewCommandf("cd %s && npm uninstall %s -y", env.vmSourcePath(), name)
 	if err := vmCmd.Execute(); err != nil {
 		return err
 	}
 	return nil
-}
-
-// Returns true if given executable exists in VM.
-func (env *Environment) isExecutableExists(name string) (bool, error) {
-	vmCmd := env.NewCommand("which", name).AsAdmin()
-	vmCmd.SupressOutput = true
-	if err := vmCmd.Execute(); err != nil {
-		return false, err
-	}
-	return vmCmd.CombinedOutput() != "", nil
 }
