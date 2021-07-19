@@ -47,6 +47,7 @@ func EnvCommand() *cobra.Command {
 	}
 	cmdDependencies.PersistentFlags().BoolP("uninstall", "", false, "Perform uninstallation, default is install")
 	cmdDependencies.PersistentFlags().BoolP("npm", "", false, "Handle npm package")
+	cmdDependencies.PersistentFlags().BoolP("globally", "g", false, "Install/uninstall for system-wide")
 
 	cmdBuild := &cobra.Command{
 		Use:   "build executable_path [flags]",
@@ -175,6 +176,11 @@ func envDependencies(cmd *cobra.Command, args []string) {
 	}
 	errorMsg := fmt.Sprintf("failed to %s one or more dependency", op)
 
+	globally, err := cmd.Flags().GetBool("globally")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	npmRequested, err := cmd.Flags().GetBool("npm")
 	if err != nil {
 		exitForCmd(cmd, err.Error())
@@ -182,11 +188,11 @@ func envDependencies(cmd *cobra.Command, args []string) {
 	if npmRequested {
 		for _, name := range args {
 			if shouldUninstall {
-				if err := env.UninstallNPMPackage(name); err != nil {
+				if err := env.UninstallNPMPackage(name, globally); err != nil {
 					log.Fail(errorMsg, err)
 				}
 			} else {
-				if err := env.InstallNPMPackage(name); err != nil {
+				if err := env.InstallNPMPackage(name, globally); err != nil {
 					log.Fail(errorMsg, err)
 				}
 			}

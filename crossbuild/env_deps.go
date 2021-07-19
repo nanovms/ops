@@ -37,9 +37,14 @@ func (env *Environment) UninstallPackage(name string) error {
 }
 
 // InstallNPMPackage installs npm package with given name.
-func (env *Environment) InstallNPMPackage(name string) error {
-	// vmCmd := env.NewCommand("npm", "install", name, "-g", "-y").AsAdmin()
-	vmCmd := env.NewCommandf("cd %s && npm install %s -y --save", env.vmSourcePath(), name)
+func (env *Environment) InstallNPMPackage(name string, globally bool) error {
+	var vmCmd *EnvironmentCommand
+	if globally {
+		vmCmd = env.NewCommand("npm", "install", name, "-g", "-y").AsAdmin()
+	} else {
+		vmCmd = env.NewCommandf("cd %s && npm install %s -y --save", env.vmSourcePath(), name)
+	}
+
 	if err := vmCmd.Execute(); err != nil {
 		return err
 	}
@@ -47,8 +52,14 @@ func (env *Environment) InstallNPMPackage(name string) error {
 }
 
 // UninstallNPMPackage removes npm package with given name.
-func (env *Environment) UninstallNPMPackage(name string) error {
-	vmCmd := env.NewCommandf("cd %s && npm uninstall %s -y", env.vmSourcePath(), name)
+func (env *Environment) UninstallNPMPackage(name string, globally bool) error {
+	var vmCmd *EnvironmentCommand
+	if globally {
+		vmCmd = env.NewCommand("npm", "uninstall", name, "-g", "-y").AsAdmin()
+	} else {
+		vmCmd = env.NewCommandf("cd %s && npm uninstall %s -y", env.vmSourcePath(), name)
+	}
+
 	if err := vmCmd.Execute(); err != nil {
 		return err
 	}
