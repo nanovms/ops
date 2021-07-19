@@ -50,7 +50,7 @@ func EnvCommand() *cobra.Command {
 	cmdDependencies.PersistentFlags().BoolP("globally", "g", false, "Install/uninstall for system-wide")
 
 	cmdBuild := &cobra.Command{
-		Use:   "build executable_path [flags]",
+		Use:   "build source_file [flags]",
 		Short: "Build executable",
 		Args:  cobra.MinimumNArgs(1),
 		Run:   envBuild,
