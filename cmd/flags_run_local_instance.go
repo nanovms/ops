@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 
 	"github.com/go-errors/errors"
@@ -46,19 +47,24 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 		c.Debugflags = append(c.Debugflags, "noaslr")
 
-		var elfFile *elf.File
+		if len(c.ProgramPath) > 0 {
+			var elfFile *elf.File
 
-		elfFile, err := api.GetElfFileInfo(c.ProgramPath)
-		if err != nil {
-			return err
-		}
+			elfFile, err := api.GetElfFileInfo(c.ProgramPath)
+			if err != nil {
+				return err
+			}
 
-		if api.IsDynamicLinked(elfFile) {
-			return fmt.Errorf("Program %s must be linked statically", c.ProgramPath)
-		}
+			if api.IsDynamicLinked(elfFile) {
+				log.Errorf("Program %s must be linked statically", c.ProgramPath)
+			}
 
-		if !api.HasDebuggingSymbols(elfFile) {
-			return fmt.Errorf("Program %s must be compiled with debugging symbols", c.ProgramPath)
+			if !api.HasDebuggingSymbols(elfFile) {
+				log.Errorf("Program %s must be compiled with debugging symbols", c.ProgramPath)
+			}
+
+		} else {
+			log.Errorf("Debug executable not found (is this a package?)")
 		}
 	}
 
