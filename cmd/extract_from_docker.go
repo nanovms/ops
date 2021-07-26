@@ -37,8 +37,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		colors=""
 
 		read_libs() {
-			path=$(which $1)
-			ldd ${path:-$1} | rev | cut -d' ' -f2 | rev | while read lib; do
+			ldd "$1" | rev | cut -d' ' -f2 | rev | while read lib; do
 				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
 					exists=0
 					resolved_lib=$(readlink -f $lib)
@@ -51,7 +50,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 					done
 
 					if [ "$exists" = "0" ]; then
-	                	echo "$resolved_lib => $lib"
+						echo "$resolved_lib => $lib"
 						colors="$colors '$lib'"
 
 						read_libs "$resolved_lib"
@@ -60,9 +59,13 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 			done
 		}
 
-		which %s
-		read_libs %s
-	}`, targetExecutable, targetExecutable)
+		app="$(command -v "%s")"
+		echo "$app"
+		# skip statically linked binaries
+		if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
+			read_libs "$app"
+		fi
+	}`, targetExecutable)
 
 	ctx, cli, containerInfo, err := createContainer(imageName, []string{"sh", "-c", script}, true, quiet)
 	if err != nil {
