@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/nanovms/ops.svg?style=svg)](https://circleci.com/gh/nanovms/ops)
 [![Go Report](https://goreportcard.com/badge/github.com/nanovms/ops)](https://goreportcard.com/report/github.com/nanovms/ops)
-[![](https://godoc.org/github.com/nanovms/ops?status.svg)](http://godoc.org/github.com/nanovms/ops)
+[![Go Docs](https://godoc.org/github.com/nanovms/ops?status.svg)](http://godoc.org/github.com/nanovms/ops)
 
 <p align="center">
   <img src="https://i.imgur.com/OtfAABU.png" style="width:200px;"/>
@@ -73,7 +73,7 @@ console.log('Server running at http://127.0.0.1:8083/');
 
 Then you can run it like so:
 
-```bash
+```sh
 ops pkg load node_v11.5.0 -p 8083 -f -n -a hi.js
 ```
 
@@ -85,18 +85,7 @@ For AWS: https://nanovms.gitbook.io/ops/aws
 
 Languages:
 
-* [Golang](https://nanovms.gitbook.io/ops/basic_usage#running-golang-hello-world)
-* [PHP](https://nanovms.gitbook.io/ops/basic_usage#running-php-hello-world)
-* [NodeJS](https://nanovms.gitbook.io/ops/basic_usage#running-a-nodejs-script)
-* [Lua](https://github.com/nanovms/ops-examples/tree/master/lua/01-hello-world)
-* [Perl](https://github.com/nanovms/ops-examples/tree/master/perl/01-hello-world)
-* [Python2.7](https://github.com/nanovms/ops-examples/tree/master/python2.7)
-* [Python3.6](https://github.com/nanovms/ops-examples/tree/master/python3.6/01-hello-world)
-* [Ruby2.3](https://github.com/nanovms/ops-examples/tree/master/ruby/01-hello-world)
-* [Rust](https://github.com/nanovms/ops-examples/tree/master/rust/01-hello-world)
-* [Scheme](https://github.com/nanovms/ops-examples/tree/master/scheme/01-hello-world)
-* [Forth](https://github.com/nanovms/ops-examples/tree/master/forth/01-hello-world)
-* [Java](https://github.com/nanovms/ops-examples/tree/master/java/01-hello-world-example)
+Various langauge examples can be found at https://github.com/nanovms/ops-examples.
 
 Applications:
 
@@ -111,7 +100,7 @@ Applications:
 
 You can always find more pre-made packages via:
 
-```bash
+```sh
 ops pkg list
 ```
 
@@ -163,15 +152,10 @@ the main release can tail the nightly by many weeks sometimes.
 ops version
 ```
 
-get the release channel (or nightly)
-```sh
-ls .ops/
-```
+if you are using a package, get the package hash:
 
-if using a package
-get the package hash:
 ```sh
-cat .ops/packages/manifest.json| jq '."gnatsd_1.4.1"'
+jq '."gnatsd_1.4.1"' ~/.ops/packages/manifest.json
 ```
 
 ## Pull Requests
@@ -191,6 +175,6 @@ Feel free to email security at.
 
 If you are having trouble running a particular application please feel
 free to open an issue and we can take a look. In general we'll only want
-to support the latest release from a given application/project, however
+to support the latest release from a given application/project, however,
 if you really want/need support for something older there are paid
-support plans available - contact the folks at https://nanovms.com .
+support plans available - contact the folks at https://nanovms.com.
