@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
@@ -35,8 +34,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 
 	program := args[0]
 	c.Program = program
-	curdir, _ := os.Getwd()
-	c.ProgramPath = path.Join(curdir, c.Program)
+	var err error
+	c.ProgramPath, err = filepath.Abs(c.Program)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 	checkProgramExists(c.Program)
 
 	flags := cmd.Flags()
@@ -49,7 +51,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags)
-	err := mergeContainer.Merge(c)
+	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
