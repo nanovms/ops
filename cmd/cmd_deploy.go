@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -51,8 +49,11 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 
 	program := args[0]
 	c.Program = program
-	curdir, _ := os.Getwd()
-	c.ProgramPath = path.Join(curdir, c.Program)
+	var err error
+	c.ProgramPath, err = filepath.Abs(c.Program)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 	checkProgramExists(c.Program)
 
 	if len(c.Args) == 0 {
@@ -62,7 +63,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags, createInstanceFlags)
-	err := mergeConfigContainer.Merge(c)
+	err = mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
