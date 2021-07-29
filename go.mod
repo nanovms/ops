@@ -14,6 +14,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/UpCloudLtd/upcloud-go-api v0.0.0-20210127073406-2964ed7e5972
 	github.com/aws/aws-sdk-go v1.35.20
+	github.com/bramvdbogaerde/go-scp v1.0.0
 	github.com/containerd/containerd v1.5.2 // indirect
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.7.1+incompatible
@@ -41,10 +42,12 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/terra-farm/go-virtualbox v0.0.4
+	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
-	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
+	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea
 	google.golang.org/api v0.30.0
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.55.0 // indirect

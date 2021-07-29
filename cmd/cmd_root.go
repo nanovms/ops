@@ -46,6 +46,7 @@ func GetRootCommand() *cobra.Command {
 	PersistGlobalCommandFlags(rootCmd.PersistentFlags())
 
 	rootCmd.AddCommand(BuildCommand())
+	rootCmd.AddCommand(EnvCommand())
 	rootCmd.AddCommand(ImageCommands())
 	rootCmd.AddCommand(InstanceCommands())
 	rootCmd.AddCommand(ProfileCommand())
