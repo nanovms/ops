@@ -49,6 +49,19 @@ func IsDynamicLinked(efd *elf.File) bool {
 // replace looking up in dynamic section in ELF
 func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	var notExistLib []string
+	var absTargetRoot string
+	if targetRoot != "" {
+		var err error
+		absTargetRoot, err = filepath.Abs(targetRoot)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		absTargetRoot = "/"
+	}
+	if filepath.IsAbs(path) {
+		path = filepath.Join(targetRoot, path)
+	}
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -69,6 +82,9 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	if err == nil && IsDynamicLinked(elfFile) {
 		env := os.Environ()
 		env = append(env, "LD_TRACE_LOADED_OBJECTS=1")
+		if targetRoot != "" {
+			env = append(env, "LD_LIBRARY_PATH="+targetRoot)
+		}
 		cmd := exec.Command(path)
 		cmd.Env = env
 		out, _ := cmd.StdoutPipe()
@@ -90,6 +106,10 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 				continue
 			}
 			libpath, _ := filepath.Abs(parts[len(parts)-2])
+			if !strings.HasPrefix(libpath, absTargetRoot) {
+				// LD_LIBRARY_PATH didn't work: manually add target root path
+				libpath = filepath.Join(absTargetRoot, libpath)
+			}
 			if strings.HasPrefix(libpath, dir) {
 				libpath = libpath[len(dir)+1:]
 			}

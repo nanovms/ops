@@ -53,17 +53,18 @@ func expandVars(origin string, s string) string {
 
 func findLib(targetRoot string, origin string, libDirs []string, path string) (string, error) {
 	if path[0] == '/' {
-		if _, err := fs.LookupFile(targetRoot, path); err != nil {
+		rpath, err := fs.LookupFile(targetRoot, path)
+		if err != nil {
 			return "", err
 		}
-		return path, nil
+		return rpath, nil
 	}
 
 	for _, libDir := range libDirs {
 		lib := filepath.Join(expandVars(origin, libDir), path)
-		_, err := fs.LookupFile(targetRoot, lib)
+		rlib, err := fs.LookupFile(targetRoot, lib)
 		if err == nil {
-			return lib, nil
+			return rlib, nil
 		} else if !os.IsNotExist(err) {
 			return "", err
 		}

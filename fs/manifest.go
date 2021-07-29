@@ -60,6 +60,9 @@ func (m *Manifest) AddUserProgram(imgpath string) (err error) {
 	}
 	program := path.Join("/", path.Join(parts...))
 
+	if filepath.IsAbs(imgpath) {
+		imgpath = filepath.Join(m.targetRoot, imgpath)
+	}
 	err = m.AddFile(program, imgpath)
 	if err != nil {
 		return
@@ -153,6 +156,13 @@ func (m *Manifest) AddDirectory(dir string, workDir string) error {
 		return err
 	}
 
+	var absPath bool
+	if filepath.IsAbs(dir) {
+		dir = filepath.Join(m.targetRoot, dir)
+		absPath = true
+	} else {
+		absPath = false
+	}
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -160,7 +170,9 @@ func (m *Manifest) AddDirectory(dir string, workDir string) error {
 
 		// if the path is relative then root it to image path
 		var vmpath string
-		if hostpath[0] != '/' {
+		if absPath {
+			vmpath = strings.TrimPrefix(hostpath, m.targetRoot)
+		} else if hostpath[0] != '/' {
 			vmpath = "/" + hostpath
 		} else {
 			vmpath = hostpath
