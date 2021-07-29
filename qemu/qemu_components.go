@@ -15,7 +15,10 @@ type drive struct {
 
 func (d drive) String() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("-drive file=%s,format=%s", d.path, d.format))
+	sb.WriteString(fmt.Sprintf("-drive file=%s", d.path))
+	if len(d.format) > 0 {
+		sb.WriteString(fmt.Sprintf(",format=%s", d.format))
+	}
 	if len(d.index) > 0 {
 		sb.WriteString(fmt.Sprintf(",index=%s", d.index))
 	}

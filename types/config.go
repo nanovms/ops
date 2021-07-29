@@ -214,6 +214,9 @@ type RunConfig struct {
 	// signify a value in megabytes or gigabytes respectively.
 	Memory string
 
+	// Vga whether to emulate a VGA output device
+	Vga bool
+
 	// Mounts
 	Mounts []string
 

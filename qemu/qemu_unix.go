@@ -96,9 +96,12 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 func (q *qemu) addDrive(id, image, ifaceType string) {
 	drv := drive{
 		path:   image,
-		format: "raw",
 		iftype: ifaceType,
 		ID:     id,
+	}
+	fileExt := filepath.Ext(image)
+	if !strings.Contains(fileExt, "qcow") {
+		drv.format = "raw"
 	}
 	q.drives = append(q.drives, drv)
 }
@@ -314,7 +317,9 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
 		q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
 
-		q.addOption("-vga", "none")
+		if !rconfig.Vga {
+			q.addOption("-vga", "none")
+		}
 
 		if rconfig.CPUs > 0 {
 			q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
