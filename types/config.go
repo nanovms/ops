@@ -197,6 +197,9 @@ type RunConfig struct {
 	// Imagename (FIXME)
 	Imagename string
 
+	// InstanceGroup
+	InstanceGroup string
+
 	// InstanceName
 	InstanceName string
 
