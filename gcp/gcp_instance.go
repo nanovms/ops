@@ -20,7 +20,6 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		c.CloudConfig.Flavor = "g1-small"
 	}
 
-	// short-circuit to instancegroup
 	if c.RunConfig.InstanceGroup != "" {
 		p.addToInstanceGroup(ctx, c.RunConfig.InstanceGroup)
 		return nil
