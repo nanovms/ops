@@ -287,6 +287,8 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.Bool("missing-files", false, "print list of files not found on image at exit")
 }
 
+// PersistNetworkParamFlags appends the network flags to a flagset
+// used in Build/Load/Create for Static IPV6 settings and Load/Run for tap interfaces
 func PersistNetworkParamFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.String("ip-address", "", "static ip address")
 	cmdFlags.String("gateway", "", "network gateway")
