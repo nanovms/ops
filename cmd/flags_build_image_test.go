@@ -49,6 +49,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
 		cmd.PersistBuildImageCommandFlags(flagSet)
+		cmd.PersistNetworkParamFlags(flagSet)
 
 		flagSet.Set("args", "a b c d")
 		flagSet.Set("envs", "test=1234")
@@ -76,6 +77,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			},
 			RunConfig: types.RunConfig{
 				Imagename: imagesPath + "/test-image.img",
+				NetMask:   "255.255.255.0",
 			},
 			Args:       []string{"MyTestApp", "a b c d"},
 			Program:    "MyTestApp",
@@ -129,5 +131,6 @@ func newBuildImageFlagSet() (flagSet *pflag.FlagSet) {
 	flagSet = pflag.NewFlagSet("test", 0)
 
 	cmd.PersistBuildImageCommandFlags(flagSet)
+	cmd.PersistNetworkParamFlags(flagSet)
 	return
 }

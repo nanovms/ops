@@ -47,6 +47,7 @@ func imageCreateCommand() *cobra.Command {
 	persistentFlags := cmdImageCreate.PersistentFlags()
 
 	PersistBuildImageCommandFlags(persistentFlags)
+	PersistNetworkParamFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
 	PersistPkgCommandFlags(persistentFlags)

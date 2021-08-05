@@ -287,6 +287,7 @@ func LoadCommand() *cobra.Command {
 
 	PersistConfigCommandFlags(persistentFlags)
 	PersistBuildImageCommandFlags(persistentFlags)
+	PersistNetworkParamFlags(persistentFlags)
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	persistentFlags.BoolP("local", "l", false, "load local package")

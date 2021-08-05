@@ -110,6 +110,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
 		cmd.PersistRunLocalInstanceCommandFlags(flagSet)
+		cmd.PersistNetworkParamFlags(flagSet)
 
 		flagSet.Set("port", "80,81,82-85")
 
@@ -144,6 +145,7 @@ func newRunLocalInstanceFlagSet(debug string) *cmd.RunLocalInstanceCommandFlags 
 	flagSet := pflag.NewFlagSet("test", 0)
 
 	cmd.PersistRunLocalInstanceCommandFlags(flagSet)
+	cmd.PersistNetworkParamFlags(flagSet)
 
 	flagSet.Set("port", "80,81,82-85")
 	flagSet.Set("force", "true")
