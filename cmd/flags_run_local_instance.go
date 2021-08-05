@@ -22,7 +22,10 @@ type RunLocalInstanceCommandFlags struct {
 	BridgeName     string
 	Debug          bool
 	Force          bool
+	Gateway        string
 	GDBPort        int
+	IPAddress      string
+	Netmask        string
 	MissingFiles   bool
 	NoTrace        []string
 	Ports          []string
@@ -90,6 +93,18 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.BridgeName != "" {
 		c.RunConfig.BridgeName = flags.BridgeName
+	}
+
+	if flags.IPAddress != "" && isIPAddressValid(flags.IPAddress) {
+		c.RunConfig.IPAddress = flags.IPAddress
+	}
+
+	if flags.Gateway != "" && isIPAddressValid(flags.Gateway) {
+		c.RunConfig.Gateway = flags.Gateway
+	}
+
+	if flags.Netmask != "" && isIPAddressValid(flags.Netmask) {
+		c.RunConfig.NetMask = flags.Netmask
 	}
 
 	if len(flags.NoTrace) > 0 {
@@ -180,7 +195,22 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
+	flags.Gateway, err = cmdFlags.GetString("gateway")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.GDBPort, err = cmdFlags.GetInt("gdbport")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.IPAddress, err = cmdFlags.GetString("ip-address")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.Netmask, err = cmdFlags.GetString("netmask")
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -255,6 +285,12 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
 	cmdFlags.Bool("syscall-summary", false, "print syscall summary on exit")
 	cmdFlags.Bool("missing-files", false, "print list of files not found on image at exit")
+}
+
+func PersistNetworkParamFlags(cmdFlags *pflag.FlagSet) {
+	cmdFlags.String("ip-address", "", "static ip address")
+	cmdFlags.String("gateway", "", "network gateway")
+	cmdFlags.String("netmask", "255.255.255.0", "network mask")
 }
 
 // isIPAddressValid checks whether IP address is valid

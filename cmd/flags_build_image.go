@@ -177,10 +177,7 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("imagename", "i", "", "image name")
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
-	cmdFlags.String("ip-address", "", "static ip address")
 	cmdFlags.String("ipv6-address", "", "static ipv6 address")
-	cmdFlags.String("gateway", "", "network gateway")
-	cmdFlags.String("netmask", "", "network mask")
 }
 
 func setNanosBaseImage(c *types.Config) {

@@ -22,6 +22,7 @@ func RunCommand() *cobra.Command {
 	PersistConfigCommandFlags(persistentFlags)
 	PersistBuildImageCommandFlags(persistentFlags)
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
+	PersistNetworkParamFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
 

@@ -24,6 +24,9 @@ func TestCreateRunLocalInstanceFlags(t *testing.T) {
 	assert.Equal(t, runLocalInstanceFlags.BridgeName, "br1")
 
 	assert.Equal(t, runLocalInstanceFlags.TapName, "tap1")
+	assert.Equal(t, runLocalInstanceFlags.IPAddress, "192.168.0.1")
+	assert.Equal(t, runLocalInstanceFlags.Gateway, "192.168.1.254")
+	assert.Equal(t, runLocalInstanceFlags.Netmask, "255.255.0.0")
 	assert.Equal(t, runLocalInstanceFlags.SkipBuild, true)
 	assert.Equal(t, runLocalInstanceFlags.Accel, false)
 	assert.Equal(t, runLocalInstanceFlags.Smp, 2)
@@ -36,6 +39,44 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 	t.Run("should merge configuration", func(t *testing.T) {
 		runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
 		runLocalInstanceFlags.Debug = false
+
+		c := &types.Config{}
+
+		err := runLocalInstanceFlags.MergeToConfig(c)
+
+		assert.Nil(t, err, nil)
+
+		expected := &types.Config{
+			BuildDir:   "",
+			Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
+			Force:      true,
+			NoTrace:    []string{"a"},
+			RunConfig: types.RunConfig{
+				Accel:      true,
+				Bridged:    true,
+				BridgeName: "br1",
+				CPUs:       2,
+				Debug:      false,
+				Gateway:    "192.168.1.254",
+				GdbPort:    1234,
+				IPAddress:  "192.168.0.1",
+				Mounts:     []string(nil),
+				NetMask:    "255.255.0.0",
+				Ports:      []string{"80", "81", "82-85"},
+				TapName:    "tap1",
+				Verbose:    true,
+			},
+		}
+
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("should clear ip/gateway/netmask if they are not valid ip addresses", func(t *testing.T) {
+		runLocalInstanceFlags := newRunLocalInstanceFlagSet("false")
+		runLocalInstanceFlags.Debug = false
+		runLocalInstanceFlags.IPAddress = "tomato"
+		runLocalInstanceFlags.Gateway = "potato"
+		runLocalInstanceFlags.Netmask = "cheese"
 
 		c := &types.Config{}
 
@@ -87,9 +128,10 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 		expected := &types.Config{
 			Debugflags: []string{},
 			RunConfig: types.RunConfig{
-				Accel: true,
-				CPUs:  1,
-				Ports: []string{"80", "90", "81", "82-85"},
+				Accel:   true,
+				CPUs:    1,
+				Ports:   []string{"80", "90", "81", "82-85"},
+				NetMask: "255.255.255.0",
 			},
 		}
 
@@ -113,6 +155,9 @@ func newRunLocalInstanceFlagSet(debug string) *cmd.RunLocalInstanceCommandFlags 
 	flagSet.Set("bridged", "true")
 	flagSet.Set("bridgename", "br1")
 	flagSet.Set("tapname", "tap1")
+	flagSet.Set("ip-address", "192.168.0.1")
+	flagSet.Set("gateway", "192.168.1.254")
+	flagSet.Set("netmask", "255.255.0.0")
 	flagSet.Set("skipbuild", "true")
 	flagSet.Set("manifest-name", "manifest.json")
 	flagSet.Set("accel", "true")
