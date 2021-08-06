@@ -155,7 +155,7 @@ ops_detect_supported_linux_distribution() {
     DETECTED_DISTRIBUTION=$(lsb_release -si)
   elif [ -f /etc/lsb-release ]; then
     . /etc/lsb-release
-    DETCTED_DISTRIBUTION=$DISTRIB_ID
+    DETECTED_DISTRIBUTION=$DISTRIB_ID
   elif [ -f /etc/debian_version ]; then
     DETECTED_DISTRIBUTION=debian
   elif [ -f /etc/fedora-release ]; then
