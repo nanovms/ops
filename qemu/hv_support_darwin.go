@@ -1,6 +1,6 @@
-package qemu
-
 // +build darwin
+
+package qemu
 
 import (
 	"bytes"
