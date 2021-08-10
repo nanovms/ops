@@ -370,7 +370,7 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 
 // AddLibrary to add a dependent library
 func (m *Manifest) AddLibrary(path string) {
-	parts := strings.FieldsFunc(path, func(c rune) bool { return c == '/' })
+	parts := strings.FieldsFunc(strings.TrimPrefix(path, m.targetRoot), func(c rune) bool { return c == '/' })
 	node := m.rootDir()
 	for i := 0; i < len(parts)-1; i++ {
 		node = mkDir(node, parts[i])
