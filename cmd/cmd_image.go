@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 
+	"github.com/nanovms/ops/fs"
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -13,6 +15,7 @@ import (
 	"github.com/nanovms/ops/provider"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // ImageCommands provides image related command on GCP
@@ -20,7 +23,7 @@ func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create", "list", "delete", "resize", "sync"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -32,6 +35,9 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageDeleteCommand())
 	cmdImage.AddCommand(imageResizeCommand())
 	cmdImage.AddCommand(imageSyncCommand())
+	cmdImage.AddCommand(imageCopyCommand())
+	cmdImage.AddCommand(imageLsCommand())
+	cmdImage.AddCommand(imageTreeCommand())
 
 	return cmdImage
 }
@@ -396,4 +402,272 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+}
+
+func imageCopyCommand() *cobra.Command {
+	var cmdCopy = &cobra.Command{
+		Use:   "cp <image_name> <src>... <dest>",
+		Short: "copy files from image to local filesystem",
+		Run:   imageCopyCommandHandler,
+		Args:  cobra.MinimumNArgs(3),
+	}
+	flags := cmdCopy.PersistentFlags()
+	flags.BoolP("recursive", "r", false, "copy directories recursively")
+	flags.BoolP("dereference", "L", false, "always follow symbolic links in image")
+	return cmdCopy
+}
+
+func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+	reader := getLocalImageReader(flags, args)
+	defer reader.Close()
+	destPath := args[len(args)-1]
+	var destDir bool
+	fileInfo, err := os.Stat(destPath)
+	if (err == nil) && fileInfo.IsDir() {
+		destDir = true
+	}
+	if (len(args) > 3) && !destDir {
+		exitWithError(fmt.Sprintf("Destination '%s' is not a directory", destPath))
+	}
+	recursive, _ := flags.GetBool("recursive")
+	dereference, _ := flags.GetBool("dereference")
+	for _, srcPath := range args[1 : len(args)-1] {
+		fileInfo, err := reader.Stat(srcPath)
+		if err != nil {
+			log.Errorf("Invalid source '%s': %v", srcPath, err)
+			continue
+		}
+		var dest string
+		if destDir {
+			dest = path.Join(destPath, path.Base(srcPath))
+		} else {
+			dest = destPath
+		}
+		switch fileInfo.Mode() {
+		case os.ModeDir:
+			if !recursive {
+				log.Warnf("Omitting directory '%s'", srcPath)
+				continue
+			}
+			err = imageCopyDir(reader, srcPath, dest, dereference)
+		case 0, os.ModeSymlink:
+			err = reader.CopyFile(srcPath, dest, true)
+			if err != nil {
+				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, dest, err)
+			}
+		}
+		if err != nil {
+			log.Error(err)
+		}
+	}
+}
+
+func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
+	dirEntries, err := reader.ReadDir(src)
+	if err != nil {
+		return fmt.Errorf("Cannot read directory '%s': %v", src, err)
+	}
+	if _, err = os.Stat(dest); os.IsNotExist(err) {
+		if err = os.Mkdir(dest, 0755); err != nil {
+			return fmt.Errorf("Cannot create directory '%s': %v", src, err)
+		}
+	}
+	for _, entry := range dirEntries {
+		srcPath := path.Join(src, entry.Name())
+		destPath := path.Join(dest, entry.Name())
+		switch entry.Mode() {
+		case os.ModeDir:
+			err = imageCopyDir(reader, srcPath, destPath, dereference)
+		case 0, os.ModeSymlink:
+			err = reader.CopyFile(srcPath, destPath, dereference)
+			if err != nil {
+				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, destPath, err)
+			}
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func imageLsCommand() *cobra.Command {
+	var cmdLs = &cobra.Command{
+		Use:   "ls <image_name> <path>",
+		Short: "list files and directories in image",
+		Run:   imageLsCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	flags := cmdLs.PersistentFlags()
+	flags.BoolP("long-format", "l", false, "use a long listing format")
+	return cmdLs
+}
+
+func imageLsCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+	reader := getLocalImageReader(flags, args)
+	defer reader.Close()
+	var srcPath string
+	if len(args) < 2 {
+		srcPath = "/"
+	} else if len(args) > 2 {
+		exitForCmd(cmd, "Too many arguments")
+	} else {
+		srcPath = args[1]
+	}
+	longFormat, _ := flags.GetBool("long-format")
+	fileInfo, err := reader.Stat(srcPath)
+	if err != nil {
+		exitWithError(fmt.Sprintf("Cannot access '%s': %v", srcPath, err))
+	}
+	switch fileInfo.Mode() {
+	case os.ModeDir:
+		dirEntries, err := reader.ReadDir(srcPath)
+		if err != nil {
+			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+		}
+		for index, entry := range dirEntries {
+			if index > 0 {
+				if longFormat {
+					fmt.Println()
+				} else {
+					fmt.Print(" ")
+				}
+			}
+			switch entry.Mode() {
+			case os.ModeDir:
+				imageLsDir(entry, longFormat)
+			case os.ModeSymlink:
+				imageLsSymlink(reader, path.Join(srcPath, entry.Name()), entry, longFormat)
+			default: // regular file
+				imageLsFile(entry, longFormat)
+			}
+		}
+	case os.ModeSymlink:
+		imageLsSymlink(reader, srcPath, fileInfo, longFormat)
+	case 0: // regular file
+		imageLsFile(fileInfo, longFormat)
+	}
+	fmt.Println()
+}
+
+func imageLsDir(fileInfo os.FileInfo, longFormat bool) {
+	var infoString string
+	if longFormat {
+		infoString = fmt.Sprintf("\t %s %s%s%s/", fileInfo.ModTime().Format(time.ANSIC),
+			log.ConsoleColors.Blue(), fileInfo.Name(), log.ConsoleColors.Reset())
+	} else {
+		infoString = log.ConsoleColors.Blue() + fileInfo.Name() + log.ConsoleColors.Reset()
+	}
+	fmt.Print(infoString)
+}
+
+func imageLsFile(fileInfo os.FileInfo, longFormat bool) {
+	var infoString string
+	if longFormat {
+		infoString = fmt.Sprintf("%8d %s %s", fileInfo.Size(),
+			fileInfo.ModTime().Format(time.ANSIC), fileInfo.Name())
+	} else {
+		infoString = fileInfo.Name()
+	}
+	fmt.Print(infoString)
+}
+
+func imageLsSymlink(reader *fs.Reader, filePath string, fileInfo os.FileInfo, longFormat bool) {
+	var infoString string
+	if longFormat {
+		target, _ := reader.ReadLink(filePath)
+		infoString = fmt.Sprintf("%8d %s %s%s%s -> %s", len(target),
+			fileInfo.ModTime().Format(time.ANSIC), log.ConsoleColors.Cyan(), fileInfo.Name(),
+			log.ConsoleColors.Reset(), target)
+	} else {
+		infoString = log.ConsoleColors.Cyan() + fileInfo.Name() + log.ConsoleColors.Reset()
+	}
+	fmt.Print(infoString)
+}
+
+func imageTreeCommand() *cobra.Command {
+	var cmdLs = &cobra.Command{
+		Use:   "tree <image_name>",
+		Short: "display image filesystem contents in tree format",
+		Run:   imageTreeCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdLs
+}
+
+func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+	reader := getLocalImageReader(flags, args)
+	dumpFSEntry(reader, "/", 0)
+	reader.Close()
+}
+
+func dumpFSEntry(reader *fs.Reader, srcPath string, indent int) {
+	fileInfo, err := reader.Stat(srcPath)
+	if err != nil {
+		exitWithError(fmt.Sprintf("Cannot access '%s': %v", srcPath, err))
+	}
+	switch fileInfo.Mode() {
+	case os.ModeDir:
+		fmt.Println(getDumpLine(indent, fileInfo, log.ConsoleColors.Blue()))
+		dirEntries, err := reader.ReadDir(srcPath)
+		if err != nil {
+			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+		}
+		for _, entry := range dirEntries {
+			dumpFSEntry(reader, path.Join(srcPath, entry.Name()), indent+1)
+		}
+	case os.ModeSymlink:
+		fmt.Print(getDumpLine(indent, fileInfo, log.ConsoleColors.Cyan()))
+		target, _ := reader.ReadLink(srcPath)
+		fmt.Printf(" -> %s\n", target)
+	case 0: // regular file
+		fmt.Println(getDumpLine(indent, fileInfo, log.ConsoleColors.White()))
+	}
+}
+
+func getDumpLine(indent int, fileInfo os.FileInfo, color string) string {
+	line := ""
+	for i := 0; i < indent; i++ {
+		line += "|   "
+	}
+	line += color + fileInfo.Name() + log.ConsoleColors.Reset()
+	return line
+}
+
+func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
+	c := lepton.NewConfig()
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if c.CloudConfig.Platform != "onprem" {
+		exitWithError("Image subcommand not implemented yet for cloud images")
+	}
+	imageName := args[0]
+	imagePath := path.Join(lepton.LocalImageDir, imageName)
+	if _, err := os.Stat(imagePath); err != nil {
+		if os.IsNotExist(err) && !strings.HasSuffix(imagePath, ".img") {
+			imagePath += ".img"
+			_, err = os.Stat(imagePath)
+		}
+		if err != nil {
+			if os.IsNotExist(err) {
+				exitWithError(fmt.Sprintf("Local image %s not found", imageName))
+			} else {
+				exitWithError(fmt.Sprintf("Cannot read image %s: %v", imageName, err))
+			}
+		}
+	}
+	reader, err := fs.NewReader(imagePath)
+	if err != nil {
+		exitWithError(fmt.Sprintf("Cannot load image %s: %v", imageName, err))
+	}
+	return reader
 }

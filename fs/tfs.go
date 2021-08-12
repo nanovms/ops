@@ -1,12 +1,16 @@
 package fs
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"math/bits"
 	"math/rand"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,6 +42,8 @@ const (
 	typeTuple  = 1
 )
 
+const symlinkHopsMax = 8
+
 type tfs struct {
 	imgFile    *os.File
 	imgOffset  uint64
@@ -49,6 +55,8 @@ type tfs struct {
 	symDict    map[string]int
 	tupleCount int
 	staging    []byte
+	decoder    tfsDecoder
+	root       *map[string]interface{}
 }
 
 func (t *tfs) logInit() error {
@@ -95,6 +103,119 @@ func (t *tfs) logExtend() error {
 	}
 	t.currentExt = logExt
 	return nil
+}
+
+func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
+	buffer := make([]byte, size)
+	if _, err := t.imgFile.ReadAt(buffer, int64(t.imgOffset+offset)); err != nil {
+		return 0, fmt.Errorf("cannot read image file: %v", err)
+	}
+	if bytes.Compare(buffer[0:len(tfsMagic)], []byte(tfsMagic)) != 0 {
+		return 0, errors.New("TFS magic number not found")
+	}
+	offset = uint64(len(tfsMagic))
+	version, err := getVarint(buffer, &offset)
+	if err != nil {
+		return 0, err
+	}
+	if version != tfsVersion {
+		return 0, fmt.Errorf("TFS version mismatch: expected %d, found %d", tfsVersion, version)
+	}
+	_size, err := getVarint(buffer, &offset)
+	if err != nil {
+		return 0, err
+	}
+	if _size != uint(size/sectorSize) {
+		return 0, fmt.Errorf("unexpected TFS log extension size %d, expected %d",
+			_size, size/sectorSize)
+	}
+	if _size == 1 { // first log "extension"
+		copy(t.uuid[:], buffer[offset:])
+		offset += uint64(len(t.uuid))
+		for _, c := range string(buffer[offset:]) {
+			if c == 0 {
+				break
+			}
+			t.label += string(c)
+		}
+		offset += uint64(len(t.label) + 1)
+	}
+	for {
+		record := buffer[offset]
+		offset++
+		switch record {
+		case endOfLog:
+			return 0, nil
+		case tupleAvailable:
+			if t.decoder.tupleRemain > 0 {
+				err = fmt.Errorf("unexpected tupleAvailable record (tupleRemain: %d)",
+					t.decoder.tupleRemain)
+				return 0, err
+			}
+			tupleTotalLen, err := getVarint(buffer, &offset)
+			if err != nil {
+				return 0, err
+			}
+			length, err := getVarint(buffer, &offset) // segment length
+			if err != nil {
+				return 0, err
+			}
+			if length > tupleTotalLen {
+				err = fmt.Errorf("invalid tupleAvailable record (length: %d, total length: %d, "+
+					"offset: %d)", length, tupleTotalLen, offset)
+				return 0, err
+			}
+			if length == tupleTotalLen {
+				var decoded uint64
+				_, err := t.decodeValue(buffer[offset:offset+uint64(length)], &decoded)
+				if err != nil {
+					return 0, err
+				}
+			} else {
+				t.staging = make([]byte, length)
+				copy(t.staging, buffer[offset:offset+uint64(length)])
+				t.decoder.tupleRemain = tupleTotalLen - length
+			}
+			offset += uint64(length)
+		case tupleExtended:
+			length, err := getVarint(buffer, &offset)
+			if err != nil {
+				return 0, err
+			}
+			if length > t.decoder.tupleRemain {
+				err = fmt.Errorf("invalid tupleExtended record (length: %d, tupleRemain: %d)",
+					length, t.decoder.tupleRemain)
+				return 0, err
+			}
+			t.staging = append(t.staging, buffer[offset:offset+uint64(length)]...)
+			t.decoder.tupleRemain -= length
+			if t.decoder.tupleRemain == 0 {
+				var decoded uint64
+				_, err := t.decodeValue(t.staging, &decoded)
+				if err != nil {
+					return 0, err
+				}
+			}
+			offset += uint64(length)
+		case endOfSegment:
+			continue
+		case logExtensionLink:
+			sector, err := getVarint(buffer, &offset)
+			if err != nil {
+				return 0, err
+			}
+			length, err := getVarint(buffer, &offset)
+			if err != nil {
+				return 0, err
+			}
+			if length*sectorSize != logExtensionSize {
+				return 0, fmt.Errorf("logExtensionLink record with unexpected length %d", length)
+			}
+			return uint64(sector * sectorSize), nil
+		default:
+			return 0, fmt.Errorf("unknown record %d (offset %d)", record, offset)
+		}
+	}
 }
 
 func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
@@ -178,6 +299,114 @@ func (t *tfs) encodeTuple(tuple map[string]interface{}) {
 func (t *tfs) encodeString(s string) {
 	t.pushHeader(entryImmediate, typeBuffer, len(s))
 	t.staging = append(t.staging, s...)
+}
+
+func (t *tfs) decodeValue(buffer []byte, offset *uint64) (interface{}, error) {
+	var entry, dataType byte
+	length, err := getHeader(buffer, offset, &entry, &dataType)
+	if err != nil {
+		return nil, err
+	}
+	switch dataType {
+	case typeTuple:
+		return t.decodeTuple(buffer, offset, entry, length)
+	case typeBuffer:
+		return t.decodeBuf(buffer, offset, entry, length)
+	default:
+		return nil, fmt.Errorf("unknown data type %d (offset %d)", dataType, *offset)
+	}
+}
+
+func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint) (*map[string]interface{}, error) {
+	var tuple *map[string]interface{}
+	if entry == entryImmediate {
+		newTuple := make(map[string]interface{})
+		tuple = &newTuple
+		t.decoder.dict[len(t.decoder.dict)+1] = tuple
+	} else {
+		ref, err := getVarint(buffer, offset)
+		if err != nil {
+			return nil, err
+		}
+		tuple, err = t.getDictTuple(ref)
+		if err != nil {
+			return tuple, err
+		}
+	}
+	for i := 0; i < int(length); i++ {
+		var nameEntry, nameType byte
+		n, err := getHeader(buffer, offset, &nameEntry, &nameType)
+		if err != nil {
+			return tuple, err
+		}
+		if nameType != typeBuffer {
+			return tuple, errors.New("unexpected name type for symbol")
+		}
+		symbol, err := t.decodeSymbol(buffer, offset, nameEntry, n)
+		if err != nil {
+			return tuple, err
+		}
+		value, err := t.decodeValue(buffer, offset)
+		if err != nil {
+			return tuple, err
+		}
+		if symbol != "" { // ignore attributes with empty symbols created by older versions of ops
+			if bufValue, ok := value.(string); ok && (bufValue == "") {
+				// an empty buffer is used to delete an entry from a tuple
+				delete(*tuple, symbol)
+			} else {
+				(*tuple)[symbol] = value
+			}
+		}
+	}
+	return tuple, nil
+}
+
+func (t *tfs) decodeSymbol(buffer []byte, offset *uint64, entry byte, length uint) (string, error) {
+	if entry == entryImmediate {
+		sym := string(buffer[*offset : *offset+uint64(length)])
+		*offset += uint64(length)
+		t.decoder.dict[len(t.decoder.dict)+1] = sym
+		return sym, nil
+	}
+	return t.getDictString(length)
+}
+
+func (t *tfs) decodeBuf(buffer []byte, offset *uint64, entry byte, length uint) (string, error) {
+	if length == 0 {
+		return "", nil
+	}
+	if entry == entryImmediate {
+		buf := string(buffer[*offset : *offset+uint64(length)])
+		*offset += uint64(length)
+		return buf, nil
+	}
+	return t.getDictString(length)
+}
+
+func (t *tfs) getDictTuple(ref uint) (*map[string]interface{}, error) {
+	value := t.decoder.dict[int(ref)]
+	if value == nil {
+		return nil, fmt.Errorf("indirect tuple %d not found", ref)
+	}
+	var isTuple bool
+	tuple, isTuple := value.(*map[string]interface{})
+	if !isTuple {
+		return nil, fmt.Errorf("invalid indirect tuple %d", ref)
+	}
+	return tuple, nil
+}
+
+func (t *tfs) getDictString(ref uint) (string, error) {
+	value := t.decoder.dict[int(ref)]
+	if value == nil {
+		return "", fmt.Errorf("indirect string %d not found", ref)
+	}
+	str, isString := value.(string)
+	if !isString {
+		return "", fmt.Errorf("invalid indirect string %d", ref)
+	}
+	return str, nil
 }
 
 func (t *tfs) writeLink(name string, target string) error {
@@ -314,6 +543,305 @@ func (t *tfs) flush() error {
 	return nil
 }
 
+func (t *tfs) readExtent(p []byte, extent *map[string]interface{}, offset uint64) (int, uint64, error) {
+	extentOffset, err := strconv.ParseUint(getString(extent, "offset"), 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot parse extent offset: %v", err)
+	}
+	extentLength, err := strconv.ParseUint(getString(extent, "length"), 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot parse extent length: %v", err)
+	}
+	extentOffset *= sectorSize
+	extentLength *= sectorSize
+	if extentLength-offset < uint64(len(p)) {
+		p = p[:extentLength-offset]
+	}
+	n, err := t.imgFile.ReadAt(p, int64(t.imgOffset+extentOffset+offset))
+	remain := extentLength - offset - uint64(n)
+	return n, remain, err
+}
+
+func (t *tfs) stat(path string) (os.FileInfo, error) {
+	tuple, parent, err := t.lookup(t.root, path)
+	if err != nil {
+		return nil, err
+	}
+	return &tfsFileInfo{
+		tuple:       tuple,
+		parentTuple: parent,
+	}, nil
+}
+
+func (t *tfs) readLink(path string) (string, error) {
+	tuple, _, err := t.lookup(t.root, path)
+	if err != nil {
+		return "", fmt.Errorf("cannot look up '%s': %v", path, err)
+	}
+	return getString(tuple, "linktarget"), nil
+}
+
+func (t *tfs) fileReader(path string) (io.Reader, error) {
+	var fileTuple *map[string]interface{}
+	currentDir := t.root
+	hopCount := 0
+	for {
+		tuple, parent, err := t.lookup(currentDir, path)
+		if err != nil {
+			return nil, fmt.Errorf("cannot look up '%s': %v", path, err)
+		}
+		target := getString(tuple, "linktarget")
+		if target == "" {
+			fileTuple = tuple
+			break
+		}
+		if hopCount == symlinkHopsMax {
+			return nil, fmt.Errorf("too many symbolic links, aborting at '%s'", path)
+		}
+		hopCount++
+		currentDir = parent
+		path = target
+	}
+	extents := getTuple(fileTuple, "extents")
+	if extents == nil {
+		return nil, fmt.Errorf("'%s' is not a file", path)
+	}
+	fileLength, err := strconv.ParseUint(getString(fileTuple, "filelength"), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse file length for '%s': %v", path, err)
+	}
+	var extentOffsets []int
+	for fileOffset := range *extents {
+		offset, err := strconv.ParseUint(fileOffset, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse file extent offset for '%s': %v", path, err)
+		}
+		extentOffsets = append(extentOffsets, int(offset*sectorSize))
+	}
+	sort.Ints(extentOffsets)
+	return &tfsFileReader{
+		t:             t,
+		length:        fileLength,
+		extents:       extents,
+		extentOffsets: extentOffsets,
+		offset:        0,
+		currentExtent: nil,
+	}, nil
+}
+
+func (t *tfs) readDir(path string) ([]os.FileInfo, error) {
+	dir, _, err := t.lookup(t.root, path)
+	if err != nil {
+		return nil, err
+	}
+	children := getTuple(dir, "children")
+	if children == nil {
+		return nil, errors.New("not a directory")
+	}
+	var entries []os.FileInfo
+	for k, v := range *children {
+		if (k != ".") && (k != "..") {
+			entries = append(entries, &tfsFileInfo{
+				tuple:       v.(*map[string]interface{}),
+				parentTuple: dir,
+			})
+		}
+	}
+	return entries, nil
+}
+
+type tfsDecoder struct {
+	tupleRemain uint
+	dict        map[int]interface{}
+}
+
+type tfsFileInfo struct {
+	tuple       *map[string]interface{}
+	parentTuple *map[string]interface{}
+}
+
+func (i *tfsFileInfo) IsDir() bool {
+	c := getTuple(i.tuple, "children")
+	if c == nil {
+		return false
+	}
+	return true
+}
+
+func (i *tfsFileInfo) ModTime() time.Time {
+	c := getString(i.tuple, "mtime")
+	var timestamp int64
+	if c != "" {
+		timestamp, _ = strconv.ParseInt(c, 10, 64)
+	}
+	return time.Unix(timestamp>>32, (timestamp&0xfffffffff)*0x10000000/1000000000)
+}
+
+func (i *tfsFileInfo) Mode() os.FileMode {
+	if i.IsDir() {
+		return os.ModeDir
+	}
+	if getString(i.tuple, "linktarget") != "" {
+		return os.ModeSymlink
+	}
+	if getTuple(i.tuple, "extents") != nil {
+		return 0 // regular file
+	}
+	return os.ModeIrregular
+}
+
+func (i *tfsFileInfo) Name() string {
+	if i.parentTuple == i.tuple {
+		return "/"
+	}
+	children := getTuple(i.parentTuple, "children")
+	for k, v := range *children {
+		if v == i.tuple {
+			return k
+		}
+	}
+	return "" // should never reach here
+}
+
+func (i *tfsFileInfo) Size() int64 {
+	l := getString(i.tuple, "filelength")
+	if l == "" {
+		return 0 // non-regular file
+	}
+	length, _ := strconv.ParseInt(l, 10, 64)
+	return length
+}
+
+func (i *tfsFileInfo) Sys() interface{} {
+	return i.tuple
+}
+
+type tfsFileReader struct {
+	t             *tfs
+	length        uint64
+	extents       *map[string]interface{}
+	extentOffsets []int
+	curExtIndex   int
+	currentExtent *map[string]interface{}
+	offset        uint64
+}
+
+func (r *tfsFileReader) Read(p []byte) (n int, err error) {
+	if r.offset >= r.length {
+		return 0, io.EOF
+	}
+	if len(r.extentOffsets) == 0 {
+		n = len(p)
+		for i := 0; i < n; i++ {
+			p[i] = 0
+		}
+		return n, nil
+	}
+	n = 0
+	for {
+		if r.currentExtent == nil {
+			min := 0
+			max := len(r.extentOffsets) - 1
+			selected := -1
+			for {
+				selected = (min + max) / 2
+				if min == max {
+					break
+				}
+				if uint64(r.extentOffsets[selected]) > r.offset {
+					max = selected - 1
+					if max < min {
+						max = min
+					}
+				} else if uint64(r.extentOffsets[selected+1]) <= r.offset {
+					min = selected + 1
+				} else {
+					break
+				}
+			}
+			if selected >= 0 {
+				r.selectExtent(selected)
+			}
+		}
+		var extentStart uint64
+		var extentLength uint64
+		if r.currentExtent == nil {
+			extentStart = r.length
+		} else {
+			extentStart, extentLength, err = r.getExtentRange()
+			if err != nil {
+				break
+			}
+			if extentStart+extentLength <= r.offset {
+				if r.curExtIndex < len(r.extentOffsets)-1 {
+					r.selectExtent(r.curExtIndex + 1)
+					extentStart, extentLength, err = r.getExtentRange()
+					if err != nil {
+						break
+					}
+				} else {
+					r.currentExtent = nil
+					extentStart = r.length
+				}
+			}
+		}
+		uninited := (r.currentExtent == nil) || (getString(r.currentExtent, "uninited") != "")
+		if (r.currentExtent != nil) && uninited {
+			extentStart += extentLength * sectorSize
+		}
+		if extentStart > r.offset {
+			zeros := extentStart - r.offset
+			if r.offset+zeros > r.length {
+				zeros = r.length - r.offset
+			}
+			if zeros > uint64(len(p[n:])) {
+				zeros = uint64(len(p[n:]))
+			}
+			for i := 0; uint64(i) < zeros; i++ {
+				p[n+i] = 0
+			}
+			n += int(zeros)
+			r.offset += zeros
+		}
+		if (r.currentExtent != nil) && !uninited {
+			readCount := len(p) - n
+			if r.offset+uint64(readCount) > r.length {
+				readCount = int(r.length - r.offset)
+			}
+			dest := p[n : n+readCount]
+			var remain uint64
+			readCount, remain, err = r.t.readExtent(dest, r.currentExtent, r.offset-extentStart)
+			n += readCount
+			r.offset += uint64(readCount)
+			if remain == 0 { // all data from the current extent has been read
+				r.currentExtent = nil
+			}
+		}
+		if (r.offset >= r.length) && (err == nil) {
+			err = io.EOF
+		}
+		if (n == len(p)) || (err != nil) {
+			break
+		}
+	}
+	return n, err
+}
+
+func (r *tfsFileReader) getExtentRange() (uint64, uint64, error) {
+	start := uint64(r.extentOffsets[r.curExtIndex])
+	length, err := strconv.ParseUint(getString(r.currentExtent, "length"), 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot parse extent length: %v", err)
+	}
+	return start, length * sectorSize, nil
+}
+
+func (r *tfsFileReader) selectExtent(index int) {
+	r.curExtIndex = index
+	ext := (*r.extents)[strconv.Itoa(r.extentOffsets[index]/sectorSize)]
+	r.currentExtent = ext.(*map[string]interface{})
+}
+
 type tlogExt struct {
 	offset uint64
 	buffer []byte
@@ -352,6 +880,80 @@ func appendVarint(buffer []byte, x uint) []byte {
 	return buffer
 }
 
+func getHeader(buffer []byte, offset *uint64, entry *byte, dataType *byte) (uint, error) {
+	if int(*offset) >= len(buffer) {
+		return 0, fmt.Errorf("getHeader(): buffer length %d exhausted", len(buffer))
+	}
+	b := buffer[*offset]
+	*offset++
+	*entry = b >> 7
+	*dataType = (b >> 6) & 0x1
+	length := uint(b & 0x1f)
+	if (b & (1 << 5)) != 0 {
+		for {
+			if int(*offset) >= len(buffer) {
+				return 0, fmt.Errorf("getHeader(): buffer length %d exhausted", len(buffer))
+			}
+			b := buffer[*offset]
+			*offset++
+			length = (length << 7) | uint(b&0x7f)
+			if (b & 0x80) == 0 {
+				break
+			}
+		}
+	}
+	return length, nil
+}
+
+func getVarint(buffer []byte, offset *uint64) (uint, error) {
+	var result uint
+	for {
+		if int(*offset) >= len(buffer) {
+			return 0, fmt.Errorf("getVarint(): buffer length %d exhausted", len(buffer))
+		}
+		b := buffer[*offset]
+		*offset++
+		result = (result << 7) | uint(b&0x7f)
+		if (b & 0x80) == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+func getTuple(parent *map[string]interface{}, child string) *map[string]interface{} {
+	entry := (*parent)[child]
+	if entry == nil {
+		return nil
+	}
+	var isTuple bool
+	tuple, isTuple := entry.(*map[string]interface{})
+	if !isTuple {
+		return nil
+	}
+	return tuple
+}
+
+func getString(parent *map[string]interface{}, child string) string {
+	value := (*parent)[child]
+	if value == nil {
+		return ""
+	}
+	str, isString := value.(string)
+	if !isString {
+		return ""
+	}
+	return str
+}
+
+func getChild(parent *map[string]interface{}, child string) *map[string]interface{} {
+	children := getTuple(parent, "children")
+	if children == nil {
+		return nil
+	}
+	return getTuple(children, child)
+}
+
 func newTfs(imgFile *os.File, imgOffset uint64, fsSize uint64) *tfs {
 	return &tfs{
 		imgFile:   imgFile,
@@ -383,4 +985,60 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 		}
 	}
 	return tfs, tfs.flush()
+}
+
+func tfsRead(imgFile *os.File, fsOffset, fsSize uint64) (*tfs, error) {
+	tfs := newTfs(imgFile, fsOffset, fsSize)
+	tfs.decoder.dict = make(map[int]interface{})
+	nextExt, err := tfs.readLogExt(0, sectorSize)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read filesystem at first log extension: %v", err)
+	}
+	for nextExt != 0 {
+		nextExt, err = tfs.readLogExt(nextExt, logExtensionSize)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read filesystem log extension: %v", err)
+		}
+	}
+	tfs.root, err = tfs.getDictTuple(1)
+	if err != nil {
+		return nil, err
+	}
+	fixupDirectory(tfs.root, tfs.root)
+	return tfs, nil
+}
+
+func fixupDirectory(parent, dir *map[string]interface{}) {
+	children := getTuple(dir, "children")
+	if children == nil {
+		return // not a directory
+	}
+	for _, child := range *children {
+		fixupDirectory(dir, child.(*map[string]interface{}))
+	}
+	(*children)["."] = dir
+	(*children)[".."] = parent
+}
+
+func (t *tfs) lookup(cwd *map[string]interface{}, path string) (*map[string]interface{}, *map[string]interface{}, error) {
+	if strings.HasPrefix(path, "/") {
+		cwd = t.root
+	}
+	tuple := cwd
+	parent := cwd
+	for _, part := range strings.Split(path, "/") {
+		if part != "" {
+			parent = tuple
+			tuple = getChild(tuple, part)
+			if tuple == nil {
+				return nil, nil, os.ErrNotExist
+			}
+		}
+	}
+	if getTuple(tuple, "children") != nil {
+		parent = getChild(tuple, "..")
+	} else if strings.HasSuffix(path, "/") {
+		return nil, nil, errors.New("not a directory")
+	}
+	return tuple, parent, nil
 }
