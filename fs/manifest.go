@@ -521,11 +521,11 @@ func (m *Manifest) MkdirPath(path string) {
 }
 
 func mkDirPath(parent map[string]interface{}, path string) map[string]interface{} {
-	path = strings.TrimPrefix(path, "/")
-	path = strings.TrimSuffix(path, "/")
 	parts := strings.Split(path, "/")
 	for _, element := range parts {
-		parent = mkDir(parent, element)
+		if element != "" {
+			parent = mkDir(parent, element)
+		}
 	}
 	return parent
 }
