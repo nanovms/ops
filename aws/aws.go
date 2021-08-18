@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -20,6 +21,14 @@ type AWS struct {
 	volumeService *ebs.EBS
 	session       *session.Session
 	ec2           *ec2.EC2
+}
+
+// strips any zone qualifier from 'zone' string
+// some AWS API calls only want region even if full region-zone is used
+// elsewhere in the same call
+// FIXME
+func stripZone(zone string) string {
+	return strings.TrimRight(zone, "abc")
 }
 
 func loadAWSCreds() (err error) {
@@ -61,7 +70,7 @@ func (p *AWS) Initialize(config *types.ProviderConfig) error {
 
 	session, err := session.NewSession(
 		&aws.Config{
-			Region: aws.String(config.Zone),
+			Region: aws.String(stripZone(config.Zone)),
 		},
 	)
 	if err != nil {
@@ -73,7 +82,7 @@ func (p *AWS) Initialize(config *types.ProviderConfig) error {
 	p.ec2 = ec2.New(session)
 	p.volumeService = ebs.New(session)
 
-	_, err = p.ec2.DescribeRegions(&ec2.DescribeRegionsInput{RegionNames: aws.StringSlice([]string{config.Zone})})
+	_, err = p.ec2.DescribeRegions(&ec2.DescribeRegionsInput{RegionNames: aws.StringSlice([]string{stripZone(config.Zone)})})
 	if err != nil {
 		return fmt.Errorf("region with name %v is invalid", config.Zone)
 	}

@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13
+      - image: cimg/go:1.15
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
