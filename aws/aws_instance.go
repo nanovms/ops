@@ -50,7 +50,7 @@ func formalizeAWSInstance(instance *ec2.Instance) *lepton.CloudInstance {
 
 func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance {
 	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
+		Region: aws.String(stripZone(region))},
 	)
 	compute := ec2.New(svc)
 

@@ -34,7 +34,7 @@ func (s *S3) CopyToBucket(config *types.Config, archPath string) error {
 	defer file.Close()
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(zone)},
+		Region: aws.String(stripZone(zone))},
 	)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (s *S3) DeleteFromBucket(config *types.Config, key string) error {
 	zone := config.CloudConfig.Zone
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(zone)},
+		Region: aws.String(stripZone(zone))},
 	)
 	if err != nil {
 		return err

@@ -19,24 +19,22 @@ var (
 func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
-	var vol lepton.NanosVolume
-
 	// Create volume
-	localVolume, err := lepton.CreateLocalVolume(config, name, data, size, provider)
+	vol, err := lepton.CreateLocalVolume(config, name, data, size, provider)
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
-	defer os.Remove(localVolume.Path)
+	defer os.Remove(vol.Path)
 
-	config.CloudConfig.ImageName = localVolume.Name
+	config.CloudConfig.ImageName = vol.Name
 
-	err = a.Storage.CopyToBucket(config, localVolume.Path)
+	err = a.Storage.CopyToBucket(config, vol.Path)
 	if err != nil {
 		return vol, fmt.Errorf("copy volume archive to aws bucket: %v", err)
 	}
 
 	bucket := config.CloudConfig.BucketName
-	key := localVolume.Name
+	key := vol.Name
 
 	input := &ec2.ImportSnapshotInput{
 		Description: aws.String("name"),
@@ -71,7 +69,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, size, provider strin
 
 	// Create volume from snapshot
 	createVolumeInput := &ec2.CreateVolumeInput{
-		AvailabilityZone: aws.String(config.CloudConfig.Zone + "c"),
+		AvailabilityZone: aws.String(config.CloudConfig.Zone),
 		SnapshotId:       snapshotID,
 		TagSpecifications: []*ec2.TagSpecification{
 			{
