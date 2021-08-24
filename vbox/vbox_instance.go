@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
@@ -196,11 +197,13 @@ func arp2ip(arp string) string {
 func mac2ip(mac string) string {
 	mac = strings.ToLower(mac)
 
+	arch := runtime.GOOS
+
 	var pad string
 	for i := 0; i < len(mac); i++ {
 		if i%2 == 0 && i != 0 {
 			c := string(mac[i])
-			if c == "0" { // osx arp strip's leading 0s
+			if c == "0" && arch == "darwin" { // osx arp strip's leading 0s
 				pad = pad + ":"
 			} else {
 				pad = pad + ":" + c
@@ -210,7 +213,10 @@ func mac2ip(mac string) string {
 		}
 	}
 
-	pad = strings.TrimLeft(pad, "0")
+	if arch == "darwin" {
+		pad = strings.TrimLeft(pad, "0")
+	}
+
 	pad = arp2ip(pad)
 	return pad
 }
