@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
@@ -114,8 +113,9 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	}
 
 	err = vm.SetNIC(1, vbox.NIC{
-		Network:  vbox.NICNetNAT,
-		Hardware: vbox.VirtIO,
+		Network:       vbox.NICNetHostonly,
+		Hardware:      vbox.VirtIO,
+		HostInterface: "vboxnet0",
 	})
 	if err != nil {
 		ctx.Logger().Errorf("failed setting NIC")
@@ -126,21 +126,6 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	if err != nil {
 		ctx.Logger().Errorf("failed started vm")
 		return
-	}
-
-	for _, p := range ctx.Config().RunConfig.Ports {
-		port, err := strconv.Atoi(p)
-		if err == nil {
-			err = vm.AddNATPF(1, fmt.Sprintf("TCP:%d", port), vbox.PFRule{
-				Proto:     vbox.PFTCP,
-				HostPort:  uint16(port),
-				GuestPort: uint16(port),
-			})
-			if err != nil {
-				ctx.Logger().Errorf("failed creating port forward rule")
-				return err
-			}
-		}
 	}
 
 	// TODO: change go-virtualbox to read forwarding rules on listing instances instead of relying on a guest property
@@ -192,6 +177,44 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 	return
 }
 
+// for osx
+func arp2ip(arp string) string {
+	cmd := exec.Command("sh", "-c", "arp -a | grep "+arp+"| awk '{print $2}'")
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	sout := string(out)
+	sout = strings.TrimSpace(sout)
+	sout = strings.Trim(sout, "()")
+	return sout
+}
+
+// hack for obtaining ip addr on mac
+func mac2ip(mac string) string {
+	mac = strings.ToLower(mac)
+
+	var pad string
+	for i := 0; i < len(mac); i++ {
+		if i%2 == 0 && i != 0 {
+			c := string(mac[i])
+			if c == "0" { // osx arp strip's leading 0s
+				pad = pad + ":"
+			} else {
+				pad = pad + ":" + c
+			}
+		} else {
+			pad += string(mac[i])
+		}
+	}
+
+	pad = strings.TrimLeft(pad, "0")
+	pad = arp2ip(pad)
+	return pad
+}
+
 // GetInstances returns the list of vms managed by VirtualBox
 func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInstance, err error) {
 	instances = []lepton.CloudInstance{}
@@ -205,10 +228,12 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 		image, _ := virtualbox.GetGuestProperty(vm.Name, "Image")
 		ports, _ := virtualbox.GetGuestProperty(vm.Name, "Ports")
 
+		nic := vm.NICs[0]
+		ip := mac2ip(nic.MacAddr)
 		instances = append(instances, lepton.CloudInstance{
 			ID:        vm.UUID,
 			Name:      vm.Name,
-			PublicIps: []string{"127.0.0.1"},
+			PublicIps: []string{ip},
 			Status:    string(vm.State),
 			Image:     image,
 			Ports:     []string{ports},
