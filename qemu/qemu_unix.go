@@ -119,7 +119,7 @@ func (q *qemu) addSerial(serialType string) {
 // added. If the mac address is empty then a random mac address is chosen.
 // Backend interface are created for each device and their ids are auto
 // incremented.
-func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udp bool) {
+func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
 	id := fmt.Sprintf("n%d", len(q.ifaces))
 	dv := device{
 		driver:  "virtio-net",
@@ -140,10 +140,9 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 	} else {
 		for _, p := range hostPorts {
 			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
-
-			if udp {
-				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
-			}
+		}
+		for _, p := range udpPorts {
+			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
 		}
 	}
 
@@ -358,7 +357,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.setAccel(rconfig)
 
-	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDP)
+	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
 	q.addDisplay("none")
 
 	if rconfig.Background {
