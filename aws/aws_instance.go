@@ -269,7 +269,17 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if ctx.Config().CloudConfig.EnableIPv6 {
-		instanceInput.SetIpv6AddressCount(1)
+
+		if ctx.Config().RunConfig.IPv6Address != "" {
+			v6ad := ctx.Config().RunConfig.IPv6Address
+			addie := &ec2.InstanceIpv6Address{
+				Ipv6Address: aws.String(v6ad),
+			}
+			instanceInput.Ipv6Addresses = []*ec2.InstanceIpv6Address{addie}
+		} else {
+			instanceInput.SetIpv6AddressCount(1)
+		}
+
 	}
 
 	// Specify the details of the instance that you want to create.

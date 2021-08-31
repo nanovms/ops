@@ -245,9 +245,6 @@ type RunConfig struct {
 	// TapName
 	TapName string
 
-	// UDP specifies if the UDP protocol is enabled (default is false).
-	UDP bool
-
 	// UDPPorts
 	UDPPorts []string
 

@@ -73,7 +73,7 @@ func TestStringSerial(t *testing.T) {
 
 func TestRandomMacGen(t *testing.T) {
 	q := qemu{}
-	q.addNetDevice("tap", "tap0", "", []string{}, false)
+	q.addNetDevice("tap", "tap0", "", []string{}, []string{})
 	if len(q.devices[0].mac) == 0 {
 		t.Errorf("No RandomMac was assigned %s", q.devices[0].mac)
 	}
@@ -83,7 +83,7 @@ func TestAddNetDevices(t *testing.T) {
 
 	t.Run("should add a port forward per tcp port", func(t *testing.T) {
 		q := qemu{}
-		q.addNetDevice("user", "", "", []string{"80", "8080", "9000"}, false)
+		q.addNetDevice("user", "", "", []string{"80", "8080", "9000"}, []string{})
 
 		want := []portfwd{
 			{port: "80", proto: "tcp"},
@@ -99,7 +99,7 @@ func TestAddNetDevices(t *testing.T) {
 
 	t.Run("should add a port forward range", func(t *testing.T) {
 		q := qemu{}
-		q.addNetDevice("user", "", "", []string{"80-9000"}, false)
+		q.addNetDevice("user", "", "", []string{"80-9000"}, []string{})
 
 		want := []portfwd{
 			{port: "80-9000", proto: "tcp"},
