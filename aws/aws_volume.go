@@ -18,6 +18,16 @@ var (
 // CreateVolume creates a snapshot and use it to create a volume
 func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
+	var sizeInGb int64
+	var vol lepton.NanosVolume
+	if config.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
+		if err != nil {
+			return vol, fmt.Errorf("cannot get volume size: %v", err)
+		}
+		config.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb = int64(size)
+	}
 
 	// Create volume
 	vol, err := lepton.CreateLocalVolume(config, name, data, provider)
@@ -77,6 +87,9 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (le
 				Tags:         tags,
 			},
 		},
+	}
+	if sizeInGb != 0 {
+		createVolumeInput.Size = &sizeInGb
 	}
 	_, err = a.ec2.CreateVolume(createVolumeInput)
 	if err != nil {
