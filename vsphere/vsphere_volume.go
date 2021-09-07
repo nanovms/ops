@@ -17,11 +17,11 @@ import (
 )
 
 // CreateVolume converts local volume raw file to mkfs and uploads required files to datastore
-func (v *Vsphere) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
+func (v *Vsphere) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 	var vol lepton.NanosVolume
 
-	vol, err := lepton.CreateLocalVolume(config, name, data, size, provider)
+	vol, err := lepton.CreateLocalVolume(config, name, data, provider)
 	if err != nil {
 		return vol, err
 	}

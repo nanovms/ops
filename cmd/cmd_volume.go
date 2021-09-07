@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"log"
-	"strconv"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
 	api "github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/onprem"
 	"github.com/spf13/cobra"
 )
 
@@ -45,7 +43,7 @@ func volumeCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume data source")
-	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", strconv.Itoa(onprem.MinimumVolumeSize), "volume initial size")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume initial size")
 	return cmdVolumeCreate
 }
 
@@ -58,13 +56,16 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+	if size != "" {
+		c.BaseVolumeSz = size
+	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	res, err := p.CreateVolume(ctx, name, data, size, c.CloudConfig.Platform)
+	res, err := p.CreateVolume(ctx, name, data, c.CloudConfig.Platform)
 	if err != nil {
 		exitWithError(err.Error())
 	}

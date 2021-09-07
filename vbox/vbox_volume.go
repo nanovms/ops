@@ -8,8 +8,8 @@ import (
 )
 
 // CreateVolume creates a local volume and uploads the volume to upcloud
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (vol lepton.NanosVolume, err error) {
-	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, size, provider)
+func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, provider string) (vol lepton.NanosVolume, err error) {
+	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, provider)
 	if err != nil {
 		return
 	}

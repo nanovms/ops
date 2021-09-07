@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
@@ -18,8 +19,12 @@ const (
 )
 
 // CreateVolume creates volume for onprem image
-func (op *OnPrem) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
-	return lepton.CreateLocalVolume(ctx.Config(), name, data, size, provider)
+func (op *OnPrem) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+	c := ctx.Config()
+	if c.BaseVolumeSz == "" {
+		c.BaseVolumeSz = strconv.Itoa(MinimumVolumeSize)
+	}
+	return lepton.CreateLocalVolume(c, name, data, provider)
 }
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes

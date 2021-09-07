@@ -14,7 +14,7 @@ import (
 )
 
 // CreateVolume uploads the volume raw file and creates a disk from it
-func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
+func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
 	var vol lepton.NanosVolume
@@ -26,12 +26,12 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, size, provider str
 
 	location := a.getLocation(config)
 
-	sizeInt, err := strconv.Atoi(size)
+	sizeInGb, err := lepton.GetSizeInGb(config.BaseVolumeSz)
 	if err != nil {
 		return vol, err
 	}
 
-	vol, err = lepton.CreateLocalVolume(config, name, data, size, provider)
+	vol, err = lepton.CreateLocalVolume(config, name, data, provider)
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
@@ -59,7 +59,7 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, size, provider str
 		Name:     to.StringPtr(name),
 		DiskProperties: &compute.DiskProperties{
 			HyperVGeneration: compute.V1,
-			DiskSizeGB:       to.Int32Ptr(int32(sizeInt / 1000 / 1000)),
+			DiskSizeGB:       to.Int32Ptr(int32(sizeInGb)),
 			CreationData: &compute.CreationData{
 				CreateOption:     "Import",
 				SourceURI:        to.StringPtr(sourceURI),

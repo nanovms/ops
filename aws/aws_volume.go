@@ -16,11 +16,11 @@ var (
 )
 
 // CreateVolume creates a snapshot and use it to create a volume
-func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
+func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
 	// Create volume
-	vol, err := lepton.CreateLocalVolume(config, name, data, size, provider)
+	vol, err := lepton.CreateLocalVolume(config, name, data, provider)
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}

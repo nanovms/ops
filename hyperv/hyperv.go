@@ -38,7 +38,7 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 }
 
 // CreateVolume is a stub
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
+func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	return lepton.NanosVolume{}, errors.New("Unsupported")
 }
 

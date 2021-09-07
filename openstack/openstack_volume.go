@@ -3,7 +3,6 @@ package openstack
 import (
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -25,7 +24,7 @@ func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
 }
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, size, provider string) (lepton.NanosVolume, error) {
+func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	var vol lepton.NanosVolume
 
 	imagesClient, err := o.getImagesClient()
@@ -38,7 +37,7 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, size, provider
 		return vol, err
 	}
 
-	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, size, provider)
+	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, provider)
 	if err != nil {
 		return vol, err
 	}
@@ -54,19 +53,17 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, size, provider
 		return vol, err
 	}
 
-	sizeNum, err := strconv.ParseFloat(size, 64)
+	sizeInGb, err := lepton.GetSizeInGb(ctx.Config().BaseVolumeSz)
 	if err != nil {
 		return vol, err
 	}
-
-	sizeNum = sizeNum / 1000 / 1000 / 1000 // convert B to GB
-	if sizeNum < 1 {
-		sizeNum = 1
+	if sizeInGb < 1 {
+		sizeInGb = 1
 	}
 
 	createOpts := volumes.CreateOpts{
 		Name:    name,
-		Size:    int(math.Round(sizeNum)),
+		Size:    sizeInGb,
 		ImageID: image.ID,
 	}
 

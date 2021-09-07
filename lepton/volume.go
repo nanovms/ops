@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
@@ -71,7 +74,7 @@ var (
 // where <uuid> is generated on creation
 // also creates a symlink to volume label at <name>
 // TODO investigate symlinked volume interaction with image
-func CreateLocalVolume(config *types.Config, name, data, size, provider string) (NanosVolume, error) {
+func CreateLocalVolume(config *types.Config, name, data, provider string) (NanosVolume, error) {
 	var vol NanosVolume
 	var mkfsCommand *fs.MkfsCommand
 
@@ -92,10 +95,8 @@ func CreateLocalVolume(config *types.Config, name, data, size, provider string) 
 	tmpPath := path.Join(config.VolumesDir, tmp)
 	mkfsCommand.SetFileSystemPath(tmpPath)
 
-	if config.BaseVolumeSz != "" && size == "" {
+	if config.BaseVolumeSz != "" {
 		mkfsCommand.SetFileSystemSize(config.BaseVolumeSz)
-	} else if size != "" {
-		mkfsCommand.SetFileSystemSize(size)
 	}
 
 	err := mkfsCommand.Execute()
@@ -172,4 +173,40 @@ func PrintVolumesList(volumes *[]NanosVolume) {
 	}
 
 	table.Render()
+}
+
+// GetSizeInGb converts a string representation of a volume size to an integer number of GB
+func GetSizeInGb(size string) (int, error) {
+	f := func(c rune) bool {
+		return !unicode.IsNumber(c)
+	}
+	unitsIndex := strings.IndexFunc(size, f)
+	var mul int64
+	if unitsIndex < 0 {
+		mul = 1
+		unitsIndex = len(size)
+	} else if unitsIndex == 0 {
+		return 0, errors.New("invalid size " + size)
+	} else {
+		units := strings.ToLower(size[unitsIndex:])
+		if units == "k" {
+			mul = 1024
+		} else if units == "m" {
+			mul = 1024 * 1024
+		} else if units == "g" {
+			mul = 1024 * 1024 * 1024
+		} else {
+			return 0, errors.New("invalid units " + units)
+		}
+	}
+	intSize, err := strconv.ParseInt(size[:unitsIndex], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	intSize *= mul
+	sizeInGb := intSize / (1024 * 1024 * 1024)
+	if sizeInGb*1024*1024*1024 < intSize {
+		sizeInGb++
+	}
+	return int(sizeInGb), nil
 }

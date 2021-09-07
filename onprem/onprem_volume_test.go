@@ -65,7 +65,7 @@ func TestOnPremVolume(t *testing.T) {
 
 func testCreateVolume(t *testing.T, name string, vol *lepton.NanosVolume, count *int) {
 	t.Run(fmt.Sprintf("create_%s", name), func(t *testing.T) {
-		res, err := testOP.CreateVolume(NewTestContext(testVolumeConfig), vol.Name, vol.Data, vol.Size, "onprem")
+		res, err := testOP.CreateVolume(NewTestContext(testVolumeConfig), vol.Name, vol.Data, "onprem")
 		if err != nil {
 			t.Error(err)
 			return
