@@ -35,6 +35,8 @@ func BuildBasicProgram() (binaryPath string) {
 	defer os.Remove(sourcePath)
 
 	cmd := exec.Command("go", "build", sourcePath)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "GOOS=linux")
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)

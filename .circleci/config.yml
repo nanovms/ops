@@ -29,21 +29,54 @@ jobs:
   build-mac:
     macos:
         xcode: "12.2.0"
+    environment:
+      TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
       - run: CI=1 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
       - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu
+      - run: go install github.com/jstemmer/go-junit-report
       - run: make deps
       - run: mkdir -p $TEST_RESULTS
+      - run: go run ops.go update
       - run:
           name: macbuild
           command: |
-            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
+            trap "~/go/bin/go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
             make test | tee ${TEST_RESULTS}/go-test.out
-  build-windows:
-    executor: win/vs2019
+  nightly-build:
+    docker:
+      - image: cimg/go:1.16
     steps:
       - checkout
-      - run:
-        command: |
-          go build
+      - run: go build
+      - run: echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+      - run: sudo apt-get update && sudo apt-get install google-cloud-sdk
+
+      - run: echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+      - run: gcloud config set project ${GOOGLE_PROJECT_ID}
+      - run: gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+
+      - run: md5sum ops | awk '{print $1}' > ops-linux-nightly.md5
+      - run: gsutil cp ops gs://cli/linux/release/nightly/ops
+      - run: gsutil cp ops-linux-nightly.md5 gs://cli/linux/release/nightly/ops-linux-nightly.md5
+      - run: gsutil acl ch -u AllUsers:R gs://cli/linux/release/nightly/ops
+      - run: gsutil acl ch -u AllUsers:R gs://cli/linux/release/nightly/ops-linux-nightly.md5
+
+workflows:
+  version: 2
+  commit-workflow:
+    jobs:
+      - build
+      - build-mac
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *" # 7PM PST
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - nightly-build
