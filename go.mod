@@ -22,7 +22,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gophercloud/gophercloud v0.12.0
 	github.com/gorilla/mux v1.8.0 // indirect
@@ -46,9 +46,9 @@ require (
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
-	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea
-	google.golang.org/api v0.30.0
+	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
+	google.golang.org/api v0.56.0
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.55.0 // indirect
 	gotest.tools v2.2.0+incompatible
