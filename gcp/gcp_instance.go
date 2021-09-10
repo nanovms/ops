@@ -104,7 +104,22 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 
 	// create firewall rules to expose instance ports
 	if len(ctx.Config().RunConfig.Ports) != 0 {
-		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName)
+
+		if ctx.Config().CloudConfig.EnableIPv6 {
+			rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, true)
+
+			_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
+
+			if err != nil {
+				fmt.Println(err)
+
+				ctx.Logger().Errorf("%v", err)
+				return errors.New("Failed to add Firewall rule")
+			}
+
+		}
+
+		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -115,7 +130,22 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if len(ctx.Config().RunConfig.UDPPorts) != 0 {
-		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName)
+
+		if ctx.Config().CloudConfig.EnableIPv6 {
+			rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, true)
+
+			_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
+
+			if err != nil {
+				fmt.Println(err)
+
+				ctx.Logger().Errorf("%v", err)
+				return errors.New("Failed to add Firewall rule")
+			}
+
+		}
+
+		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -235,30 +265,53 @@ func (p *GCloud) DeleteInstance(ctx *lepton.Context, instancename string) error 
 	cloudConfig := ctx.Config().CloudConfig
 	runConfig := ctx.Config().RunConfig
 	if len(runConfig.Ports) != 0 {
-		rule := p.buildFirewallRule("tcp", runConfig.Ports, instancename)
+
+		if cloudConfig.EnableIPv6 {
+			rule := p.buildFirewallRule("tcp", runConfig.Ports, instancename, true)
+			_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
+			if err != nil {
+				ctx.Logger().Errorf("%v", err)
+				return errors.New("Failed to delete firewall rule")
+			}
+		}
+
+		rule := p.buildFirewallRule("tcp", runConfig.Ports, instancename, false)
 		_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
 		if err != nil {
 			ctx.Logger().Errorf("%v", err)
 			return errors.New("Failed to delete firewall rule")
 		}
 	}
+
 	if len(runConfig.UDPPorts) != 0 {
-		rule := p.buildFirewallRule("udp", runConfig.UDPPorts, instancename)
+		if cloudConfig.EnableIPv6 {
+			rule := p.buildFirewallRule("udp", runConfig.UDPPorts, instancename, true)
+			_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
+			if err != nil {
+				ctx.Logger().Errorf("%v", err)
+				return errors.New("Failed to delete firewall rule")
+			}
+		}
+
+		rule := p.buildFirewallRule("udp", runConfig.UDPPorts, instancename, false)
 		_, err := p.Service.Firewalls.Delete(cloudConfig.ProjectID, rule.Name).Context(context).Do()
 		if err != nil {
 			ctx.Logger().Errorf("%v", err)
 			return errors.New("Failed to delete firewall rule")
 		}
 	}
+
 	op, err := p.Service.Instances.Delete(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Context(context).Do()
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("Instance deletion started. Monitoring operation %s.\n", op.Name)
 	err = p.pollOperation(context, cloudConfig.ProjectID, p.Service, *op)
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("Instance deletion succeeded %s.\n", instancename)
 	return nil
 }

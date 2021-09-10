@@ -131,11 +131,32 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 				return
 			}
 
-			nic = append(nic, &compute.NetworkInterface{
-				Name:       "eth0",
-				Network:    network.SelfLink,
-				Subnetwork: subnet.SelfLink,
-			})
+			var cnic *compute.NetworkInterface
+
+			if ctx.Config().CloudConfig.EnableIPv6 {
+				cnic = &compute.NetworkInterface{
+					Name:       "eth0",
+					Network:    network.SelfLink,
+					Subnetwork: subnet.SelfLink,
+					StackType:  "IPV4_IPV6",
+					Ipv6AccessConfigs: []*compute.AccessConfig{
+						{
+							Type:        "DIRECT_IPV6",
+							NetworkTier: "PREMIUM",
+						},
+					},
+				}
+
+			} else {
+				cnic = &compute.NetworkInterface{
+					Name:       "eth0",
+					Network:    network.SelfLink,
+					Subnetwork: subnet.SelfLink,
+				}
+			}
+
+			nic = append(nic, cnic)
+
 		} else {
 			nic = append(nic, &compute.NetworkInterface{
 				Name:    "eth0",
@@ -158,19 +179,44 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 	return
 }
 
-func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string) *compute.Firewall {
+func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, ipv6 bool) *compute.Firewall {
 
-	return &compute.Firewall{
-		Name:        fmt.Sprintf("ops-%s-rule-%s", protocol, tag),
-		Description: fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ports, "[]"), tag),
-		Allowed: []*compute.FirewallAllowed{
+	src := "0.0.0.0/0"
+	if ipv6 {
+		src = "::/0"
+	}
+
+	var allowed []*compute.FirewallAllowed
+
+	if protocol != "icmp" {
+
+		allowed = []*compute.FirewallAllowed{
 			{
 				IPProtocol: protocol,
 				Ports:      ports,
 			},
-		},
+		}
+	} else {
+		allowed = []*compute.FirewallAllowed{
+			{
+				IPProtocol: protocol,
+			},
+		}
+	}
+
+	name := fmt.Sprintf("ops-%s-rule-%s", protocol, tag)
+
+	if ipv6 {
+		name = fmt.Sprintf("ops-%s-rule-%s-ipv6", protocol, tag)
+		tag = tag + "-ipv6"
+	}
+
+	return &compute.Firewall{
+		Name:         name,
+		Description:  fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ports, "[]"), tag),
+		Allowed:      allowed,
 		TargetTags:   []string{tag},
-		SourceRanges: []string{"0.0.0.0/0"},
+		SourceRanges: []string{src},
 	}
 }
 
