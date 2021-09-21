@@ -208,7 +208,6 @@ func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, 
 
 	if ipv6 {
 		name = fmt.Sprintf("ops-%s-rule-%s-ipv6", protocol, tag)
-		tag = tag + "-ipv6"
 	}
 
 	f := &compute.Firewall{
