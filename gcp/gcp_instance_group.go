@@ -70,7 +70,7 @@ func (p *GCloud) createInstanceTemplate(ctx *lepton.Context, instanceGroup strin
 	// add network tags for ports
 
 	if len(ctx.Config().RunConfig.Ports) != 0 {
-		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, false)
+		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, ctx.Config().CloudConfig.Subnet, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -80,7 +80,7 @@ func (p *GCloud) createInstanceTemplate(ctx *lepton.Context, instanceGroup strin
 	}
 
 	if len(ctx.Config().RunConfig.UDPPorts) != 0 {
-		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, false)
+		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, ctx.Config().CloudConfig.Subnet, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 

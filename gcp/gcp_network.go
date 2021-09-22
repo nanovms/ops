@@ -179,7 +179,7 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 	return
 }
 
-func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, ipv6 bool) *compute.Firewall {
+func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, network string, ipv6 bool) *compute.Firewall {
 
 	src := "0.0.0.0/0"
 	if ipv6 {
@@ -208,16 +208,21 @@ func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, 
 
 	if ipv6 {
 		name = fmt.Sprintf("ops-%s-rule-%s-ipv6", protocol, tag)
-		tag = tag + "-ipv6"
 	}
 
-	return &compute.Firewall{
+	f := &compute.Firewall{
 		Name:         name,
 		Description:  fmt.Sprintf("Allow traffic to %v ports %s", arrayToString(ports, "[]"), tag),
 		Allowed:      allowed,
 		TargetTags:   []string{tag},
 		SourceRanges: []string{src},
 	}
+
+	if network != "" {
+		f.Network = "global/networks/" + network
+	}
+
+	return f
 }
 
 func arrayToString(a interface{}, delim string) string {
