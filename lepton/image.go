@@ -239,9 +239,15 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddKlibs(c.RunConfig.Klibs)
 
 	for _, f := range c.Files {
-		hostPath := path.Join(c.LocalFilesParentDirectory, f)
-		filePath := f
-		err := m.AddFile(filePath, hostPath)
+		hostPath := f
+
+		if filepath.IsAbs(f) {
+			hostPath = filepath.Join(c.TargetRoot, f)
+		} else {
+			hostPath = path.Join(c.LocalFilesParentDirectory, f)
+		}
+
+		err := m.AddFile(f, hostPath)
 		if err != nil {
 			return err
 		}
