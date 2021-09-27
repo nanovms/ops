@@ -214,12 +214,17 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		return nil, errors.Wrap(err, 1)
 	}
 
-	if len(c.Args) > 1 {
+	// add file user might've passed in via '-a' but not if already
+	// defined in manifest as we've already included it
+	if len(c.Args) > 1 && !m.FileExists(c.Args[1]) {
 		if _, err := os.Stat(c.Args[1]); err == nil {
 			err = m.AddFile(c.Args[1], c.Args[1])
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			fmt.Println(err)
+			os.Exit(1)
 		}
 	}
 
