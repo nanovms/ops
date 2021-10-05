@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -20,23 +21,30 @@ const (
 )
 
 // CreateImage - Creates image on DO using nanos images
-//
-// This is currently blocked on DO allowing us to give it signed urls
-// for image imports. If you wish to manage with digital ocean you need
-// to manually upload the image for now.
-//
-// https://github.com/nanovms/ops/issues/468
+// converts to qcow2 first
 func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error {
 	c := ctx.Config()
 
 	imageName := c.CloudConfig.ImageName + ".img"
+	newPath := c.CloudConfig.ImageName + "qcow" + ".img"
 
-	err := do.Storage.CopyToBucket(ctx.Config(), imagePath)
+	cmd := exec.Command("sh", "-c", "qemu-img convert -f raw -O qcow2 ~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("%s\n", stdoutStderr)
+	}
+
+	opshome := lepton.GetOpsHome()
+
+	err = do.Storage.CopyToBucket(ctx.Config(), opshome+"/images/"+newPath)
 	if err != nil {
 		return err
 	}
 
-	publicURL := do.Storage.getImageSpacesURL(c, c.CloudConfig.ImageName+".img")
+	publicURL := do.Storage.getImageSpacesURL(c, newPath)
+
+	log.Info(publicURL)
 
 	createImageRequest := &godo.CustomImageCreateRequest{
 		Name:         imageName,
@@ -46,12 +54,22 @@ func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error
 		Tags:         []string{opsTag},
 	}
 
-	_, _, err = do.Client.Images.Create(context.TODO(), createImageRequest)
+	i, _, err := do.Client.Images.Create(context.TODO(), createImageRequest)
 	if err != nil {
 		return err
 	}
 
-	err = do.Storage.DeleteFromBucket(c, filepath.Base(imagePath))
+	log.Infof("%+v\n", i)
+
+	for i.Status != "available" {
+		time.Sleep(250 * time.Millisecond)
+		i, _, err = do.Client.Images.GetByID(context.TODO(), i.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = do.Storage.DeleteFromBucket(c, filepath.Base(newPath))
 	if err != nil {
 		return err
 	}
