@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"debug/elf"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,32 +52,33 @@ func expandVars(origin string, s string) string {
 	return strings.Replace(s, "$ORIGIN", origin, -1)
 }
 
-func findLib(targetRoot string, origin string, libDirs []string, path string) (string, error) {
+// returns the image path and host path
+func findLib(targetRoot string, origin string, libDirs []string, path string) (string, string, error) {
 	if path[0] == '/' {
 		rpath, err := fs.LookupFile(targetRoot, path)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		return rpath, nil
+		return path, rpath, nil
 	}
 
 	for _, libDir := range libDirs {
 		lib := filepath.Join(expandVars(origin, libDir), path)
 		rlib, err := fs.LookupFile(targetRoot, lib)
 		if err == nil {
-			return rlib, nil
+			return lib, rlib, nil
 		} else if !os.IsNotExist(err) {
-			return "", err
+			return "", "", err
 		}
 	}
 
-	return "", os.ErrNotExist
+	return "", "", os.ErrNotExist
 }
 
-func _getSharedLibs(targetRoot string, path string) ([]string, error) {
+func _getSharedLibs(libs map[string]string, targetRoot string, path string) error {
 	path, err := fs.LookupFile(targetRoot, path)
 	if err != nil {
-		return nil, errors.WrapPrefix(err, path, 0)
+		return errors.WrapPrefix(err, path, 0)
 	}
 
 	fd, err := elf.Open(path)
@@ -84,7 +86,7 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 		if strings.Contains(err.Error(), "bad magic number") {
 			log.Fatalf(constants.ErrorColor, "Only ELF binaries are supported. Is thia a Mach-0 (osx) binary? run 'file "+path+"' on it\n")
 		}
-		return nil, errors.WrapPrefix(err, path, 0)
+		return errors.WrapPrefix(err, path, 0)
 	}
 	defer fd.Close()
 
@@ -100,13 +102,13 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 	// 2. DT_RUNPATH
 	dtRunpath, err := fd.DynString(elf.DT_RUNPATH)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(dtRunpath) == 0 {
 		// DT_RPATH should take precedence over LD_LIBRARY_PATH
 		dtRpath, err := fd.DynString(elf.DT_RPATH)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, d := range dtRpath {
 			libDirs = append(libDirs, strings.Split(d, ":")...)
@@ -122,52 +124,64 @@ func _getSharedLibs(targetRoot string, path string) ([]string, error) {
 
 	dtNeeded, err := fd.DynString(elf.DT_NEEDED)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var libs []string
 	for _, libpath := range dtNeeded {
 		if len(libpath) == 0 {
 			continue
 		}
 
 		// append library
-		absLibpath, err := findLib(targetRoot, filepath.Dir(path), libDirs, libpath)
+		libpath, absLibpath, err := findLib(targetRoot, filepath.Dir(path), libDirs, libpath)
 		if err != nil {
-			return nil, errors.WrapPrefix(err, libpath, 0)
+			return errors.WrapPrefix(err, libpath, 0)
 		}
-		libs = append(libs, absLibpath)
+		if _, ok := libs[libpath]; !ok {
+			libs[libpath] = absLibpath
 
-		// append library dependencies
-		deplibs, err := _getSharedLibs(targetRoot, absLibpath)
-		if err != nil {
-			return nil, err
+			// append library dependencies
+			err := _getSharedLibs(libs, targetRoot, absLibpath)
+			if err != nil {
+				return err
+			}
 		}
-		libs = append(libs, deplibs...)
 	}
 
-	return libs, nil
+	for _, prog := range fd.Progs {
+		if prog.ProgHeader.Type != elf.PT_INTERP {
+			continue
+		}
+		r := prog.Open()
+		ipathbuf, err := ioutil.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		// don't include the terminating NUL in path string
+		ipath := string(ipathbuf[:len(ipathbuf)-1])
+		ipath, absIpath, err := findLib(targetRoot, filepath.Dir(path), libDirs, ipath)
+		if err != nil {
+			return errors.WrapPrefix(err, ipath, 0)
+		}
+		if _, ok := libs[ipath]; !ok {
+			libs[ipath] = absIpath
+			err := _getSharedLibs(libs, targetRoot, ipath)
+			if err != nil {
+				return err
+			}
+		}
+		break
+	}
+	return nil
 }
 
-func unique(a []string) []string {
-	keys := map[string]bool{}
-	for v := range a {
-		keys[a[v]] = true
-	}
-
-	result := []string{}
-	for key := range keys {
-		result = append(result, key)
-	}
-	return result
-}
-
-func getSharedLibs(targetRoot string, path string) ([]string, error) {
-	libs, err := _getSharedLibs(targetRoot, path)
+func getSharedLibs(targetRoot string, path string) (map[string]string, error) {
+	libs := make(map[string]string)
+	err := _getSharedLibs(libs, targetRoot, path)
 	if err != nil {
 		return nil, err
 	}
-	return unique(libs), nil
+	return libs, nil
 }
 
 // isELF returns true if file is valid ELF

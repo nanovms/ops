@@ -344,8 +344,8 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
-	for _, libpath := range deps {
-		m.AddLibrary(libpath)
+	for libpath, hostpath := range deps {
+		m.AddFile(libpath, hostpath)
 	}
 
 	if c.RunConfig.IPAddress != "" || c.RunConfig.IPv6Address != "" {
