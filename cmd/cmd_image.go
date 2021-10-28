@@ -169,6 +169,7 @@ func imageDeleteCommand() *cobra.Command {
 
 	cmdImageDelete.PersistentFlags().StringP("lru", "", "", "clean least recently used images with a time notation. Use \"1w\" notation to delete images older than one week. Other notation examples are 300d, 3w, 1m and 2y.")
 	cmdImageDelete.PersistentFlags().BoolP("assume-yes", "", false, "clean images without waiting for confirmation")
+	cmdImageDelete.PersistentFlags().BoolP("force", "", false, "force even if image is being used by instance")
 
 	return cmdImageDelete
 }
@@ -196,6 +197,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 	lru, _ := cmd.Flags().GetString("lru")
 	assumeYes, _ := cmd.Flags().GetBool("assume-yes")
+	forceFlag, _ := cmd.Flags().GetBool("force")
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
@@ -207,6 +209,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
 	imageMap := make(map[string]string)
 	for _, name := range args {
 		for _, img := range images {
@@ -217,27 +220,31 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	instances, err := p.GetInstances(ctx)
-	if err != nil {
-		exitWithError(err.Error())
-	}
+	if !forceFlag {
 
-	if len(instances) > 0 {
-		for imgName, imgPath := range imageMap {
-			for _, is := range instances {
-				var matchedImage bool
-				if c.CloudConfig.Platform == onprem.ProviderName {
-					matchedImage = (is.Image == imgPath)
-				} else {
-					matchedImage = (is.Image == imgName)
-				}
+		instances, err := p.GetInstances(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		}
 
-				if matchedImage {
-					fmt.Printf("image '%s' is being used\n", imgName)
-					os.Exit(1)
+		if len(instances) > 0 {
+			for imgName, imgPath := range imageMap {
+				for _, is := range instances {
+					var matchedImage bool
+					if c.CloudConfig.Platform == onprem.ProviderName {
+						matchedImage = (is.Image == imgPath)
+					} else {
+						matchedImage = (is.Image == imgName)
+					}
+
+					if matchedImage {
+						fmt.Printf("image '%s' is being used\n", imgName)
+						os.Exit(1)
+					}
 				}
 			}
 		}
+
 	}
 
 	imagesToDelete := []string{}
