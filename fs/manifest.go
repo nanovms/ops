@@ -368,16 +368,6 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 	return nil
 }
 
-// AddLibrary to add a dependent library
-func (m *Manifest) AddLibrary(path string) {
-	parts := strings.FieldsFunc(strings.TrimPrefix(path, m.targetRoot), func(c rune) bool { return c == '/' })
-	node := m.rootDir()
-	for i := 0; i < len(parts)-1; i++ {
-		node = mkDir(node, parts[i])
-	}
-	m.AddFileTo(node, parts[len(parts)-1], path)
-}
-
 // AddPassthrough to add key, value directly to manifest
 func (m *Manifest) AddPassthrough(key string, value interface{}) {
 	m.root[key] = value
