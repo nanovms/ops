@@ -16,7 +16,7 @@ type DigitalOcean struct {
 
 // Initialize DigialOcean related things
 func (do *DigitalOcean) Initialize(c *types.ProviderConfig) error {
-	doToken := os.Getenv("TOKEN")
+	doToken := os.Getenv("DO_TOKEN")
 	do.Client = godo.NewFromToken(doToken)
 	return nil
 }

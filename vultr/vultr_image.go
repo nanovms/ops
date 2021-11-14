@@ -42,7 +42,7 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 
 	objURL := v.Storage.getSignedURL(key, bucket, region)
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("url", objURL)
@@ -65,7 +65,7 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 func (v *Vultr) destroyImage(snapshotid string) {
 	destroyURL := "https://api.vultr.com/v1/snapshot/destroy"
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("SNAPSHOTID", snapshotid)
@@ -115,7 +115,7 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	req.Header.Set("API-Key", token)
 	req.Header.Set("Content-Type", "application/json")

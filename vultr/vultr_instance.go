@@ -23,7 +23,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 	createURL := "https://api.vultr.com/v1/server/create"
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("DCID", "1")
@@ -72,7 +72,7 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	req.Header.Set("API-Key", token)
 	req.Header.Set("Content-Type", "application/json")
@@ -123,7 +123,7 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	destroyInstanceURL := "https://api.vultr.com/v1/server/destroy"
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("SUBID", instanceID)
@@ -148,7 +148,7 @@ func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 	startInstanceURL := "https://api.vultr.com/v1/server/start"
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("SUBID", instanceID)
@@ -173,7 +173,7 @@ func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 func (v *Vultr) StopInstance(ctx *lepton.Context, instanceID string) error {
 	haltInstanceURL := "https://api.vultr.com/v1/server/halt"
 
-	token := os.Getenv("TOKEN")
+	token := os.Getenv("VULTR_TOKEN")
 
 	urlData := url.Values{}
 	urlData.Set("SUBID", instanceID)
