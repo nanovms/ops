@@ -95,8 +95,9 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"SUBID", "Name", "Status", "Created", "Private Ips", "Public Ips"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -104,13 +105,14 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, image := range data {
+	for _, server := range data {
 		var row []string
-		row = append(row, image.Name)
-		row = append(row, image.Status)
-		row = append(row, image.CreatedAt)
-		row = append(row, image.PrivateIP)
-		row = append(row, image.PublicIP)
+		row = append(row, server.SUBID)
+		row = append(row, server.Name)
+		row = append(row, server.Status)
+		row = append(row, server.CreatedAt)
+		row = append(row, server.PrivateIP)
+		row = append(row, server.PublicIP)
 		table.Append(row)
 	}
 
