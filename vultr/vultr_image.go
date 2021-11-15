@@ -48,6 +48,9 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 	urlData.Set("url", objURL)
 
 	req, err := http.NewRequest("POST", createURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -71,6 +74,9 @@ func (v *Vultr) destroyImage(snapshotid string) {
 	urlData.Set("SNAPSHOTID", snapshotid)
 
 	req, err := http.NewRequest("POST", destroyURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -112,6 +118,9 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/snapshot/list", nil)
+	if err != nil {
+		panic(err)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
