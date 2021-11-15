@@ -29,7 +29,7 @@ type vultrServer struct {
 	Name      string `json:"label"`
 }
 
-// Initialize GCP related things
+// Initialize provider
 func (v *Vultr) Initialize(config *types.ProviderConfig) error {
 	return nil
 }
