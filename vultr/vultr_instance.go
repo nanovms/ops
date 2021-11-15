@@ -37,6 +37,9 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 	urlData.Set("SNAPSHOTID", c.CloudConfig.ImageName)
 
 	req, err := http.NewRequest("POST", createURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -69,6 +72,9 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/server/list", nil)
+	if err != nil {
+		panic(err)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,6 +135,9 @@ func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", destroyInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -154,6 +163,9 @@ func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", startInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -179,6 +191,9 @@ func (v *Vultr) StopInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", haltInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
