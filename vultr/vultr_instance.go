@@ -37,6 +37,9 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 	urlData.Set("SNAPSHOTID", c.CloudConfig.ImageName)
 
 	req, err := http.NewRequest("POST", createURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -70,6 +73,9 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/server/list", nil)
 	if err != nil {
+		panic(err)
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 	token := os.Getenv("TOKEN")
@@ -95,8 +101,9 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"SUBID", "Name", "Status", "Created", "Private Ips", "Public Ips"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -104,13 +111,14 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, image := range data {
+	for _, server := range data {
 		var row []string
-		row = append(row, image.Name)
-		row = append(row, image.Status)
-		row = append(row, image.CreatedAt)
-		row = append(row, image.PrivateIP)
-		row = append(row, image.PublicIP)
+		row = append(row, server.SUBID)
+		row = append(row, server.Name)
+		row = append(row, server.Status)
+		row = append(row, server.CreatedAt)
+		row = append(row, server.PrivateIP)
+		row = append(row, server.PublicIP)
 		table.Append(row)
 	}
 
@@ -129,6 +137,9 @@ func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", destroyInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -154,6 +165,9 @@ func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", startInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -179,6 +193,9 @@ func (v *Vultr) StopInstance(ctx *lepton.Context, instanceID string) error {
 	urlData.Set("SUBID", instanceID)
 
 	req, err := http.NewRequest("POST", haltInstanceURL, strings.NewReader(urlData.Encode()))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("API-Key", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
