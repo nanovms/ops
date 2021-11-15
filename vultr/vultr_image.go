@@ -1,19 +1,17 @@
 package vultr
 
 import (
-	"encoding/json"
-	"errors"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
-	"strings"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
+	"github.com/vultr/govultr/v2"
 )
 
 // BuildImage to be upload on v
@@ -38,57 +36,24 @@ func (v *Vultr) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (stri
 }
 
 func (v *Vultr) createImage(key string, bucket string, region string) {
-	createURL := "https://api.vultr.com/v1/snapshot/create_from_url"
 
 	objURL := v.Storage.getSignedURL(key, bucket, region)
 
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("url", objURL)
-
-	req, err := http.NewRequest("POST", createURL, strings.NewReader(urlData.Encode()))
+	snap, err := v.Client.Snapshot.CreateFromURL(context.TODO(), &govultr.SnapshotURLReq{
+		URL: objURL,
+	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
+	log.Info("snapshot:", snap)
 }
 
 func (v *Vultr) destroyImage(snapshotid string) {
-	destroyURL := "https://api.vultr.com/v1/snapshot/destroy"
-
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("SNAPSHOTID", snapshotid)
-
-	req, err := http.NewRequest("POST", destroyURL, strings.NewReader(urlData.Encode()))
+	err := v.Client.Snapshot.Delete(context.TODO(), snapshotid)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
 }
 
 // CreateImage - Creates image on v using nanos images
@@ -110,44 +75,44 @@ func (v *Vultr) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 // GetImages return all images on Vultr
 func (v *Vultr) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
-	return nil, errors.New("un-implemented")
+	snaps, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
+		PerPage: 100,
+		Cursor:  "",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var images []lepton.CloudImage
+
+	for _, snap := range snaps {
+		images = append(images, lepton.CloudImage{
+			ID:      snap.ID,
+			Name:    "",
+			Status:  snap.Status,
+			Size:    int64(snap.Size),
+			Path:    "",
+			Created: time.Now(),
+		})
+	}
+
+	return images, nil
+
 }
 
-// ListImages lists images on Digital Ocean
+// ListImages lists images on Vultr
 func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/snapshot/list", nil)
+	snaps, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
+		PerPage: 100,
+		Cursor:  "",
+	})
 	if err != nil {
-		panic(err)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	token := os.Getenv("VULTR_TOKEN")
-
-	req.Header.Set("API-Key", token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var data map[string]vultrSnap
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Error(err)
+		return err
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "ID", "Status", "Created"})
+	table.SetHeader([]string{"ID", "Date created", "Size", "Status"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -155,12 +120,12 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, image := range data {
+	for _, image := range snaps {
 		var row []string
-		row = append(row, image.Description)
-		row = append(row, image.SnapShotID)
+		row = append(row, image.ID)
+		row = append(row, image.DateCreated)
+		row = append(row, humanize.Bytes(uint64(image.Size)))
 		row = append(row, image.Status)
-		row = append(row, image.CreatedAt)
 		table.Append(row)
 	}
 
@@ -184,7 +149,7 @@ func (v *Vultr) SyncImage(config *types.Config, target lepton.Provider, image st
 
 // ResizeImage is not supported on Vultr.
 func (v *Vultr) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
