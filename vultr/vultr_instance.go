@@ -1,107 +1,98 @@
 package vultr
 
 import (
-	"encoding/json"
-	"errors"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
+	"github.com/vultr/govultr/v2"
 )
 
 // CreateInstance - Creates instance on Digital Ocean Platform
 func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 	c := ctx.Config()
 
-	// you may poll /v1/server/list?SUBID=<SUBID> and check that the "status" field is set to "active"
-
-	createURL := "https://api.vultr.com/v1/server/create"
-
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("DCID", "1")
-
-	// this is the instance size
-	// TODO
-	urlData.Set("VPSPLANID", "201")
-
-	// id for snapshot
-	urlData.Set("OSID", "164")
-	urlData.Set("SNAPSHOTID", c.CloudConfig.ImageName)
-
-	req, err := http.NewRequest("POST", createURL, strings.NewReader(urlData.Encode()))
-	if err != nil {
-		panic(err)
+	flavor := "vc2-1c-1gb"
+	if c.CloudConfig.Flavor != "" {
+		flavor = c.CloudConfig.Flavor
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	instance, err := v.Client.Instance.Create(context.TODO(), &govultr.InstanceCreateReq{
+		Region:     c.CloudConfig.Zone,
+		Plan:       flavor,
+		SnapshotID: c.CloudConfig.ImageName,
+	})
 	if err != nil {
-		panic(err)
+		return err
 	}
-	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
+	log.Info("instance:", instance)
 
 	return nil
 }
 
 // GetInstanceByName returns instance with given name
 func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	instance, err := v.Client.Instance.Get(context.TODO(), name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &lepton.CloudInstance{
+		ID:        instance.ID,
+		Status:    instance.Status,
+		Created:   time.Now().String(),
+		PublicIps: []string{instance.MainIP},
+		Ports:     []string{},
+		Image:     instance.ImageID,
+	}, nil
 }
 
 // GetInstances return all instances on Vultr
-// TODO
 func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	return nil, errors.New("un-implemented")
+	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+		PerPage: 100,
+		Cursor:  "",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var cloudInstances []lepton.CloudInstance
+
+	for _, instance := range instances {
+		cloudInstances = append(cloudInstances, lepton.CloudInstance{
+			ID:        instance.ID,
+			Status:    instance.Status,
+			Created:   time.Now().String(),
+			PublicIps: []string{instance.MainIP},
+			Image:     instance.ImageID,
+		})
+	}
+
+	return cloudInstances, nil
+
 }
 
 // ListInstances lists instances on v
 func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/server/list", nil)
+	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+		PerPage: 100,
+		Cursor:  "",
+	})
 	if err != nil {
-		panic(err)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	token := os.Getenv("VULTR_TOKEN")
-
-	req.Header.Set("API-Key", token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var data map[string]vultrServer
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Error(err)
-	}
+	log.Debug("instances:", instances)
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"SUBID", "Name", "Status", "Created", "Private Ips", "Public Ips"})
+	table.SetHeader([]string{"ID", "Plan", "MainIP", "Status", "ImageID", "Region"})
 	table.SetHeaderColor(
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -111,14 +102,14 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
 
-	for _, server := range data {
+	for _, instance := range instances {
 		var row []string
-		row = append(row, server.SUBID)
-		row = append(row, server.Name)
-		row = append(row, server.Status)
-		row = append(row, server.CreatedAt)
-		row = append(row, server.PrivateIP)
-		row = append(row, server.PublicIP)
+		row = append(row, instance.ID)
+		row = append(row, instance.Plan)
+		row = append(row, instance.MainIP)
+		row = append(row, instance.Status)
+		row = append(row, instance.Os)
+		row = append(row, instance.Region)
 		table.Append(row)
 	}
 
@@ -129,85 +120,31 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
 // DeleteInstance deletes instance from v
 func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
-	destroyInstanceURL := "https://api.vultr.com/v1/server/destroy"
-
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("SUBID", instanceID)
-
-	req, err := http.NewRequest("POST", destroyInstanceURL, strings.NewReader(urlData.Encode()))
+	err := v.Client.Instance.Delete(context.TODO(), instanceID)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
 	return nil
 }
 
 // StartInstance starts an instance in v
 func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
-	startInstanceURL := "https://api.vultr.com/v1/server/start"
 
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("SUBID", instanceID)
-
-	req, err := http.NewRequest("POST", startInstanceURL, strings.NewReader(urlData.Encode()))
+	err := v.Client.Instance.Start(context.TODO(), instanceID)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
 	return nil
 }
 
 // StopInstance halts instance from v
 func (v *Vultr) StopInstance(ctx *lepton.Context, instanceID string) error {
-	haltInstanceURL := "https://api.vultr.com/v1/server/halt"
-
-	token := os.Getenv("VULTR_TOKEN")
-
-	urlData := url.Values{}
-	urlData.Set("SUBID", instanceID)
-
-	req, err := http.NewRequest("POST", haltInstanceURL, strings.NewReader(urlData.Encode()))
+	err := v.Client.Instance.Halt(context.TODO(), instanceID)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	req.Header.Set("API-Key", token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Info("response Body:", string(body))
 	return nil
 }
 

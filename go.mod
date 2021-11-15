@@ -23,6 +23,7 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -32,6 +33,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gophercloud/gophercloud v0.12.0
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
@@ -53,6 +55,7 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
+	github.com/vultr/govultr/v2 v2.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
