@@ -64,6 +64,18 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 	}
 
 	bucket := config.CloudConfig.BucketName
+	if bucket == "" {
+		log.Fatal(fmt.Errorf("BucketName is required"))
+	}
+
+	bucketExists, err := client.BucketExists(bucket)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !bucketExists {
+		log.Fatal(fmt.Errorf("bucket %s does not exist", bucket))
+	}
+
 	key := filepath.Base(archPath)
 
 	n, err := client.PutObject(bucket, key, file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
