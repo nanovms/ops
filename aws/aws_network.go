@@ -129,8 +129,9 @@ func (p *AWS) CreateSubnet(ctx *lepton.Context, vpc *ec2.Vpc) (subnet *ec2.Subne
 	tags, _ := buildAwsTags([]types.Tag{}, ctx.Config().CloudConfig.Subnet)
 
 	createSubnetInput := &ec2.CreateSubnetInput{
-		VpcId:     vpc.VpcId,
-		CidrBlock: vpc.CidrBlock,
+		AvailabilityZone: aws.String(ctx.Config().CloudConfig.Zone),
+		VpcId:            vpc.VpcId,
+		CidrBlock:        vpc.CidrBlock,
 		TagSpecifications: []*ec2.TagSpecification{
 			{Tags: tags, ResourceType: aws.String("subnet")},
 		},
