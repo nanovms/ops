@@ -21,6 +21,10 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 		flavor = c.CloudConfig.Flavor
 	}
 
+	if c.CloudConfig.Zone == "" {
+		return fmt.Errorf("zone is required (-z)")
+	}
+
 	instance, err := v.Client.Instance.Create(context.TODO(), &govultr.InstanceCreateReq{
 		Region:     c.CloudConfig.Zone,
 		Plan:       flavor,
