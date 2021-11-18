@@ -12,6 +12,7 @@ import (
 	"github.com/nanovms/ops/oci"
 	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/openstack"
+	"github.com/nanovms/ops/proxmox"
 	"github.com/nanovms/ops/types"
 	"github.com/nanovms/ops/upcloud"
 	"github.com/nanovms/ops/vbox"
@@ -48,6 +49,8 @@ func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provide
 		provider = oci.NewProvider()
 	case "vbox":
 		provider = vbox.NewProvider()
+	case "proxmox":
+		provider = &proxmox.ProxMox{}
 	default:
 		return provider, fmt.Errorf("error:Unknown provider %s", providerName)
 	}
