@@ -176,6 +176,10 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 		})
 	}
 
+	if ctx.Config().RunConfig.IPAddress != "" {
+		nic[0].NetworkIP = ctx.Config().RunConfig.IPAddress
+	}
+
 	return
 }
 
