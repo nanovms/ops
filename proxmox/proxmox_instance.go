@@ -50,7 +50,7 @@ func (p *ProxMox) getNextID() string {
 	return ir.Data
 }
 
-// CreateInstance - Creates instance on Digital Ocean Platform
+// CreateInstance - Creates instance on Proxmox.
 func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	config := ctx.Config()
 
@@ -66,6 +66,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -77,11 +78,13 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	// FIXME: seems to be a race between config && finishing vm creation
@@ -102,6 +105,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -113,11 +117,13 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	debug := false
@@ -151,12 +157,13 @@ type InstanceInfo struct {
 	Status string `json:"status"`
 }
 
-// ListInstances lists instances on v
+// ListInstances lists instances on Proxmox.
 func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 
 	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/pve/qemu", nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -168,11 +175,13 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	ir := &InstanceResponse{}
@@ -203,12 +212,13 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 	return nil
 }
 
-// DeleteInstance deletes instance from v
+// DeleteInstance deletes instance from Proxmox.
 func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 
 	req, err := http.NewRequest("DELETE", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID, nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -220,23 +230,27 @@ func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
+
 	}
 
 	return err
 
 }
 
-// StartInstance starts an instance in v
+// StartInstance starts an instance in Proxmox
 func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID+"/status/start", nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -248,22 +262,25 @@ func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	return nil
 }
 
-// StopInstance halts instance from v
+// StopInstance halts instance from Proxmox.
 func (p *ProxMox) StopInstance(ctx *lepton.Context, instanceID string) error {
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID+"/status/stop", nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -275,11 +292,13 @@ func (p *ProxMox) StopInstance(ctx *lepton.Context, instanceID string) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	return nil

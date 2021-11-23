@@ -67,6 +67,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	err = w.WriteField("content", "iso")
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	file := mustOpen(fileName)
@@ -74,11 +75,13 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	fw, err = w.CreateFormFile(fieldName, file.Name())
 	if err != nil {
 		fmt.Printf("Error creating writer: %v\n", err)
+		return err
 	}
 
 	_, err = io.Copy(fw, file)
 	if err != nil {
 		fmt.Printf("Error with io.Copy: %v\n", err)
+		return err
 	}
 
 	w.Close()
@@ -86,6 +89,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/storage/local/upload", &b)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -99,11 +103,13 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	debug := false
@@ -136,6 +142,7 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/pve/storage/local/content", nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	tr := &http.Transport{
@@ -147,11 +154,13 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	ir := &ImageResponse{}
