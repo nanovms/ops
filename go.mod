@@ -12,12 +12,11 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/Microsoft/hcsshim v0.8.22 // indirect
 	github.com/UpCloudLtd/upcloud-go-api v0.0.0-20210127073406-2964ed7e5972
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/bits-and-blooms/bitset v1.2.1 // indirect
 	github.com/bramvdbogaerde/go-scp v1.0.0
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/containerd/continuity v0.2.0 // indirect
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.7.1+incompatible
@@ -40,6 +39,7 @@ require (
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.1
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/selinux v1.8.5 // indirect
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/rivo/uniseg v0.2.0 // indirect
