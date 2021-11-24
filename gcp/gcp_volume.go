@@ -18,6 +18,17 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) 
 
 	arch := name + ".tar.gz"
 
+	var sizeInGb int64
+	var vol lepton.NanosVolume
+	if config.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
+		if err != nil {
+			return vol, fmt.Errorf("cannot get volume size: %v", err)
+		}
+		config.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb = int64(size)
+	}
+
 	lv, err := lepton.CreateLocalVolume(config, name, data, provider)
 	if err != nil {
 		return lv, err
@@ -67,6 +78,7 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) 
 
 	disk := &compute.Disk{
 		Name:        name,
+		SizeGb:      sizeInGb,
 		SourceImage: "global/images/" + name,
 		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
 	}
