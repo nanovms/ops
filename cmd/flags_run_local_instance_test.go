@@ -26,6 +26,7 @@ func TestCreateRunLocalInstanceFlags(t *testing.T) {
 	assert.Equal(t, runLocalInstanceFlags.TapName, "tap1")
 	assert.Equal(t, runLocalInstanceFlags.SkipBuild, true)
 	assert.Equal(t, runLocalInstanceFlags.Accel, false)
+	assert.Equal(t, runLocalInstanceFlags.Memory, "64M")
 	assert.Equal(t, runLocalInstanceFlags.Smp, 2)
 	assert.Equal(t, runLocalInstanceFlags.SyscallSummary, true)
 
@@ -52,6 +53,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 				Accel:      true,
 				Bridged:    true,
 				BridgeName: "br1",
+				Memory:     "64M",
 				CPUs:       2,
 				Debug:      false,
 				GdbPort:    1234,
@@ -116,6 +118,7 @@ func newRunLocalInstanceFlagSet(debug string) *cmd.RunLocalInstanceCommandFlags 
 	flagSet.Set("skipbuild", "true")
 	flagSet.Set("manifest-name", "manifest.json")
 	flagSet.Set("accel", "true")
+	flagSet.Set("memory", "64M")
 	flagSet.Set("smp", "2")
 	flagSet.Set("mounts", "files:/mnt/f")
 	flagSet.Set("syscall-summary", "true")
