@@ -559,7 +559,7 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 
 	if resp.StatusCode != 200 {
 		os.Remove(out.Name())
-		return errors.New("resource not found")
+		return fmt.Errorf("can not download file from: %s, status: %s", url, resp.Status)
 	}
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))

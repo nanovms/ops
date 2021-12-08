@@ -105,7 +105,8 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		packages, err = api.GetPackageList(lepton.NewConfig())
 	}
 	if err != nil {
-		log.Panicf("failed getting packages: %s", err)
+		log.Errorf("failed getting packages: %s", err)
+		return
 	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
