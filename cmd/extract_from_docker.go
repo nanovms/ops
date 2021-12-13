@@ -172,6 +172,28 @@ func createContainer(image string, command []string, pull bool, quiet bool) (con
 		return nil, nil, dockerContainer.ContainerCreateCreatedBody{}, err
 	}
 
+	// grab latest if not specified
+	if !strings.Contains(image, ":") {
+		image += ":latest"
+	}
+
+	// try local image first
+	images, err := cli.ImageList(ctx, dockerTypes.ImageListOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+out:
+	for _, img := range images {
+		tags := img.RepoTags
+		for i := 0; i < len(tags); i++ {
+			if tags[i] == image {
+				pull = false
+				break out
+			}
+		}
+	}
+
 	if pull {
 		reader, err := cli.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
 		if err != nil {
