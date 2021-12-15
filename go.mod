@@ -16,8 +16,13 @@ require (
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/bits-and-blooms/bitset v1.2.1 // indirect
 	github.com/bramvdbogaerde/go-scp v1.0.0
+	github.com/checkpoint-restore/go-criu/v5 v5.2.0 // indirect
+	github.com/cilium/ebpf v0.7.0 // indirect
+	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/containerd/continuity v0.2.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.7+incompatible
@@ -25,6 +30,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/go-ini/ini v1.52.0 // indirect
+	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0
@@ -36,11 +42,13 @@ require (
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
+	github.com/moby/sys/mountinfo v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/selinux v1.8.5 // indirect
+	github.com/opencontainers/runc v1.0.3 // indirect
+	github.com/opencontainers/selinux v1.10.0 // indirect
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/schollz/progressbar/v2 v2.13.2
@@ -54,12 +62,14 @@ require (
 	github.com/terra-farm/go-virtualbox v0.0.4
 	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
+	github.com/urfave/cli v1.22.5 // indirect
+	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	github.com/vmware/govmomi v0.22.2
 	github.com/vultr/govultr/v2 v2.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b // indirect
+	golang.org/x/net v0.0.0-20211215060638-4ddde0e984e9 // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
-	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef
+	golang.org/x/sys v0.0.0-20211214234402-4825e8c3871d
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/api v0.56.0
 	google.golang.org/appengine v1.6.7 // indirect
