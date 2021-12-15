@@ -43,7 +43,7 @@ Build:
 make build
 ```
 
-osx notes:
+macOS notes:
 
 ```sh
 GO111MODULE=on go build -ldflags "-w"
