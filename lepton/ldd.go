@@ -11,6 +11,6 @@ func ValidateELF(executablePath string) {
 		exitWithError(err.Error())
 	}
 	if !valid {
-		exitWithError(fmt.Sprintf(`only ELF binaries are supported. Is thia a Linux binary? run "file %s" on it`, executablePath))
+		exitWithError(fmt.Sprintf(`only ELF binaries are supported. Is this a Linux binary? run "file %s" on it`, executablePath))
 	}
 }
