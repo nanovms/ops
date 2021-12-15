@@ -84,7 +84,7 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 	fd, err := elf.Open(path)
 	if err != nil {
 		if strings.Contains(err.Error(), "bad magic number") {
-			log.Fatalf(constants.ErrorColor, "Only ELF binaries are supported. Is this a Mach-0 (osx) binary? run 'file "+path+"' on it\n")
+			log.Fatalf(constants.ErrorColor, "Only ELF binaries are supported. Is this a Mach-0 (macOS) binary? run 'file "+path+"' on it\n")
 		}
 		return errors.WrapPrefix(err, path, 0)
 	}
