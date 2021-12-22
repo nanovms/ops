@@ -23,7 +23,11 @@ func UpdateCommand() *cobra.Command {
 
 func updateCommandHandler(cmd *cobra.Command, args []string) {
 	log.Info("Checking for updates...")
-	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, runtime.GOOS))
+	platform := runtime.GOOS
+	if runtime.GOARCH == "arm64" {
+		platform += "/aarch64"
+	}
+	err := api.DoUpdate(fmt.Sprintf(api.OpsReleaseURL, platform))
 	if err != nil {
 		log.Errorf("Failed to update. %v", err)
 	} else {
