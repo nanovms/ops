@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -18,6 +19,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -332,7 +334,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
-		q.addOption("-kernel", "./kernel.img")
+
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion, "kernel.img")
+
+		q.addOption("-kernel", kernel)
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
 
