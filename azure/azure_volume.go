@@ -26,9 +26,14 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, provider string) (
 
 	location := a.getLocation(config)
 
-	sizeInGb, err := lepton.GetSizeInGb(config.BaseVolumeSz)
-	if err != nil {
-		return vol, err
+	var sizeInGb int64
+	if config.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
+		if err != nil {
+			return vol, fmt.Errorf("cannot get volume size: %v", err)
+		}
+		config.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb = int64(size)
 	}
 
 	vol, err = lepton.CreateLocalVolume(config, name, data, provider)
