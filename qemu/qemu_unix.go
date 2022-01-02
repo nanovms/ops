@@ -1,3 +1,4 @@
+//go:build linux || darwin
 // +build linux darwin
 
 package qemu
@@ -275,6 +276,11 @@ func (q *qemu) addAccel() (bool, error) {
 	}
 
 	if runtime.GOOS == "darwin" {
+		// currently Nanos dont support hardware acceleration in M1 Macbooks
+		if runtime.GOARCH == "arm64" {
+			return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
+		}
+
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host,-rdtscp")
