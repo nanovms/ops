@@ -316,7 +316,6 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 		}
 
 		target := filepath.Join(hostBaseDir, header.Name)
-		fmt.Println(target)
 
 		// check the file type
 		switch header.Typeflag {
