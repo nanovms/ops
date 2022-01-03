@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -23,7 +24,7 @@ import (
 )
 
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
-func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool) (string, string) {
+func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool) (string, string) {
 	var err error
 
 	if packageName == "" {
@@ -106,7 +107,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	}
 
 	if verbose {
-		fmt.Printf("Extracting files inoto %s\n", tempDirectory)
+		fmt.Printf("Extracting files into %s\n", tempDirectory)
 	}
 
 	sysroot := tempDirectory + "/sysroot"
@@ -114,6 +115,16 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/program")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if copyWholeFS {
+		if verbose {
+			fmt.Println("Copying whole container fs into sysroot")
+		}
+		copyWholeContainer(cli, containerInfo.ID, sysroot)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	for _, libraryLine := range librariesPath {
@@ -270,6 +281,68 @@ func copyFromContainer(cli *dockerClient.Client, containerID string, containerPa
 	}
 
 	return nil
+}
+
+func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDir string) error {
+	err := os.MkdirAll(path.Dir(hostBaseDir), 0764)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fileReader, _, err := cli.CopyFromContainer(context.Background(), containerID, "/")
+	if err != nil {
+		return err
+	}
+	defer fileReader.Close()
+
+	tr := tar.NewReader(fileReader)
+
+	for {
+		header, err := tr.Next()
+
+		switch {
+
+		// if no more files are found return
+		case err == io.EOF:
+			return nil
+
+		// return any other error
+		case err != nil:
+			return err
+
+		// if the header is nil, just skip it (not sure how this happens)
+		case header == nil:
+			continue
+		}
+
+		target := filepath.Join(hostBaseDir, header.Name)
+		fmt.Println(target)
+
+		// check the file type
+		switch header.Typeflag {
+
+		// dir
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					return err
+				}
+			}
+
+		// file
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+
+			f.Close()
+		}
+	}
 }
 
 // ImageNameToPackageName converts a Docker image name to a package name
