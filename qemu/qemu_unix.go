@@ -1,5 +1,4 @@
-//go:build linux || darwin
-// +build linux darwin
+// +build linux darwin freebsd
 
 package qemu
 
@@ -360,6 +359,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	netDevType := "user"
+	goos := runtime.GOOS
+
 	ifaceName := ""
 	if rconfig.Bridged {
 		netDevType = "tap"
@@ -368,7 +369,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.setAccel(rconfig)
 
-	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	if goos != "freebsd" {
+		q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	}
+
 	q.addDisplay("none")
 
 	if rconfig.Background {
