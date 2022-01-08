@@ -214,7 +214,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		return nil, errors.Wrap(err, 1)
 	}
 
-	if len(c.Args) > 1 {
+	if !c.DisableArgsCopy && len(c.Args) > 1 {
 		if f, err := os.Stat(c.Args[1]); err == nil {
 			if f.IsDir() {
 				err = m.AddDirectory(c.Args[1], c.Args[1])

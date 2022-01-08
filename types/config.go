@@ -5,6 +5,9 @@ type Config struct {
 	// Args defines an array of commands to execute when the image is launched.
 	Args []string
 
+	// Disable auto copy of files from host to container when present in args
+	DisableArgsCopy bool
+
 	// BaseVolumeSz is an optional parameter for defining the size of the base
 	// volume (defaults to the end of blocks written by TFS).
 	BaseVolumeSz string
