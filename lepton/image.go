@@ -215,8 +215,13 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 	}
 
 	if len(c.Args) > 1 {
-		if _, err := os.Stat(c.Args[1]); err == nil {
-			err = m.AddFile(c.Args[1], c.Args[1])
+		if f, err := os.Stat(c.Args[1]); err == nil {
+			if f.IsDir() {
+				err = m.AddDirectory(c.Args[1], c.Args[1])
+			} else {
+				err = m.AddFile(c.Args[1], c.Args[1])
+			}
+
 			if err != nil {
 				return nil, err
 			}
