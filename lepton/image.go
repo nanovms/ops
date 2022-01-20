@@ -514,6 +514,10 @@ func DownloadReleaseImages(version string) error {
 	defer os.Remove(localtar)
 
 	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
+		if strings.Index(err.Error(), "can not download file") > -1 {
+			return errors.Wrap(errors.New("release is not found"), 1)
+		}
+		
 		return errors.Wrap(err, 1)
 	}
 
