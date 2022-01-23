@@ -109,7 +109,7 @@ func TestConvertJsonToConfig(t *testing.T) {
 		err := cmd.ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
+		assert.Equal(t, errors.Unwrap(err), errors.Unwrap(cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\""))))
 	})
 
 	t.Run("should return error if nested property does not exist in config struct", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestConvertJsonToConfig(t *testing.T) {
 		err := cmd.ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
+		assert.Equal(t, errors.Unwrap(err), errors.Unwrap(cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\""))))
 	})
 
 	t.Run("should return error if some properties do not exist in config struct", func(t *testing.T) {
@@ -129,7 +129,7 @@ func TestConvertJsonToConfig(t *testing.T) {
 		err := cmd.ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"Test2\"")))
+		assert.Equal(t, errors.Unwrap(err), errors.Unwrap(cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"Test2\""))))
 	})
 
 	t.Run("should return error if properties in first level do not exist in config struct", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestConvertJsonToConfig(t *testing.T) {
 		err := cmd.ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"test\"")))
+		assert.Equal(t, errors.Unwrap(err), errors.Unwrap(cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"test\""))))
 	})
 
 	t.Run("should convert config successfully if all properties are known", func(t *testing.T) {
