@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
@@ -18,6 +19,16 @@ import (
 var (
 	// ErrInvalidFileConfig is used when some error occurred on reading the configuration file. The message also provides instructions to search for how to set up configuration.
 	ErrInvalidFileConfig = func(err error) error {
+		n := 1
+		for {
+			_, file, line, _ := runtime.Caller(n)
+			if file == "" {
+				break
+			}
+			err = fmt.Errorf("%w %v: %v \n", err, file, line)
+			n++
+		}
+
 		return fmt.Errorf("failed converting configuration file: %v\nSee more details at https://nanovms.gitbook.io/ops/configuration", err)
 	}
 )
