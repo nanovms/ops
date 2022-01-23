@@ -25,7 +25,7 @@ var (
 			if file == "" {
 				break
 			}
-			err = fmt.Errorf("%w %v: %v \n", err, file, line)
+			err = fmt.Errorf("%w \n%v: %v", err, file, line)
 			n++
 		}
 
