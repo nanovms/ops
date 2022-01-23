@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -369,28 +370,35 @@ func (p *AWS) ListImages(ctx *lepton.Context) error {
 		return err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Id", "Status", "Created"})
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
-	table.SetRowLine(true)
+	if ctx.Config().RunConfig.JSON {
+		// json output
+		if err := json.NewEncoder(os.Stdout).Encode(cimages); err != nil {
+			return err
+		}
+	} else {
+		// default of table output
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Name", "Id", "Status", "Created"})
+		table.SetHeaderColor(
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+		table.SetRowLine(true)
 
-	for _, image := range cimages {
-		var row []string
+		for _, image := range cimages {
+			var row []string
 
-		row = append(row, image.Name)
-		row = append(row, image.ID)
-		row = append(row, image.Status)
-		row = append(row, lepton.Time2Human(image.Created))
+			row = append(row, image.Name)
+			row = append(row, image.ID)
+			row = append(row, image.Status)
+			row = append(row, lepton.Time2Human(image.Created))
 
-		table.Append(row)
+			table.Append(row)
+		}
+
+		table.Render()
 	}
-
-	table.Render()
-
 	return nil
 }
 
