@@ -11,7 +11,7 @@ type GlobalCommandFlags struct {
 	ShowWarnings bool
 	ShowErrors   bool
 	ShowDebug    bool
-	Json         bool
+	JSON         bool
 }
 
 // MergeToConfig append command flags that are used transversally for all commands to configuration

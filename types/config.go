@@ -246,7 +246,7 @@ type RunConfig struct {
 	ShowWarnings bool
 
 	// Json output
-	Json bool
+	JSON bool
 
 	// TapName
 	TapName string
