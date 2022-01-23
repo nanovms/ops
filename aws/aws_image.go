@@ -370,7 +370,7 @@ func (p *AWS) ListImages(ctx *lepton.Context) error {
 		return err
 	}
 
-	if ctx.Config().RunConfig.Json {
+	if ctx.Config().RunConfig.JSON {
 		// json output
 		if err := json.NewEncoder(os.Stdout).Encode(cimages); err != nil {
 			return err

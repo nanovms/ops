@@ -19,7 +19,7 @@ func (flags *GlobalCommandFlags) MergeToConfig(config *types.Config) (err error)
 	config.RunConfig.ShowWarnings = flags.ShowWarnings
 	config.RunConfig.ShowErrors = flags.ShowErrors
 	config.RunConfig.ShowDebug = flags.ShowDebug
-	config.RunConfig.Json = flags.Json
+	config.RunConfig.JSON = flags.JSON
 
 	return
 }
@@ -31,7 +31,7 @@ func NewGlobalCommandFlags(cmdFlags *pflag.FlagSet) (flags *GlobalCommandFlags) 
 	flags.ShowWarnings, _ = cmdFlags.GetBool("show-warnings")
 	flags.ShowErrors, _ = cmdFlags.GetBool("show-errors")
 	flags.ShowDebug, _ = cmdFlags.GetBool("show-debug")
-	flags.Json, _ = cmdFlags.GetBool("json")
+	flags.JSON, _ = cmdFlags.GetBool("json")
 
 	return flags
 }
