@@ -26,10 +26,10 @@ const releaseBaseURL string = "https://storage.googleapis.com/nanos/release/"
 const nightlyReleaseBaseURL string = "https://storage.googleapis.com/nanos/release/nightly/"
 
 // PackageBaseURL gives URL for downloading of packages
-const PackageBaseURL string = "https://storage.googleapis.com/packagehub"
+const PackageBaseURL string = "https://repo.ops.city/packages"
 
 // PackageManifestURL stores info about all packages
-const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
+const PackageManifestURL string = "https://repo.ops.city/manifest.json"
 
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
