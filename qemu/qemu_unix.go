@@ -1,4 +1,4 @@
-// +build linux darwin
+// +build linux darwin freebsd
 
 package qemu
 
@@ -275,6 +275,11 @@ func (q *qemu) addAccel() (bool, error) {
 	}
 
 	if runtime.GOOS == "darwin" {
+		// currently Nanos dont support hardware acceleration in M1 Macbooks
+		if runtime.GOARCH == "arm64" {
+			return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
+		}
+
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host,-rdtscp")
@@ -354,6 +359,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	netDevType := "user"
+	goos := runtime.GOOS
+
 	ifaceName := ""
 	if rconfig.Bridged {
 		netDevType = "tap"
@@ -362,7 +369,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.setAccel(rconfig)
 
-	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	if goos != "freebsd" {
+		q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	}
+
 	q.addDisplay("none")
 
 	if rconfig.Background {
