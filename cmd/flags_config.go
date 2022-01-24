@@ -65,7 +65,7 @@ func ConvertJSONToConfig(data []byte, c *types.Config) (err error) {
 	err = dec.Decode(&c)
 	if err != nil {
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			problemPart := data[jsonErr.Offset-1: jsonErr.Offset+10]
+			problemPart := data[jsonErr.Offset-1 : jsonErr.Offset+10]
 			line := 1 + strings.Count(string(data)[:jsonErr.Offset], "\n")
 			err = fmt.Errorf("%w ~ error near '%s' (offset %d) line: %v", err, problemPart, jsonErr.Offset, line)
 		}
