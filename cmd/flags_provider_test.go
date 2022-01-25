@@ -44,7 +44,7 @@ func TestMergeProviderFlags(t *testing.T) {
 				Platform: "azure",
 			},
 			RunConfig: types.RunConfig{
-				Klibs: []string{"cloud_init"},
+				Klibs: []string{"cloud_init", "tls"},
 			},
 		}
 

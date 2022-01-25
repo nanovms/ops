@@ -214,9 +214,14 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		return nil, errors.Wrap(err, 1)
 	}
 
-	if len(c.Args) > 1 {
-		if _, err := os.Stat(c.Args[1]); err == nil {
-			err = m.AddFile(c.Args[1], c.Args[1])
+	if !c.DisableArgsCopy && len(c.Args) > 1 {
+		if f, err := os.Stat(c.Args[1]); err == nil {
+			if f.IsDir() {
+				err = m.AddDirectory(c.Args[1], c.Args[1])
+			} else {
+				err = m.AddFile(c.Args[1], c.Args[1])
+			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -344,8 +349,8 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
-	for _, libpath := range deps {
-		m.AddLibrary(libpath)
+	for libpath, hostpath := range deps {
+		m.AddFile(libpath, hostpath)
 	}
 
 	if c.RunConfig.IPAddress != "" || c.RunConfig.IPv6Address != "" {
@@ -509,6 +514,11 @@ func DownloadReleaseImages(version string) error {
 	defer os.Remove(localtar)
 
 	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
+
+		if strings.Index(err.Error(), "can not download file") > -1 {
+			return fmt.Errorf("release '%s' is not found", version)
+		}
+
 		return errors.Wrap(err, 1)
 	}
 
@@ -559,7 +569,7 @@ func DownloadFile(filepath string, url string, timeout int, showProgress bool) e
 
 	if resp.StatusCode != 200 {
 		os.Remove(out.Name())
-		return errors.New("resource not found")
+		return fmt.Errorf("can not download file from: %s, status: %s", url, resp.Status)
 	}
 
 	fsize, _ := strconv.Atoi(resp.Header.Get("Content-Length"))

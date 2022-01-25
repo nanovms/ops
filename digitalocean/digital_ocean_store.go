@@ -64,6 +64,18 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 	}
 
 	bucket := config.CloudConfig.BucketName
+	if bucket == "" {
+		log.Fatal(fmt.Errorf("BucketName is required"))
+	}
+
+	bucketExists, err := client.BucketExists(bucket)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !bucketExists {
+		log.Fatal(fmt.Errorf("bucket %s does not exist", bucket))
+	}
+
 	key := filepath.Base(archPath)
 
 	n, err := client.PutObject(bucket, key, file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
@@ -75,7 +87,7 @@ func (s *Spaces) CopyToBucket(config *types.Config, archPath string) error {
 
 	log.Infof("Successfully uploaded %q to %q\n", config.CloudConfig.ImageName, bucket)
 
-	policy := `{"Version": "2012-10-17","Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": {"AWS": ["*"]},"Resource": ["arn:aws:s3:::ops/` + key + `"],"Sid": ""}]}`
+	policy := `{"Version": "2012-10-17","Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": {"AWS": ["*"]},"Resource": ["arn:aws:s3:::` + bucket + `/` + key + `"],"Sid": ""}]}`
 
 	err = client.SetBucketPolicy(bucket, policy)
 	if err != nil {

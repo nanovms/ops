@@ -27,6 +27,7 @@ type RunLocalInstanceCommandFlags struct {
 	NoTrace        []string
 	Ports          []string
 	SkipBuild      bool
+	Memory         string
 	Smp            int
 	SyscallSummary bool
 	TapName        string
@@ -74,6 +75,10 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.MissingFiles {
 		c.Debugflags = append(c.Debugflags, "missing_files")
+	}
+
+	if flags.Memory != "" {
+		c.RunConfig.Memory = flags.Memory
 	}
 
 	if flags.Smp > 0 {
@@ -205,6 +210,11 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
+	flags.Memory, err = cmdFlags.GetString("memory")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.Smp, err = cmdFlags.GetInt("smp")
 	if err != nil {
 		exitWithError(err.Error())
@@ -252,6 +262,7 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("tapname", "t", "", "tap device name")
 	cmdFlags.BoolP("skipbuild", "s", false, "skip building image")
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
+	cmdFlags.StringP("memory", "m", "", "RAM size")
 	cmdFlags.IntP("smp", "", 1, "number of threads to use")
 	cmdFlags.Bool("syscall-summary", false, "print syscall summary on exit")
 	cmdFlags.Bool("missing-files", false, "print list of files not found on image at exit")

@@ -43,7 +43,7 @@ Build:
 make build
 ```
 
-osx notes:
+macOS notes:
 
 ```sh
 GO111MODULE=on go build -ldflags "-w"
@@ -103,6 +103,14 @@ You can always find more pre-made packages via:
 ```sh
 ops pkg list
 ```
+
+## Apple M1 Users
+
+The Apple M1 and M2 are ARM based. OPS is built for users primarily
+deploying to x86 based servers. While you can certainly run ARM builds
+with Nanos and OPS be aware that if you are trying to run x86 builds
+(the default) on ARM based M1s you won't be able to use hardware
+acceleration.
 
 # Build a bootable image
 `ops build <app>`

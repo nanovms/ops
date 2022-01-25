@@ -15,16 +15,17 @@ import (
 
 // BuildImageCommandFlags consolidates all command flags required to build an image in one struct
 type BuildImageCommandFlags struct {
-	Type        string
-	CmdArgs     []string
-	CmdEnvs     []string
-	ImageName   string
-	Mounts      []string
-	TargetRoot  string
-	IPAddress   string
-	IPv6Address string
-	Netmask     string
-	Gateway     string
+	Type            string
+	CmdArgs         []string
+	DisableArgsCopy bool
+	CmdEnvs         []string
+	ImageName       string
+	Mounts          []string
+	TargetRoot      string
+	IPAddress       string
+	IPv6Address     string
+	Netmask         string
+	Gateway         string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
@@ -88,6 +89,8 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		c.Args = flags.CmdArgs
 	}
 
+	c.DisableArgsCopy = flags.DisableArgsCopy
+
 	if c.Program != "" {
 		c.Args = append([]string{c.Program}, c.Args...)
 	}
@@ -146,6 +149,11 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 		exitWithError(err.Error())
 	}
 
+	flags.DisableArgsCopy, err = cmdFlags.GetBool("disable-args-copy")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.Gateway, err = cmdFlags.GetString("gateway")
 	if err != nil {
 		exitWithError(err.Error())
@@ -177,6 +185,7 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("imagename", "i", "", "image name")
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
+	cmdFlags.BoolP("disable-args-copy", "", false, "disable copying of files passed as arguments")
 	cmdFlags.String("ip-address", "", "static ip address")
 	cmdFlags.String("ipv6-address", "", "static ipv6 address")
 	cmdFlags.String("gateway", "", "network gateway")

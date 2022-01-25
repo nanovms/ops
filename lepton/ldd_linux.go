@@ -47,7 +47,7 @@ func IsDynamicLinked(efd *elf.File) bool {
 
 // works only on linux, need to
 // replace looking up in dynamic section in ELF
-func getSharedLibs(targetRoot string, path string) ([]string, error) {
+func getSharedLibs(targetRoot string, path string) (map[string]string, error) {
 	var notExistLib []string
 	var absTargetRoot string
 	if targetRoot != "" {
@@ -75,7 +75,7 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 	// LD_TRACE_LOADED_OBJECTS need to fork with out executing it.
 	// TODO:move away from LD_TRACE_LOADED_OBJECTS
 	dir, _ := os.Getwd()
-	var deps []string
+	var deps = make(map[string]string)
 
 	elfFile, err := GetElfFileInfo(path)
 
@@ -117,7 +117,8 @@ func getSharedLibs(targetRoot string, path string) ([]string, error) {
 				notExistLib = append(notExistLib, text)
 			}
 			err = errors.New("")
-			deps = append(deps, strings.TrimSpace(libpath))
+			libpath = strings.TrimSpace(libpath)
+			deps[strings.TrimPrefix(libpath, absTargetRoot)] = libpath
 		}
 
 		if len(notExistLib) != 0 {

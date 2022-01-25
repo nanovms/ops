@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -174,8 +175,28 @@ func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string) error
 		return err
 	}
 
+	// Look for an unused device name to be assigned to the volume, starting from "/dev/sdb"
+	device := ""
+	for deviceLetter := 'b'; deviceLetter <= 'z'; deviceLetter++ {
+		name := "/dev/sd" + string(deviceLetter)
+		nameUsed := false
+		for _, mapping := range instance.BlockDeviceMappings {
+			if *mapping.DeviceName == name {
+				nameUsed = true
+				break
+			}
+		}
+		if !nameUsed {
+			device = name
+			break
+		}
+	}
+	if device == "" {
+		return errors.New("No available device names")
+	}
+
 	input := &ec2.AttachVolumeInput{
-		Device:     aws.String("/dev/sdf"),
+		Device:     aws.String(device),
 		InstanceId: aws.String(*instance.InstanceId),
 		VolumeId:   aws.String(*vol.VolumeId),
 	}
@@ -200,7 +221,6 @@ func (a *AWS) DetachVolume(ctx *lepton.Context, instanceName, name string) error
 	}
 
 	input := &ec2.DetachVolumeInput{
-		Device:     aws.String("/dev/sdf"),
 		InstanceId: aws.String(*instance.InstanceId),
 		VolumeId:   aws.String(*vol.VolumeId),
 	}

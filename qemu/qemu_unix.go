@@ -1,4 +1,4 @@
-// +build linux darwin
+// +build linux darwin freebsd
 
 package qemu
 
@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -18,6 +19,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -273,6 +275,11 @@ func (q *qemu) addAccel() (bool, error) {
 	}
 
 	if runtime.GOOS == "darwin" {
+		// currently Nanos dont support hardware acceleration in M1 Macbooks
+		if runtime.GOARCH == "arm64" {
+			return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
+		}
+
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host,-rdtscp")
@@ -332,7 +339,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
-		q.addOption("-kernel", "./kernel.img")
+
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion, "kernel.img")
+
+		q.addOption("-kernel", kernel)
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
 
@@ -349,6 +359,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	netDevType := "user"
+	goos := runtime.GOOS
+
 	ifaceName := ""
 	if rconfig.Bridged {
 		netDevType = "tap"
@@ -357,7 +369,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.setAccel(rconfig)
 
-	q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	if goos != "freebsd" {
+		q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+	}
+
 	q.addDisplay("none")
 
 	if rconfig.Background {

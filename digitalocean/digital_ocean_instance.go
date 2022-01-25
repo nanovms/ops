@@ -12,10 +12,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const (
-	fakeFingerprint = "02:14:c3:d2:cd:4a:67:8b:43:b3:49:83:99:49:6a:58"
-)
-
 // CreateInstance - Creates instance on Digital Ocean Platform
 func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	config := ctx.Config()
@@ -35,6 +31,23 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	instanceName := strings.Replace(config.RunConfig.InstanceName, ".img", "", 1)
 	imageName := "image:" + strings.Replace(image.Name, ".img", "", 1)
 
+	keys, _, err := do.Client.Keys.List(context.TODO(), &godo.ListOptions{
+		Page:    1,
+		PerPage: 200,
+	})
+	if err != nil {
+		return err
+	}
+
+	dropletKeys := []godo.DropletCreateSSHKey{}
+
+	for _, key := range keys {
+		dropletKeys = append(dropletKeys, godo.DropletCreateSSHKey{
+			ID:          key.ID,
+			Fingerprint: key.Fingerprint,
+		})
+	}
+
 	createReq := &godo.DropletCreateRequest{
 		Name:   instanceName,
 		Size:   flavor,
@@ -43,7 +56,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 			ID: imageID,
 		},
 		Tags:    []string{opsTag, imageName},
-		SSHKeys: []godo.DropletCreateSSHKey{{Fingerprint: fakeFingerprint}},
+		SSHKeys: dropletKeys,
 	}
 
 	_, _, err = do.Client.Droplets.Create(context.TODO(), createReq)

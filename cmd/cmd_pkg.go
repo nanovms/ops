@@ -81,6 +81,7 @@ func PackageCommands() *cobra.Command {
 	cmdFromDockerPackage.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
 	cmdFromDockerPackage.PersistentFlags().Bool("verbose", false, "verbose mode")
 	cmdFromDockerPackage.PersistentFlags().StringP("file", "f", "", "target executable")
+	cmdFromDockerPackage.PersistentFlags().BoolP("copy", "c", false, "copy whole file system")
 	cmdFromDockerPackage.MarkPersistentFlagRequired("file")
 	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
 
@@ -105,7 +106,8 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		packages, err = api.GetPackageList(lepton.NewConfig())
 	}
 	if err != nil {
-		log.Panicf("failed getting packages: %s", err)
+		log.Errorf("failed getting packages: %s", err)
+		return
 	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
@@ -269,8 +271,9 @@ func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
 	verbose, _ := flags.GetBool("verbose")
 	packageName, _ := flags.GetString("name")
 	targetExecutable, _ := flags.GetString("file")
+	copyWholeFS, _ := flags.GetBool("copy")
 
-	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose)
+	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose, copyWholeFS)
 	fmt.Println(packageName)
 }
 

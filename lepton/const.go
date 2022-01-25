@@ -26,10 +26,10 @@ const releaseBaseURL string = "https://storage.googleapis.com/nanos/release/"
 const nightlyReleaseBaseURL string = "https://storage.googleapis.com/nanos/release/nightly/"
 
 // PackageBaseURL gives URL for downloading of packages
-const PackageBaseURL string = "https://storage.googleapis.com/packagehub"
+const PackageBaseURL string = "https://repo.ops.city/packages"
 
 // PackageManifestURL stores info about all packages
-const PackageManifestURL string = "https://storage.googleapis.com/packagehub/manifest.json"
+const PackageManifestURL string = "https://repo.ops.city/manifest.json"
 
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
@@ -127,8 +127,19 @@ func getImageTempDir(c *types.Config) string {
 // NightlyReleaseURL give URL for nightly build
 var NightlyReleaseURL = nightlyReleaseURL()
 
+var realGOOS = getGOOS()
+
+func getGOOS() string {
+	goos := runtime.GOOS
+	if goos == "freebsd" {
+		return "linux"
+	}
+
+	return goos
+}
+
 func nightlyFileName() string {
-	return fmt.Sprintf("nanos-nightly-%v.tar.gz", runtime.GOOS)
+	return fmt.Sprintf("nanos-nightly-%v.tar.gz", realGOOS)
 }
 
 func nightlyReleaseURL() string {
@@ -147,7 +158,7 @@ var NightlyLocalFolder = nightlyLocalFolder()
 
 // LocalTimeStamp gives local timestamp from download nightly build
 func LocalTimeStamp() (string, error) {
-	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", runtime.GOOS)
+	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
 	data, err := ioutil.ReadFile(path.Join(NightlyLocalFolder, timestamp))
 	// first time download?
 	if os.IsNotExist(err) {
@@ -162,7 +173,7 @@ func LocalTimeStamp() (string, error) {
 
 // RemoteTimeStamp gives latest nightly build timestamp
 func RemoteTimeStamp() (string, error) {
-	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", runtime.GOOS)
+	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
 	resp, err := http.Get(nightlyReleaseBaseURL + timestamp)
 	if err != nil {
 		return "", err
@@ -176,7 +187,7 @@ func RemoteTimeStamp() (string, error) {
 }
 
 func updateLocalTimestamp(timestamp string) error {
-	fname := fmt.Sprintf("nanos-nightly-%v.timestamp", runtime.GOOS)
+	fname := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
 	return ioutil.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
 }
 
@@ -217,7 +228,7 @@ func getLocalRelVersion() string {
 }
 
 func releaseFileName(version string) string {
-	return fmt.Sprintf("nanos-release-%v-%v.tar.gz", runtime.GOOS, version)
+	return fmt.Sprintf("nanos-release-%v-%v.tar.gz", realGOOS, version)
 }
 
 func getReleaseURL(version string) string {

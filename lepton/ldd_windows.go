@@ -21,7 +21,7 @@ func GetElfFileInfo(path string) (*elf.File, error) {
 }
 
 // stub
-func getSharedLibs(targetRoot string, path string) ([]string, error) {
-	var deps []string
+func getSharedLibs(targetRoot string, path string) (map[string]string, error) {
+	var deps = make(map[string]string)
 	return deps, nil
 }

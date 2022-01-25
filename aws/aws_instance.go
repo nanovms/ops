@@ -268,6 +268,10 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		},
 	}
 
+	if ctx.Config().RunConfig.IPAddress != "" {
+		instanceInput.PrivateIpAddress = aws.String(ctx.Config().RunConfig.IPAddress)
+	}
+
 	if ctx.Config().CloudConfig.EnableIPv6 {
 		if ctx.Config().RunConfig.IPv6Address != "" {
 			v6ad := ctx.Config().RunConfig.IPv6Address
