@@ -277,7 +277,14 @@ ops_set_user_permissions(){
 ops_link() {
   printf "$cyan> Adding to bash profile...$reset\n"
   OPS_PROFILE="$(ops_detect_profile)"
-  SOURCE_STR="# OPS config\nexport OPS_DIR=\"\$HOME/.ops\"\nexport PATH=\"\$HOME/.ops/bin:\$PATH\"\nsource \"\$HOME/.ops/scripts/bash_completion.sh\""
+
+  SHELLTYPE="$(basename "/$SHELL")"
+
+  if [ "$SHELLTYPE" = "zsh" ]; then
+    SOURCE_STR="# OPS config\nexport OPS_DIR=\"\$HOME/.ops\"\nexport PATH=\"\$HOME/.ops/bin:\$PATH\"\nsource\"\$HOME/.ops/scripts/bash_completion.sh\"\nautoload bashcompinit\n"
+  else
+    SOURCE_STR="# OPS config\nexport OPS_DIR=\"\$HOME/.ops\"\nexport PATH=\"\$HOME/.ops/bin:\$PATH\"\nsource\"\$HOME/.ops/scripts/bash_completion.sh\"\n"
+  fi
 
   echo "------------- ${OPS_PROFILE}"
 
