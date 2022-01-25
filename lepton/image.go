@@ -241,6 +241,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	addHostName(m, c)
 	addPasswd(m, c)
 	m.SetKlibDir(getKlibsDir(c.NightlyBuild))
+
 	m.AddKlibs(c.RunConfig.Klibs)
 
 	for _, f := range c.Files {
@@ -259,6 +260,12 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	}
 
 	for k, v := range c.MapDirs {
+		for _, x := range c.Args {
+			if x == filepath.Base(v) {
+				errstr := fmt.Sprintf("can't have directory with same name as binary %v", x)
+				return errors.New(errstr)
+			}
+		}
 		if filepath.IsAbs(k) {
 			k = filepath.Join(c.TargetRoot, k)
 		} else {
