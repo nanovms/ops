@@ -214,9 +214,14 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		return nil, errors.Wrap(err, 1)
 	}
 
-	if len(c.Args) > 1 {
-		if _, err := os.Stat(c.Args[1]); err == nil {
-			err = m.AddFile(c.Args[1], c.Args[1])
+	if !c.DisableArgsCopy && len(c.Args) > 1 {
+		if f, err := os.Stat(c.Args[1]); err == nil {
+			if f.IsDir() {
+				err = m.AddDirectory(c.Args[1], c.Args[1])
+			} else {
+				err = m.AddFile(c.Args[1], c.Args[1])
+			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -516,6 +521,11 @@ func DownloadReleaseImages(version string) error {
 	defer os.Remove(localtar)
 
 	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
+
+		if strings.Index(err.Error(), "can not download file") > -1 {
+			return fmt.Errorf("release '%s' is not found", version)
+		}
+
 		return errors.Wrap(err, 1)
 	}
 
