@@ -78,12 +78,12 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 				Imagename: imagesPath + "/test-image.img",
 				NetMask:   "255.255.255.0",
 			},
-			Args:       []string{"MyTestApp", "a b c d"},
-			Program:    "MyTestApp",
-			TargetRoot: "unix",
-			Env:        map[string]string{"test": "1234"},
-			NameServer: "8.8.8.8",
-			VolumesDir: lepton.LocalVolumeDir,
+			Args:        []string{"MyTestApp", "a b c d"},
+			Program:     "MyTestApp",
+			TargetRoot:  "unix",
+			Env:         map[string]string{"test": "1234"},
+			NameServers: []string{"8.8.8.8"},
+			VolumesDir:  lepton.LocalVolumeDir,
 		}
 
 		err := buildImageFlags.MergeToConfig(c)
@@ -118,7 +118,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			CloudConfig: types.ProviderConfig{},
 			RunConfig:   types.RunConfig{},
 			Args:        []string{},
-			NameServer:  "8.8.8.8",
+			NameServers: []string{"8.8.8.8"},
 		}
 
 		assert.Equal(t, expected, c)

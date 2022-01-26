@@ -78,9 +78,9 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 		log.Fatalf("error: %v: %v\n", c.Boot, err)
 	}
 
-	if c.NameServer == "" {
+	if len(c.NameServers) == 0 {
 		// google dns server
-		c.NameServer = "8.8.8.8"
+		c.NameServers = []string{"8.8.8.8"}
 	}
 }
 

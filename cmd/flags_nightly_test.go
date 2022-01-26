@@ -46,7 +46,7 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 			Kernel:       path.Join(nightlyPath, "/kernel.img"),
 			CloudConfig:  types.ProviderConfig{},
 			RunConfig:    types.RunConfig{},
-			NameServer:   "8.8.8.8",
+			NameServers:  []string{"8.8.8.8"},
 			NightlyBuild: true,
 		}
 
@@ -74,7 +74,7 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 			Kernel:       nightlyPath + "/kernel.img",
 			CloudConfig:  types.ProviderConfig{},
 			RunConfig:    types.RunConfig{},
-			NameServer:   "8.8.8.8",
+			NameServers:  []string{"8.8.8.8"},
 			NightlyBuild: true,
 		}
 
