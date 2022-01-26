@@ -169,8 +169,7 @@ ops_detect_supported_linux_distribution() {
 
 ops_brew_install_qemu() {
   if which brew >/dev/null; then
-    brew tap nanovms/homebrew-qemu
-    brew install nanovms/homebrew-qemu/qemu
+    brew install qemu
   else
     printf "Homebrew not found.Please install from https://brew.sh/"
   fi
