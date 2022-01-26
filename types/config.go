@@ -162,6 +162,9 @@ type ProviderConfig struct {
 	// azure: https://azure.microsoft.com/en-us/global-infrastructure/geographies/#overview
 	// gcp: https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `cloud:"zone"`
+
+	// AwsIPN is aws instance profile name
+	AwsIPN string
 }
 
 // Tag is used as property on creating instances

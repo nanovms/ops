@@ -1,7 +1,0 @@
-{
-  "CloudConfig" :{
-    "ProjectID" :"projectid",
-    "BucketName":"thebucketname"
-  },
-  "RunConfig" : {"Memory": "2G"}
-}

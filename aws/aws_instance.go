@@ -268,6 +268,12 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		},
 	}
 
+	if cloudConfig.AwsIPN != "" {
+		instanceInput.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
+			Name: aws.String(cloudConfig.AwsIPN),
+		}
+	}
+
 	if ctx.Config().RunConfig.IPAddress != "" {
 		instanceInput.PrivateIpAddress = aws.String(ctx.Config().RunConfig.IPAddress)
 	}
