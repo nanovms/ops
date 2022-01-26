@@ -64,11 +64,18 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdFromDockerPackage,
 	}
 
+	var cmdPkgLogin = &cobra.Command{
+		Use:   "login [apikey]",
+		Short: "login to pkghub account using the apikey",
+		Args:  cobra.ExactArgs(1),
+		Run:   cmdPkgLogin,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker"},
+		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
@@ -91,6 +98,7 @@ func PackageCommands() *cobra.Command {
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
 	cmdPkg.AddCommand(cmdFromDockerPackage)
+	cmdPkg.AddCommand(cmdPkgLogin)
 	cmdPkg.AddCommand(LoadCommand())
 	return cmdPkg
 }
@@ -234,16 +242,6 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 	})
 }
 
-func randomToken(n int) (string, error) {
-	bytes := make([]byte, n)
-
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(bytes), nil
-}
-
 func cmdAddPackage(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
@@ -275,6 +273,33 @@ func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
 
 	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose, copyWholeFS)
 	fmt.Println(packageName)
+}
+
+func cmdPkgLogin(cmd *cobra.Command, args []string) {
+	apikey := args[0]
+	resp, err := lepton.ValidateAPIKey(apikey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = lepton.StoreCredentials(lepton.Credentials{
+		Username: resp.Username,
+		Email:    resp.Email,
+		ApiKey:   apikey,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Login Successful as user %s\n", resp.Username)
+}
+
+func randomToken(n int) (string, error) {
+	bytes := make([]byte, n)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
 }
 
 // LoadCommand helps you to run application with package

@@ -26,13 +26,15 @@ const releaseBaseURL string = "https://storage.googleapis.com/nanos/release/"
 const nightlyReleaseBaseURL string = "https://storage.googleapis.com/nanos/release/nightly/"
 
 // PackageBaseURL gives URL for downloading of packages
-const PackageBaseURL string = "https://repo.ops.city/packages"
+const PackageBaseURL string = PkghubBaseURL + "/packages"
 
 // PackageManifestURL stores info about all packages
-const PackageManifestURL string = "https://repo.ops.city/manifest.json"
+const PackageManifestURL string = PkghubBaseURL + "/manifest.json"
 
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
+
+const PkghubBaseURL string = "https://repo.ops.city"
 
 var (
 	// LocalVolumeDir is the default local volume directory
