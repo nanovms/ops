@@ -87,8 +87,8 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		c.BaseVolumeSz = pkgConfig.BaseVolumeSz
 	}
 
-	if c.NameServer == "" {
-		c.NameServer = pkgConfig.NameServer
+	if len(c.NameServers) == 0 {
+		c.NameServers = pkgConfig.NameServers
 	}
 
 	if c.TargetRoot == "" {

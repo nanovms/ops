@@ -54,9 +54,9 @@ type Config struct {
 	// Mounts
 	Mounts map[string]string
 
-	// NameServer is an optional parameter that defines the DNS server to use
+	// NameServers is an optional parameter array that defines the DNS server to use
 	// for DNS resolutions (defaults to Google's DNS server: '8.8.8.8').
-	NameServer string
+	NameServers []string
 
 	// NanosVersion
 	NanosVersion string

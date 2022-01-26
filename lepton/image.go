@@ -72,8 +72,11 @@ func createFile(filepath string) (*os.File, error) {
 func addDNSConfig(m *fs.Manifest, c *types.Config) {
 	temp := getImageTempDir(c)
 	resolv := path.Join(temp, "resolv.conf")
-	data := []byte("nameserver ")
-	data = append(data, []byte(c.NameServer)...)
+
+	var data []byte
+	for _, ns := range c.NameServers {
+		data = append(data, []byte(fmt.Sprintln("nameserver ", ns))...)
+	}
 	err := ioutil.WriteFile(resolv, data, 0644)
 	if err != nil {
 		panic(err)
