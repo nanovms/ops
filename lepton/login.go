@@ -9,11 +9,16 @@ import (
 	"path/filepath"
 )
 
-const API_KEY_HEADER = "x-api-key"
+// ApiKeyHeader is the header key where we set the api key for packagehub
+const ApiKeyHeader = "x-api-key"
+
+// CredentialFileName is the name of the file which stores packagehub's credentials
 const CredentialFileName = "credentials"
 
+// ErrCredentialsNotExist is the error we return if the credential file doesn't exist
 var ErrCredentialsNotExist = errors.New("credentials not exist")
 
+// ValidateSuccessResponse is the structure of the success response from validate api key endpoint
 type ValidateSuccessResponse struct {
 	Username string
 	Email    string
@@ -24,7 +29,7 @@ type ValidateSuccessResponse struct {
 type Credentials struct {
 	Username string
 	Email    string
-	ApiKey   string
+	APIKey   string
 }
 
 // ValidateAPIKey uses the api key provided and sends it to validate endpoint of packagehub
@@ -35,7 +40,7 @@ func ValidateAPIKey(apikey string) (*ValidateSuccessResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(API_KEY_HEADER, apikey)
+	req.Header.Add(ApiKeyHeader, apikey)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -72,6 +77,9 @@ func StoreCredentials(creds Credentials) error {
 	return ioutil.WriteFile(credentialFilePath, data, 0644)
 }
 
+// ReadCredsFromLocal gets the credentials from the credential file in the ops home
+// returns an ErrCredentialsNotExist if the file doesn't exist. This means the user
+// hasn't authenticated yet.
 func ReadCredsFromLocal() (*Credentials, error) {
 	opsHome := GetOpsHome()
 	credentialFilePath := filepath.Join(opsHome, CredentialFileName)
