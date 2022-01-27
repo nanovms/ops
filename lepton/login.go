@@ -35,7 +35,7 @@ type Credentials struct {
 // ValidateAPIKey uses the api key provided and sends it to validate endpoint of packagehub
 // if the response is a valid user then we return that or else error is returned.
 func ValidateAPIKey(apikey string) (*ValidateSuccessResponse, error) {
-	apikeyEndpoint := PkghubBaseURL + "/apikey/validate"
+	apikeyEndpoint := PkghubBaseURL + "/apikeys/validate"
 	req, err := http.NewRequest("POST", apikeyEndpoint, nil)
 	if err != nil {
 		return nil, err
