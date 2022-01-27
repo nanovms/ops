@@ -317,6 +317,7 @@ func LoadCommand() *cobra.Command {
 	PersistBuildImageCommandFlags(persistentFlags)
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 	persistentFlags.BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
@@ -328,6 +329,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
@@ -335,7 +337,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	c := lepton.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
