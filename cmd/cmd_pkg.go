@@ -15,7 +15,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
-	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 )
@@ -64,11 +63,18 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdFromDockerPackage,
 	}
 
+	var cmdPkgLogin = &cobra.Command{
+		Use:   "login [apikey]",
+		Short: "login to pkghub account using the apikey",
+		Args:  cobra.ExactArgs(1),
+		Run:   cmdPkgLogin,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker"},
+		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
@@ -91,6 +97,7 @@ func PackageCommands() *cobra.Command {
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
 	cmdPkg.AddCommand(cmdFromDockerPackage)
+	cmdPkg.AddCommand(cmdPkgLogin)
 	cmdPkg.AddCommand(LoadCommand())
 	return cmdPkg
 }
@@ -103,7 +110,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	if local {
 		packages, err = api.GetLocalPackageList()
 	} else {
-		packages, err = api.GetPackageList(lepton.NewConfig())
+		packages, err = api.GetPackageList(api.NewConfig())
 	}
 	if err != nil {
 		log.Errorf("failed getting packages: %s", err)
@@ -170,13 +177,13 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
-	downloadPackage(args[0], lepton.NewConfig())
+	downloadPackage(args[0], api.NewConfig())
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	expackage := filepath.Join(packageDirectoryPath(), args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0], lepton.NewConfig())
+		expackage = downloadPackage(args[0], api.NewConfig())
 	}
 
 	description := path.Join(expackage, "README.md")
@@ -213,7 +220,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 	expackage := filepath.Join(directoryPath, args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0], lepton.NewConfig())
+		expackage = downloadPackage(args[0], api.NewConfig())
 	}
 
 	filepath.Walk(expackage, func(hostpath string, info os.FileInfo, err error) error {
@@ -234,16 +241,6 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 	})
 }
 
-func randomToken(n int) (string, error) {
-	bytes := make([]byte, n)
-
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(bytes), nil
-}
-
 func cmdAddPackage(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
@@ -258,7 +255,7 @@ func cmdAddPackage(cmd *cobra.Command, args []string) {
 		name = token
 	}
 
-	extractFilePackage(args[0], name, lepton.NewConfig())
+	extractFilePackage(args[0], name, api.NewConfig())
 
 	fmt.Println(name)
 }
@@ -277,6 +274,32 @@ func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
 	fmt.Println(packageName)
 }
 
+func cmdPkgLogin(cmd *cobra.Command, args []string) {
+	apikey := args[0]
+	resp, err := api.ValidateAPIKey(apikey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = api.StoreCredentials(api.Credentials{
+		Username: resp.Username,
+		APIKey:   apikey,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Login Successful as user %s\n", resp.Username)
+}
+
+func randomToken(n int) (string, error) {
+	bytes := make([]byte, n)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
+}
+
 // LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var cmdLoadPackage = &cobra.Command{
@@ -292,6 +315,7 @@ func LoadCommand() *cobra.Command {
 	PersistBuildImageCommandFlags(persistentFlags)
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
 	persistentFlags.BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
@@ -303,14 +327,15 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
 
-	c := lepton.NewConfig()
+	c := api.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
@@ -321,9 +346,9 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if strings.Contains(executableName, packageFolder) {
 		executableName = filepath.Base(executableName)
 	} else {
-		executableName = filepath.Join(lepton.PackageSysRootFolderName, executableName)
+		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
 	}
-	lepton.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
+	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
