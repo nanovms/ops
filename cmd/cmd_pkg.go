@@ -283,7 +283,6 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 	}
 	err = lepton.StoreCredentials(lepton.Credentials{
 		Username: resp.Username,
-		Email:    resp.Email,
 		APIKey:   apikey,
 	})
 	if err != nil {

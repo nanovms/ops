@@ -21,14 +21,11 @@ var ErrCredentialsNotExist = errors.New("credentials not exist")
 // ValidateSuccessResponse is the structure of the success response from validate api key endpoint
 type ValidateSuccessResponse struct {
 	Username string
-	Email    string
-	GithubID int
 }
 
 // Credentials is the information that will be stored in the ~/.ops/credentials
 type Credentials struct {
 	Username string
-	Email    string
 	APIKey   string
 }
 
