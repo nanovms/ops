@@ -160,16 +160,20 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	if err != nil {
 		return
 	}
+	defer f.Close()
 
 	blockIndex := int64(0)
 	snapshotBlocksChecksums := []byte{}
 	wg := sync.WaitGroup{}
 	awsErrors := make(chan error)
 	errors := []error{}
+	done := make(chan bool)
 
 	go func() {
-		err := <-awsErrors
-		errors = append(errors, err)
+		for err := range awsErrors {
+			errors = append(errors, err)
+		}
+		done <- true
 	}()
 
 	for {
@@ -203,6 +207,8 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	}
 
 	wg.Wait()
+	close(awsErrors)
+	<-done
 
 	if len(errors) != 0 {
 		err = errors[0]
