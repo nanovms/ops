@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 )
 
-// ApiKeyHeader is the header key where we set the api key for packagehub
-const ApiKeyHeader = "x-api-key"
+// APIKeyHeader is the header key where we set the api key for packagehub
+const APIKeyHeader = "x-api-key"
 
 // CredentialFileName is the name of the file which stores packagehub's credentials
 const CredentialFileName = "credentials"
@@ -40,7 +40,7 @@ func ValidateAPIKey(apikey string) (*ValidateSuccessResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(ApiKeyHeader, apikey)
+	req.Header.Add(APIKeyHeader, apikey)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err

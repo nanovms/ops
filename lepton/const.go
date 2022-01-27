@@ -34,6 +34,7 @@ const PackageManifestURL string = PkghubBaseURL + "/manifest.json"
 // PackageManifestFileName is manifest file path
 const PackageManifestFileName string = "manifest.json"
 
+// PkghubBaseURL is the base url of packagehub
 const PkghubBaseURL string = "https://repo.ops.city"
 
 var (
