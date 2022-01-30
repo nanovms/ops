@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 )
 
+// BuildRequestForArchiveUpload builds the request to upload a package with the provided metadata
 func BuildRequestForArchiveUpload(name string, pkg Package, archiveLocation string) (*http.Request, error) {
 	params := map[string]string{
 		"name":        name,
@@ -64,6 +65,7 @@ func newfileUploadRequest(uri string, params map[string]string, fileParamName, p
 	return req, nil
 }
 
+// CreateTarGz builds a .tar.tz archive with the directory of the source as the root of the archive
 func CreateTarGz(src string, destination string) error {
 	fd, err := os.Create(destination)
 	if err != nil {
