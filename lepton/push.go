@@ -65,7 +65,7 @@ func newfileUploadRequest(uri string, params map[string]string, fileParamName, p
 	return req, nil
 }
 
-// CreateTarGz builds a .tar.tz archive with the directory of the source as the root of the archive
+// CreateTarGz builds a .tar.gz archive with the directory of the source as the root of the archive
 func CreateTarGz(src string, destination string) error {
 	fd, err := os.Create(destination)
 	if err != nil {

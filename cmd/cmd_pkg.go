@@ -317,16 +317,14 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
-	packageFound := false
 	var foundPkg api.Package
 	for name, pkg := range *pkgList {
 		if name == packageName {
-			packageFound = true
 			foundPkg = pkg
 			break
 		}
 	}
-	if !packageFound {
+	if foundPkg.SHA256 == "" {
 		log.Fatalf("no local package with the name %s found", packageName)
 	}
 
