@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,9 +13,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-errors/errors"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
+	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 )
@@ -70,6 +73,13 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdPkgLogin,
 	}
 
+	var cmdPkgPush = &cobra.Command{
+		Use:   "push [local-package]",
+		Short: "push the local package to packagehub",
+		Args:  cobra.ExactArgs(1),
+		Run:   cmdPkgPush,
+	}
+
 	var cmdPkg = &cobra.Command{
 		Use:       "pkg",
 		Short:     "Package related commands",
@@ -98,6 +108,7 @@ func PackageCommands() *cobra.Command {
 	cmdPkg.AddCommand(cmdAddPackage)
 	cmdPkg.AddCommand(cmdFromDockerPackage)
 	cmdPkg.AddCommand(cmdPkgLogin)
+	cmdPkg.AddCommand(cmdPkgPush)
 	cmdPkg.AddCommand(LoadCommand())
 	return cmdPkg
 }
@@ -288,6 +299,59 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("Login Successful as user %s\n", resp.Username)
+}
+
+func cmdPkgPush(cmd *cobra.Command, args []string) {
+	packageName := args[0]
+	creds, err := api.ReadCredsFromLocal()
+	if err != nil {
+		if err == api.ErrCredentialsNotExist {
+			// for a better error message
+			log.Fatal(errors.New("user is not logged in. use 'ops pkg login' first"))
+		} else {
+			log.Fatal(err)
+		}
+	}
+	pkgList, err := api.GetLocalPackageList()
+	if err != nil {
+		log.Fatal(err)
+	}
+	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
+	var foundPkg api.Package
+	for name, pkg := range *pkgList {
+		if name == packageName {
+			foundPkg = pkg
+			break
+		}
+	}
+	if foundPkg.SHA256 == "" {
+		log.Fatalf("no local package with the name %s found", packageName)
+	}
+
+	// build the archive here
+	archiveName := filepath.Join(localPackages, packageName) + ".tar.gz"
+	err = lepton.CreateTarGz(filepath.Join(localPackages, packageName), archiveName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(archiveName)
+
+	req, err := lepton.BuildRequestForArchiveUpload(packageName, foundPkg, archiveName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set(lepton.APIKeyHeader, creds.APIKey)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// if the package is uploaded successfully then pkghub redirects to home page
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(errors.New("there was as an error while uploading the archive"))
+	} else {
+		fmt.Println("Package was uploaded successfully.")
+	}
+
 }
 
 func randomToken(n int) (string, error) {
