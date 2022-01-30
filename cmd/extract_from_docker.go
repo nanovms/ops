@@ -148,12 +148,17 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		}
 	}
 
-	parts := strings.Split(packageName, ":")
+	// like docker if the user doesn't provide version of the image we consider "latest" as the version
+	parts := strings.Split(imageName, ":")
+	version := parts[len(parts)-1]
+	if len(parts) == 1 {
+		version = "latest"
+	}
 
 	c := &types.Config{
 		Program: packageName + "/program",
 		Args:    []string{"/program"},
-		Version: parts[len(parts)-1],
+		Version: version,
 	}
 
 	json, _ := json.MarshalIndent(c, "", "  ")
