@@ -136,6 +136,10 @@ type ProviderConfig struct {
 	// ImageName
 	ImageName string `cloud:"imagename"`
 
+	// InstanceProfile is a container for an IAM role
+	// you can use to pass role information to an EC2 instance when the instance starts.
+	InstanceProfile string
+
 	// Platform defines the cloud provider to use with the ops CLI, currently
 	// supporting aws, azure, and gcp.
 	Platform string `cloud:"platform"`
@@ -162,9 +166,6 @@ type ProviderConfig struct {
 	// azure: https://azure.microsoft.com/en-us/global-infrastructure/geographies/#overview
 	// gcp: https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `cloud:"zone"`
-
-	// AwsIPN is aws instance profile name
-	AwsIPN string
 }
 
 // Tag is used as property on creating instances

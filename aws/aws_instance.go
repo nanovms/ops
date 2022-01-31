@@ -198,6 +198,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	svc := p.ec2
 	cloudConfig := ctx.Config().CloudConfig
+	runConfig := ctx.Config().RunConfig
 
 	// create security group - could take a potential 'RemotePort' from
 	// config.json in future
@@ -253,29 +254,28 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
 	tags = append(tags, &ec2.Tag{Key: aws.String("image"), Value: &imgName})
 
+	instanceNIS := &ec2.InstanceNetworkInterfaceSpecification{
+		DeleteOnTermination: aws.Bool(true),
+		DeviceIndex:         aws.Int64(0),
+		Groups: []*string{
+			aws.String(*sg.GroupId),
+		},
+		SubnetId: aws.String(*subnet.SubnetId),
+	}
+
 	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
 		InstanceType: aws.String(cloudConfig.Flavor),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
-		SubnetId:     aws.String(*subnet.SubnetId),
-		SecurityGroupIds: []*string{
-			aws.String(*sg.GroupId),
-		},
 		TagSpecifications: []*ec2.TagSpecification{
 			{ResourceType: aws.String("instance"), Tags: tags},
 			{ResourceType: aws.String("volume"), Tags: tags},
 		},
 	}
 
-	if cloudConfig.AwsIPN != "" {
-		instanceInput.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
-			Name: aws.String(cloudConfig.AwsIPN),
-		}
-	}
-
 	if ctx.Config().RunConfig.IPAddress != "" {
-		instanceInput.PrivateIpAddress = aws.String(ctx.Config().RunConfig.IPAddress)
+		instanceNIS.PrivateIpAddress = aws.String(ctx.Config().RunConfig.IPAddress)
 	}
 
 	if ctx.Config().CloudConfig.EnableIPv6 {
@@ -284,9 +284,37 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			addie := &ec2.InstanceIpv6Address{
 				Ipv6Address: aws.String(v6ad),
 			}
-			instanceInput.Ipv6Addresses = []*ec2.InstanceIpv6Address{addie}
+			instanceNIS.Ipv6Addresses = []*ec2.InstanceIpv6Address{addie}
 		} else {
-			instanceInput.SetIpv6AddressCount(1)
+			instanceNIS.SetIpv6AddressCount(1)
+		}
+	}
+
+	instanceInput.NetworkInterfaces = []*ec2.InstanceNetworkInterfaceSpecification{instanceNIS}
+
+	if cloudConfig.InstanceProfile != "" {
+		instanceInput.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
+			Name: aws.String(cloudConfig.InstanceProfile),
+		}
+	}
+
+	if runConfig.InstanceGroup != "" {
+		ltInput := &LaunchTemplateInput{
+			AutoScalingGroup:    runConfig.InstanceGroup,
+			InstanceProfileName: cloudConfig.InstanceProfile,
+			LaunchTemplateName:  tagInstanceName,
+			ImageID:             ami,
+			InstanceType:        cloudConfig.Flavor,
+			Tags:                tags,
+		}
+		if err := p.autoScalingLaunchTemplate(ltInput); err != nil {
+			log.Errorf("Could not create launch template for auto scaling group %v", err)
+			return err
+		}
+
+		instanceInput.LaunchTemplate = &ec2.LaunchTemplateSpecification{
+			LaunchTemplateName: aws.String(ltInput.LaunchTemplateName),
+			Version:            aws.String("$Default"),
 		}
 	}
 
