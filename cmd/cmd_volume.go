@@ -142,8 +142,8 @@ func volumeAttachCommand() *cobra.Command {
 }
 
 func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
-	instance_name := args[0]
-	volume_name := args[1]
+	instanceName := args[0]
+	volumeName := args[1]
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
@@ -155,7 +155,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	err = p.AttachVolume(ctx, instance_name, volume_name)
+	err = p.AttachVolume(ctx, instanceName, volumeName)
 	if err != nil {
 		log.Fatal(err)
 	}
