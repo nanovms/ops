@@ -65,7 +65,7 @@ type VolumeService interface {
 	GetAllVolumes(ctx *Context) (*[]NanosVolume, error)
 	DeleteVolume(ctx *Context, volumeName string) error
 	AttachVolume(ctx *Context, instanceName, volumeName string) error
-	DetachVolume(ctx *Context, instainceName, volumeName string) error
+	DetachVolume(ctx *Context, instanceName, volumeName string) error
 }
 
 // DNSRecord is ops representation of a dns record
