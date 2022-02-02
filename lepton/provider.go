@@ -61,11 +61,11 @@ type Storage interface {
 
 // VolumeService is an interface for volume related operations
 type VolumeService interface {
-	CreateVolume(ctx *Context, name, data, provider string) (NanosVolume, error)
+	CreateVolume(ctx *Context, volumeName, data, provider string) (NanosVolume, error)
 	GetAllVolumes(ctx *Context) (*[]NanosVolume, error)
-	DeleteVolume(ctx *Context, name string) error
-	AttachVolume(ctx *Context, image, name string) error
-	DetachVolume(ctx *Context, image, name string) error
+	DeleteVolume(ctx *Context, volumeName string) error
+	AttachVolume(ctx *Context, instanceName, volumeName string) error
+	DetachVolume(ctx *Context, instanceName, volumeName string) error
 }
 
 // DNSRecord is ops representation of a dns record
