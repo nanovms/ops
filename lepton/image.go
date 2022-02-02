@@ -307,6 +307,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddEnvironmentVariable("PWD", "/")
 	m.AddEnvironmentVariable("OPS_VERSION", Version)
 	m.AddEnvironmentVariable("NANOS_VERSION", c.NanosVersion)
+	m.AddEnvironmentVariable("IMAGE_NAME", c.CloudConfig.ImageName)
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
 	}
