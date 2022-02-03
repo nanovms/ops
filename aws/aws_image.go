@@ -294,7 +294,7 @@ var (
 	}
 
 	// Architectures define architecture from instance family
-	Architectures = map[string]string{"a1": "arm64", "c1": "x86_64", "c3": "x86_64", "c4": "x86_64", "c5": "x86_64", "c5a": "x86_64", "c/mnt/fe07786e-0984-4ec0-92dc-a59b4efd31aa/Go/src/github.com/nanovms/ops-dev/ops-dev5ad": "x86_64", "c5d": "x86_64", "c5n": "x86_64", "c6g": "arm64", "c6gd": "arm64", "c6gn": "arm64", "c6i": "x86_64", "c7g": "arm64", "cc2": "x86_64", "d3": "x86_64", "d3en": "x86_64", "dl1": "x86_64", "f1": "x86_64", "g2": "x86_64", "g3": "x86_64", "g3s": "x86_64", "g4ad": "x86_64", "g4dn": "x86_64", "g5": "x86_64", "g5g": "arm64", "h1": "x86_64", "i2": "x86_64", "i3": "x86_64", "i3en": "x86_64", "im4gn": "arm64", "inf1": "x86_64", "is4gen": "arm64", "m1": "x86_64", "m2": "x86_64", "m3": "x86_64", "m4": "x86_64", "m5": "x86_64", "m5a": "x86_64", "m5ad": "x86_64", "m5d": "x86_64", "m5dn": "x86_64", "m5n": "x86_64", "m5zn": "x86_64", "m6a": "x86_64", "m6g": "arm64", "m6gd": "arm64", "m6i": "x86_64", "mac1": "x86_64_mac", "p2": "x86_64", "p3": "x86_64", "p3dn": "x86_64", "p4d": "x86_64", "r3": "x86_64", "r4": "x86_64", "r5": "x86_64", "r5a": "x86_64", "r5ad": "x86_64", "r5b": "x86_64", "r5d": "x86_64", "r5dn": "x86_64", "r5n": "x86_64", "r6g": "arm64", "r6gd": "arm64", "r6i": "x86_64", "t1": "i386,", "t2": "x86_64", "t3": "x86_64", "t3a": "x86_64", "t4g": "arm64", "u-12tb1": "x86_64", "u-6tb1": "x86_64", "u-9tb1": "x86_64", "vt1": "x86_64", "x1": "x86_64", "x1e": "x86_64", "x2gd": "arm64", "x2iezn": "x86_64", "z1d": "x86_64"}
+	Architectures = map[string]string{"a1": "arm64", "c1": "x86_64", "c3": "x86_64", "c4": "x86_64", "c5": "x86_64", "c5a": "x86_64", "c5ad": "x86_64", "c5d": "x86_64", "c5n": "x86_64", "c6g": "arm64", "c6gd": "arm64", "c6gn": "arm64", "c6i": "x86_64", "c7g": "arm64", "cc2": "x86_64", "d3": "x86_64", "d3en": "x86_64", "dl1": "x86_64", "f1": "x86_64", "g2": "x86_64", "g3": "x86_64", "g3s": "x86_64", "g4ad": "x86_64", "g4dn": "x86_64", "g5": "x86_64", "g5g": "arm64", "h1": "x86_64", "i2": "x86_64", "i3": "x86_64", "i3en": "x86_64", "im4gn": "arm64", "inf1": "x86_64", "is4gen": "arm64", "m1": "x86_64", "m2": "x86_64", "m3": "x86_64", "m4": "x86_64", "m5": "x86_64", "m5a": "x86_64", "m5ad": "x86_64", "m5d": "x86_64", "m5dn": "x86_64", "m5n": "x86_64", "m5zn": "x86_64", "m6a": "x86_64", "m6g": "arm64", "m6gd": "arm64", "m6i": "x86_64", "mac1": "x86_64_mac", "p2": "x86_64", "p3": "x86_64", "p3dn": "x86_64", "p4d": "x86_64", "r3": "x86_64", "r4": "x86_64", "r5": "x86_64", "r5a": "x86_64", "r5ad": "x86_64", "r5b": "x86_64", "r5d": "x86_64", "r5dn": "x86_64", "r5n": "x86_64", "r6g": "arm64", "r6gd": "arm64", "r6i": "x86_64", "t1": "i386,", "t2": "x86_64", "t3": "x86_64", "t3a": "x86_64", "t4g": "arm64", "u-12tb1": "x86_64", "u-6tb1": "x86_64", "u-9tb1": "x86_64", "vt1": "x86_64", "x1": "x86_64", "x1e": "x86_64", "x2gd": "arm64", "x2iezn": "x86_64", "z1d": "x86_64"}
 )
 
 // GetEnaSupportForFlavor checks whether an image should be registered with EnaSupport based on instances type which will load the image
@@ -316,9 +316,7 @@ func getArchitecture(flavor string) string {
 		return "x86_64"
 	}
 
-	instanceFamily := strings.ToLower(strings.Split(flavor, ".")[0])
-
-	if arc, isExist := Architectures[instanceFamily]; isExist {
+	if arc, isExist := Architectures[ strings.ToLower(strings.Split(flavor, ".")[0])]; isExist {
 		return arc
 	}
 	return "x86_64"
