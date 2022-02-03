@@ -316,7 +316,7 @@ func getArchitecture(flavor string) string {
 		return "x86_64"
 	}
 
-	if arc, isExist := Architectures[ strings.ToLower(strings.Split(flavor, ".")[0])]; isExist {
+	if arc, isExist := Architectures[strings.ToLower(strings.Split(flavor, ".")[0])]; isExist {
 		return arc
 	}
 	return "x86_64"
