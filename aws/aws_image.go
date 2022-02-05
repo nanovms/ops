@@ -30,6 +30,11 @@ import (
 // BuildImage to be upload on AWS
 func (p *AWS) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+
+	if isGravitonProcessor(c.CloudConfig.Flavor) {
+		c.Uefi = true
+	}
+
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
@@ -295,6 +300,9 @@ var (
 
 	// Architectures define architecture from instance family
 	Architectures = map[string]string{"a1": "arm64", "c1": "x86_64", "c3": "x86_64", "c4": "x86_64", "c5": "x86_64", "c5a": "x86_64", "c5ad": "x86_64", "c5d": "x86_64", "c5n": "x86_64", "c6g": "arm64", "c6gd": "arm64", "c6gn": "arm64", "c6i": "x86_64", "c7g": "arm64", "cc2": "x86_64", "d3": "x86_64", "d3en": "x86_64", "dl1": "x86_64", "f1": "x86_64", "g2": "x86_64", "g3": "x86_64", "g3s": "x86_64", "g4ad": "x86_64", "g4dn": "x86_64", "g5": "x86_64", "g5g": "arm64", "h1": "x86_64", "i2": "x86_64", "i3": "x86_64", "i3en": "x86_64", "im4gn": "arm64", "inf1": "x86_64", "is4gen": "arm64", "m1": "x86_64", "m2": "x86_64", "m3": "x86_64", "m4": "x86_64", "m5": "x86_64", "m5a": "x86_64", "m5ad": "x86_64", "m5d": "x86_64", "m5dn": "x86_64", "m5n": "x86_64", "m5zn": "x86_64", "m6a": "x86_64", "m6g": "arm64", "m6gd": "arm64", "m6i": "x86_64", "mac1": "x86_64_mac", "p2": "x86_64", "p3": "x86_64", "p3dn": "x86_64", "p4d": "x86_64", "r3": "x86_64", "r4": "x86_64", "r5": "x86_64", "r5a": "x86_64", "r5ad": "x86_64", "r5b": "x86_64", "r5d": "x86_64", "r5dn": "x86_64", "r5n": "x86_64", "r6g": "arm64", "r6gd": "arm64", "r6i": "x86_64", "t1": "i386,", "t2": "x86_64", "t3": "x86_64", "t3a": "x86_64", "t4g": "arm64", "u-12tb1": "x86_64", "u-6tb1": "x86_64", "u-9tb1": "x86_64", "vt1": "x86_64", "x1": "x86_64", "x1e": "x86_64", "x2gd": "arm64", "x2iezn": "x86_64", "z1d": "x86_64"}
+
+	// GravitonProcessors are designed by AWS to deliver the best price performance for your cloud workloads running in Amazon EC2
+	GravitonProcessors = map[string]bool{"a1": true, "c6g": true, "c6gd": true, "c6gn": true, "c7g": true, "g5g": true, "im4gn": true, "is4gen": true, "m6g": true, "m6gd": true, "r6g": true, "r6gd": true, "t4g": true, "x2gd": true}
 )
 
 // GetEnaSupportForFlavor checks whether an image should be registered with EnaSupport based on instances type which will load the image
@@ -320,6 +328,15 @@ func getArchitecture(flavor string) string {
 		return arc
 	}
 	return "x86_64"
+}
+
+func isGravitonProcessor(flavor string) bool {
+	if flavor == "" {
+		return false
+	}
+
+	_, isExist := GravitonProcessors[strings.ToLower(strings.Split(flavor, ".")[0])]
+	return isExist
 }
 
 func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
