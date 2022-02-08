@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	// SnapshotBlockDataLength define block length 512bytes
+	// SnapshotBlockDataLength define block length 512K
 	SnapshotBlockDataLength = 524288
 
 	// PutSnapshotBlockLimit define limit requests per snapshot, each supported Region: 1,000 per second
@@ -41,6 +41,30 @@ const (
 type PutSnapshotBlockResult struct {
 	Error   error
 	BlockID int64
+}
+
+// PutSnapshotBlockResults define array of PutSnapshotBlockResult
+type PutSnapshotBlockResults struct {
+	Data []PutSnapshotBlockResult
+
+	// sync.Mutex to lock the slice
+	sync.Mutex
+}
+
+// Set a PutSnapshotBlockResult to slice Data
+func (psb *PutSnapshotBlockResults) Set(result PutSnapshotBlockResult) {
+	psb.Lock()
+	defer psb.Unlock()
+
+	psb.Data = append(psb.Data, result)
+}
+
+// Len get len of data
+func (psb *PutSnapshotBlockResults) Len() int {
+	psb.Lock()
+	defer psb.Unlock()
+
+	return len(psb.Data)
 }
 
 // BuildImage to be upload on AWS
@@ -187,12 +211,12 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	var snapshotBlocksChecksums []byte
 	wg := sync.WaitGroup{}
 	chanBlockResult := make(chan PutSnapshotBlockResult)
-	var blockResults []PutSnapshotBlockResult
+	var blockResults PutSnapshotBlockResults
 	done := make(chan bool)
 
 	go func() {
-		for block := range chanBlockResult {
-			blockResults = append(blockResults, block)
+		for result := range chanBlockResult {
+			blockResults.Set(result)
 		}
 		done <- true
 	}()
@@ -212,18 +236,18 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 		wg.Add(1)
 		go p.writeToBlock(input, &wg, chanBlockResult)
 
-		if blockIndex+1 == PutSnapshotBlockLimit {
+		blockIndex++
+
+		if blockIndex%PutSnapshotBlockLimit == 0 {
 			// When concurrent reach PutSnapshotBlockLimit, we waiting for finish
 			for {
-				fmt.Println("WAITING FINISH.......", blockIndex, len(blockResults))
-				if blockIndex+1 == int64(len(blockResults)) {
+				if blockIndex == int64(blockResults.Len()) {
 					break
 				}
+
 				time.Sleep(2 * time.Second)
 			}
 		}
-
-		blockIndex++
 	}
 
 	wg.Wait()
@@ -233,7 +257,7 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	close(done)
 
 	var retryErrs []error
-	for _, data := range blockResults {
+	for _, data := range blockResults.Data {
 		// If any error from BlockResults, we get data from the file again and try PutSnapshotBlock sequentially
 		if data.Error != nil {
 			block := make([]byte, SnapshotBlockDataLength)
@@ -241,9 +265,8 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 			if err != nil {
 				return
 			}
-			input, checksum := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
+			input, _ := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
 
-			fmt.Println("RecheckBlockId", data.BlockID, "Checksum", string(checksum), "ErrFirst", data.Error)
 			if _, err := p.volumeService.PutSnapshotBlock(input); err != nil {
 				retryErrs = append(retryErrs, err)
 			}
