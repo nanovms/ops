@@ -27,6 +27,22 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+const (
+	// SnapshotBlockDataLength define block length 512bytes
+	SnapshotBlockDataLength = 524288
+
+	// PutSnapshotBlockLimit define limit requests per snapshot, each supported Region: 1,000 per second
+	// https://docs.aws.amazon.com/general/latest/gr/ebs-service.html#limits_ebs
+	// We config 80% of max for smooth concurrent
+	PutSnapshotBlockLimit = 800
+)
+
+// PutSnapshotBlockResult define result from PutSnapshotBlock
+type PutSnapshotBlockResult struct {
+	Error   error
+	BlockID int64
+}
+
 // BuildImage to be upload on AWS
 func (p *AWS) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
@@ -168,21 +184,21 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	defer f.Close()
 
 	blockIndex := int64(0)
-	snapshotBlocksChecksums := []byte{}
+	var snapshotBlocksChecksums []byte
 	wg := sync.WaitGroup{}
-	awsErrors := make(chan error)
-	errors := []error{}
+	chanBlockResult := make(chan PutSnapshotBlockResult)
+	var blockResults []PutSnapshotBlockResult
 	done := make(chan bool)
 
 	go func() {
-		for err := range awsErrors {
-			errors = append(errors, err)
+		for block := range chanBlockResult {
+			blockResults = append(blockResults, block)
 		}
 		done <- true
 	}()
 
 	for {
-		block := make([]byte, 524288)
+		block := make([]byte, SnapshotBlockDataLength)
 		_, err = f.Read(block)
 		if err == io.EOF {
 			break
@@ -190,33 +206,52 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 			return
 		}
 
-		h := sha256.New()
-		h.Write(block)
-		checksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
-		snapshotBlocksChecksums = append(snapshotBlocksChecksums, h.Sum(nil)...)
-
-		putSnapshotBlockInput := &ebs.PutSnapshotBlockInput{
-			BlockData:         aws.ReadSeekCloser(bytes.NewReader(block)),
-			BlockIndex:        aws.Int64(blockIndex),
-			Checksum:          aws.String(checksum),
-			ChecksumAlgorithm: aws.String("SHA256"),
-			DataLength:        aws.Int64(524288),
-			SnapshotId:        snapshotOutput.SnapshotId,
-		}
+		input, checksum := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
+		snapshotBlocksChecksums = append(snapshotBlocksChecksums, checksum...)
 
 		wg.Add(1)
+		go p.writeToBlock(input, &wg, chanBlockResult)
 
-		go p.writeToBlock(putSnapshotBlockInput, &wg, awsErrors)
+		if blockIndex+1 == PutSnapshotBlockLimit {
+			// When concurrent reach PutSnapshotBlockLimit, we waiting for finish
+			for {
+				fmt.Println("WAITING FINISH.......", blockIndex, len(blockResults))
+				if blockIndex+1 == int64(len(blockResults)) {
+					break
+				}
+				time.Sleep(2 * time.Second)
+			}
+		}
 
 		blockIndex++
 	}
 
 	wg.Wait()
-	close(awsErrors)
-	<-done
+	close(chanBlockResult)
 
-	if len(errors) != 0 {
-		err = errors[0]
+	<-done
+	close(done)
+
+	var retryErrs []error
+	for _, data := range blockResults {
+		// If any error from BlockResults, we get data from the file again and try PutSnapshotBlock sequentially
+		if data.Error != nil {
+			block := make([]byte, SnapshotBlockDataLength)
+			_, err = f.ReadAt(block, data.BlockID*SnapshotBlockDataLength)
+			if err != nil {
+				return
+			}
+			input, checksum := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
+
+			fmt.Println("RecheckBlockId", data.BlockID, "Checksum", string(checksum), "ErrFirst", data.Error)
+			if _, err := p.volumeService.PutSnapshotBlock(input); err != nil {
+				retryErrs = append(retryErrs, err)
+			}
+		}
+	}
+
+	if len(retryErrs) != 0 {
+		err = retryErrs[0]
 		return
 	}
 
@@ -245,13 +280,30 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	return
 }
 
-func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, errors chan error) {
+func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, chanBlockResult chan PutSnapshotBlockResult) {
 	defer wg.Done()
 
 	_, err := p.volumeService.PutSnapshotBlock(input)
-	if err != nil {
-		errors <- err
+	chanBlockResult <- PutSnapshotBlockResult{
+		Error:   err,
+		BlockID: *input.BlockIndex,
 	}
+}
+
+// buildSnapshotBlockInput
+func buildSnapshotBlockInput(snapshotID string, blockIndex int64, block []byte) (*ebs.PutSnapshotBlockInput, []byte) {
+	h := sha256.New()
+	h.Write(block)
+	checksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	return &ebs.PutSnapshotBlockInput{
+		BlockData:         aws.ReadSeekCloser(bytes.NewReader(block)),
+		BlockIndex:        aws.Int64(blockIndex),
+		Checksum:          aws.String(checksum),
+		ChecksumAlgorithm: aws.String("SHA256"),
+		DataLength:        aws.Int64(SnapshotBlockDataLength),
+		SnapshotId:        aws.String(snapshotID),
+	}, h.Sum(nil)
 }
 
 var (
