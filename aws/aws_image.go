@@ -39,8 +39,8 @@ const (
 
 // PutSnapshotBlockResult define result from PutSnapshotBlock
 type PutSnapshotBlockResult struct {
-	Error   error
-	BlockID int64
+	Error      error
+	BlockIndex int64
 }
 
 // PutSnapshotBlockResults define array of PutSnapshotBlockResult
@@ -107,30 +107,11 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	key := c.CloudConfig.ImageName
 
-	bar := progressbar.New(100)
-
-	go func() {
-		for {
-			time.Sleep(2 * time.Second)
-
-			bar.Add64(1)
-			bar.RenderBlank()
-
-			if bar.State().CurrentPercent == 99 {
-				break
-			}
-		}
-	}()
-
 	ctx.Logger().Info("Creating snapshot")
 	snapshotID, err := p.createSnapshot(imagePath)
 	if err != nil {
 		return err
 	}
-
-	bar.Set(100)
-	bar.Finish()
-	fmt.Println()
 
 	// tag the volume
 	tags, _ := buildAwsTags(c.CloudConfig.Tags, key)
@@ -190,22 +171,37 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
-func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
+// createSnapshot process create Snapshot to EBS
+// Returns snapshotID and err
+func (p *AWS) createSnapshot(imagePath string) (string, error) {
+	// Open file first
+	f, err := os.Open(imagePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	// create progressBar track put snapshot
+	fi, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	// maxBar include process of createSnapshot, completeSnapshot, putSnapshot (include request and response from ebs api)
+	maxBar := (fi.Size()/int64(SnapshotBlockDataLength))*2 + 2
+	bar := progressbar.Default(maxBar)
+
 	snapshotOutput, err := p.volumeService.StartSnapshot(&ebs.StartSnapshotInput{
 		Tags:       []*ebs.Tag{},
 		VolumeSize: aws.Int64(1),
 	})
 	if err != nil {
-		return
+		return "", err
 	}
 
-	snapshotID = *snapshotOutput.SnapshotId
+	bar.Add64(1)
 
-	f, err := os.Open(imagePath)
-	if err != nil {
-		return
-	}
-	defer f.Close()
+	snapshotID := *snapshotOutput.SnapshotId
 
 	blockIndex := int64(0)
 	var snapshotBlocksChecksums []byte
@@ -216,6 +212,10 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 
 	go func() {
 		for result := range chanBlockResult {
+			if result.Error == nil {
+				// when success add one to bar
+				bar.Add64(1)
+			}
 			blockResults.Set(result)
 		}
 		done <- true
@@ -223,11 +223,11 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 
 	for {
 		block := make([]byte, SnapshotBlockDataLength)
-		_, err = f.Read(block)
-		if err == io.EOF {
+
+		if _, err := f.Read(block); err == io.EOF {
 			break
 		} else if err != nil {
-			return
+			return snapshotID, err
 		}
 
 		input, checksum := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
@@ -237,6 +237,9 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 		go p.writeToBlock(input, &wg, chanBlockResult)
 
 		blockIndex++
+
+		// when PutSnapshotBlock add one to bar
+		bar.Add64(1)
 
 		if blockIndex%PutSnapshotBlockLimit == 0 {
 			// When concurrent reach PutSnapshotBlockLimit, we waiting for finish
@@ -256,51 +259,60 @@ func (p *AWS) createSnapshot(imagePath string) (snapshotID string, err error) {
 	<-done
 	close(done)
 
-	var retryErrs []error
-	for _, data := range blockResults.Data {
-		// If any error from BlockResults, we get data from the file again and try PutSnapshotBlock sequentially
-		if data.Error != nil {
-			block := make([]byte, SnapshotBlockDataLength)
-			_, err = f.ReadAt(block, data.BlockID*SnapshotBlockDataLength)
-			if err != nil {
-				return
-			}
-			input, _ := buildSnapshotBlockInput(*snapshotOutput.SnapshotId, blockIndex, block)
-
-			if _, err := p.volumeService.PutSnapshotBlock(input); err != nil {
-				retryErrs = append(retryErrs, err)
-			}
-		}
-	}
-
-	if len(retryErrs) != 0 {
-		err = retryErrs[0]
-		return
+	if err := p.retryPutSnapshotBlocks(bar, f, snapshotID, &blockResults); err != nil {
+		return snapshotID, err
 	}
 
 	h := sha256.New()
 	h.Write(snapshotBlocksChecksums)
 	snapshotChecksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
 
-	_, err = p.volumeService.CompleteSnapshot(&ebs.CompleteSnapshotInput{
+	if _, err := p.volumeService.CompleteSnapshot(&ebs.CompleteSnapshotInput{
 		ChangedBlocksCount:        &blockIndex,
 		Checksum:                  aws.String(snapshotChecksum),
 		ChecksumAggregationMethod: aws.String("LINEAR"),
 		ChecksumAlgorithm:         aws.String("SHA256"),
-		SnapshotId:                snapshotOutput.SnapshotId,
-	})
-	if err != nil {
-		return
+		SnapshotId:                aws.String(snapshotID),
+	}); err != nil {
+		return snapshotID, err
 	}
 
-	err = p.ec2.WaitUntilSnapshotCompleted(&ec2.DescribeSnapshotsInput{
+	bar.Add64(1)
+
+	if err := p.ec2.WaitUntilSnapshotCompleted(&ec2.DescribeSnapshotsInput{
 		SnapshotIds: aws.StringSlice([]string{*snapshotOutput.SnapshotId}),
-	})
-	if err != nil {
-		return
+	}); err != nil {
+		return snapshotID, err
 	}
 
-	return
+	return snapshotID, nil
+}
+
+// retryPutSnapshotBlocks if any error from BlockResults, we get data from the file again and try PutSnapshotBlock sequentially
+// Returns an error
+func (p *AWS) retryPutSnapshotBlocks(bar *progressbar.ProgressBar, f *os.File, snapshotID string, blockResults *PutSnapshotBlockResults) error {
+	var errs []error
+	for _, data := range blockResults.Data {
+		if data.Error != nil {
+			block := make([]byte, SnapshotBlockDataLength)
+
+			if _, err := f.ReadAt(block, data.BlockIndex*SnapshotBlockDataLength); err != nil {
+				return err
+			}
+			input, _ := buildSnapshotBlockInput(snapshotID, data.BlockIndex, block)
+
+			log.Debug("RetryPutSnapshotBlock", data.BlockIndex, "PreviousErr", data.Error)
+			if _, err := p.volumeService.PutSnapshotBlock(input); err != nil {
+				errs = append(errs, err)
+			}
+
+			bar.Add64(1)
+		}
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
 }
 
 func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, chanBlockResult chan PutSnapshotBlockResult) {
@@ -308,8 +320,8 @@ func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup,
 
 	_, err := p.volumeService.PutSnapshotBlock(input)
 	chanBlockResult <- PutSnapshotBlockResult{
-		Error:   err,
-		BlockID: *input.BlockIndex,
+		Error:      err,
+		BlockIndex: *input.BlockIndex,
 	}
 }
 
