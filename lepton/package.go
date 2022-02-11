@@ -27,7 +27,7 @@ const PackageSysRootFolderName = "sysroot"
 
 // PackageList contains a list of known packages.
 type PackageList struct {
-	list map[string]Package
+	list []Package
 }
 
 // Package is the definition of an OPS package.
@@ -37,20 +37,32 @@ type Package struct {
 	Language    string `json:"language"`
 	Description string `json:"description,omitempty"`
 	SHA256      string `json:"sha256"`
+	Name        string `json:"name"`
+	Namespace   string `json:"namespace"`
 }
 
-// DownloadPackage downloads package by name
-func DownloadPackage(name string, config *types.Config) (string, error) {
+func (pkglist *PackageList) FindPackage(identifier string) (*Package, bool) {
+	return nil, false
+}
+
+func (pkglist *PackageList) List() []Package {
+	return pkglist.list
+}
+
+// DownloadPackage downloads package by identifier
+func DownloadPackage(identifier string, config *types.Config) (string, error) {
 	packages, err := GetPackageList(config)
 	if err != nil {
 		return "", nil
 	}
 
-	if _, ok := (*packages)[name]; !ok {
-		return "", fmt.Errorf("package %q does not exist", name)
+	pkg, ok := packages.FindPackage(identifier)
+
+	if !ok {
+		return "", fmt.Errorf("package %q does not exist", identifier)
 	}
 
-	archivename := name + ".tar.gz"
+	archivename := pkg.Namespace + "/" + pkg.SHA256 + ".tar.gz"
 	packagepath := path.Join(PackagesCache, archivename)
 	_, err = os.Stat(packagepath)
 	if err != nil && !os.IsNotExist(err) {
@@ -125,7 +137,7 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 }
 
 // GetPackageList provides list of packages
-func GetPackageList(config *types.Config) (*map[string]Package, error) {
+func GetPackageList(config *types.Config) (*PackageList, error) {
 	var err error
 
 	pkgManifestURL := PackageManifestURL
@@ -182,12 +194,12 @@ func GetPackageList(config *types.Config) (*map[string]Package, error) {
 		return nil, err
 	}
 
-	return &packages.list, nil
+	return &packages, nil
 }
 
 // GetLocalPackageList provides list of local packages
-func GetLocalPackageList() (*map[string]Package, error) {
-	packages := map[string]Package{}
+func GetLocalPackageList() ([]Package, error) {
+	packages := []Package{}
 
 	localPackagesDir := GetOpsHome() + "/local_packages"
 
@@ -214,11 +226,11 @@ func GetLocalPackageList() (*map[string]Package, error) {
 				return nil, err
 			}
 
-			packages[pkgName] = pkg
+			packages = append(packages, pkg)
 		}
 	}
 
-	return &packages, nil
+	return packages, nil
 }
 
 func getPackageCache() string {
@@ -280,12 +292,8 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		fname := filepath.Base(archive)
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
 
-		list, err := GetPackageList(config)
-		if err != nil {
-			panic(err)
-		}
-
-		if (*list)[fname].SHA256 != sha {
+		// file name is the sha256
+		if fname != sha {
 			log.Fatalf("This package doesn't match what is in the manifest.")
 		}
 
