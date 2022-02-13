@@ -80,7 +80,10 @@ func (p *AWS) Initialize(config *types.ProviderConfig) error {
 	p.session = session
 	p.dnsService = route53.New(session)
 	p.ec2 = ec2.New(session)
-	p.volumeService = ebs.New(session)
+	p.volumeService = ebs.New(session,
+		aws.NewConfig().
+			WithRegion(stripZone(config.Zone)).
+			WithMaxRetries(7))
 
 	_, err = p.ec2.DescribeRegions(&ec2.DescribeRegionsInput{RegionNames: aws.StringSlice([]string{stripZone(config.Zone)})})
 	if err != nil {
