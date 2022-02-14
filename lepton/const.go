@@ -251,9 +251,12 @@ func getLastReleaseLocalFolder() string {
 	return getReleaseLocalFolder(getLatestRelVersion())
 }
 
-func getKlibsDir(nightly bool) string {
+func getKlibsDir(nightly bool, version string) string {
 	if nightly {
 		return nightlyLocalFolder() + "/klibs"
+	}
+	if version != "" {
+		return getReleaseLocalFolder(version) + "/klibs"
 	}
 
 	return getLastReleaseLocalFolder() + "/klibs"

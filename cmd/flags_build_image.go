@@ -198,6 +198,8 @@ func setNanosBaseImage(c *types.Config) {
 
 	if c.NightlyBuild {
 		currversion, err = downloadNightlyImages(c)
+	} else if c.NanosVersion != "" {
+		currversion = c.NanosVersion
 	} else {
 		currversion, err = getCurrentVersion()
 	}
