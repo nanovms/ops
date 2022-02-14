@@ -16,8 +16,9 @@ import (
 
 // PkgCommandFlags consolidates all command flags required to use a provider
 type PkgCommandFlags struct {
-	Package      string
-	LocalPackage bool
+	Package        string
+	SluggedPackage string
+	LocalPackage   bool
 }
 
 // PackagePath returns the package path in file system
@@ -26,7 +27,7 @@ func (flags *PkgCommandFlags) PackagePath() string {
 		return path.Join(api.GetOpsHome(), "local_packages", flags.Package)
 	}
 
-	return path.Join(api.GetOpsHome(), "packages", flags.Package)
+	return path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
 }
 
 // MergeToConfig merge package configuration to ops configuration

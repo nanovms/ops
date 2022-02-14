@@ -139,8 +139,9 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"PackageName", "Version", "Language", "Runtime", "Description"})
+	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "Runtime", "Description"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -182,6 +183,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 				r.MatchString(pkg.Namespace)) {
 			continue
 		}
+		row = append(row, pkg.Namespace)
 		row = append(row, pkg.Name)
 		row = append(row, pkg.Version)
 		row = append(row, pkg.Language)
@@ -406,6 +408,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
+	pkgFlags.SluggedPackage = strings.ReplaceAll(args[0], ":", "_")
 
 	c := api.NewConfig()
 
