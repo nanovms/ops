@@ -42,16 +42,19 @@ type Package struct {
 	Namespace   string `json:"namespace"`
 }
 
+// PackageIdentifier is used to identify a namespaced package
 type PackageIdentifier struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 	Version   string `json:"version"`
 }
 
+// Match matches a package with all the fields of this identifier
 func (pkgidf *PackageIdentifier) Match(pkg Package) bool {
 	return pkg.Name == pkgidf.Name && pkg.Namespace == pkgidf.Namespace && pkg.Version == pkgidf.Version
 }
 
+// FindPackage finds a package with the mentioned identifier
 func (pkglist *PackageList) FindPackage(identifier string) (*Package, bool) {
 	idf := ParseIdentifier(identifier)
 	for _, pkg := range pkglist.Packages {
@@ -62,10 +65,12 @@ func (pkglist *PackageList) FindPackage(identifier string) (*Package, bool) {
 	return nil, false
 }
 
+// List returns the package list
 func (pkglist *PackageList) List() []Package {
 	return pkglist.Packages
 }
 
+// ParseIdentifier parses a package identifier which looks like <namespace>/<pkg>:<version>
 func ParseIdentifier(identifier string) PackageIdentifier {
 	tokens := strings.Split(identifier, "/")
 	namespace := tokens[len(tokens)-2]
