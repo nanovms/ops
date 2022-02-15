@@ -109,7 +109,7 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 		return packagepath, nil
 	}
 
-	archivePath := pkg.Namespace + "/" + pkg.SHA256 + ".tar.gz"
+	archivePath := pkg.Namespace + "/" + pkg.Name + "/" + pkg.Version + ".tar.gz"
 
 	pkgBaseURL := PackageBaseURL
 
