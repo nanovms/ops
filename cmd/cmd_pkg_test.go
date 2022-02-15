@@ -21,7 +21,7 @@ func TestListPkgCommand(t *testing.T) {
 func TestGetPkgCommand(t *testing.T) {
 	getPkgCmd := cmd.PackageCommands()
 
-	getPkgCmd.SetArgs([]string{"get", "node_v14.2.0"})
+	getPkgCmd.SetArgs([]string{"get", "eyberg/bind:9.13.4"})
 
 	err := getPkgCmd.Execute()
 
@@ -31,7 +31,7 @@ func TestGetPkgCommand(t *testing.T) {
 func TestPkgContentsCommand(t *testing.T) {
 	getPkgCmd := cmd.PackageCommands()
 
-	getPkgCmd.SetArgs([]string{"contents", "node_v14.2.0"})
+	getPkgCmd.SetArgs([]string{"contents", "eyberg/bind:9.13.4"})
 
 	err := getPkgCmd.Execute()
 
@@ -41,7 +41,7 @@ func TestPkgContentsCommand(t *testing.T) {
 func TestPkgDescribeCommand(t *testing.T) {
 	getPkgCmd := cmd.PackageCommands()
 
-	getPkgCmd.SetArgs([]string{"describe", "node_v14.2.0"})
+	getPkgCmd.SetArgs([]string{"describe", "eyberg/bind:9.13.4"})
 
 	err := getPkgCmd.Execute()
 
@@ -54,7 +54,7 @@ func TestLoad(t *testing.T) {
 	program := buildNodejsProgram()
 	defer os.Remove(program)
 
-	getPkgCmd.SetArgs([]string{"load", "node_v14.2.0", "-a", program})
+	getPkgCmd.SetArgs([]string{"load", "eyberg/node:v14.2.0", "-a", program})
 
 	err := getPkgCmd.Execute()
 

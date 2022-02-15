@@ -77,7 +77,7 @@ func ParseIdentifier(identifier string) PackageIdentifier {
 	pkgTokens := strings.Split(tokens[len(tokens)-1], ":")
 	pkgName := pkgTokens[0]
 	version := "latest"
-	if pkgTokens[1] != "" {
+	if len(pkgTokens) > 1 {
 		version = pkgTokens[1]
 	}
 	return PackageIdentifier{

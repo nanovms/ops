@@ -200,10 +200,20 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 	downloadPackage(args[0], api.NewConfig())
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 	expackage := filepath.Join(packageDirectoryPath(), args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], api.NewConfig())
@@ -234,6 +244,11 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 func cmdPackageContents(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 
 	directoryPath := packageDirectoryPath()
 
@@ -241,7 +256,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		directoryPath = localPackageDirectoryPath()
 	}
 
-	expackage := filepath.Join(directoryPath, args[0])
+	expackage := filepath.Join(directoryPath, strings.ReplaceAll(args[0], ":", "_"))
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], api.NewConfig())
 	}
