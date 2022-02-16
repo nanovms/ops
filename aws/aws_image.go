@@ -351,6 +351,7 @@ var (
 		"c5ad": true,
 		"c5d":  true,
 		"c5n":  true,
+		"c6a":  true,
 		"c6g":  true,
 		"c6gd": true,
 		"c6gn": true,
