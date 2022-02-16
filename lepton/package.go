@@ -335,15 +335,13 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	// used for extracting releases (which currently don't have
 	// checksums)
 	if strings.Contains(archive, filepath.Join(homeDirName, "packages")) {
-
 		fname := filepath.Base(archive)
-		namespace := filepath.Dir(archive)
+		namespace := filepath.Base(filepath.Dir(archive))
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
 		fnameTokens := strings.Split(fname, "_")
 		pkgName := fnameTokens[0]
 		version := fnameTokens[len(fnameTokens)-1]
 		pkg, found := pkgList.FindPackage(fmt.Sprintf("%s/%s:%s", namespace, pkgName, version))
-
 		if !found || pkg == nil || pkg.SHA256 != sha {
 			log.Fatalf("This package doesn't match what is in the manifest.")
 		}
