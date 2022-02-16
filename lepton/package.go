@@ -27,7 +27,8 @@ const PackageSysRootFolderName = "sysroot"
 
 // PackageList contains a list of known packages.
 type PackageList struct {
-	list map[string]Package
+	Version  int       `json:"Version"`
+	Packages []Package `json:"Packages"`
 }
 
 // Package is the definition of an OPS package.
@@ -37,20 +38,72 @@ type Package struct {
 	Language    string `json:"language"`
 	Description string `json:"description,omitempty"`
 	SHA256      string `json:"sha256"`
+	Name        string `json:"name"`
+	Namespace   string `json:"namespace"`
 }
 
-// DownloadPackage downloads package by name
-func DownloadPackage(name string, config *types.Config) (string, error) {
+// PackageIdentifier is used to identify a namespaced package
+type PackageIdentifier struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Version   string `json:"version"`
+}
+
+// Match matches a package with all the fields of this identifier
+func (pkgidf *PackageIdentifier) Match(pkg Package) bool {
+	return pkg.Name == pkgidf.Name && pkg.Namespace == pkgidf.Namespace && pkg.Version == pkgidf.Version
+}
+
+// FindPackage finds a package with the mentioned identifier
+func (pkglist *PackageList) FindPackage(identifier string) (*Package, bool) {
+	idf := ParseIdentifier(identifier)
+	for _, pkg := range pkglist.Packages {
+		if idf.Match(pkg) {
+			return &pkg, true
+		}
+	}
+	return nil, false
+}
+
+// List returns the package list
+func (pkglist *PackageList) List() []Package {
+	return pkglist.Packages
+}
+
+// ParseIdentifier parses a package identifier which looks like <namespace>/<pkg>:<version>
+func ParseIdentifier(identifier string) PackageIdentifier {
+	tokens := strings.Split(identifier, "/")
+	namespace := tokens[len(tokens)-2]
+	pkgTokens := strings.Split(tokens[len(tokens)-1], ":")
+	pkgName := pkgTokens[0]
+	version := "latest"
+	if len(pkgTokens) > 1 {
+		version = pkgTokens[1]
+	}
+	return PackageIdentifier{
+		Name:      pkgName,
+		Namespace: namespace,
+		Version:   version,
+	}
+}
+
+// DownloadPackage downloads package by identifier
+func DownloadPackage(identifier string, config *types.Config) (string, error) {
 	packages, err := GetPackageList(config)
 	if err != nil {
 		return "", nil
 	}
 
-	if _, ok := (*packages)[name]; !ok {
-		return "", fmt.Errorf("package %q does not exist", name)
+	pkg, ok := packages.FindPackage(identifier)
+
+	if !ok {
+		return "", fmt.Errorf("package %q does not exist", identifier)
 	}
 
-	archivename := name + ".tar.gz"
+	archivename := pkg.Namespace + "/" + pkg.Name + "_" + pkg.Version + ".tar.gz"
+
+	archiveFolder := path.Join(PackagesCache, pkg.Namespace)
+	os.MkdirAll(archiveFolder, 0755)
 	packagepath := path.Join(PackagesCache, archivename)
 	_, err = os.Stat(packagepath)
 	if err != nil && !os.IsNotExist(err) {
@@ -60,6 +113,8 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 	if err == nil {
 		return packagepath, nil
 	}
+
+	archivePath := pkg.Namespace + "/" + pkg.Name + "/" + pkg.Version + ".tar.gz"
 
 	pkgBaseURL := PackageBaseURL
 
@@ -81,9 +136,9 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 	if isNetworkRepo {
 		var fileURL string
 		if strings.HasSuffix(pkgBaseURL, "/") {
-			fileURL = pkgBaseURL + archivename
+			fileURL = pkgBaseURL + archivePath
 		} else {
-			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivename)
+			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivePath)
 		}
 
 		if err = DownloadFileWithProgress(packagepath, fileURL, 600); err != nil {
@@ -125,7 +180,7 @@ func DownloadPackage(name string, config *types.Config) (string, error) {
 }
 
 // GetPackageList provides list of packages
-func GetPackageList(config *types.Config) (*map[string]Package, error) {
+func GetPackageList(config *types.Config) (*PackageList, error) {
 	var err error
 
 	pkgManifestURL := PackageManifestURL
@@ -177,17 +232,17 @@ func GetPackageList(config *types.Config) (*map[string]Package, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, &packages.list)
+	err = json.Unmarshal(data, &packages)
 	if err != nil {
 		return nil, err
 	}
 
-	return &packages.list, nil
+	return &packages, nil
 }
 
 // GetLocalPackageList provides list of local packages
-func GetLocalPackageList() (*map[string]Package, error) {
-	packages := map[string]Package{}
+func GetLocalPackageList() ([]Package, error) {
+	packages := []Package{}
 
 	localPackagesDir := GetOpsHome() + "/local_packages"
 
@@ -214,11 +269,11 @@ func GetLocalPackageList() (*map[string]Package, error) {
 				return nil, err
 			}
 
-			packages[pkgName] = pkg
+			packages = append(packages, pkg)
 		}
 	}
 
-	return &packages, nil
+	return packages, nil
 }
 
 func getPackageCache() string {
@@ -271,21 +326,23 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	sha := sha256Of(archive)
 	homeDirName := filepath.Base(GetOpsHome())
 
+	pkgList, err := GetPackageList(config)
+	if err != nil {
+		panic(err)
+	}
 	// hack
 	// this only verifies for packages - unfortunately this function is
 	// used for extracting releases (which currently don't have
 	// checksums)
 	if strings.Contains(archive, filepath.Join(homeDirName, "packages")) {
-
 		fname := filepath.Base(archive)
+		namespace := filepath.Base(filepath.Dir(archive))
 		fname = strings.ReplaceAll(fname, ".tar.gz", "")
-
-		list, err := GetPackageList(config)
-		if err != nil {
-			panic(err)
-		}
-
-		if (*list)[fname].SHA256 != sha {
+		fnameTokens := strings.Split(fname, "_")
+		pkgName := fnameTokens[0]
+		version := fnameTokens[len(fnameTokens)-1]
+		pkg, found := pkgList.FindPackage(fmt.Sprintf("%s/%s:%s", namespace, pkgName, version))
+		if !found || pkg == nil || pkg.SHA256 != sha {
 			log.Fatalf("This package doesn't match what is in the manifest.")
 		}
 

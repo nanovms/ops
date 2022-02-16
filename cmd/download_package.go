@@ -154,13 +154,13 @@ func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config
 		log.Fatal(err)
 	}
 
-	expackage := path.Join(packagesDirPath, pkg)
+	expackage := path.Join(packagesDirPath, strings.ReplaceAll(pkg, ":", "_"))
 	opsPackage, err := api.DownloadPackage(pkg, config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	api.ExtractPackage(opsPackage, packagesDirPath, config)
+	api.ExtractPackage(opsPackage, path.Dir(expackage), config)
 
 	err = os.Remove(opsPackage)
 	if err != nil {

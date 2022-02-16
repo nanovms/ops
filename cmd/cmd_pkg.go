@@ -114,18 +114,23 @@ func PackageCommands() *cobra.Command {
 }
 
 func cmdListPackages(cmd *cobra.Command, args []string) {
-	var packages *map[string]api.Package
+	var packages []api.Package
 	var err error
 	local, _ := cmd.Flags().GetBool("local")
 
 	if local {
 		packages, err = api.GetLocalPackageList()
+		if err != nil {
+			log.Errorf("failed getting packages: %s", err)
+			return
+		}
 	} else {
-		packages, err = api.GetPackageList(api.NewConfig())
-	}
-	if err != nil {
-		log.Errorf("failed getting packages: %s", err)
-		return
+		pkgList, err := api.GetPackageList(api.NewConfig())
+		if err != nil {
+			log.Errorf("failed getting packages: %s", err)
+			return
+		}
+		packages = pkgList.List()
 	}
 
 	searchRegex, err := cmd.Flags().GetString("search")
@@ -134,8 +139,9 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"PackageName", "Version", "Language", "Runtime", "Description"})
+	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "Runtime", "Description"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -156,31 +162,37 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	}
 
 	// Sort the package list by packagename
-	keys := make([]string, 0, len(*packages))
-	for key := range *packages {
-		keys = append(keys, key)
+	keys := make([]string, 0, len(packages))
+	for _, pkg := range packages {
+		keys = append(keys, pkg.Name)
 	}
 	sort.Slice(keys, func(i, j int) bool {
 		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
 	})
 
-	for _, key := range keys {
+	var rows [][]string
+	for _, pkg := range packages {
 		var row []string
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
 		// row.
 		if filter &&
-			!(r.MatchString((*packages)[key].Language) ||
-				r.MatchString((*packages)[key].Runtime) ||
-				r.MatchString(key)) {
+			!(r.MatchString(pkg.Language) ||
+				r.MatchString(pkg.Runtime) ||
+				r.MatchString(pkg.Name) ||
+				r.MatchString(pkg.Namespace)) {
 			continue
 		}
+		row = append(row, pkg.Namespace)
+		row = append(row, pkg.Name)
+		row = append(row, pkg.Version)
+		row = append(row, pkg.Language)
+		row = append(row, pkg.Runtime)
+		row = append(row, pkg.Description)
+		rows = append(rows, row)
+	}
 
-		row = append(row, key)
-		row = append(row, (*packages)[key].Version)
-		row = append(row, (*packages)[key].Language)
-		row = append(row, (*packages)[key].Runtime)
-		row = append(row, (*packages)[key].Description)
+	for _, row := range rows {
 		table.Append(row)
 	}
 
@@ -188,10 +200,20 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 }
 
 func cmdGetPackage(cmd *cobra.Command, args []string) {
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 	downloadPackage(args[0], api.NewConfig())
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 	expackage := filepath.Join(packageDirectoryPath(), args[0])
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], api.NewConfig())
@@ -222,6 +244,11 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 func cmdPackageContents(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
+	identifier := args[0]
+	tokens := strings.Split(identifier, "/")
+	if len(tokens) < 2 {
+		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	}
 
 	directoryPath := packageDirectoryPath()
 
@@ -229,7 +256,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		directoryPath = localPackageDirectoryPath()
 	}
 
-	expackage := filepath.Join(directoryPath, args[0])
+	expackage := filepath.Join(directoryPath, strings.ReplaceAll(args[0], ":", "_"))
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], api.NewConfig())
 	}
@@ -318,8 +345,8 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	}
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
-	for name, pkg := range *pkgList {
-		if name == packageName {
+	for _, pkg := range pkgList {
+		if pkg.Name == packageName {
 			foundPkg = pkg
 			break
 		}
@@ -396,6 +423,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
+	pkgFlags.SluggedPackage = strings.ReplaceAll(args[0], ":", "_")
 
 	c := api.NewConfig()
 

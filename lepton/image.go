@@ -561,7 +561,7 @@ func DownloadFileWithProgress(filepath string, url string, timeout int) error {
 
 // DownloadFile downloads file using URL
 func DownloadFile(filepath string, url string, timeout int, showProgress bool) error {
-	log.Info("Downloading..", url)
+	log.Info("Downloading..", url, "to", filepath)
 	out, err := os.Create(filepath + ".tmp")
 	if err != nil {
 		return err
