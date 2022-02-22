@@ -606,9 +606,14 @@ func (t *tfs) fileReader(path string) (io.Reader, error) {
 	if extents == nil {
 		return nil, fmt.Errorf("'%s' is not a file", path)
 	}
-	fileLength, err := strconv.ParseUint(getString(fileTuple, "filelength"), 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse file length for '%s': %v", path, err)
+	var fileLength uint64 = 0
+	fileLengthStr := getString(fileTuple, "filelength")
+	if fileLengthStr != "" {
+		var err error
+		fileLength, err = strconv.ParseUint(fileLengthStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse file length for '%s': %v", path, err)
+		}
 	}
 	var extentOffsets []int
 	for fileOffset := range *extents {
