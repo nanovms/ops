@@ -243,7 +243,11 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	addDNSConfig(m, c)
 	addHostName(m, c)
 	addPasswd(m, c)
-	m.SetKlibDir(getKlibsDir(c.NightlyBuild))
+	if c.KlibDir != "" {
+		m.SetKlibDir(c.KlibDir)
+	} else {
+		m.SetKlibDir(getKlibsDir(c.NightlyBuild))
+	}
 
 	m.AddKlibs(c.RunConfig.Klibs)
 
