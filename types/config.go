@@ -46,6 +46,9 @@ type Config struct {
 	// Kernel
 	Kernel string
 
+	// Klibs host location
+	KlibDir string
+
 	// MapDirs specifies a map of local directories to add to into the image.
 	// These directory paths are then adjusted from local path specification
 	// to image path specification.
