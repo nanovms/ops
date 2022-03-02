@@ -507,6 +507,7 @@ func (p *AWS) findInstanceByName(name string) (*ec2.Instance, error) {
 	filter := []*ec2.Filter{
 		{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})},
 		{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})},
+		{Name: aws.String("instance-state-name"), Values: aws.StringSlice([]string{"running", "pending", "shutting-down", "stopping", "stopped"})},
 	}
 
 	request := ec2.DescribeInstancesInput{
