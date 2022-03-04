@@ -328,6 +328,38 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	log.Info("Created instance", tagInstanceName)
 
+	if cloudConfig.ElasticIP != "" {
+		log.Debug("associating elastic IP to instance")
+		var instance *lepton.CloudInstance
+		pollCount := 60
+		for pollCount > 0 {
+			time.Sleep(2 * time.Second)
+			instance, err = p.GetInstanceByName(ctx, tagInstanceName)
+			if err == nil {
+				pollCount--
+				if instance.Status != "pending" {
+					break
+				}
+			} else {
+				break
+			}
+		}
+		if err == nil {
+			input := &ec2.AssociateAddressInput{
+				InstanceId: aws.String(instance.ID),
+				PublicIp:   aws.String(cloudConfig.ElasticIP),
+			}
+			result, err := svc.AssociateAddress(input)
+			if err != nil {
+				log.Errorf("Could not associate elastic IP: %v", err.(awserr.Error).Error())
+			} else {
+				log.Debugf("result: %v", result)
+			}
+		} else {
+			log.Errorf("Could not retrieve instance: %v", err.Error())
+		}
+	}
+
 	// create dns zones/records to associate DNS record to instance IP
 	if cloudConfig.DomainName != "" {
 		ctx.Logger().Debug("associating domain to the created instance")

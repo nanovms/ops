@@ -127,6 +127,9 @@ type ProviderConfig struct {
 	// DomainName
 	DomainName string
 
+	// AWS Elastic IP address
+	ElasticIP string
+
 	// EnableIPv6 enables IPv6 when creating a vpc. It does not affect an existing VPC
 	EnableIPv6 bool
 
