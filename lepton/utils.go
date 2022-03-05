@@ -83,6 +83,7 @@ func SliceAtoi(sa []string) ([]int, error) {
 	return si, nil
 }
 
+// BaseHTTPRequest is a wrapper around http.NewRequest with a header that holds the ops version.
 func BaseHTTPRequest(method string, url string, body io.Reader) (*http.Request, error) {
 	request, err := http.NewRequest(method, url, body)
 	if request != nil {
