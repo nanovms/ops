@@ -3,6 +3,7 @@ package lepton
 import (
 	"archive/tar"
 	"crypto/sha256"
+	"regexp"
 
 	"compress/gzip"
 	"encoding/json"
@@ -24,6 +25,8 @@ import (
 
 // PackageSysRootFolderName is the name of package root folder
 const PackageSysRootFolderName = "sysroot"
+
+var packageRegex = regexp.MustCompile(`(?P<packageName>[A-Za-z]+)[_-](?P<version>\S+)`)
 
 // PackageList contains a list of known packages.
 type PackageList struct {
@@ -250,12 +253,13 @@ func GetLocalPackageList() ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	username := GetLocalUsername()
 	for _, pkg := range localPackages {
 		pkgName := pkg.Name()
 
 		// ignore packages compressed
 		if !strings.Contains(pkgName, "tar.gz") {
+			name, _ := getPkgnameAndVersion(pkgName)
 			data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName))
 			if err != nil {
 				return nil, err
@@ -268,7 +272,8 @@ func GetLocalPackageList() ([]Package, error) {
 				os.Exit(1)
 				return nil, err
 			}
-
+			pkg.Namespace = username
+			pkg.Name = name
 			packages = append(packages, pkg)
 		}
 	}
@@ -408,4 +413,19 @@ func BuildImageFromPackage(packagepath string, c types.Config) error {
 		return errors.Wrap(err, 1)
 	}
 	return nil
+}
+
+func getPkgnameAndVersion(pkgName string) (string, string) {
+	match := packageRegex.FindStringSubmatch(pkgName)
+	result := make(map[string]string)
+	// mostly then there is no version in the name and hence we can return all of it
+	if len(match) == 0 {
+		return pkgName, ""
+	}
+	for i, name := range packageRegex.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = match[i]
+		}
+	}
+	return result["packageName"], result["version"]
 }

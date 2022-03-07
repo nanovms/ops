@@ -94,3 +94,12 @@ func ReadCredsFromLocal() (*Credentials, error) {
 	}
 	return &creds, nil
 }
+
+// GetLocalUsername gets the local username and return "" if not found
+func GetLocalUsername() string {
+	creds, err := ReadCredsFromLocal()
+	if err != nil {
+		return ""
+	}
+	return creds.Username
+}
