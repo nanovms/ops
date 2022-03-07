@@ -57,7 +57,7 @@ func newfileUploadRequest(uri string, params map[string]string, fileParamName, p
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", uri, body)
+	req, err := BaseHTTPRequest("POST", uri, body)
 	if err != nil {
 		return nil, err
 	}

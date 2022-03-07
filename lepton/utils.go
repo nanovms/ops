@@ -2,7 +2,9 @@ package lepton
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"strconv"
 	"unicode/utf8"
 
@@ -79,4 +81,13 @@ func SliceAtoi(sa []string) ([]int, error) {
 		si = append(si, i)
 	}
 	return si, nil
+}
+
+// BaseHTTPRequest is a wrapper around http.NewRequest with a header that holds the ops version.
+func BaseHTTPRequest(method string, url string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequest(method, url, body)
+	if request != nil {
+		request.Header.Add("X-ops-version", Version)
+	}
+	return request, err
 }

@@ -33,7 +33,7 @@ type Credentials struct {
 // if the response is a valid user then we return that or else error is returned.
 func ValidateAPIKey(apikey string) (*ValidateSuccessResponse, error) {
 	apikeyEndpoint := PkghubBaseURL + "/apikeys/validate"
-	req, err := http.NewRequest("POST", apikeyEndpoint, nil)
+	req, err := BaseHTTPRequest("POST", apikeyEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
