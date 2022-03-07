@@ -246,7 +246,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	if c.KlibDir != "" {
 		m.SetKlibDir(c.KlibDir)
 	} else {
-		m.SetKlibDir(getKlibsDir(c.NightlyBuild))
+		m.SetKlibDir(getKlibsDir(c.NightlyBuild, c.NanosVersion))
 	}
 
 	m.AddKlibs(c.RunConfig.Klibs)
