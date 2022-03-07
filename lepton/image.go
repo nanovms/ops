@@ -574,8 +574,11 @@ func DownloadFile(fpath string, url string, timeout int, showProgress bool) erro
 	c := &http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
 	}
-
-	resp, err := c.Get(url)
+	req, err := BaseHTTPRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Do(req)
 	if err != nil {
 		return err
 	}
