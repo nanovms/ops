@@ -15,7 +15,7 @@ require (
 	github.com/UpCloudLtd/upcloud-go-api v0.0.0-20210127073406-2964ed7e5972
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/bramvdbogaerde/go-scp v1.0.0
-	github.com/containerd/containerd v1.5.9 // indirect
+	github.com/containerd/containerd v1.5.10 // indirect
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.7+incompatible
