@@ -250,9 +250,10 @@ func GetLocalPackageList() ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	username := GetLocalUsername()
 	for _, pkg := range localPackages {
 		pkgName := pkg.Name()
+		pkgParts := strings.Split(pkg.Name(), "-")
 
 		// ignore packages compressed
 		if !strings.Contains(pkgName, "tar.gz") {
@@ -268,7 +269,8 @@ func GetLocalPackageList() ([]Package, error) {
 				os.Exit(1)
 				return nil, err
 			}
-
+			pkg.Namespace = username
+			pkg.Name = pkgParts[0]
 			packages = append(packages, pkg)
 		}
 	}
