@@ -565,7 +565,6 @@ func DownloadFileWithProgress(filepath string, url string, timeout int) error {
 
 // DownloadFile downloads file using URL
 func DownloadFile(fpath string, url string, timeout int, showProgress bool) error {
-	log.Info("Downloading..", url, "to", fpath)
 	out, err := ioutil.TempFile(filepath.Dir(fpath), fmt.Sprintf("*%s", filepath.Base(fpath)))
 	if err != nil {
 		return err
