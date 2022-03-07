@@ -15,7 +15,6 @@ type NanosVersionCommandFlags struct {
 // MergeToConfig downloads specified nanos version build and change configuration nanos tools paths
 func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	nanosVersion := flags.NanosVersion
-
 	if nanosVersion != "" {
 		var exists bool
 		exists, err = lepton.CheckNanosVersionExists(nanosVersion)
