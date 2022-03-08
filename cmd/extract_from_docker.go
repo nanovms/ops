@@ -349,7 +349,7 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 	}
 }
 
-// ImageNameToPackageName converts a Docker image name to a package name
+// ImageNameToPackageNameAndVersion converts a Docker image name to a package name and version
 func ImageNameToPackageNameAndVersion(imageName string) (string, string, error) {
 	matches := reference.ReferenceRegexp.FindStringSubmatch(imageName)
 
