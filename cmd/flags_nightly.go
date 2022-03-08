@@ -60,14 +60,17 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	}
 
-	if c.Boot == "" {
+	// user provided flag takes presidence config params
+	newBootPath := path.Join(api.GetOpsHome(), version, "boot.img")
+	if c.Boot == "" || c.Boot != newBootPath {
 		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	}
 
 	c.UefiBoot = api.GetUefiBoot(version)
 
-	if c.Kernel == "" {
-		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+	newKernelPath := path.Join(api.GetOpsHome(), version, "kernel.img")
+	if c.Kernel == "" || c.Kernel != newKernelPath {
+		c.Kernel = newKernelPath
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
