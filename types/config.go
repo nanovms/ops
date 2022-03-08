@@ -130,6 +130,9 @@ type ProviderConfig struct {
 	// AWS Elastic IP address
 	ElasticIP string
 
+	// Used by GCP to assign a public static IP to a NIC
+	StaticIP string
+
 	// EnableIPv6 enables IPv6 when creating a vpc. It does not affect an existing VPC
 	EnableIPv6 bool
 

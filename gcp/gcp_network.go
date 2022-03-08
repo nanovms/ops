@@ -164,7 +164,7 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 			})
 		}
 	} else {
-		nic = append(nic, &compute.NetworkInterface{
+		eth0Nic := &compute.NetworkInterface{
 			Name: "eth0",
 			AccessConfigs: []*compute.AccessConfig{
 				{
@@ -173,7 +173,11 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 					Name:        "External NAT",
 				},
 			},
-		})
+		}
+		if ctx.Config().CloudConfig.StaticIP != "" {
+			eth0Nic.AccessConfigs[0].NatIP = ctx.Config().CloudConfig.StaticIP
+		}
+		nic = append(nic, eth0Nic)
 	}
 
 	if ctx.Config().RunConfig.IPAddress != "" {
