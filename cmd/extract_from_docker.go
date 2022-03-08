@@ -26,12 +26,15 @@ import (
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
 func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool) (string, string) {
 	var err error
-
+	var version string
+	var name string
 	if packageName == "" {
-		packageName, err = ImageNameToPackageName(imageName)
+		name, version, err = ImageNameToPackageNameAndVersion(imageName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		// just in case the version is blank
+		packageName = strings.TrimRight(name+"-"+version, "-")
 	}
 
 	script := fmt.Sprintf(`{
@@ -149,12 +152,9 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	}
 
 	// like docker if the user doesn't provide version of the image we consider "latest" as the version
-	parts := strings.Split(imageName, ":")
-	version := parts[len(parts)-1]
-	if len(parts) == 1 {
+	if version == "" {
 		version = "latest"
 	}
-
 	c := &types.Config{
 		Program: packageName + "/program",
 		Args:    []string{"/program"},
@@ -349,30 +349,29 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 	}
 }
 
-// ImageNameToPackageName converts a Docker image name to a package name
-func ImageNameToPackageName(imageName string) (string, error) {
+// ImageNameToPackageNameAndVersion converts a Docker image name to a package name and version
+func ImageNameToPackageNameAndVersion(imageName string) (string, string, error) {
 	matches := reference.ReferenceRegexp.FindStringSubmatch(imageName)
 
 	if matches == nil {
 		if imageName == "" {
-			return "", reference.ErrNameEmpty
+			return "", "", reference.ErrNameEmpty
 		}
 
 		if reference.ReferenceRegexp.FindStringSubmatch(strings.ToLower(imageName)) != nil {
-			return "", reference.ErrNameContainsUppercase
+			return "", "", reference.ErrNameContainsUppercase
 		}
 
-		return "", reference.ErrReferenceInvalidFormat
+		return "", "", reference.ErrReferenceInvalidFormat
 	}
 
 	if len(matches[1]) > reference.NameTotalLengthMax {
-		return "", reference.ErrNameTooLong
+		return "", "", reference.ErrNameTooLong
 	}
 
 	nameMatches := regexp.MustCompile(`(.*\/)?(.*)$`).FindStringSubmatch(matches[1])
-
-	name := nameMatches[2]
+	name := nameMatches[0]
 	tag := matches[2]
 
-	return name + "-" + tag, nil
+	return name, tag, nil
 }
