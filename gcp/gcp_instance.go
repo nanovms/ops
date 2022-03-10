@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 	compute "google.golang.org/api/compute/v1"
 )
@@ -35,6 +36,11 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	imageName := fmt.Sprintf("projects/%v/global/images/%v",
 		c.CloudConfig.ProjectID,
 		c.CloudConfig.ImageName)
+
+	c.CloudConfig.Tags = append(c.CloudConfig.Tags, types.Tag{
+		Key:   "image",
+		Value: c.CloudConfig.ImageName,
+	})
 
 	serialTrue := "true"
 
@@ -175,7 +181,6 @@ func (p *GCloud) ListInstances(ctx *lepton.Context) error {
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 	table.SetRowLine(true)
-
 	for _, instance := range instances {
 		var rows []string
 		rows = append(rows, instance.Name)
