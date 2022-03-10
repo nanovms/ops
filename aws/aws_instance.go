@@ -328,7 +328,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	log.Info("Created instance", tagInstanceName)
 
-	if cloudConfig.ElasticIP != "" {
+	if cloudConfig.StaticIP != "" {
 		log.Debug("associating elastic IP to instance")
 		var instance *lepton.CloudInstance
 		pollCount := 60
@@ -347,7 +347,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		if err == nil {
 			input := &ec2.AssociateAddressInput{
 				InstanceId: aws.String(instance.ID),
-				PublicIp:   aws.String(cloudConfig.ElasticIP),
+				PublicIp:   aws.String(cloudConfig.StaticIP),
 			}
 			result, err := svc.AssociateAddress(input)
 			if err != nil {
