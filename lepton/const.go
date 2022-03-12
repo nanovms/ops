@@ -35,7 +35,7 @@ const PackageManifestURL string = PkghubBaseURL + "/v2/manifest.json"
 const PackageManifestFileName string = "manifest.json"
 
 // PkghubBaseURL is the base url of packagehub
-const PkghubBaseURL string = "https://devrepo.ops.city"
+const PkghubBaseURL string = "https://repo.ops.city"
 
 var (
 	// LocalVolumeDir is the default local volume directory
