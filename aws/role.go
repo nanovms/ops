@@ -203,6 +203,9 @@ func VerifyRole(zone string, bucket string) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(zone)},
 	)
+	if err != nil {
+		log.Fatalf("error while creation session: %s", err.Error())
+	}
 
 	svc := iam.New(sess)
 

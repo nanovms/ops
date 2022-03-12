@@ -139,7 +139,7 @@ func (do *DigitalOcean) SyncImage(config *types.Config, target lepton.Provider, 
 
 // ResizeImage is not supported on Digital Ocean.
 func (do *DigitalOcean) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // CustomizeImage returns image path with adaptations needed by cloud provider

@@ -156,7 +156,7 @@ func (a *Azure) Initialize(config *types.ProviderConfig) error {
 	if subID != "" {
 		a.subID = subID
 	} else {
-		return fmt.Errorf("Set AZURE_SUBSCRIPTION_ID")
+		return fmt.Errorf("set AZURE_SUBSCRIPTION_ID")
 	}
 
 	locationDefault := os.Getenv("AZURE_LOCATION_DEFAULT")
@@ -168,28 +168,28 @@ func (a *Azure) Initialize(config *types.ProviderConfig) error {
 	if clientID != "" {
 		a.clientID = strings.TrimSpace(clientID)
 	} else {
-		return fmt.Errorf("Set AZURE_CLIENT_ID")
+		return fmt.Errorf("set AZURE_CLIENT_ID")
 	}
 
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	if clientSecret != "" {
 		a.clientSecret = strings.TrimSpace(clientSecret)
 	} else {
-		return fmt.Errorf("Set AZURE_CLIENT_SECRET")
+		return fmt.Errorf("set AZURE_CLIENT_SECRET")
 	}
 
 	tenantID := os.Getenv("AZURE_TENANT_ID")
 	if tenantID != "" {
 		a.tenantID = strings.TrimSpace(tenantID)
 	} else {
-		return fmt.Errorf("Set AZURE_TENANT_ID")
+		return fmt.Errorf("set AZURE_TENANT_ID")
 	}
 
 	groupName := os.Getenv("AZURE_BASE_GROUP_NAME")
 	if groupName != "" {
 		a.groupName = strings.TrimSpace(groupName)
 	} else {
-		return fmt.Errorf("Set AZURE_BASE_GROUP_NAME")
+		return fmt.Errorf("set AZURE_BASE_GROUP_NAME")
 	}
 
 	storageAccount := os.Getenv("AZURE_STORAGE_ACCOUNT")

@@ -18,7 +18,7 @@ import (
 
 // ResizeImage is not supported on OpenStack.
 func (o *OpenStack) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // BuildImage to be upload on OpenStack
