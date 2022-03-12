@@ -17,7 +17,7 @@ import (
 
 // ResizeImage is not supported on VSphere.
 func (v *Vsphere) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // BuildImage to be upload on VSphere

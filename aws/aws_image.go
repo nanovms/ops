@@ -610,7 +610,7 @@ func (p *AWS) ListImages(ctx *lepton.Context) error {
 
 // ResizeImage is not supported on AWS.
 func (p *AWS) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // DeleteImage deletes image from AWS by ami name
@@ -618,7 +618,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 	// delete ami by ami name
 	image, err := p.findImageByName(imagename)
 	if err != nil {
-		return fmt.Errorf("Error running deregister image operation: %s", err)
+		return fmt.Errorf("error running deregister image operation: %s", err)
 	}
 
 	amiID := aws.StringValue(image.ImageId)
@@ -632,7 +632,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 	}
 	_, err = p.ec2.DeregisterImage(params)
 	if err != nil {
-		return fmt.Errorf("Error running deregister image operation: %s", err)
+		return fmt.Errorf("error running deregister image operation: %s", err)
 	}
 
 	// DeleteSnapshot
@@ -642,7 +642,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 	}
 	_, err = p.ec2.DeleteSnapshot(params2)
 	if err != nil {
-		return fmt.Errorf("Error running snapshot delete: %s", err)
+		return fmt.Errorf("error running snapshot delete: %s", err)
 	}
 
 	return nil

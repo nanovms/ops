@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -60,7 +61,7 @@ func (p *AWS) Initialize(config *types.ProviderConfig) error {
 	p.Storage = &S3{}
 
 	if config.Zone == "" {
-		return fmt.Errorf("Zone missing")
+		return errors.New("zone missing")
 	}
 
 	err := loadAWSCreds()

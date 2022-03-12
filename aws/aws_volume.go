@@ -12,10 +12,6 @@ import (
 	"github.com/nanovms/ops/lepton"
 )
 
-var (
-	errGettingAWSVolumeService = func(err error) error { return fmt.Errorf("get volume service: %v", err) }
-)
-
 // CreateVolume creates a snapshot and use it to create a volume
 func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
@@ -192,7 +188,7 @@ func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string) error
 		}
 	}
 	if device == "" {
-		return errors.New("No available device names")
+		return errors.New("no available device names")
 	}
 
 	input := &ec2.AttachVolumeInput{
