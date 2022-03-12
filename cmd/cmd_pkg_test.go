@@ -62,3 +62,11 @@ func TestLoad(t *testing.T) {
 
 	removeImage(program)
 }
+
+func TestPkgSearch(t *testing.T) {
+	searchPkgCmd := cmd.PackageCommands()
+
+	searchPkgCmd.SetArgs([]string{"search", "mysql"})
+	err := searchPkgCmd.Execute()
+	assert.Nil(t, err)
+}

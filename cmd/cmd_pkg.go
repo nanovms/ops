@@ -25,10 +25,18 @@ import (
 // PackageCommands gives package related commands
 func PackageCommands() *cobra.Command {
 	var search string
+
 	var cmdPkgList = &cobra.Command{
 		Use:   "list",
 		Short: "list packages",
 		Run:   cmdListPackages,
+	}
+
+	var cmdPkgSearch = &cobra.Command{
+		Use:   "search [packagename]",
+		Short: "search packages",
+		Args:  cobra.ExactArgs(1),
+		Run:   cmdSearchPackages,
 	}
 
 	var cmdGetPackage = &cobra.Command{
@@ -102,6 +110,7 @@ func PackageCommands() *cobra.Command {
 	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
 
 	cmdPkg.AddCommand(cmdPkgList)
+	cmdPkg.AddCommand(cmdPkgSearch)
 	cmdPkg.AddCommand(cmdGetPackage)
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
@@ -138,17 +147,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "Runtime", "Description"})
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
-
-	table.SetRowLine(true)
+	table := pkgTable(packages)
 
 	var r *regexp.Regexp
 	var filter bool
@@ -160,16 +159,6 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 			filter = false
 		}
 	}
-
-	// Sort the package list by packagename
-	keys := make([]string, 0, len(packages))
-	for _, pkg := range packages {
-		keys = append(keys, pkg.Name)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
-	})
-
 	var rows [][]string
 	for _, pkg := range packages {
 		var row []string
@@ -183,6 +172,40 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 				r.MatchString(pkg.Namespace)) {
 			continue
 		}
+		row = append(row, pkg.Namespace)
+		row = append(row, pkg.Name)
+		row = append(row, pkg.Version)
+		row = append(row, pkg.Language)
+		row = append(row, pkg.Runtime)
+		row = append(row, pkg.Description)
+		rows = append(rows, row)
+	}
+
+	for _, row := range rows {
+		table.Append(row)
+	}
+
+	table.Render()
+}
+
+func cmdSearchPackages(cmd *cobra.Command, args []string) {
+	q := args[0]
+
+	pkgs, err := api.SearchPackages(q)
+	if err != nil {
+		log.Errorf("Error while searching packages: %s", err.Error())
+		return
+	}
+	if len(pkgs.Packages) == 0 {
+		fmt.Println("No packages found.")
+		return
+	}
+	table := pkgTable(pkgs.Packages)
+
+	var rows [][]string
+	for _, pkg := range pkgs.Packages {
+		var row []string
+
 		row = append(row, pkg.Namespace)
 		row = append(row, pkg.Name)
 		row = append(row, pkg.Version)
@@ -452,4 +475,29 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+}
+
+func pkgTable(packages []api.Package) *tablewriter.Table {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "Runtime", "Description"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+
+	table.SetRowLine(true)
+
+	// Sort the package list by packagename
+	keys := make([]string, 0, len(packages))
+	for _, pkg := range packages {
+		keys = append(keys, pkg.Name)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
+	})
+
+	return table
 }
