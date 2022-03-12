@@ -6,6 +6,7 @@ import (
 	"net/url"
 )
 
+// SearchPackages searches packages against pkghub
 func SearchPackages(q string) (*PackageList, error) {
 	// we can ignore this error as the url being parsed here is const so wouldn't error
 	pkghub, _ := url.Parse(PkghubBaseURL + "/api/v1/search")
