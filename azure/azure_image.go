@@ -207,5 +207,5 @@ func (a *Azure) SyncImage(config *types.Config, target lepton.Provider, image st
 
 // ResizeImage is not supported on azure.
 func (a *Azure) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }

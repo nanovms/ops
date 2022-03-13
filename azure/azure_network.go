@@ -240,7 +240,7 @@ func (a *Azure) DeleteSubnetwork(ctx *lepton.Context, subnetID string) error {
 			return errors.New("error waiting for virtual network deletion")
 		}
 	} else {
-		return errors.New("Other devices are connected to the same subnet")
+		return errors.New("other devices are connected to the same subnet")
 	}
 
 	return nil

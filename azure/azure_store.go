@@ -66,6 +66,9 @@ func (az *Storage) virtualSize(archPath string) uint32 {
 
 	qi := &qemuInfo{}
 	err = json.Unmarshal([]byte(out), qi)
+	if err != nil {
+		log.Error(err)
+	}
 
 	return qi.VirtualSize
 }
@@ -183,6 +186,10 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 		page := make([]byte, max)
 		n, err := file.Read(page)
 
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
 		if err != nil {
 			log.Fatal(err)
@@ -211,10 +218,7 @@ func (az *Storage) DeleteFromBucket(config *types.Config, key string) error {
 //Exists() function not available in sdk. So for now this is a work around
 func containerExists(containerURL azblob.ContainerURL) bool {
 	_, err := containerURL.GetProperties(context.Background(), azblob.LeaseAccessConditions{})
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // return AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_ACCESS_KEY

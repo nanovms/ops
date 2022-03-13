@@ -133,8 +133,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		return errors.New("error creating network interface controller")
 	}
 
-	var sshKeyData string
-	sshKeyData = fakepubkey
+	sshKeyData := fakepubkey
 	nctx := context.TODO()
 
 	ctx.Logger().Log("creating the vm - this can take a few minutes")
@@ -363,7 +362,7 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
 	if err != nil {
 		ctx.Logger().Error(err)
-		return errors.New("Unable to delete instance")
+		return errors.New("unable to delete instance")
 	}
 
 	err = future.WaitForCompletionRef(context.TODO(), vmClient.Client)
@@ -449,7 +448,7 @@ func (a *Azure) PrintInstanceLogs(ctx *lepton.Context, instancename string, watc
 	if err != nil {
 		return err
 	}
-	fmt.Printf(l)
+	fmt.Println(l)
 	return nil
 }
 

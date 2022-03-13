@@ -195,12 +195,12 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 
 // StartInstance from on premise
 func (p *OnPrem) StartInstance(ctx *lepton.Context, instancename string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // StopInstance from on premise
 func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
-	return fmt.Errorf("Operation not supported")
+	return fmt.Errorf("operation not supported")
 }
 
 // DeleteInstance from on premise

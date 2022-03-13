@@ -52,6 +52,9 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	svc, err := session.NewSession(&aws.Config{
 		Region: aws.String(stripZone(region))},
 	)
+	if err != nil {
+		log.Fatalf("failed creation session: %s", err.Error())
+	}
 	compute := ec2.New(svc)
 
 	filter = append(filter, &ec2.Filter{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})})
@@ -83,10 +86,13 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 func (p *AWS) StartInstance(ctx *lepton.Context, instanceName string) error {
 
 	if instanceName == "" {
-		return errors.New("Enter Instance Name")
+		return errors.New("enter instance name")
 	}
 
 	instance, err := p.findInstanceByName(instanceName)
+	if err != nil {
+		return err
+	}
 
 	input := &ec2.StartInstancesInput{
 		InstanceIds: []*string{
@@ -118,7 +124,7 @@ func (p *AWS) StartInstance(ctx *lepton.Context, instanceName string) error {
 // StopInstance stops instance from AWS by ami name
 func (p *AWS) StopInstance(ctx *lepton.Context, instanceName string) error {
 	if instanceName == "" {
-		return errors.New("Enter Instance name")
+		return errors.New("enter instance name")
 	}
 
 	instance, err := p.findInstanceByName(instanceName)
@@ -453,7 +459,7 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 // DeleteInstance deletes instance from AWS
 func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 	if instanceName == "" {
-		return errors.New("Enter Instance name")
+		return errors.New("enter instance name")
 	}
 
 	instance, err := p.findInstanceByName(instanceName)
@@ -491,14 +497,14 @@ func (p *AWS) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch 
 	if err != nil {
 		return err
 	}
-	fmt.Printf(l)
+	fmt.Println(l)
 	return nil
 }
 
 // GetInstanceLogs gets instance related logs
 func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string, error) {
 	if instanceName == "" {
-		return "", errors.New("Enter Instance name")
+		return "", errors.New("enter instance name")
 	}
 
 	instance, err := p.findInstanceByName(instanceName)
