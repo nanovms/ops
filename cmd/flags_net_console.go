@@ -35,6 +35,9 @@ func NewNetConsoleFlags(cmdFlags *pflag.FlagSet) (flags *NetConsoleFlags) {
 
 // MergeToConfig sets passthrough data in the config from the flags
 func (flags *NetConsoleFlags) MergeToConfig(config *types.Config) (err error) {
+	if config.ManifestPassthrough == nil {
+		config.ManifestPassthrough = make(map[string]interface{})
+	}
 	config.ManifestPassthrough["netconsole-port"] = flags.NetConsolePort
 	config.ManifestPassthrough["netconsole-ip"] = flags.NetConsoleIP
 	config.ManifestPassthrough["consoles"] = flags.Consoles
