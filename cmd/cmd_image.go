@@ -56,6 +56,7 @@ func imageCreateCommand() *cobra.Command {
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
 	PersistPkgCommandFlags(persistentFlags)
+	PersistNetConsoleFlags(persistentFlags)
 
 	return cmdImageCreate
 }
@@ -71,12 +72,13 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
+	netconsoleFlags := NewNetConsoleFlags(flags)
 
 	if len(args) > 0 {
 		c.Program = args[0]
 	}
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags, netconsoleFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

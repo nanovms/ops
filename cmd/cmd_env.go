@@ -31,6 +31,7 @@ func EnvCommand() *cobra.Command {
 	PersistNightlyCommandFlags(flags)
 	PersistNanosVersionCommandFlags(flags)
 	PersistBuildImageCommandFlags(flags)
+	PersistNetConsoleFlags(flags)
 
 	cmdCopy := &cobra.Command{
 		Use:   "copy <local_dir> [flags]",
@@ -87,7 +88,8 @@ func envBuild(cmd *cobra.Command, args []string) {
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
-	mergeContainer := NewMergeConfigContainer(configFlags, nightlyFlags, nanosVersionFlags, buildImageFlags)
+	netconsoleFlags := NewNetConsoleFlags(flags)
+	mergeContainer := NewMergeConfigContainer(configFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, netconsoleFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

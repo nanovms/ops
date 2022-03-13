@@ -24,6 +24,7 @@ func BuildCommand() *cobra.Command {
 	PersistProviderCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
+	PersistNetConsoleFlags(persistentFlags)
 
 	return cmdBuild
 }
@@ -36,13 +37,14 @@ func buildCommandHandler(cmd *cobra.Command, args []string) {
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
+	netconsoleFlags := NewNetConsoleFlags(flags)
 
 	c := lepton.NewConfig()
 
 	c.Program = args[0]
 	checkProgramExists(c.Program)
 
-	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags)
+	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, netconsoleFlags)
 	err := mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

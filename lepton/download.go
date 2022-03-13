@@ -2,12 +2,9 @@ package lepton
 
 import (
 	"fmt"
-	"time"
 
 	pb "github.com/schollz/progressbar/v2"
 )
-
-const refreshRate = time.Millisecond * 100
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer
 // interface and we can pass this into io.TeeReader() which will report progress on each

@@ -29,6 +29,7 @@ func DeployCommand() *cobra.Command {
 	PersistCreateInstanceFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
+	PersistNetConsoleFlags(persistentFlags)
 
 	return cmdDeploy
 }
@@ -44,6 +45,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	pkgFlags := NewPkgCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
+	netconsoleFlags := NewNetConsoleFlags(flags)
 
 	c := lepton.NewConfig()
 
@@ -62,7 +64,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 		c.Args = append([]string{c.Program}, c.Args...)
 	}
 
-	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags, createInstanceFlags)
+	mergeConfigContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags, createInstanceFlags, netconsoleFlags)
 	err = mergeConfigContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

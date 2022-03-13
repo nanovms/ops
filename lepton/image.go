@@ -39,22 +39,6 @@ func BuildImage(c types.Config) error {
 	return nil
 }
 
-// rebuildImage rebuilds a unikernel image for user
-// supplied ELF binary after volume attach/detach
-func rebuildImage(c types.Config) error {
-	c.Program = c.ProgramPath
-	m, err := BuildManifest(&c)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
-	if err = createImageFile(&c, m); err != nil {
-		return errors.Wrap(err, 1)
-	}
-
-	return nil
-}
-
 func createFile(filepath string) (*os.File, error) {
 	path := path.Dir(filepath)
 	var _, err = os.Stat(path)
@@ -530,7 +514,7 @@ func DownloadReleaseImages(version string) error {
 
 	if err := DownloadFileWithProgress(localtar, url, 600); err != nil {
 
-		if strings.Index(err.Error(), "can not download file") > -1 {
+		if strings.Contains(err.Error(), "can not download file") {
 			return fmt.Errorf("release '%s' is not found", version)
 		}
 

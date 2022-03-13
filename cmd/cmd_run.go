@@ -24,6 +24,7 @@ func RunCommand() *cobra.Command {
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
+	PersistNetConsoleFlags(persistentFlags)
 
 	return cmdRun
 }
@@ -49,8 +50,9 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
+	netconsleFlags := NewNetConsoleFlags(flags)
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, netconsleFlags)
 	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

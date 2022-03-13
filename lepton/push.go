@@ -102,7 +102,7 @@ func CreateTarGz(src string, destination string) error {
 	} else if mode.IsDir() { // folder
 
 		// walk through every file in the folder
-		filepath.Walk(src, func(file string, fi os.FileInfo, err error) error {
+		filepath.Walk(src, func(file string, fi os.FileInfo, ferr error) error {
 			// generate tar header
 			header, err := tar.FileInfoHeader(fi, file)
 			if err != nil {

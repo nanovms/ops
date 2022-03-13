@@ -430,6 +430,7 @@ func LoadCommand() *cobra.Command {
 	PersistRunLocalInstanceCommandFlags(persistentFlags)
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
+	PersistNetConsoleFlags(persistentFlags)
 	persistentFlags.BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
@@ -444,13 +445,14 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
+	netconsoleFlags := NewNetConsoleFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
 	pkgFlags.SluggedPackage = strings.ReplaceAll(args[0], ":", "_")
 
 	c := api.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags, netconsoleFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
