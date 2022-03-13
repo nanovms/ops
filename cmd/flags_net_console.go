@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// NetConsoleFlags for flags related to net console options
 type NetConsoleFlags struct {
 	NetConsolePort int
 	NetConsoleIP   string
@@ -32,6 +33,7 @@ func NewNetConsoleFlags(cmdFlags *pflag.FlagSet) (flags *NetConsoleFlags) {
 	return
 }
 
+// MergeToConfig sets passthrough data in the config from the flags
 func (flags *NetConsoleFlags) MergeToConfig(config *types.Config) (err error) {
 	config.ManifestPassthrough["netconsole-port"] = flags.NetConsolePort
 	config.ManifestPassthrough["netconsole-ip"] = flags.NetConsoleIP
