@@ -30,6 +30,9 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 			}
 		}
 
+		// override Boot and Kernel parameters in configuration file
+		config.Boot = ""
+		config.Kernel = ""
 		updateNanosToolsPaths(config, nanosVersion)
 		config.NanosVersion = nanosVersion
 	} else {
