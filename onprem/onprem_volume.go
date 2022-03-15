@@ -66,7 +66,7 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
-func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	log.Warn("not implemented")
 	fmt.Println("use <ops run> or <ops pkg load> with --mounts flag instead")
 	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")

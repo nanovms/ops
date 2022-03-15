@@ -65,7 +65,7 @@ func TestAttachVolume(t *testing.T) {
 		StartServer(&request.StartServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
-	err := p.AttachVolume(testutils.NewMockContext(), serverName, volumeName)
+	err := p.AttachVolume(testutils.NewMockContext(), serverName, volumeName, 1)
 
 	assert.Nil(t, err)
 }

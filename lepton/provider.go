@@ -64,7 +64,7 @@ type VolumeService interface {
 	CreateVolume(ctx *Context, volumeName, data, provider string) (NanosVolume, error)
 	GetAllVolumes(ctx *Context) (*[]NanosVolume, error)
 	DeleteVolume(ctx *Context, volumeName string) error
-	AttachVolume(ctx *Context, instanceName, volumeName string) error
+	AttachVolume(ctx *Context, instanceName, volumeName string, attachID int) error
 	DetachVolume(ctx *Context, instanceName, volumeName string) error
 }
 

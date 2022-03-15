@@ -152,7 +152,7 @@ func (g *GCloud) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches Compute Engine Disk volume to existing instance
-func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	config := ctx.Config()
 
 	disk := &compute.AttachedDisk{

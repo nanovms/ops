@@ -144,7 +144,7 @@ func (a *Azure) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)

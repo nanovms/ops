@@ -160,7 +160,7 @@ func (a *AWS) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string) error {
+func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string, attachID int) error {
 	vol, err := a.findVolumeByName(name)
 	if err != nil {
 		return err
@@ -171,24 +171,32 @@ func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string) error
 		return err
 	}
 
-	// Look for an unused device name to be assigned to the volume, starting from "/dev/sdb"
 	device := ""
-	for deviceLetter := 'b'; deviceLetter <= 'z'; deviceLetter++ {
-		name := "/dev/sd" + string(deviceLetter)
-		nameUsed := false
-		for _, mapping := range instance.BlockDeviceMappings {
-			if *mapping.DeviceName == name {
-				nameUsed = true
+	if attachID >= 0 {
+		if attachID >= 1 && attachID <= 25 {
+			device = "/dev/sd" + string(rune('a'+attachID))
+		} else {
+			return fmt.Errorf("invalid attachment point %d; allowed values: 1-25", attachID)
+		}
+	} else {
+		// Look for an unused device name to be assigned to the volume, starting from "/dev/sdb"
+		for deviceLetter := 'b'; deviceLetter <= 'z'; deviceLetter++ {
+			name := "/dev/sd" + string(deviceLetter)
+			nameUsed := false
+			for _, mapping := range instance.BlockDeviceMappings {
+				if *mapping.DeviceName == name {
+					nameUsed = true
+					break
+				}
+			}
+			if !nameUsed {
+				device = name
 				break
 			}
 		}
-		if !nameUsed {
-			device = name
-			break
+		if device == "" {
+			return errors.New("no available device names")
 		}
-	}
-	if device == "" {
-		return errors.New("no available device names")
 	}
 
 	input := &ec2.AttachVolumeInput{
