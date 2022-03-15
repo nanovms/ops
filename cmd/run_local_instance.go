@@ -3,13 +3,22 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/network"
+	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/qemu"
 	"github.com/nanovms/ops/types"
 )
 
 // RunLocalInstance runs a virtual machine in a hypervisor
 func RunLocalInstance(c *types.Config) (err error) {
+	if c.Mounts != nil {
+		c.VolumesDir = lepton.LocalVolumeDir
+		err = onprem.AddMountsFromConfig(c)
+		if err != nil {
+			return
+		}
+	}
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		ErrNoHypervisor := "No hypervisor found on $PATH"
