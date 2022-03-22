@@ -172,6 +172,13 @@ func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID i
 			},
 		},
 	}
+	if attachID > 0 {
+		if attachID < 64 {
+			(*vm.StorageProfile.DataDisks)[0].Lun = to.Int32Ptr(int32(attachID))
+		} else {
+			return fmt.Errorf("invalid attachment point %d; allowed values: 0-63", attachID)
+		}
+	}
 
 	future, err := vmClient.CreateOrUpdate(context.TODO(), a.groupName, image, vm)
 	if err != nil {
