@@ -241,7 +241,6 @@ func (a *AWS) findVolumeByName(name string) (*ec2.Volume, error) {
 	input := &ec2.DescribeVolumesInput{
 		Filters: []*ec2.Filter{
 			{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
-			{Name: aws.String("tag:Name"), Values: []*string{aws.String(name)}},
 		},
 	}
 
@@ -250,9 +249,16 @@ func (a *AWS) findVolumeByName(name string) (*ec2.Volume, error) {
 		return nil, err
 	}
 
-	if len(output.Volumes) == 0 {
-		return nil, fmt.Errorf("volume with name %s not found", name)
+	for _, volume := range output.Volumes {
+		if *volume.VolumeId == name {
+			return volume, nil
+		}
+		for _, tag := range volume.Tags {
+			if (*tag.Key == "Name") && (*tag.Value == name) {
+				return volume, nil
+			}
+		}
 	}
 
-	return output.Volumes[0], nil
+	return nil, fmt.Errorf("volume '%s' not found", name)
 }
