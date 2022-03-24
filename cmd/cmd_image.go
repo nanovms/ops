@@ -72,10 +72,6 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	providerFlags := NewProviderCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 
-	if pkgFlags.Package != "" {
-		pkgFlags.SluggedPackage = strings.ReplaceAll(pkgFlags.Package, ":", "_")
-	}
-
 	if len(args) > 0 {
 		c.Program = args[0]
 	}
