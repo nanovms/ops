@@ -6,11 +6,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/nanovms/ops/types"
+	"strings"
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
+
 	"github.com/spf13/pflag"
 )
 
@@ -35,6 +36,8 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.Package == "" {
 		return
 	}
+
+	flags.SluggedPackage = strings.ReplaceAll(flags.Package, ":", "_")
 
 	packagePath := flags.PackagePath()
 
