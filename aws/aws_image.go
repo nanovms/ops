@@ -140,7 +140,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 			{
 				DeviceName: aws.String("/dev/sda1"),
 				Ebs: &ec2.EbsBlockDevice{
-					DeleteOnTermination: aws.Bool(false),
+					DeleteOnTermination: aws.Bool(true),
 					SnapshotId:          aws.String(snapshotID),
 					VolumeType:          aws.String("gp2"),
 				},
