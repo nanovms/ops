@@ -10,7 +10,6 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/onprem"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 )
@@ -70,11 +69,6 @@ func ConvertJSONToConfig(data []byte, c *types.Config) (err error) {
 			err = fmt.Errorf("%w ~ error near '%s' (offset %d) line: %v", err, problemPart, jsonErr.Offset, line)
 		}
 		return ErrInvalidFileConfig(err)
-	}
-
-	c.VolumesDir = lepton.LocalVolumeDir
-	if c.Mounts != nil {
-		err = onprem.AddMountsFromConfig(c)
 	}
 
 	if c.RunConfig.IPAddress != "" && !isIPAddressValid(c.RunConfig.IPAddress) {

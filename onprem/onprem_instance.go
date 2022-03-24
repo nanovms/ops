@@ -32,6 +32,14 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 		return fmt.Errorf("image \"%s\" not found", imageName)
 	}
 
+	if c.Mounts != nil {
+		c.VolumesDir = lepton.LocalVolumeDir
+		err := AddMountsFromConfig(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
 		fmt.Println("No hypervisor found on $PATH")

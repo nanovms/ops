@@ -152,13 +152,19 @@ func (g *GCloud) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches Compute Engine Disk volume to existing instance
-func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (g *GCloud) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	config := ctx.Config()
 
 	disk := &compute.AttachedDisk{
 		AutoDelete: false,
-		DeviceName: name,
 		Source:     fmt.Sprintf("zones/%s/disks/%s", config.CloudConfig.Zone, name),
+	}
+	if attachID >= 0 {
+		if attachID > 0 {
+			disk.DeviceName = fmt.Sprintf("persistent-disk-%d", attachID)
+		} else {
+			return fmt.Errorf("attachment point 0 is reserved for the boot disk")
+		}
 	}
 	op, err := g.Service.Instances.AttachDisk(config.CloudConfig.ProjectID, config.CloudConfig.Zone, image, disk).Context(context.TODO()).Do()
 	if err != nil {

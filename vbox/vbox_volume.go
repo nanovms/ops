@@ -35,7 +35,7 @@ func (p *Provider) DeleteVolume(ctx *lepton.Context, name string) (err error) {
 }
 
 // AttachVolume attaches a storage to an upcloud server
-func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string) (err error) {
+func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string, attachID int) (err error) {
 	err = errors.New("Unsupported")
 
 	return

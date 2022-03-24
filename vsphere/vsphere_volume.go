@@ -170,7 +170,7 @@ func (v *Vsphere) DeleteVolume(ctx *lepton.Context, name string) (err error) {
 }
 
 // AttachVolume attaches a volume to an instance
-func (v *Vsphere) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (v *Vsphere) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	f := find.NewFinder(v.client, true)
 	ds, err := f.DatastoreOrDefault(context.TODO(), v.datastore)
 	if err != nil {

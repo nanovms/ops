@@ -210,3 +210,25 @@ func GetSizeInGb(size string) (int, error) {
 	}
 	return int(sizeInGb), nil
 }
+
+// AddMounts adds Mounts and RunConfig.Mounts to image from flags
+func AddMounts(mounts []string, config *types.Config) error {
+	if config.Mounts == nil {
+		config.Mounts = make(map[string]string)
+	}
+	for _, mnt := range mounts {
+		lm := strings.Split(mnt, VolumeDelimiter)
+		if len(lm) != 2 {
+			return fmt.Errorf("mount config invalid: missing parts: %s", mnt)
+		}
+		if lm[1] == "" || lm[1][0] != '/' {
+			return fmt.Errorf("mount config invalid: %s", mnt)
+		}
+		_, ok := config.Mounts[lm[0]]
+		if ok {
+			return fmt.Errorf("mount path occupied: %s", lm[0])
+		}
+		config.Mounts[lm[0]] = lm[1]
+	}
+	return nil
+}

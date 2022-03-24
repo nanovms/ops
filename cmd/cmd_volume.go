@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -144,6 +146,17 @@ func volumeAttachCommand() *cobra.Command {
 func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 	instanceName := args[0]
 	volumeName := args[1]
+	attachID := -1
+	attachIDPrefix := "%"
+	if strings.HasPrefix(volumeName, attachIDPrefix) {
+		attachStrings := strings.Split(strings.TrimPrefix(volumeName, attachIDPrefix), ":")
+		if len(attachStrings) == 2 {
+			if id, err := strconv.Atoi(attachStrings[0]); err == nil {
+				attachID = id
+				volumeName = attachStrings[1]
+			}
+		}
+	}
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
@@ -155,7 +168,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	err = p.AttachVolume(ctx, instanceName, volumeName)
+	err = p.AttachVolume(ctx, instanceName, volumeName, attachID)
 	if err != nil {
 		log.Fatal(err)
 	}

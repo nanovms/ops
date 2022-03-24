@@ -107,7 +107,7 @@ func (p *Provider) DeleteVolume(ctx *lepton.Context, name string) (err error) {
 }
 
 // AttachVolume attaches a volume to an oci instance
-func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string) (err error) {
+func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string, attachID int) (err error) {
 	return errors.New("Unsupported")
 
 	_, err = p.computeClient.AttachVolume(context.TODO(), core.AttachVolumeRequest{

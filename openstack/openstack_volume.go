@@ -173,7 +173,7 @@ func (o *OpenStack) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (o *OpenStack) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	computeClient, err := o.getComputeClient()
 	if err != nil {
 		return err

@@ -9,7 +9,6 @@ import (
 	"github.com/nanovms/ops/types"
 
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/onprem"
 	"github.com/spf13/pflag"
 )
 
@@ -79,7 +78,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 	}
 
 	if flags.Mounts != nil {
-		err = onprem.AddMounts(flags.Mounts, c)
+		err = lepton.AddMounts(flags.Mounts, c)
 		if err != nil {
 			return
 		}

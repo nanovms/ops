@@ -144,7 +144,7 @@ func (a *Azure) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume attaches a volume to an instance
-func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	vmClient := a.getVMClient()
 
 	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
@@ -171,6 +171,13 @@ func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string) error {
 				ID: to.StringPtr(*disk.ID),
 			},
 		},
+	}
+	if attachID > 0 {
+		if attachID < 64 {
+			(*vm.StorageProfile.DataDisks)[0].Lun = to.Int32Ptr(int32(attachID))
+		} else {
+			return fmt.Errorf("invalid attachment point %d; allowed values: 0-63", attachID)
+		}
 	}
 
 	future, err := vmClient.CreateOrUpdate(context.TODO(), a.groupName, image, vm)

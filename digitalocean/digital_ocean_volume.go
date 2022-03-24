@@ -19,7 +19,7 @@ func (do *DigitalOcean) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (do *DigitalOcean) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	return nil
 }
 

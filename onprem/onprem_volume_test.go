@@ -178,7 +178,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 			}
 
 			mounts = append(mounts, fmt.Sprintf("%s:%s", tt.mount, tt.mountAt))
-			err = onprem.AddMounts(mounts, config)
+			err = lepton.AddMounts(mounts, config)
 			if err != nil {
 				if !tt.err {
 					t.Errorf("AddMounts: %v", err)

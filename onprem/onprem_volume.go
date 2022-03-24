@@ -66,7 +66,7 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
-func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	log.Warn("not implemented")
 	fmt.Println("use <ops run> or <ops pkg load> with --mounts flag instead")
 	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
@@ -142,45 +142,6 @@ func filterVolume(all []lepton.NanosVolume, query map[string]string) ([]lepton.N
 		}
 	}
 	return vols, nil
-}
-
-// AddMounts adds Mounts and RunConfig.Mounts to image from flags
-func AddMounts(mounts []string, config *types.Config) error {
-	if config.Mounts == nil {
-		config.Mounts = make(map[string]string)
-	}
-	query := make(map[string]string)
-
-	for _, mnt := range mounts {
-		lm := strings.Split(mnt, lepton.VolumeDelimiter)
-		if len(lm) != 2 {
-			return fmt.Errorf("mount config invalid: missing parts: %s", mnt)
-		}
-		if lm[1] == "" || lm[1][0] != '/' {
-			return fmt.Errorf("mount config invalid: %s", mnt)
-		}
-
-		query["id"] = lm[0]
-		query["label"] = lm[0]
-		vols, err := GetVolumes(config.VolumesDir, query)
-		if err != nil {
-			return err
-		}
-
-		if len(vols) == 0 {
-			return fmt.Errorf("volume with uuid/label %s not found", lm[0])
-		} else if len(vols) > 1 {
-			return fmt.Errorf("ambiguous volume uuid/label: %s: multiple volumes found", lm[0])
-		}
-		_, ok := config.Mounts[lm[0]]
-		if ok {
-			return fmt.Errorf("mount path occupied: %s", lm[0])
-		}
-		config.Mounts[lm[0]] = lm[1]
-		config.RunConfig.Mounts = append(config.RunConfig.Mounts, vols[0].Path)
-	}
-
-	return nil
 }
 
 // AddMountsFromConfig adds RunConfig.Mounts to image from existing Mounts

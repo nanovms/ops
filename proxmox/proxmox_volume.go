@@ -19,7 +19,7 @@ func (p *ProxMox) DeleteVolume(ctx *lepton.Context, name string) error {
 }
 
 // AttachVolume is a stub to satisfy VolumeService interface
-func (p *ProxMox) AttachVolume(ctx *lepton.Context, image, name string) error {
+func (p *ProxMox) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	return nil
 }
 
