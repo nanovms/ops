@@ -77,6 +77,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags)
+
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

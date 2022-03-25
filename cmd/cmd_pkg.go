@@ -446,7 +446,6 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 	pkgFlags.Package = args[0]
-	pkgFlags.SluggedPackage = strings.ReplaceAll(args[0], ":", "_")
 
 	c := api.NewConfig()
 
