@@ -121,9 +121,8 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 	if len(flags.Consoles) > 0 {
 		c.ManifestPassthrough["netconsole_port"] = flags.NetConsolePort
 		c.ManifestPassthrough["netconsole_ip"] = flags.NetConsoleIP
+		c.ManifestPassthrough["consoles"] = flags.Consoles
 	}
-	c.ManifestPassthrough["consoles"] = flags.Consoles
-
 	return
 }
 
