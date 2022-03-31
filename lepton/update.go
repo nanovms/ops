@@ -253,9 +253,5 @@ func DoUpdate(url string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	err = Apply(resp.Body, Options{})
-	if err != nil {
-		// error handling
-	}
-	return err
+	return Apply(resp.Body, Options{})
 }
