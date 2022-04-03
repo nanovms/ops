@@ -66,8 +66,9 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			Program:    "MyTestApp",
 		}
 		expected := &types.Config{
-			Boot:   opsPath + "/boot.img",
-			Kernel: opsPath + "/kernel.img",
+			Boot:     opsPath + "/boot.img",
+			UefiBoot: opsPath + "/bootx64.efi",
+			Kernel:   opsPath + "/kernel.img",
 			Mounts: map[string]string{
 				volumeName: "/files",
 			},
@@ -114,6 +115,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 
 		expected := &types.Config{
 			Boot:                opsPath + "/boot.img",
+			UefiBoot:            opsPath + "/bootx64.efi",
 			Kernel:              opsPath + "/kernel.img",
 			Mounts:              map[string]string{},
 			CloudConfig:         types.ProviderConfig{},
