@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
@@ -24,7 +24,7 @@ import (
 func (a *Azure) GetVM(ctx context.Context, vmName string) (vm compute.VirtualMachine, err error) {
 	vmClient := a.getVMClient()
 
-	vm, err = vmClient.Get(ctx, a.groupName, vmName, compute.InstanceView)
+	vm, err = vmClient.Get(ctx, a.groupName, vmName, compute.InstanceViewTypesInstanceView)
 	return
 }
 
@@ -164,6 +164,10 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 					ImageReference: &compute.ImageReference{
 						ID: to.StringPtr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/images/" + ctx.Config().CloudConfig.ImageName),
 					},
+					OsDisk: &compute.OSDisk{
+						CreateOption: compute.DiskCreateOptionTypesFromImage,
+						DeleteOption: compute.DiskDeleteOptionTypesDelete,
+					},
 				},
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
 					BootDiagnostics: &compute.BootDiagnostics{
@@ -232,7 +236,7 @@ func (a *Azure) GetInstanceByName(ctx *lepton.Context, name string) (vm *lepton.
 	nicClient := a.getNicClient()
 	ipClient := a.getIPClient()
 
-	result, err := vmClient.Get(context.TODO(), a.groupName, name, compute.InstanceView)
+	result, err := vmClient.Get(context.TODO(), a.groupName, name, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		if management.IsResourceNotFoundError(err) {
 			return nil, lepton.ErrInstanceNotFound(name)
@@ -249,7 +253,7 @@ func (a *Azure) GetInstances(ctx *lepton.Context) (cinstances []lepton.CloudInst
 	nicClient := a.getNicClient()
 	ipClient := a.getIPClient()
 
-	vmlist, err := vmClient.List(context.TODO(), a.groupName)
+	vmlist, err := vmClient.List(context.TODO(), a.groupName, "")
 	if err != nil {
 		return
 	}
@@ -359,7 +363,7 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	}
 
 	ctx.Logger().Infof("Deleting vm with ID %s...", instancename)
-	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename)
+	future, err := vmClient.Delete(context.TODO(), a.groupName, instancename, nil)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("unable to delete instance")
@@ -478,7 +482,7 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 
 	vmClient := a.getVMClient()
 
-	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceView)
+	vm, err := vmClient.Get(context.TODO(), a.groupName, vmName, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -202,7 +202,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 // DeleteFromBucket deletes key from config's bucket
 func (az *Storage) DeleteFromBucket(config *types.Config, key string) error {
 
-	fmt.Printf("Started deleting image from container")
+	fmt.Printf("Started deleting image from container\n")
 	blobURL := getBlobURL(containerName, key)
 
 	ctx := context.Background()
