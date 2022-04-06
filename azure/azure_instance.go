@@ -149,6 +149,10 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	tags := getAzureDefaultTags()
 	tags["image"] = &ctx.Config().CloudConfig.ImageName
 
+	for _, tag := range ctx.Config().CloudConfig.Tags {
+		tags[tag.Key] = to.StringPtr(tag.Value)
+	}
+
 	future, err := vmClient.CreateOrUpdate(
 		nctx,
 		a.groupName,
