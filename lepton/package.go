@@ -76,7 +76,12 @@ func (pkglist *PackageList) List() []Package {
 // ParseIdentifier parses a package identifier which looks like <namespace>/<pkg>:<version>
 func ParseIdentifier(identifier string) PackageIdentifier {
 	tokens := strings.Split(identifier, "/")
-	namespace := tokens[len(tokens)-2]
+	var namespace string
+	if len(tokens) < 2 {
+		namespace = ""
+	} else {
+		namespace = tokens[len(tokens)-2]
+	}
 	pkgTokens := strings.Split(tokens[len(tokens)-1], ":")
 	pkgName := pkgTokens[0]
 	version := "latest"
@@ -259,7 +264,7 @@ func GetLocalPackageList() ([]Package, error) {
 
 		// ignore packages compressed
 		if !strings.Contains(pkgName, "tar.gz") {
-			name, _ := getPkgnameAndVersion(pkgName)
+			name, _ := GetPkgnameAndVersion(pkgName)
 			data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName))
 			if err != nil {
 				return nil, err
@@ -415,12 +420,13 @@ func BuildImageFromPackage(packagepath string, c types.Config) error {
 	return nil
 }
 
-func getPkgnameAndVersion(pkgName string) (string, string) {
-	match := packageRegex.FindStringSubmatch(pkgName)
+// GetPkgnameAndVersion gets the name and version from the pkg identifier
+func GetPkgnameAndVersion(pkgIdentifier string) (string, string) {
+	match := packageRegex.FindStringSubmatch(pkgIdentifier)
 	result := make(map[string]string)
 	// mostly then there is no version in the name and hence we can return all of it
 	if len(match) == 0 {
-		return pkgName, ""
+		return pkgIdentifier, "latest"
 	}
 	for i, name := range packageRegex.SubexpNames() {
 		if i != 0 && name != "" {

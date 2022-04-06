@@ -352,7 +352,7 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 }
 
 func cmdPkgPush(cmd *cobra.Command, args []string) {
-	packageName := args[0]
+	packageFolder := args[0]
 	creds, err := api.ReadCredsFromLocal()
 	if err != nil {
 		if err == api.ErrCredentialsNotExist {
@@ -362,6 +362,7 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
+	name, version := api.GetPkgnameAndVersion(packageFolder)
 	pkgList, err := api.GetLocalPackageList()
 	if err != nil {
 		log.Fatal(err)
@@ -369,24 +370,24 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
 	for _, pkg := range pkgList {
-		if pkg.Name == packageName {
+		if pkg.Name == name && pkg.Version == version {
 			foundPkg = pkg
 			break
 		}
 	}
-	if foundPkg.SHA256 == "" {
-		log.Fatalf("no local package with the name %s found", packageName)
+	if foundPkg.Name == "" {
+		log.Fatalf("no local package with the name %s found", packageFolder)
 	}
 
 	// build the archive here
-	archiveName := filepath.Join(localPackages, packageName) + ".tar.gz"
-	err = lepton.CreateTarGz(filepath.Join(localPackages, packageName), archiveName)
+	archiveName := filepath.Join(localPackages, packageFolder) + ".tar.gz"
+	err = lepton.CreateTarGz(filepath.Join(localPackages, packageFolder), archiveName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := lepton.BuildRequestForArchiveUpload(packageName, foundPkg, archiveName)
+	req, err := lepton.BuildRequestForArchiveUpload(name, foundPkg, archiveName)
 	if err != nil {
 		log.Fatal(err)
 	}
