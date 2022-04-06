@@ -25,6 +25,9 @@ type BuildImageCommandFlags struct {
 	IPv6Address     string
 	Netmask         string
 	Gateway         string
+	NetConsolePort  string
+	NetConsoleIP    string
+	Consoles        []string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
@@ -110,6 +113,16 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		c.RunConfig.NetMask = flags.Netmask
 	}
 
+	if c.ManifestPassthrough == nil {
+		c.ManifestPassthrough = make(map[string]interface{})
+	}
+
+	// we only set the netconsole port and ip if the consoles have values
+	if len(flags.Consoles) > 0 {
+		c.ManifestPassthrough["netconsole_port"] = flags.NetConsolePort
+		c.ManifestPassthrough["netconsole_ip"] = flags.NetConsoleIP
+		c.ManifestPassthrough["consoles"] = flags.Consoles
+	}
 	return
 }
 
@@ -173,6 +186,19 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 		exitWithError(err.Error())
 	}
 
+	flags.NetConsolePort, err = cmdFlags.GetString("netconsole-port")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	flags.NetConsoleIP, err = cmdFlags.GetString("netconsole-ip")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	flags.Consoles, err = cmdFlags.GetStringArray("consoles")
+	if err != nil {
+		exitWithError(err.Error())
+	}
 	return
 }
 
@@ -189,6 +215,9 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.String("ipv6-address", "", "static ipv6 address")
 	cmdFlags.String("gateway", "", "network gateway")
 	cmdFlags.String("netmask", "255.255.255.0", "network mask")
+	cmdFlags.StringP("netconsole-port", "", "4444", "set net console port")
+	cmdFlags.StringP("netconsole-ip", "", "10.0.2.2", "set net console ip")
+	cmdFlags.StringArrayP("consoles", "", []string{}, "set different consoles to forward logs to")
 }
 
 func setNanosBaseImage(c *types.Config) {

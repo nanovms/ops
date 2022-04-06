@@ -66,8 +66,9 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			Program:    "MyTestApp",
 		}
 		expected := &types.Config{
-			Boot:   opsPath + "/boot.img",
-			Kernel: opsPath + "/kernel.img",
+			Boot:     opsPath + "/boot.img",
+			UefiBoot: opsPath + "/bootx64.efi",
+			Kernel:   opsPath + "/kernel.img",
 			Mounts: map[string]string{
 				volumeName: "/files",
 			},
@@ -78,12 +79,13 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 				Imagename: imagesPath + "/test-image.img",
 				NetMask:   "255.255.255.0",
 			},
-			Args:        []string{"MyTestApp", "a b c d"},
-			Program:     "MyTestApp",
-			TargetRoot:  "unix",
-			Env:         map[string]string{"test": "1234"},
-			NameServers: []string{"8.8.8.8"},
-			VolumesDir:  lepton.LocalVolumeDir,
+			Args:                []string{"MyTestApp", "a b c d"},
+			Program:             "MyTestApp",
+			TargetRoot:          "unix",
+			Env:                 map[string]string{"test": "1234"},
+			NameServers:         []string{"8.8.8.8"},
+			VolumesDir:          lepton.LocalVolumeDir,
+			ManifestPassthrough: map[string]interface{}{},
 		}
 
 		err := buildImageFlags.MergeToConfig(c)
@@ -112,13 +114,15 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 
 		expected := &types.Config{
-			Boot:        opsPath + "/boot.img",
-			Kernel:      opsPath + "/kernel.img",
-			Mounts:      map[string]string{},
-			CloudConfig: types.ProviderConfig{},
-			RunConfig:   types.RunConfig{},
-			Args:        []string{},
-			NameServers: []string{"8.8.8.8"},
+			Boot:                opsPath + "/boot.img",
+			UefiBoot:            opsPath + "/bootx64.efi",
+			Kernel:              opsPath + "/kernel.img",
+			Mounts:              map[string]string{},
+			CloudConfig:         types.ProviderConfig{},
+			RunConfig:           types.RunConfig{},
+			Args:                []string{},
+			NameServers:         []string{"8.8.8.8"},
+			ManifestPassthrough: map[string]interface{}{},
 		}
 
 		assert.Equal(t, expected, c)

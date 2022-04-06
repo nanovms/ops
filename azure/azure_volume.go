@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -63,7 +63,7 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, provider string) (
 		Location: to.StringPtr(location),
 		Name:     to.StringPtr(name),
 		DiskProperties: &compute.DiskProperties{
-			HyperVGeneration: compute.V1,
+			HyperVGeneration: compute.HyperVGenerationV1,
 			DiskSizeGB:       to.Int32Ptr(int32(sizeInGb)),
 			CreationData: &compute.CreationData{
 				CreateOption:     "Import",
@@ -147,7 +147,7 @@ func (a *Azure) DeleteVolume(ctx *lepton.Context, name string) error {
 func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
 	vmClient := a.getVMClient()
 
-	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
+	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID i
 func (a *Azure) DetachVolume(ctx *lepton.Context, image, name string) error {
 	vmClient := a.getVMClient()
 
-	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceView)
+	vm, err := vmClient.Get(context.TODO(), a.groupName, image, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		return err
 	}

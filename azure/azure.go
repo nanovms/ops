@@ -15,7 +15,7 @@ import (
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 )
 
 // most of this is ripped from the samples repo:
