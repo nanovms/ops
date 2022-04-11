@@ -161,25 +161,22 @@ func (a *Azure) AttachVolume(ctx *lepton.Context, image, name string, attachID i
 	if err != nil {
 		return err
 	}
-
-	vm.StorageProfile.DataDisks = &[]compute.DataDisk{
-		{
-			Lun:          to.Int32Ptr(0),
-			Name:         &name,
-			CreateOption: compute.DiskCreateOptionTypesAttach,
-			ManagedDisk: &compute.ManagedDiskParameters{
-				ID: to.StringPtr(*disk.ID),
-			},
+	newDisk := compute.DataDisk{
+		Lun:          to.Int32Ptr(0),
+		Name:         &name,
+		CreateOption: compute.DiskCreateOptionTypesAttach,
+		ManagedDisk: &compute.ManagedDiskParameters{
+			ID: to.StringPtr(*disk.ID),
 		},
 	}
 	if attachID > 0 {
 		if attachID < 64 {
-			(*vm.StorageProfile.DataDisks)[0].Lun = to.Int32Ptr(int32(attachID))
+			newDisk.Lun = to.Int32Ptr(int32(attachID))
 		} else {
 			return fmt.Errorf("invalid attachment point %d; allowed values: 0-63", attachID)
 		}
 	}
-
+	*vm.StorageProfile.DataDisks = append(*vm.StorageProfile.DataDisks, newDisk)
 	future, err := vmClient.CreateOrUpdate(context.TODO(), a.groupName, image, vm)
 	if err != nil {
 		return fmt.Errorf("cannot update vm: %v", err)
