@@ -437,6 +437,8 @@ func GetNSPkgnameAndVersion(pkgIdentifier string) (string, string, string) {
 	return namespace, result["packageName"], result["version"]
 }
 
+// ExtractNS extracts namespace from the package identifier of format <namespace>/<packageWithVersion>
+// and returns the namespace and package with version
 func ExtractNS(identifier string) (string, string) {
 	namespace := ""
 	pkgIdfs := strings.Split(identifier, "/")
