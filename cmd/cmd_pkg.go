@@ -109,6 +109,8 @@ func PackageCommands() *cobra.Command {
 	cmdFromDockerPackage.MarkPersistentFlagRequired("file")
 	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
 
+	cmdPkgPush.PersistentFlags().BoolP("private", "p", false, "set the package as private")
+
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdPkgSearch)
 	cmdPkg.AddCommand(cmdGetPackage)
@@ -352,6 +354,8 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 }
 
 func cmdPkgPush(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
 	pkgIdentifier := args[0]
 	creds, err := api.ReadCredsFromLocal()
 	if err != nil {
@@ -363,6 +367,7 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	private, _ := flags.GetBool("private")
 	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
 	pkgList, err := api.GetLocalPackageList()
 	if err != nil {
@@ -391,7 +396,7 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := lepton.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName)
+	req, err := lepton.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
 	if err != nil {
 		log.Fatal(err)
 	}

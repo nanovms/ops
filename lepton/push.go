@@ -14,7 +14,11 @@ import (
 )
 
 // BuildRequestForArchiveUpload builds the request to upload a package with the provided metadata
-func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLocation string) (*http.Request, error) {
+func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLocation string, private bool) (*http.Request, error) {
+	privateStr := "off"
+	if private {
+		privateStr = "on"
+	}
 	params := map[string]string{
 		"name":        name,
 		"description": pkg.Description,
@@ -22,6 +26,7 @@ func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLo
 		"runtime":     pkg.Runtime,
 		"version":     pkg.Version,
 		"namespace":   namespace,
+		"private":     privateStr,
 	}
 	return newfileUploadRequest(PkghubBaseURL+"/packages/create", params, "package", archiveLocation)
 
