@@ -352,7 +352,7 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 }
 
 func cmdPkgPush(cmd *cobra.Command, args []string) {
-	packageFolder := args[0]
+	pkgIdentifier := args[0]
 	creds, err := api.ReadCredsFromLocal()
 	if err != nil {
 		if err == api.ErrCredentialsNotExist {
@@ -362,13 +362,17 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-	name, version := api.GetPkgnameAndVersion(packageFolder)
+
+	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
 	pkgList, err := api.GetLocalPackageList()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	_, packageFolder := api.ExtractNS(pkgIdentifier)
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
+
 	for _, pkg := range pkgList {
 		if pkg.Name == name && pkg.Version == version {
 			foundPkg = pkg
@@ -387,7 +391,7 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := lepton.BuildRequestForArchiveUpload(name, foundPkg, archiveName)
+	req, err := lepton.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName)
 	if err != nil {
 		log.Fatal(err)
 	}
