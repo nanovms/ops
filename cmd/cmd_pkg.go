@@ -376,7 +376,7 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	_, packageFolder := api.ExtractNS(pkgIdentifier)
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
-	fmt.Println(ns, name, version)
+
 	for _, pkg := range pkgList {
 		// trip the "v" if provided in the version
 		if pkg.Name == name && strings.TrimPrefix(pkg.Version, "v") == strings.TrimPrefix(version, "v") {
