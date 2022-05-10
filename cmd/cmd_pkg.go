@@ -366,13 +366,14 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-
 	private, _ := flags.GetBool("private")
 	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
 	pkgList, err := api.GetLocalPackageList()
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(ns, name, version)
+
 	_, packageFolder := api.ExtractNS(pkgIdentifier)
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
