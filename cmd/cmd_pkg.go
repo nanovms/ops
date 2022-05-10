@@ -372,7 +372,6 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(ns, name, version)
 
 	_, packageFolder := api.ExtractNS(pkgIdentifier)
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
