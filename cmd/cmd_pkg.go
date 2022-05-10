@@ -373,13 +373,13 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	_, packageFolder := api.ExtractNS(pkgIdentifier)
 	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
 	var foundPkg api.Package
-
+	fmt.Println(ns, name, version)
 	for _, pkg := range pkgList {
-		if pkg.Name == name && pkg.Version == version {
+		// trip the "v" if provided in the version
+		if pkg.Name == name && strings.TrimPrefix(pkg.Version, "v") == strings.TrimPrefix(version, "v") {
 			foundPkg = pkg
 			break
 		}
