@@ -366,7 +366,6 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 	}
-
 	private, _ := flags.GetBool("private")
 	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
 	pkgList, err := api.GetLocalPackageList()
@@ -379,7 +378,8 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 	var foundPkg api.Package
 
 	for _, pkg := range pkgList {
-		if pkg.Name == name && pkg.Version == version {
+		// trip the "v" if provided in the version
+		if pkg.Name == name && strings.TrimPrefix(pkg.Version, "v") == strings.TrimPrefix(version, "v") {
 			foundPkg = pkg
 			break
 		}

@@ -265,21 +265,26 @@ func GetLocalPackageList() ([]Package, error) {
 		// ignore packages compressed
 		if !strings.Contains(pkgName, "tar.gz") {
 			_, name, _ := GetNSPkgnameAndVersion(pkgName)
-			data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName))
-			if err != nil {
-				return nil, err
+			manifestLoc := fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName)
+			if _, err := os.Stat(manifestLoc); err == nil {
+
+				data, err := ioutil.ReadFile(manifestLoc)
+				if err != nil {
+					return nil, err
+				}
+
+				var pkg Package
+				err = json.Unmarshal(data, &pkg)
+				if err != nil {
+					fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
+					os.Exit(1)
+					return nil, err
+				}
+				pkg.Namespace = username
+				pkg.Name = name
+				packages = append(packages, pkg)
 			}
 
-			var pkg Package
-			err = json.Unmarshal(data, &pkg)
-			if err != nil {
-				fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
-				os.Exit(1)
-				return nil, err
-			}
-			pkg.Namespace = username
-			pkg.Name = name
-			packages = append(packages, pkg)
 		}
 	}
 
