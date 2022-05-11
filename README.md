@@ -74,7 +74,7 @@ console.log('Server running at http://127.0.0.1:8083/');
 Then you can run it like so:
 
 ```sh
-ops pkg load node_v11.5.0 -p 8083 -f -n -a hi.js
+ops pkg load eyberg/node:v14.2.0 -p 8083 -n -a hi.js
 ```
 
 Want to push your app out to the cloud?
