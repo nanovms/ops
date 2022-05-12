@@ -65,15 +65,16 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	}
 
 	packagePath := flags.PackagePath()
-
 	if _, err := os.Stat(packagePath); os.IsNotExist(err) {
 		if flags.LocalPackage {
-			return fmt.Errorf("No local package with the name %s found", flags.Package)
+			return fmt.Errorf("no local package with the name %s found", flags.Package)
 		}
 
 		downloadPackage(flags.Package, c)
 	}
 
+	// re-evaluate the package path to make sure correct paths are detected
+	packagePath = flags.PackagePath()
 	manifestPath := path.Join(packagePath, "package.manifest")
 	if _, err := os.Stat(manifestPath); err != nil {
 		return errors.New("failed finding package manifest")
