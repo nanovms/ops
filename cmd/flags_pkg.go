@@ -27,8 +27,35 @@ func (flags *PkgCommandFlags) PackagePath() string {
 	if flags.LocalPackage {
 		return path.Join(api.GetOpsHome(), "local_packages", flags.Package)
 	}
+	flags.SluggedPackage = strings.ReplaceAll(flags.Package, ":", "_")
 
-	return path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
+	// if the local_path doesn't exist then we try to check if there is a "v" version
+	pkgPath := path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
+	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
+		pkgPath = flags.buildAlternatePath()
+	}
+
+	return pkgPath
+}
+
+// buildAlternatePath generates an alternate package path with an extra "v" prefixed
+// to the version. There are certain packages on pkghub which follow these conventions
+func (flags *PkgCommandFlags) buildAlternatePath() string {
+	pkgParts := strings.Split(flags.Package, ":")
+	pkgPath := path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
+	if len(pkgParts) > 1 {
+		pkg := pkgParts[0]
+		version := "v" + pkgParts[1]
+		fuzzyPkgVersion := pkg + "_" + version
+		altPkgPath := path.Join(api.GetOpsHome(), "packages", fuzzyPkgVersion)
+		if _, err := os.Stat(altPkgPath); os.IsNotExist(err) {
+			return pkgPath
+		}
+		flags.SluggedPackage = fuzzyPkgVersion
+		return altPkgPath
+	}
+
+	return pkgPath
 }
 
 // MergeToConfig merge package configuration to ops configuration
@@ -37,18 +64,17 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		return
 	}
 
-	flags.SluggedPackage = strings.ReplaceAll(flags.Package, ":", "_")
-
 	packagePath := flags.PackagePath()
-
 	if _, err := os.Stat(packagePath); os.IsNotExist(err) {
 		if flags.LocalPackage {
-			return fmt.Errorf("No local package with the name %s found", flags.Package)
+			return fmt.Errorf("no local package with the name %s found", flags.Package)
 		}
 
 		downloadPackage(flags.Package, c)
 	}
 
+	// re-evaluate the package path to make sure correct paths are detected
+	packagePath = flags.PackagePath()
 	manifestPath := path.Join(packagePath, "package.manifest")
 	if _, err := os.Stat(manifestPath); err != nil {
 		return errors.New("failed finding package manifest")
