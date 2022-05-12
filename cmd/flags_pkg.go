@@ -50,10 +50,9 @@ func (flags *PkgCommandFlags) buildAlternatePath() string {
 		altPkgPath := path.Join(api.GetOpsHome(), "packages", fuzzyPkgVersion)
 		if _, err := os.Stat(altPkgPath); os.IsNotExist(err) {
 			return pkgPath
-		} else {
-			flags.SluggedPackage = fuzzyPkgVersion
-			return altPkgPath
 		}
+		flags.SluggedPackage = fuzzyPkgVersion
+		return altPkgPath
 	}
 
 	return pkgPath
