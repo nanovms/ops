@@ -171,6 +171,10 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
+func (p *AWS) MirrorImage(ctx *lepton.Context) (string, error) {
+	return "", nil
+}
+
 // createSnapshot process create Snapshot to EBS
 // Returns snapshotID and err
 func (p *AWS) createSnapshot(imagePath string) (string, error) {
