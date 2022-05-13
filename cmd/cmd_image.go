@@ -726,5 +726,5 @@ func imageMirrorHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	fmt.Println("New image id -", newImageID)
+	fmt.Println("Image was successfully mirrored. New image id -", newImageID)
 }

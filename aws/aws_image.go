@@ -207,6 +207,16 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 		SourceImageId: i.ImageId,
 		SourceRegion:  &srcRegion,
 	})
+	if err != nil {
+		return "", err
+	}
+
+	tags, _ := buildAwsTags(ctx.Config().CloudConfig.Tags, imageName)
+
+	dstEc2.CreateTags(&ec2.CreateTagsInput{
+		Resources: []*string{output.ImageId},
+		Tags:      tags,
+	})
 
 	if err != nil {
 		return "", err
