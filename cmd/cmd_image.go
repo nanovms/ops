@@ -462,7 +462,7 @@ func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
 		case 0, os.ModeSymlink:
 			err = reader.CopyFile(srcPath, dest, true)
 			if err != nil {
-				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, dest, err)
+				err = fmt.Errorf("cannot copy '%s' to '%s': %v", srcPath, dest, err)
 			}
 		}
 		if err != nil {
@@ -474,11 +474,11 @@ func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
 func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
 	dirEntries, err := reader.ReadDir(src)
 	if err != nil {
-		return fmt.Errorf("Cannot read directory '%s': %v", src, err)
+		return fmt.Errorf("cannot read directory '%s': %v", src, err)
 	}
 	if _, err = os.Stat(dest); os.IsNotExist(err) {
 		if err = os.Mkdir(dest, 0755); err != nil {
-			return fmt.Errorf("Cannot create directory '%s': %v", src, err)
+			return fmt.Errorf("cannot create directory '%s': %v", src, err)
 		}
 	}
 	for _, entry := range dirEntries {
@@ -490,7 +490,7 @@ func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
 		case 0, os.ModeSymlink:
 			err = reader.CopyFile(srcPath, destPath, dereference)
 			if err != nil {
-				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, destPath, err)
+				err = fmt.Errorf("cannot copy '%s' to '%s': %v", srcPath, destPath, err)
 			}
 		}
 		if err != nil {
@@ -533,7 +533,7 @@ func imageLsCommandHandler(cmd *cobra.Command, args []string) {
 	case os.ModeDir:
 		dirEntries, err := reader.ReadDir(srcPath)
 		if err != nil {
-			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+			exitWithError(fmt.Sprintf("cannot read directory '%s': %v", srcPath, err))
 		}
 		for index, entry := range dirEntries {
 			if index > 0 {
@@ -615,14 +615,14 @@ func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
 func dumpFSEntry(reader *fs.Reader, srcPath string, indent int) {
 	fileInfo, err := reader.Stat(srcPath)
 	if err != nil {
-		exitWithError(fmt.Sprintf("Cannot access '%s': %v", srcPath, err))
+		exitWithError(fmt.Sprintf("cannot access '%s': %v", srcPath, err))
 	}
 	switch fileInfo.Mode() {
 	case os.ModeDir:
 		fmt.Println(getDumpLine(indent, fileInfo, log.ConsoleColors.Blue()))
 		dirEntries, err := reader.ReadDir(srcPath)
 		if err != nil {
-			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+			exitWithError(fmt.Sprintf("cannot read directory '%s': %v", srcPath, err))
 		}
 		for _, entry := range dirEntries {
 			dumpFSEntry(reader, path.Join(srcPath, entry.Name()), indent+1)
