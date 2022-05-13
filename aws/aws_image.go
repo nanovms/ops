@@ -172,6 +172,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
+// MirrorImage copies an image using its imageName from one region to another
 func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion string) (string, error) {
 	srcSession, err := session.NewSession(
 		&aws.Config{

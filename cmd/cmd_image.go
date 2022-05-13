@@ -722,9 +722,9 @@ func imageMirrorHandler(cmd *cobra.Command, args []string) {
 		exitWithError(fmt.Sprintf("mirroring images for cloud provider %s is not yet implemented by ops", c.CloudConfig.Platform))
 	}
 
-	newImageId, err := mirrorer.MirrorImage(ctx, args[0], args[1], args[2])
+	newImageID, err := mirrorer.MirrorImage(ctx, args[0], args[1], args[2])
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	fmt.Println("New image id -", newImageId)
+	fmt.Println("New image id -", newImageID)
 }
