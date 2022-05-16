@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ebs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
@@ -169,6 +170,60 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	return nil
+}
+
+// MirrorImage copies an image using its imageName from one region to another
+func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion string) (string, error) {
+	srcSession, err := session.NewSession(
+		&aws.Config{
+			Region: aws.String(stripZone(srcRegion)),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	srcEc2 := ec2.New(srcSession)
+
+	i, err := p.findImageByNameUsingSession(srcEc2, imageName)
+	if i == nil {
+		return "", fmt.Errorf("no image with name %s found", imageName)
+	}
+	if err != nil {
+		return "", fmt.Errorf("error while search for image: %s", err.Error())
+	}
+
+	dstSession, err := session.NewSession(
+		&aws.Config{
+			Region: aws.String(stripZone(dstRegion)),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	dstEc2 := ec2.New(dstSession)
+
+	output, err := dstEc2.CopyImage(&ec2.CopyImageInput{
+		Name:          aws.String(imageName),
+		SourceImageId: i.ImageId,
+		SourceRegion:  &srcRegion,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	tags, _ := buildAwsTags(ctx.Config().CloudConfig.Tags, imageName)
+
+	dstEc2.CreateTags(&ec2.CreateTagsInput{
+		Resources: []*string{output.ImageId},
+		Tags:      tags,
+	})
+
+	if err != nil {
+		return "", err
+	}
+	return *output.ImageId, nil
 }
 
 // createSnapshot process create Snapshot to EBS
@@ -649,6 +704,10 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 }
 
 func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
+	return p.findImageByNameUsingSession(p.ec2, name)
+}
+
+func (p *AWS) findImageByNameUsingSession(ec2Session *ec2.EC2, name string) (*ec2.Image, error) {
 	ec2Filters := []*ec2.Filter{
 		{Name: aws.String("tag:Name"), Values: []*string{&name}},
 		{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
@@ -658,7 +717,7 @@ func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
 		Filters: ec2Filters,
 	}
 
-	result, err := p.ec2.DescribeImages(input)
+	result, err := ec2Session.DescribeImages(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {

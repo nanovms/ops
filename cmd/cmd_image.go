@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/fs"
-	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/onprem"
@@ -23,7 +22,7 @@ func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree", "mirror"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -38,6 +37,7 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageCopyCommand())
 	cmdImage.AddCommand(imageLsCommand())
 	cmdImage.AddCommand(imageTreeCommand())
+	cmdImage.AddCommand(imageMirrorCommand())
 
 	return cmdImage
 }
@@ -62,7 +62,7 @@ func imageCreateCommand() *cobra.Command {
 
 func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
-	c := lepton.NewConfig()
+	c := api.NewConfig()
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
@@ -141,7 +141,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := lepton.NewConfig()
+	c := api.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)
@@ -183,7 +183,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c := lepton.NewConfig()
+	c := api.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
 	err := mergeContainer.Merge(c)
@@ -462,7 +462,7 @@ func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
 		case 0, os.ModeSymlink:
 			err = reader.CopyFile(srcPath, dest, true)
 			if err != nil {
-				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, dest, err)
+				err = fmt.Errorf("cannot copy '%s' to '%s': %v", srcPath, dest, err)
 			}
 		}
 		if err != nil {
@@ -474,11 +474,11 @@ func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
 func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
 	dirEntries, err := reader.ReadDir(src)
 	if err != nil {
-		return fmt.Errorf("Cannot read directory '%s': %v", src, err)
+		return fmt.Errorf("cannot read directory '%s': %v", src, err)
 	}
 	if _, err = os.Stat(dest); os.IsNotExist(err) {
 		if err = os.Mkdir(dest, 0755); err != nil {
-			return fmt.Errorf("Cannot create directory '%s': %v", src, err)
+			return fmt.Errorf("cannot create directory '%s': %v", src, err)
 		}
 	}
 	for _, entry := range dirEntries {
@@ -490,7 +490,7 @@ func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
 		case 0, os.ModeSymlink:
 			err = reader.CopyFile(srcPath, destPath, dereference)
 			if err != nil {
-				err = fmt.Errorf("Cannot copy '%s' to '%s': %v", srcPath, destPath, err)
+				err = fmt.Errorf("cannot copy '%s' to '%s': %v", srcPath, destPath, err)
 			}
 		}
 		if err != nil {
@@ -533,7 +533,7 @@ func imageLsCommandHandler(cmd *cobra.Command, args []string) {
 	case os.ModeDir:
 		dirEntries, err := reader.ReadDir(srcPath)
 		if err != nil {
-			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+			exitWithError(fmt.Sprintf("cannot read directory '%s': %v", srcPath, err))
 		}
 		for index, entry := range dirEntries {
 			if index > 0 {
@@ -596,13 +596,13 @@ func imageLsSymlink(reader *fs.Reader, filePath string, fileInfo os.FileInfo, lo
 }
 
 func imageTreeCommand() *cobra.Command {
-	var cmdLs = &cobra.Command{
+	var cmdTree = &cobra.Command{
 		Use:   "tree <image_name>",
 		Short: "display image filesystem contents in tree format",
 		Run:   imageTreeCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-	return cmdLs
+	return cmdTree
 }
 
 func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
@@ -615,14 +615,14 @@ func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
 func dumpFSEntry(reader *fs.Reader, srcPath string, indent int) {
 	fileInfo, err := reader.Stat(srcPath)
 	if err != nil {
-		exitWithError(fmt.Sprintf("Cannot access '%s': %v", srcPath, err))
+		exitWithError(fmt.Sprintf("cannot access '%s': %v", srcPath, err))
 	}
 	switch fileInfo.Mode() {
 	case os.ModeDir:
 		fmt.Println(getDumpLine(indent, fileInfo, log.ConsoleColors.Blue()))
 		dirEntries, err := reader.ReadDir(srcPath)
 		if err != nil {
-			exitWithError(fmt.Sprintf("Cannot read directory '%s': %v", srcPath, err))
+			exitWithError(fmt.Sprintf("cannot read directory '%s': %v", srcPath, err))
 		}
 		for _, entry := range dirEntries {
 			dumpFSEntry(reader, path.Join(srcPath, entry.Name()), indent+1)
@@ -646,7 +646,7 @@ func getDumpLine(indent int, fileInfo os.FileInfo, color string) string {
 }
 
 func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
-	c := lepton.NewConfig()
+	c := api.NewConfig()
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
@@ -659,7 +659,7 @@ func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
 		exitWithError("Image subcommand not implemented yet for cloud images")
 	}
 	imageName := args[0]
-	imagePath := path.Join(lepton.LocalImageDir, imageName)
+	imagePath := path.Join(api.LocalImageDir, imageName)
 	if _, err := os.Stat(imagePath); err != nil {
 		if os.IsNotExist(err) && !strings.HasSuffix(imagePath, ".img") {
 			imagePath += ".img"
@@ -678,4 +678,53 @@ func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
 		exitWithError(fmt.Sprintf("Cannot load image %s: %v", imageName, err))
 	}
 	return reader
+}
+
+func imageMirrorCommand() *cobra.Command {
+
+	var cmdMirror = &cobra.Command{
+		Use:   "mirror <image_name> <src_region> <dst_region>",
+		Short: "copies an image from one region to another",
+		Run:   imageMirrorHandler,
+		Args:  cobra.ExactArgs(3),
+	}
+	return cmdMirror
+
+}
+
+func imageMirrorHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	zone, _ := cmd.Flags().GetString("zone")
+	if zone != "" {
+		c.CloudConfig.Zone = zone
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	mirrorer, ok := p.(api.Mirrorer)
+	if !ok {
+		exitWithError(fmt.Sprintf("mirroring images for cloud provider %s is not yet implemented by ops", c.CloudConfig.Platform))
+	}
+
+	newImageID, err := mirrorer.MirrorImage(ctx, args[0], args[1], args[2])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	fmt.Println("Image was successfully mirrored. New image id -", newImageID)
 }

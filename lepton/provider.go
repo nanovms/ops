@@ -44,6 +44,12 @@ type Provider interface {
 	VolumeService
 }
 
+// Mirrorer is an interface that all provider which provider feature to
+// copy an image from one region to another
+type Mirrorer interface {
+	MirrorImage(ctx *Context, imageName, srcRegion, dstRegion string) (string, error)
+}
+
 // ErrInstanceNotFound creates new error stating instance with given name cannot be found
 func ErrInstanceNotFound(name string) error {
 	return fmt.Errorf("%s: %s", errPrefixInstanceNotFound, name)
