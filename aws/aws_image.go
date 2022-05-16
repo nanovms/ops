@@ -182,13 +182,15 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 	if err != nil {
 		return "", err
 	}
-	// initialize aws services
+
 	srcEc2 := ec2.New(srcSession)
 
-	i, _ := p.findImageByNameUsingSession(srcEc2, imageName)
-
+	i, err := p.findImageByNameUsingSession(srcEc2, imageName)
 	if i == nil {
 		return "", fmt.Errorf("no image with name %s found", imageName)
+	}
+	if err != nil {
+		return "", fmt.Errorf("error while search for image: %s", err.Error())
 	}
 
 	dstSession, err := session.NewSession(
@@ -199,7 +201,7 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 	if err != nil {
 		return "", err
 	}
-	// initialize aws services
+
 	dstEc2 := ec2.New(dstSession)
 
 	output, err := dstEc2.CopyImage(&ec2.CopyImageInput{

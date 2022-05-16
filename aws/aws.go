@@ -77,7 +77,7 @@ func (p *AWS) Initialize(config *types.ProviderConfig) error {
 	if err != nil {
 		return err
 	}
-	// initialize aws services
+
 	p.session = session
 	p.dnsService = route53.New(session)
 	p.ec2 = ec2.New(session)
