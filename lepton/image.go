@@ -554,6 +554,9 @@ func DownloadFile(fpath string, url string, timeout int, showProgress bool) erro
 		return err
 	}
 
+	// we dont care about the error here
+	creds, _ := ReadCredsFromLocal()
+
 	// Get the data
 	c := &http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
@@ -562,6 +565,11 @@ func DownloadFile(fpath string, url string, timeout int, showProgress bool) erro
 	if err != nil {
 		return err
 	}
+
+	if creds != nil {
+		req.Header.Set(APIKeyHeader, creds.APIKey)
+	}
+
 	resp, err := c.Do(req)
 	if err != nil {
 		return err
