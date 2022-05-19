@@ -707,10 +707,8 @@ func imageMirrorHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	zone, _ := cmd.Flags().GetString("zone")
-	if zone != "" {
-		c.CloudConfig.Zone = zone
-	}
+	// the first argument for the command can be considered as the zone
+	c.CloudConfig.Zone = args[1]
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
