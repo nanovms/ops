@@ -3,11 +3,8 @@ package lepton
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
-
-	"github.com/nanovms/ops/log"
 )
 
 type APIMetadataRequest struct {
@@ -20,15 +17,8 @@ type APIMetadataRequest struct {
 func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 	var err error
 
-	creds, err := ReadCredsFromLocal()
-	if err != nil {
-		if err == ErrCredentialsNotExist {
-			// for a better error message
-			log.Fatal(errors.New("user is not logged in. use 'ops pkg login' first"))
-		} else {
-			log.Fatal(err)
-		}
-	}
+	// we ignore the error here
+	creds, _ := ReadCredsFromLocal()
 
 	// this would never error out
 	metadataURL, _ := url.Parse(PkghubBaseURL + "/api/v1/pkg/metadata")
@@ -38,18 +28,26 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 		Version:   version,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	req, err := BaseHTTPRequest("POST", metadataURL.String(), bytes.NewBuffer(data))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	req.Header.Set(APIKeyHeader, creds.APIKey)
+
+	if creds != nil {
+		req.Header.Set(APIKeyHeader, creds.APIKey)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	var pkg Package
 	err = json.NewDecoder(resp.Body).Decode(&pkg)
+	if err != nil {
+		return nil, err
+	}
 	return &pkg, err
 }

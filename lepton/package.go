@@ -57,17 +57,6 @@ func (pkgidf *PackageIdentifier) Match(pkg Package) bool {
 	return pkg.Name == pkgidf.Name && pkg.Namespace == pkgidf.Namespace && pkg.Version == pkgidf.Version
 }
 
-// FindPackage finds a package with the mentioned identifier
-func (pkglist *PackageList) FindPackage(identifier string) (*Package, bool) {
-	idf := ParseIdentifier(identifier)
-	for _, pkg := range pkglist.Packages {
-		if idf.Match(pkg) {
-			return &pkg, true
-		}
-	}
-	return nil, false
-}
-
 // List returns the package list
 func (pkglist *PackageList) List() []Package {
 	return pkglist.Packages
@@ -97,14 +86,13 @@ func ParseIdentifier(identifier string) PackageIdentifier {
 
 // DownloadPackage downloads package by identifier
 func DownloadPackage(identifier string, config *types.Config) (string, error) {
-	packages, err := GetPackageList(config)
+	pkgIdf := ParseIdentifier(identifier)
+
+	pkg, err := GetPackageMetadata(pkgIdf.Namespace, pkgIdf.Name, pkgIdf.Version)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-
-	pkg, ok := packages.FindPackage(identifier)
-
-	if !ok {
+	if pkg == nil {
 		return "", fmt.Errorf("package %q does not exist", identifier)
 	}
 
@@ -341,10 +329,6 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	sha := sha256Of(archive)
 	homeDirName := filepath.Base(GetOpsHome())
 
-	pkgList, err := GetPackageList(config)
-	if err != nil {
-		panic(err)
-	}
 	// hack
 	// this only verifies for packages - unfortunately this function is
 	// used for extracting releases (which currently don't have
@@ -356,8 +340,9 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		fnameTokens := strings.Split(fname, "_")
 		pkgName := fnameTokens[0]
 		version := fnameTokens[len(fnameTokens)-1]
-		pkg, found := pkgList.FindPackage(fmt.Sprintf("%s/%s:%s", namespace, pkgName, version))
-		if !found || pkg == nil || pkg.SHA256 != sha {
+
+		pkg, _ := GetPackageMetadata(namespace, pkgName, version)
+		if pkg == nil || pkg.SHA256 != sha {
 			log.Fatalf("This package doesn't match what is in the manifest.")
 		}
 
@@ -425,7 +410,7 @@ func BuildImageFromPackage(packagepath string, c types.Config) error {
 	return nil
 }
 
-// GetNSPkgnameAndVersion gets the name and version from the pkg identifier
+// GetNSPkgnameAndVersion gets the namespace, name and version from the pkg identifier
 func GetNSPkgnameAndVersion(pkgIdentifier string) (string, string, string) {
 	namespace, pkgIdf := ExtractNS(pkgIdentifier)
 	match := packageRegex.FindStringSubmatch(pkgIdf)
