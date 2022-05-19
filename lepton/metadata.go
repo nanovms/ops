@@ -8,6 +8,7 @@ import (
 	"net/url"
 )
 
+// APIMetadataRequest is payload sent to get metadata for a package
 type APIMetadataRequest struct {
 	Namespace string `json:"namespace"`
 	PkgName   string `json:"pkg_name"`
