@@ -3,6 +3,7 @@ package lepton
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 )
@@ -43,6 +44,12 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("package not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
 	}
 	var pkg Package
 	err = json.NewDecoder(resp.Body).Decode(&pkg)
