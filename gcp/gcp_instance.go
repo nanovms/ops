@@ -317,6 +317,24 @@ func (p *GCloud) DeleteInstance(ctx *lepton.Context, instancename string) error 
 		return err
 	}
 
+	if cloudConfig.DomainName != "" {
+		domainName := cloudConfig.DomainName
+		domainParts := strings.Split(domainName, ".")
+		zoneName := domainParts[len(domainParts)-2]
+		dnsName := zoneName + "." + domainParts[len(domainParts)-1]
+		aRecordName := domainName + "."
+
+		zoneID, err := p.FindOrCreateZoneIDByName(ctx.Config(), dnsName)
+		if err != nil {
+			return err
+		}
+		err = p.DeleteZoneRecordIfExists(ctx.Config(), zoneID, aRecordName)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	fmt.Printf("Instance deletion succeeded %s.\n", instancename)
 	return nil
 }

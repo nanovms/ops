@@ -131,11 +131,14 @@ func instanceDeleteCommand() *cobra.Command {
 		Run:   instanceDeleteCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
+
+	PersistDeleteInstanceFlags(cmdInstanceDelete.PersistentFlags())
 	return cmdInstanceDelete
 }
 
 func instanceDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	c, err := getInstanceCommandDefaultConfig(cmd)
+
+	c, err := getInstanceDeleteCommandConfig(cmd)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -249,6 +252,22 @@ func getInstanceCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err e
 	c = lepton.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err = mergeContainer.Merge(c)
+
+	return
+}
+
+func getInstanceDeleteCommandConfig(cmd *cobra.Command) (c *types.Config, err error) {
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+	deleteFlags := NewDeleteInstanceCommandFlags(flags)
+
+	c = lepton.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags, deleteFlags)
 	err = mergeContainer.Merge(c)
 
 	return

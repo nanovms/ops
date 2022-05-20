@@ -14,6 +14,33 @@ type CreateInstanceFlags struct {
 	UDPPorts   []string
 }
 
+// DeleteInstanceFlags consolidates flags used for delete an instance
+type DeleteInstanceFlags struct {
+	DomainName string
+}
+
+// MergeToConfig append command flags that are used to delete an instance
+func (f *DeleteInstanceFlags) MergeToConfig(config *types.Config) (err error) {
+	if f.DomainName != "" {
+		config.CloudConfig.DomainName = f.DomainName
+	}
+
+	return nil
+}
+
+// NewDeleteInstanceCommandFlags returns an instance of CreateInstanceFlags
+func NewDeleteInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *DeleteInstanceFlags) {
+	var err error
+	flags = &DeleteInstanceFlags{}
+
+	flags.DomainName, err = cmdFlags.GetString("domainname")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	return flags
+}
+
 // MergeToConfig append command flags that are used to create an instance
 func (f *CreateInstanceFlags) MergeToConfig(config *types.Config) (err error) {
 	if f.DomainName != "" {
@@ -77,4 +104,9 @@ func PersistCreateInstanceFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringP("flavor", "f", "", "flavor name for cloud provider")
 	cmdFlags.StringArrayP("port", "p", nil, "port to open")
 	cmdFlags.StringArrayP("udp", "", nil, "udp ports to forward")
+}
+
+// PersistDeleteInstanceFlags specify delete instance flags in command
+func PersistDeleteInstanceFlags(cmdFlags *pflag.FlagSet) {
+	cmdFlags.StringP("domainname", "d", "", "domain name for instance")
 }
