@@ -218,7 +218,7 @@ func AddMounts(mounts []string, config *types.Config) error {
 	}
 	for _, mnt := range mounts {
 		lm := strings.Split(mnt, VolumeDelimiter)
-		if len(lm) != 2 {
+		if len(lm) < 2 {
 			return fmt.Errorf("mount config invalid: missing parts: %s", mnt)
 		}
 		if lm[1] == "" || lm[1][0] != '/' {
@@ -228,7 +228,7 @@ func AddMounts(mounts []string, config *types.Config) error {
 		if ok {
 			return fmt.Errorf("mount path occupied: %s", lm[0])
 		}
-		config.Mounts[lm[0]] = lm[1]
+		config.Mounts[lm[0]] = strings.Join(lm[1:], ":")
 	}
 	return nil
 }

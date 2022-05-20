@@ -86,7 +86,8 @@ func (m *Manifest) SetKlibDir(dir string) {
 // AddMount adds mount
 func (m *Manifest) AddMount(label, path string) {
 	dir := strings.TrimPrefix(path, "/")
-	mkDirPath(m.rootDir(), dir)
+	dirparts := strings.Split(dir, ":")
+	mkDirPath(m.rootDir(), dirparts[0])
 	if m.root["mounts"] == nil {
 		m.root["mounts"] = make(map[string]interface{})
 	}
