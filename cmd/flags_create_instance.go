@@ -28,7 +28,7 @@ func (f *DeleteInstanceFlags) MergeToConfig(config *types.Config) (err error) {
 	return nil
 }
 
-// NewDeleteInstanceCommandFlags returns an instance of CreateInstanceFlags
+// NewDeleteInstanceCommandFlags returns an instance of DeleteInstanceFlags
 func NewDeleteInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *DeleteInstanceFlags) {
 	var err error
 	flags = &DeleteInstanceFlags{}
