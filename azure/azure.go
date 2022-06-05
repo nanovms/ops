@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -146,6 +147,23 @@ func (a *Azure) getLocation(config *types.Config) string {
 		log.Fatalf("Error: a location must be set via either the Zone attribute in CloudConfig or the AZURE_LOCATION_DEFAULT environment variable.")
 	}
 	return location
+}
+
+func stripAndExtractAvailibilityZone(location string) (string, string) {
+	exp, err := regexp.Compile(`\-\d$`)
+
+	// this error wouldn't happen as we control the regex
+	if err != nil {
+		log.Fatalf("error while extracting availibility zone")
+	}
+	if exp.Match([]byte(location)) {
+		// returns the last part of the location as az
+		az := location[len(location)-1:]
+		// strips the "-[1-9]" from the end of the location if its present
+		cleanedLoc := location[:len(location)-2]
+		return cleanedLoc, az
+	}
+	return location, ""
 }
 
 // Initialize Azure related things
