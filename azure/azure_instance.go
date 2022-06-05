@@ -57,7 +57,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	location := a.getLocation(ctx.Config())
+	location, az := stripAndExtractAvailibilityZone(a.getLocation(ctx.Config()))
 
 	vmName := ctx.Config().RunConfig.InstanceName
 	ctx.Logger().Logf("spinning up:\t%s", vmName)
@@ -153,11 +153,17 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		tags[tag.Key] = to.StringPtr(tag.Value)
 	}
 
+	var zone *[]string = nil
+	if az != "" {
+		zone = to.StringSlicePtr([]string{az})
+	}
+
 	future, err := vmClient.CreateOrUpdate(
 		nctx,
 		a.groupName,
 		vmName,
 		compute.VirtualMachine{
+			Zones:    zone,
 			Location: to.StringPtr(location),
 			Tags:     tags,
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
