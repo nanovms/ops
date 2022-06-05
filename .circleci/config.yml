@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.18.3
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -46,7 +46,7 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   nightly-build:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.18.3
     steps:
       - checkout
       - run: go build
