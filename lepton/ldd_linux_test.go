@@ -1,4 +1,5 @@
-// +build linux
+//go:build lin
+// +build lin
 
 package lepton
 
