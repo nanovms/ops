@@ -11,10 +11,10 @@ jobs:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - run: go get -u golang.org/x/lint/golint
+      - run: go get -d golang.org/x/lint/golint
       - run: sudo apt-get update
       - run: sudo apt-get install qemu-system-x86
-      - run: go get -u github.com/jstemmer/go-junit-report
+      - run: go get -d github.com/jstemmer/go-junit-report
       - run: make deps
       - run: ./hack/verify-gofmt.sh
       - run: ./hack/verify-govet.sh
