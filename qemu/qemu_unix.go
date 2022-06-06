@@ -353,6 +353,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	}
 
+	q.addOption("-device", "virtio-rng-pci")
+
 	// add mounted volumes
 	for n, file := range rconfig.Mounts {
 		q.addDrive(fmt.Sprintf("hd%d", n+1), file, "none")
