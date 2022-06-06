@@ -1,3 +1,4 @@
+//go:build linux || darwin || freebsd
 // +build linux darwin freebsd
 
 package qemu
@@ -351,6 +352,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-m", "1G")
 
 	}
+
+	q.addOption("-device", "virtio-rng-pci")
 
 	// add mounted volumes
 	for n, file := range rconfig.Mounts {
