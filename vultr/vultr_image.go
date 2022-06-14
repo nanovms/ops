@@ -65,7 +65,7 @@ func (v *Vultr) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	c := ctx.Config()
 	bucket := c.CloudConfig.BucketName
-	key := c.CloudConfig.ImageName + ".img"
+	key := c.CloudConfig.ImageName
 	zone := c.CloudConfig.Zone
 
 	v.createImage(key, bucket, zone)

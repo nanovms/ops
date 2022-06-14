@@ -71,7 +71,7 @@ func (s *Objects) CopyToBucket(config *types.Config, archPath string) error {
 		log.Fatal(err)
 	}
 
-	n, err := client.PutObject(bucket, config.CloudConfig.ImageName+".img", file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+	n, err := client.PutObject(bucket, config.CloudConfig.ImageName, file, stat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -28,8 +28,8 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		flavor = config.CloudConfig.Flavor
 	}
 
-	instanceName := strings.Replace(config.RunConfig.InstanceName, ".img", "", 1)
-	imageName := "image:" + strings.Replace(image.Name, ".img", "", 1)
+	instanceName := config.RunConfig.InstanceName
+	imageName := "image:" + image.Name
 
 	keys, _, err := do.Client.Keys.List(context.TODO(), &godo.ListOptions{
 		Page:    1,
@@ -119,7 +119,7 @@ func (do *DigitalOcean) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstanc
 			} else if strings.Contains(t, "image:") {
 				parts := strings.Split(t, ":")
 				if len(parts) > 1 {
-					instance.Image = parts[1] + ".img"
+					instance.Image = parts[1]
 				}
 			}
 		}

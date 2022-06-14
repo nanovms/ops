@@ -69,7 +69,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		} else {
 			c.CloudConfig.ImageName = filepath.Base(imageName)
 			images := path.Join(lepton.GetOpsHome(), "images")
-			imageName = path.Join(images, filepath.Base(imageName)+".img")
+			imageName = path.Join(images, filepath.Base(imageName))
 		}
 		c.RunConfig.Imagename = imageName
 	}
