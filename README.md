@@ -9,9 +9,9 @@
 </p>
 
 Ops is a tool for creating and running a [Nanos](https://github.com/nanovms/nanos) unikernel. It is used to
-package, create and run your application as a [nanos](https://github.com/nanovms/nanos) unikernel instance.
+package, create, and run your application as a [nanos](https://github.com/nanovms/nanos) unikernel instance.
 
-Check out the [DOCS](https://nanovms.gitbook.io/ops/)
+Check out the [DOCS](https://nanovms.gitbook.io/ops/).
 
 # Installation
 
@@ -49,7 +49,7 @@ macOS notes:
 GO111MODULE=on go build -ldflags "-w"
 ```
 
-For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites) please consult the documentation.
+For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites), please consult the documentation.
 
 # Basic usage examples
 
@@ -129,7 +129,7 @@ ops run -p <port> -c <file> <app>
 
 # Example config file
 
-ops config files are plain JSON, below is an example
+OPS config files are plain JSON, below is an example.
 
 ```JSON
 {
@@ -153,14 +153,14 @@ Only advanced/power users should use the bridge networking option.
 Feel free to open up a pull request. It's helpful to have your OPS
 version and the release channel you are using.
 
-Also - if it doesn't work on the main release you can try the nightly -
-the main release can tail the nightly by many weeks sometimes.
+Also, if it doesn't work on the main release, then you can try the nightly. 
+The main release can tail the nightly by many weeks sometimes.
 
 ```sh
 ops version
 ```
 
-if you are using a package, get the package hash:
+If you are using a package, get the package hash:
 
 ```sh
 jq '."gnatsd_1.4.1"' ~/.ops/packages/manifest.json
@@ -169,7 +169,7 @@ jq '."gnatsd_1.4.1"' ~/.ops/packages/manifest.json
 ## Pull Requests
 
 If you have an idea for a new feature and it might take longer than a
-few hours or days to do it's worth opening a feature request tkt to
+few hours or days to complete, then it's worth opening a feature request ticket to
 ideate it first before jumping into code. There might be someone already
 working on the feature or plans to do something entirely different.
 
@@ -177,7 +177,7 @@ working on the feature or plans to do something entirely different.
 
 [Security](https://github.com/nanovms/ops/blob/master/SECURITY.md)
 
-Feel free to email security at.
+Feel free to email security[at]nanovms[dot]com.
 
 ## Support
 
