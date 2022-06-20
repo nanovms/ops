@@ -661,9 +661,6 @@ func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
 	imageName := args[0]
 	imagePath := path.Join(api.LocalImageDir, imageName)
 	if _, err := os.Stat(imagePath); err != nil {
-		if os.IsNotExist(err) {
-			_, err = os.Stat(imagePath)
-		}
 		if err != nil {
 			if os.IsNotExist(err) {
 				exitWithError(fmt.Sprintf("Local image %s not found", imageName))
