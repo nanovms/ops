@@ -46,7 +46,7 @@ var (
 func GenerateImageName(program string) string {
 	program = filepath.Base(program)
 	images := path.Join(GetOpsHome(), "images")
-	return fmt.Sprintf("%s/%s.img", images, program)
+	return fmt.Sprintf("%s/%s", images, program)
 }
 
 // PackagesCache where all packages are stored

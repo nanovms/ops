@@ -125,7 +125,7 @@ func (o *OpenStack) CreateImage(ctx *lepton.Context, imagePath string) error {
 		log.Error(err)
 	}
 
-	imagePath = lepton.LocalImageDir + "/" + imgName + ".img"
+	imagePath = lepton.LocalImageDir + "/" + imgName
 	err = o.uploadImage(imagesClient, image.ID, imagePath)
 	if err != nil {
 		return err

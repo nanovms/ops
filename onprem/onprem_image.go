@@ -4,7 +4,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -65,16 +64,13 @@ func (p *OnPrem) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err
 		if info.IsDir() {
 			return nil
 		}
-		name := info.Name()
 
-		if len(name) > 4 && strings.LastIndex(info.Name(), ".img") == len(name)-4 {
-			images = append(images, lepton.CloudImage{
-				Name:    info.Name(),
-				Path:    hostpath,
-				Size:    info.Size(),
-				Created: info.ModTime(),
-			})
-		}
+		images = append(images, lepton.CloudImage{
+			Name:    info.Name(),
+			Path:    hostpath,
+			Size:    info.Size(),
+			Created: info.ModTime(),
+		})
 		return nil
 	})
 
@@ -121,7 +117,7 @@ func (p *OnPrem) DeleteImage(ctx *lepton.Context, imagename string) error {
 
 // SyncImage syncs image from onprem to target provider provided in Context
 func (p *OnPrem) SyncImage(config *types.Config, target lepton.Provider, image string) error {
-	imagePath := path.Join(lepton.LocalImageDir, image+".img")
+	imagePath := path.Join(lepton.LocalImageDir, image)
 	_, err := os.Stat(imagePath)
 	if err != nil {
 		return nil

@@ -41,7 +41,7 @@ func TestDeleteImage(t *testing.T) {
 
 	deleteImageCmd := cmd.ImageCommands()
 
-	deleteImageCmd.SetArgs([]string{"delete", imagePath + ".img", "--assume-yes"})
+	deleteImageCmd.SetArgs([]string{"delete", imagePath, "--assume-yes"})
 
 	err := deleteImageCmd.Execute()
 

@@ -51,7 +51,7 @@ func mustOpen(f string) *os.File {
 func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	c := ctx.Config()
 
-	imageName := c.CloudConfig.ImageName + ".img"
+	imageName := c.CloudConfig.ImageName
 
 	opshome := lepton.GetOpsHome()
 
