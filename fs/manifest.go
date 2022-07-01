@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/nanovms/ops/log"
@@ -375,76 +374,6 @@ func (m *Manifest) AddPassthrough(key string, value interface{}) {
 }
 
 func (m *Manifest) finalize() {
-	if m.boot != nil {
-		klibDir, isDir := m.bootDir()["klib"].(map[string]interface{})
-		if isDir && (klibDir["ntp"] != nil) {
-			env := m.root["environment"].(map[string]interface{})
-			var err error
-
-			var ntpAddress string
-			var ntpPort string
-			var ntpPollMin string
-			var ntpPollMax string
-			var ntpResetThreshold string
-
-			var pollMinNumber int
-			var pollMaxNumber int
-
-			if val, ok := env["ntpAddress"].(string); ok {
-				ntpAddress = val
-			}
-
-			if val, ok := env["ntpPort"].(string); ok {
-				ntpPort = val
-			}
-
-			if val, ok := env["ntpPollMin"].(string); ok {
-				pollMinNumber, err = strconv.Atoi(val)
-				if err == nil && pollMinNumber > 3 {
-					ntpPollMin = val
-				}
-			}
-
-			if val, ok := env["ntpPollMax"].(string); ok {
-				pollMaxNumber, err = strconv.Atoi(val)
-				if err == nil && pollMaxNumber < 18 {
-					ntpPollMax = val
-				}
-			}
-
-			if val, ok := env["ntpResetThreshold"].(string); ok {
-				_, err = strconv.Atoi(val)
-				if err == nil {
-					ntpResetThreshold = val
-				}
-			}
-
-			if pollMinNumber != 0 && pollMaxNumber != 0 && pollMinNumber > pollMaxNumber {
-				ntpPollMin = ""
-				ntpPollMax = ""
-			}
-
-			if ntpAddress != "" {
-				m.root["ntp_address"] = ntpAddress
-			}
-
-			if ntpPort != "" {
-				m.root["ntp_port"] = ntpPort
-			}
-
-			if ntpPollMin != "" {
-				m.root["ntp_poll_min"] = ntpPollMin
-			}
-
-			if ntpPollMax != "" {
-				m.root["ntp_poll_max"] = ntpPollMax
-			}
-
-			if ntpResetThreshold != "" {
-				m.root["ntp_reset_threshold"] = ntpResetThreshold
-			}
-		}
-	}
 }
 
 func (m *Manifest) bootDir() map[string]interface{} {
