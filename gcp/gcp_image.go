@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nanovms/ops/lepton"
@@ -18,9 +19,16 @@ import (
 // GCPStorageURL is GCP storage path
 const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 
+func amendConfig(c *types.Config) {
+	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
+		c.Uefi = true
+	}
+}
+
 // BuildImage to be upload on GCP
 func (p *GCloud) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+	amendConfig(c)
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
@@ -62,6 +70,7 @@ func (p *GCloud) CustomizeImage(ctx *lepton.Context) (string, error) {
 // BuildImageWithPackage to upload on GCP
 func (p *GCloud) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
+	amendConfig(c)
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
 		return "", err
