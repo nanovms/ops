@@ -28,7 +28,7 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   build-mac:
     macos:
-        xcode: "12.2.0"
+        xcode: "14.0.0"
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
