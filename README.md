@@ -11,6 +11,11 @@
 Ops is a tool for creating and running a [Nanos](https://github.com/nanovms/nanos) unikernel. It is used to
 package, create, and run your application as a [nanos](https://github.com/nanovms/nanos) unikernel instance.
 
+1. [Installation](#installation)
+2. [Hello World](#hello-world)
+3. [Cloud](#cloud)
+4. [Support](#support)
+
 Check out the [DOCS](https://nanovms.gitbook.io/ops/).
 
 # Installation
@@ -22,6 +27,10 @@ Most users should just download the binary from the website:
 ```sh
 curl https://ops.city/get.sh -sSfL | sh
 ```
+
+If you don't like this option you can also download pre-made packages
+for various systems [here](https://ops.city/downloads) and you can also
+build from source.
 
 ## Build and Install from source
 
@@ -51,7 +60,7 @@ GO111MODULE=on go build -ldflags "-w"
 
 For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites), please consult the documentation.
 
-# Basic usage examples
+# Hello World
 
 Before learning more about `ops` it is a good idea to see some basic usage
 examples. Below are links to simple examples using various programming platforms:
@@ -74,43 +83,58 @@ console.log('Server running at http://127.0.0.1:8083/');
 Then you can run it like so:
 
 ```sh
-ops pkg load eyberg/node:v14.2.0 -p 8083 -n -a hi.js
+ops pkg load eyberg/node:v16.5.0 -p 8083 -n -a hi.js
 ```
 
-Want to push your app out to the cloud?
+Note: Since the node package is inside the unikernel you do not need to
+install node locally to use it.
 
-For Google: https://nanovms.gitbook.io/ops/google_cloud
+# Cloud
 
-For AWS: https://nanovms.gitbook.io/ops/aws
+Want to push your app out to the cloud? No complex orchestration like
+K8S is necessary. OPS pushes all the orchestration onto the cloud
+provider of choice so you don't need to manage anything. Be sure to try
+this out as the next step after running a hello world locally as it will
+answer many questions you might have.
 
-Languages:
+- [Azure](https://docs.ops.city/ops/azure)
+- [AWS](https://docs.ops.city/ops/aws)
+- [Google Cloud](https://docs.ops.city/ops/google_cloud)
 
-Various langauge examples can be found at https://github.com/nanovms/ops-examples.
+- [Digital Ocean](https://docs.ops.city/ops/digital_ocean)
+- [Vultr](https://docs.ops.city/ops/vultr)
+- [UpCloud](https://docs.ops.city/ops/upcloud)
 
-Applications:
+You can find many more pre-made packages at the public repo:
 
-* Nginx
-* HAProxy
-* Tarantool
-* Hiawatha
-* Mosquitto
-* Kache
-* Gnatsd
-* [Wasmer](https://github.com/nanovms/ops-examples/tree/master/wasm/01-hello-world)
+[https://repo.ops.city/](https://repo.ops.city/)
 
-You can always find more pre-made packages via:
+Or via the shell:
 
 ```sh
 ops pkg list
 ```
 
-## Apple M1 Users
+You can also upload your own with a free account.
+
+Languages:
+
+Various langauge examples can be found at
+[https://github.com/nanovms/ops-examples](https://github.com/nanovms/ops-examples).
+In general [https://nanos.org](Nanos) supports any languages and is not
+language specific.
+
+You can find more examples and tutorial on youtube as well:
+
+[https://www.youtube.com/channel/UC3mqDqCVu3moVKzmP2YNmlg](https://www.youtube.com/channel/UC3mqDqCVu3moVKzmP2YNmlg)
+
+## Apple M1/M2 Users
 
 The Apple M1 and M2 are ARM based. OPS is built for users primarily
 deploying to x86 based servers. While you can certainly run ARM builds
 with Nanos and OPS be aware that if you are trying to run x86 builds
 (the default) on ARM based M1s you won't be able to use hardware
-acceleration.
+acceleration for x86.
 
 # Build a bootable image
 `ops build <app>`
@@ -179,7 +203,7 @@ working on the feature or plans to do something entirely different.
 
 Feel free to email security[at]nanovms[dot]com.
 
-## Support
+# Support
 
 If you are having trouble running a particular application please feel
 free to open an issue and we can take a look. In general we'll only want
