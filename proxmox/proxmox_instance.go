@@ -63,7 +63,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	data.Set("name", imageName)
 	data.Set("net0", "model=virtio,bridge=vmbr0")
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu", bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -102,7 +102,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 	data.Set("virtio0", "file=local:iso/"+imageName)
 	data.Set("boot", "order=virtio0")
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -160,7 +160,7 @@ type InstanceInfo struct {
 // ListInstances lists instances on Proxmox.
 func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 
-	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/pve/qemu", nil)
+	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -215,7 +215,7 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 // DeleteInstance deletes instance from Proxmox.
 func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 
-	req, err := http.NewRequest("DELETE", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID, nil)
+	req, err := http.NewRequest("DELETE", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+instanceID, nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -247,7 +247,7 @@ func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 // StartInstance starts an instance in Proxmox
 func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID+"/status/start", nil)
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+instanceID+"/status/start", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -277,7 +277,7 @@ func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 // StopInstance halts instance from Proxmox.
 func (p *ProxMox) StopInstance(ctx *lepton.Context, instanceID string) error {
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/qemu/"+instanceID+"/status/stop", nil)
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+instanceID+"/status/stop", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err

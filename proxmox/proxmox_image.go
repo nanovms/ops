@@ -86,7 +86,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	w.Close()
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/pve/storage/local/upload", &b)
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/local/upload", &b)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -139,7 +139,7 @@ type ImageInfo struct {
 // ListImages lists images on ProxMox
 func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 
-	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/pve/storage/local/content", nil)
+	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/local/content", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
