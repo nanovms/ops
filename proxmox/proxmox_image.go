@@ -22,12 +22,23 @@ import (
 
 // BuildImage to be upload on v
 func (p *ProxMox) BuildImage(ctx *lepton.Context) (string, error) {
-	return "", nil
+	c := ctx.Config()
+	err := lepton.BuildImage(*c)
+	if err != nil {
+		return "", err
+	}
+
+	return p.CustomizeImage(ctx)
 }
 
 // BuildImageWithPackage to upload on ProxMox.
 func (p *ProxMox) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
-	return "", nil
+	c := ctx.Config()
+	err := lepton.BuildImageFromPackage(pkgpath, *c)
+	if err != nil {
+		return "", err
+	}
+	return p.CustomizeImage(ctx)
 }
 
 func (p *ProxMox) createImage(key string, bucket string, region string) {
@@ -206,5 +217,6 @@ func (p *ProxMox) ResizeImage(ctx *lepton.Context, imagename string, hbytes stri
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (p *ProxMox) CustomizeImage(ctx *lepton.Context) (string, error) {
-	return "", nil
+	imagePath := ctx.Config().RunConfig.Imagename
+	return imagePath, nil
 }
