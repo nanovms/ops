@@ -10,10 +10,11 @@ import (
 
 // ProxMox provides access to the ProxMox API.
 type ProxMox struct {
-	Storage *Objects
-	tokenID string
-	secret  string
-	apiURL  string
+	Storage  *Objects
+	tokenID  string
+	secret   string
+	apiURL   string
+	nodeNAME string
 }
 
 // Initialize provider
@@ -31,6 +32,11 @@ func (p *ProxMox) Initialize(config *types.ProviderConfig) error {
 	p.apiURL = os.Getenv("API_URL")
 	if p.apiURL == "" {
 		return fmt.Errorf("API_URL is not set")
+	}
+
+	p.nodeNAME = os.Getenv("NODE_NAME")
+	if p.nodeNAME == "" {
+		p.nodeNAME = "pve"
 	}
 
 	return nil
