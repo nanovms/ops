@@ -72,7 +72,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	file := mustOpen(fileName)
 
-	fw, err = w.CreateFormFile(fieldName, file.Name())
+	fw, err = w.CreateFormFile(fieldName, file.Name()+".iso")
 	if err != nil {
 		fmt.Printf("Error creating writer: %v\n", err)
 		return err

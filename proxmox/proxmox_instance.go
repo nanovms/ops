@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
@@ -87,20 +86,58 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	// FIXME: seems to be a race between config && finishing vm creation
-	// probably some sort of context we can look at instead of blocking
-	time.Sleep(1 * time.Second)
-
 	p.addVirtioDisk(ctx, nextid, imageName)
+	p.movDisk(ctx, nextid, imageName)
 
 	return err
+}
+
+func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) error {
+
+	data := url.Values{}
+	data.Set("disk", "virtio0")
+	data.Set("node", p.nodeNAME)
+	data.Set("format", "raw")
+	data.Set("storage", "local-lvm")
+	data.Set("vmid", vmid)
+
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	debug := false
+	if debug {
+		fmt.Println(string(body))
+	}
+
+	return nil
 }
 
 func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string) error {
 	data := url.Values{}
 
-	data.Set("virtio0", "file=local:iso/"+imageName)
-	data.Set("boot", "order=virtio0")
+	// attach disk
+	data.Set("virtio0", "file=local:iso/"+imageName+".iso")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -121,6 +158,28 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	// set boot order, needs to come after attaching disk
+	data.Set("boot", "order=virtio0")
+
+	req, err = http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
+	resp, err = client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer resp.Body.Close()
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
