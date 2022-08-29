@@ -10,10 +10,10 @@ import (
 
 // ProxMox provides access to the ProxMox API.
 type ProxMox struct {
-	Storage *Objects
-	tokenID string
-	secret  string
-	apiURL  string
+	Storage  *Objects
+	tokenID  string
+	secret   string
+	apiURL   string
 	nodeNAME string
 }
 
