@@ -19,6 +19,9 @@ type ProxMox struct {
 
 // Initialize provider
 func (p *ProxMox) Initialize(config *types.ProviderConfig) error {
+
+	var err error
+
 	p.tokenID = os.Getenv("TOKEN_ID")
 	if p.tokenID == "" {
 		return fmt.Errorf("TOKEN_ID is not set")
@@ -37,6 +40,11 @@ func (p *ProxMox) Initialize(config *types.ProviderConfig) error {
 	p.nodeNAME = os.Getenv("NODE_NAME")
 	if p.nodeNAME == "" {
 		p.nodeNAME = "pve"
+	}
+
+	err = p.CheckInit()
+	if err != nil {
+		return err
 	}
 
 	return nil
