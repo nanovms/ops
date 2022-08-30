@@ -123,6 +123,11 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 
+	err = p.CheckResultType(body, "createimage")
+	if err != nil {
+		return err
+	}
+
 	debug := false
 	if debug {
 		fmt.Println(string(body))
@@ -171,6 +176,11 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
+	}
+
+	err = p.CheckResultType(body, "listimages")
+	if err != nil {
 		return err
 	}
 

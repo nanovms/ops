@@ -43,6 +43,11 @@ func (p *ProxMox) getNextID() string {
 		fmt.Println(err)
 	}
 
+	err = p.CheckResultType(body, "getnextid")
+	if err != nil {
+		return ""
+	}
+
 	ir := &NextIDResponse{}
 	json.Unmarshal([]byte(body), ir)
 
@@ -80,9 +85,14 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
+	}
+
+	err = p.CheckResultType(body, "createinstance")
+	if err != nil {
 		return err
 	}
 
@@ -125,6 +135,11 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) er
 		return err
 	}
 
+	err = p.CheckResultType(body, "movdisk")
+	if err != nil {
+		return err
+	}
+
 	debug := false
 	if debug {
 		fmt.Println(string(body))
@@ -163,6 +178,11 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
+	err = p.CheckResultType(body, "addvirtiodisk")
+	if err != nil {
+		return err
+	}
+
 	// set boot order, needs to come after attaching disk
 	data.Set("boot", "order=virtio0")
 
@@ -182,6 +202,11 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		return err
+	}
+
+	err = p.CheckResultType(body, "bootorderset")
+	if err != nil {
 		return err
 	}
 
