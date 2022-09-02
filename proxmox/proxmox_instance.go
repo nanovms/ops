@@ -108,12 +108,19 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) error {
 
+	var err error
+
 	data := url.Values{}
 	data.Set("disk", "virtio0")
 	data.Set("node", p.nodeNAME)
 	data.Set("format", "raw")
 	data.Set("storage", "local-lvm")
 	data.Set("vmid", vmid)
+
+	err = p.CheckStorage("local-lvm")
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
 	if err != nil {

@@ -18,6 +18,16 @@ type pDataArr struct {
 	Data []string `json:"data"`
 }
 
+type sData struct {
+	Active  int    `json:"active"`
+	Enabled int    `json:"enabled"`
+	Storage string `json:"storage"`
+}
+
+type sDataArr struct {
+	Data []sData `json:"data"`
+}
+
 // CheckInit return custom error on {"data": null} or {"data": []} result come from ProxMox API /api2/json/pools
 func (p *ProxMox) CheckInit() error {
 
@@ -44,6 +54,7 @@ func (p *ProxMox) CheckInit() error {
 		return err
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -60,6 +71,78 @@ func (p *ProxMox) CheckInit() error {
 	}
 
 	return nil
+
+}
+
+// CheckStorage return error when not found configured storage or any storages via ProxMox API
+func (p *ProxMox) CheckStorage(storage string) error {
+
+	var err error
+
+	var sdp sDataArr
+
+	var b bytes.Buffer
+
+	edk := errors.New("no any storages is configured")
+	enb := errors.New("storage is disabled: " + storage)
+	ect := errors.New("storage is not active: " + storage)
+	ecs := errors.New("not found storage: " + storage)
+
+	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage", &b)
+	if err != nil {
+		return err
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, &sdp)
+	if err != nil {
+		return err
+	}
+
+	if err == nil && sdp.Data == nil {
+		return edk
+	}
+
+	debug := false
+	if debug {
+		fmt.Println(string(body))
+	}
+
+	for _, v := range sdp.Data {
+
+		if v.Storage == storage {
+
+			if v.Active != 1 {
+				return ect
+			}
+
+			if v.Enabled != 1 {
+				return enb
+			}
+
+			return nil
+
+		}
+	}
+
+	return ecs
 
 }
 
