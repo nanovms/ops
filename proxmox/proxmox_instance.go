@@ -96,8 +96,12 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	p.addVirtioDisk(ctx, nextid, imageName)
-	p.movDisk(ctx, nextid, imageName)
+	err = p.addVirtioDisk(ctx, nextid, imageName)
+	if err != nil {
+		return err
+	}
+
+	err = p.movDisk(ctx, nextid, imageName)
 
 	return err
 }

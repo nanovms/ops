@@ -63,12 +63,17 @@ func (p *ProxMox) CheckInit() error {
 
 }
 
-// CheckResult return custom error when {"data": null} or {"data": []} result come from ProxMox API (Not used now)
+// CheckResult return error or custom error when {"data": null} or {"data": []} result come from ProxMox API (Not used yet)
 func (p *ProxMox) CheckResult(body []byte) error {
 
 	var err error
 
 	ecs := errors.New("check token permissions, environment variables correctness")
+
+	err = checkErrs(body)
+	if err != nil {
+		return err
+	}
 
 	err = checkData(body)
 	if err != nil {
@@ -79,7 +84,7 @@ func (p *ProxMox) CheckResult(body []byte) error {
 
 }
 
-// CheckResultType return custom errors based on type of check, when {"data": null} or {"data": []} result come from ProxMox API
+// CheckResultType return error or custom error based on type of check, when {"data": null} or {"data": []} result come from ProxMox API
 func (p *ProxMox) CheckResultType(body []byte, rtype string) error {
 
 	var err error
@@ -91,7 +96,7 @@ func (p *ProxMox) CheckResultType(body []byte, rtype string) error {
 	case "createimage":
 		ecs = errors.New("can not create disk image in 'local' storage, " + edef)
 	case "listimages":
-		ecs = errors.New("no have any disk images in 'local' storage or " + edef)
+		ecs = errors.New("no disk images found in 'local' storage or " + edef)
 	case "createinstance":
 		ecs = errors.New("can not create machine instance with disk image from 'local' storage, " + edef)
 	case "getnextid":
@@ -104,9 +109,33 @@ func (p *ProxMox) CheckResultType(body []byte, rtype string) error {
 		ecs = errors.New("can not set boot order, " + edef)
 	}
 
+	err = checkErrs(body)
+	if err != nil {
+		return err
+	}
+
 	err = checkData(body)
 	if err != nil {
 		return ecs
+	}
+
+	return nil
+
+}
+
+// checkErrs return error from ProxMox API as is
+func checkErrs(body []byte) error {
+
+	var err error
+
+	var est map[string]*json.RawMessage
+
+	err = json.Unmarshal(body, &est)
+	if err == nil {
+		e, ok := est["errors"]
+		if ok {
+			return errors.New(string(*e))
+		}
 	}
 
 	return nil
