@@ -60,9 +60,17 @@ func mustOpen(f string) *os.File {
 
 // CreateImage - Creates image on v using nanos images
 func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
+
+	var err error
+
 	c := ctx.Config()
 
 	imageName := c.CloudConfig.ImageName
+
+	err = p.CheckStorage("local")
+	if err != nil {
+		return err
+	}
 
 	opshome := lepton.GetOpsHome()
 
@@ -70,7 +78,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	fileName := opshome + "/images/" + imageName
 
 	var b bytes.Buffer
-	var err error
+
 	w := multipart.NewWriter(&b)
 
 	var fw io.Writer
