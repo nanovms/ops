@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/docker/go-units"
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
@@ -43,7 +44,7 @@ func (p *ProxMox) getNextID() string {
 		fmt.Println(err)
 	}
 
-	err = p.CheckResultType(body, "getnextid")
+	err = p.CheckResultType(body, "getnextid", "")
 	if err != nil {
 		return ""
 	}
@@ -56,16 +57,124 @@ func (p *ProxMox) getNextID() string {
 
 // CreateInstance - Creates instance on Proxmox.
 func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
+
+	var err error
+
 	config := ctx.Config()
 
 	nextid := p.getNextID()
 
+	instanceName := config.RunConfig.InstanceName
+
+	archType := config.CloudConfig.Arch
+	machineType := config.CloudConfig.Machine
+	socketsNum := config.CloudConfig.Sockets
+	coresNum := config.CloudConfig.Cores
+	numaStr := strconv.FormatBool(config.CloudConfig.Numa)
+	memoryHmn := config.CloudConfig.Memory
 	imageName := config.CloudConfig.ImageName
+	storageName := config.CloudConfig.StorageName
+	isoStorageName := config.CloudConfig.IsoStorageName
+	bridgeName := config.CloudConfig.BridgeName
+	bridgeName0 := config.CloudConfig.BridgeName0
+	onbootStr := strconv.FormatBool(config.CloudConfig.Onboot)
+	protectionStr := strconv.FormatBool(config.CloudConfig.Protection)
+
+	// Check CloudConfig options
+
+	if archType == "" {
+		archType = "x86_64"
+	}
+
+	if socketsNum == 0 {
+		socketsNum = 1
+	}
+
+	socketsStr := strconv.FormatInt(int64(socketsNum), 10)
+
+	if coresNum == 0 {
+		coresNum = 1
+	}
+
+	coresStr := strconv.FormatInt(int64(coresNum), 10)
+
+	if numaStr == "true" {
+		numaStr = "1"
+	} else {
+		numaStr = "0"
+	}
+
+	if memoryHmn == "" {
+		memoryHmn = "512M"
+	}
+
+	memoryInt, err := units.RAMInBytes(memoryHmn)
+	if err != nil {
+		return err
+	}
+
+	memoryInt = memoryInt / 1024 / 1024
+
+	memoryStr := strconv.FormatInt(memoryInt, 10)
+
+	if storageName == "" {
+		storageName = "local-lvm"
+	}
+
+	if isoStorageName == "" {
+		isoStorageName = "local"
+	}
+
+	if bridgeName0 == "" {
+		if bridgeName != "" {
+			bridgeName0 = bridgeName
+		} else {
+			bridgeName0 = "vmbr0"
+		}
+	}
+
+	err = p.CheckStorage(storageName, "images")
+	if err != nil {
+		return err
+	}
+
+	err = p.CheckStorage(isoStorageName, "iso")
+	if err != nil {
+		return err
+	}
+
+	err = p.CheckBridge(bridgeName0)
+	if err != nil {
+		return err
+	}
+
+	if onbootStr == "true" {
+		onbootStr = "1"
+	} else {
+		onbootStr = "0"
+	}
+
+	if protectionStr == "true" {
+		protectionStr = "1"
+	} else {
+		protectionStr = "0"
+	}
 
 	data := url.Values{}
 	data.Set("vmid", nextid)
-	data.Set("name", imageName)
-	data.Set("net0", "model=virtio,bridge=vmbr0")
+	data.Set("name", instanceName)
+	// Not work correctly through ProxMox API (Uses auto detecting by ProxMox)
+	// data.Set("arch", archType)
+	if machineType != "" {
+		data.Set("machine", machineType)
+	}
+	data.Set("sockets", socketsStr)
+	data.Set("cores", coresStr)
+	data.Set("numa", numaStr)
+	data.Set("memory", memoryStr)
+	data.Set("net0", "model=virtio,bridge="+bridgeName0)
+	data.Set("onboot", onbootStr)
+	data.Set("protection", protectionStr)
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -91,36 +200,34 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "createinstance")
+	debug := false
+	if debug {
+		fmt.Println(string(body))
+	}
+
+	err = p.CheckResultType(body, "createinstance", "file="+isoStorageName+":iso/"+imageName+".iso")
 	if err != nil {
 		return err
 	}
 
-	err = p.addVirtioDisk(ctx, nextid, imageName)
+	err = p.addVirtioDisk(ctx, nextid, imageName, isoStorageName)
 	if err != nil {
 		return err
 	}
 
-	err = p.movDisk(ctx, nextid, imageName)
+	err = p.movDisk(ctx, nextid, imageName, storageName)
 
 	return err
 }
 
-func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) error {
-
-	var err error
+func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string, storageName string) error {
 
 	data := url.Values{}
 	data.Set("disk", "virtio0")
 	data.Set("node", p.nodeNAME)
 	data.Set("format", "raw")
-	data.Set("storage", "local-lvm")
+	data.Set("storage", storageName)
 	data.Set("vmid", vmid)
-
-	err = p.CheckStorage("local-lvm")
-	if err != nil {
-		return err
-	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -146,7 +253,7 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) er
 		return err
 	}
 
-	err = p.CheckResultType(body, "movdisk")
+	err = p.CheckResultType(body, "movdisk", storageName)
 	if err != nil {
 		return err
 	}
@@ -159,11 +266,12 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) er
 	return nil
 }
 
-func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string) error {
+func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string, isoStorageName string) error {
+
 	data := url.Values{}
 
 	// attach disk
-	data.Set("virtio0", "file=local:iso/"+imageName+".iso")
+	data.Set("virtio0", "file="+isoStorageName+":iso/"+imageName+".iso")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -189,7 +297,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
-	err = p.CheckResultType(body, "addvirtiodisk")
+	err = p.CheckResultType(body, "addvirtiodisk", isoStorageName)
 	if err != nil {
 		return err
 	}
@@ -216,7 +324,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
-	err = p.CheckResultType(body, "bootorderset")
+	err = p.CheckResultType(body, "bootorderset", "")
 	if err != nil {
 		return err
 	}

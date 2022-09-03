@@ -66,8 +66,13 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	c := ctx.Config()
 
 	imageName := c.CloudConfig.ImageName
+	isoStorageName := c.CloudConfig.IsoStorageName
 
-	err = p.CheckStorage("local")
+	if isoStorageName == "" {
+		isoStorageName = "local"
+	}
+
+	err = p.CheckStorage(isoStorageName, "iso")
 	if err != nil {
 		return err
 	}
@@ -105,7 +110,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	w.Close()
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/local/upload", &b)
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+isoStorageName+"/upload", &b)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -131,7 +136,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "createimage")
+	err = p.CheckResultType(body, "createimage", isoStorageName)
 	if err != nil {
 		return err
 	}
@@ -163,7 +168,22 @@ type ImageInfo struct {
 // ListImages lists images on ProxMox
 func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 
-	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/local/content", nil)
+	var err error
+
+	c := ctx.Config()
+
+	isoStorageName := c.CloudConfig.StorageName
+
+	if isoStorageName == "" {
+		isoStorageName = "local"
+	}
+
+	err = p.CheckStorage(isoStorageName, "iso")
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+isoStorageName+"/content", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -187,7 +207,7 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "listimages")
+	err = p.CheckResultType(body, "listimages", isoStorageName)
 	if err != nil {
 		return err
 	}

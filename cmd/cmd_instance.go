@@ -96,6 +96,8 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
+	fmt.Printf("%s instance '%s' created...\n", c.CloudConfig.Platform, c.RunConfig.InstanceName)
 }
 
 func instanceListCommand() *cobra.Command {

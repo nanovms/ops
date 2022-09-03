@@ -118,11 +118,23 @@ type Config struct {
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
+	// Arch specifies the type of CPU architecture (Used only for ProxMox yet)
+	Arch string `cloud:"arch"`
+
+	// BridgeName specifies the name of first bridge interface (Used only for ProxMox yet)
+	BridgeName string `cloud:"bridgename"`
+
+	// BridgeName0 (alias for BridgName) specifies the name of first bridge interface (Used only for ProxMox yet)
+	BridgeName0 string `cloud:"bridgename0"`
+
 	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 
 	// BucketNamespace is required on uploading files to cloud providers as oci
 	BucketNamespace string
+
+	// Cores of CPU for instance (Used only for ProxMox yet)
+	Cores uint `cloud:"cores"`
 
 	// DomainName
 	DomainName string
@@ -146,6 +158,21 @@ type ProviderConfig struct {
 	// you can use to pass role information to an EC2 instance when the instance starts.
 	InstanceProfile string
 
+	// IsoStorageName is used for upload intermediate iso images via ProxMox API
+	IsoStorageName string `cloud:"isostoragename"`
+
+	// Machine specifies the type of machine (pc or q35) (Used only for ProxMox yet)
+	Machine string `cloud:"machine"`
+
+	// Memory for instance (Used only for ProxMox yet)
+	Memory string `cloud:"memory"`
+
+	// Numa for instance (Used only for ProxMox yet)
+	Numa bool `cloud:"numa"`
+
+	// Onboot is used to define automatic startup option for instance (Used only for ProxMox yet)
+	Onboot bool `cloud:"onboot"`
+
 	// Platform defines the cloud provider to use with the ops CLI, currently
 	// supporting aws, azure, and gcp.
 	Platform string `cloud:"platform"`
@@ -154,8 +181,17 @@ type ProviderConfig struct {
 	// to gcp.
 	ProjectID string `cloud:"projectid"`
 
+	// Protection is used to define vm/image protection for instance (Used only for ProxMox yet)
+	Protection bool `cloud:"protection"`
+
 	// SecurityGroup
 	SecurityGroup string
+
+	// StorageName is used for create bootable raw image for instance via ProxMox API from iso image
+	StorageName string `cloud:"storagename"`
+
+	// Sockets of CPUs for instance (Used only for ProxMox yet)
+	Sockets uint `cloud:"sockets"`
 
 	// Subnet
 	Subnet string

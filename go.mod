@@ -23,6 +23,7 @@ require (
 	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/go-errors/errors v1.0.1
