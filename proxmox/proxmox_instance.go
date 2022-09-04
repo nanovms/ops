@@ -65,13 +65,14 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	instanceName := config.RunConfig.InstanceName
 
-	archType := config.CloudConfig.Arch
-	machineType := config.CloudConfig.Machine
-	socketsNum := config.CloudConfig.Sockets
-	coresNum := config.CloudConfig.Cores
-	numaStr := strconv.FormatBool(config.CloudConfig.Numa)
-	memoryHmn := config.CloudConfig.Memory
-	imageName := config.CloudConfig.ImageName
+	imageName := config.ProxmoxConfig.ImageName
+
+	archType := config.ProxmoxConfig.Arch
+	machineType := config.ProxmoxConfig.Machine
+	socketsNum := config.ProxmoxConfig.Sockets
+	coresNum := config.ProxmoxConfig.Cores
+	numaStr := strconv.FormatBool(config.ProxmoxConfig.Numa)
+	memoryHmn := config.ProxmoxConfig.Memory
 
 	storageName := config.ProxmoxConfig.StorageName
 	isoStorageName := config.ProxmoxConfig.IsoStorageName
@@ -80,7 +81,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	onbootStr := strconv.FormatBool(config.ProxmoxConfig.Onboot)
 	protectionStr := strconv.FormatBool(config.ProxmoxConfig.Protection)
 
-	// Check CloudConfig options
+	// Check ProxMox configuration options
 
 	if archType == "" {
 		archType = "x86_64"

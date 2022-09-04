@@ -65,7 +65,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	c := ctx.Config()
 
-	imageName := c.CloudConfig.ImageName
+	imageName := c.ProxmoxConfig.ImageName
 
 	isoStorageName := c.ProxmoxConfig.IsoStorageName
 

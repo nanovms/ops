@@ -121,17 +121,12 @@ type Config struct {
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
-	// Arch specifies the type of CPU architecture (Used only for ProxMox yet)
-	Arch string `cloud:"arch"`
 
 	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 
 	// BucketNamespace is required on uploading files to cloud providers as oci
 	BucketNamespace string
-
-	// Cores of CPU for instance (Used only for ProxMox yet)
-	Cores uint `cloud:"cores"`
 
 	// DomainName
 	DomainName string
@@ -155,15 +150,6 @@ type ProviderConfig struct {
 	// you can use to pass role information to an EC2 instance when the instance starts.
 	InstanceProfile string
 
-	// Machine specifies the type of machine (pc or q35) (Used only for ProxMox yet)
-	Machine string `cloud:"machine"`
-
-	// Memory for instance (Used only for ProxMox yet)
-	Memory string `cloud:"memory"`
-
-	// Numa for instance (Used only for ProxMox yet)
-	Numa bool `cloud:"numa"`
-
 	// Platform defines the cloud provider to use with the ops CLI, currently
 	// supporting aws, azure, and gcp.
 	Platform string `cloud:"platform"`
@@ -174,9 +160,6 @@ type ProviderConfig struct {
 
 	// SecurityGroup
 	SecurityGroup string
-
-	// Sockets of CPUs for instance (Used only for ProxMox yet)
-	Sockets uint `cloud:"sockets"`
 
 	// Subnet
 	Subnet string
@@ -197,6 +180,22 @@ type ProviderConfig struct {
 
 // ProxmoxConfig give provider details
 type ProxmoxConfig struct {
+
+	// Arch specifies the type of CPU architecture
+	Arch string `cloud:"arch"`
+
+	// Cores of CPU
+	Cores uint `cloud:"cores"`
+
+	// Machine specifies the type of machine
+	Machine string `cloud:"machine"`
+
+	// Memory
+	Memory string `cloud:"memory"`
+
+	// Numa
+	Numa bool `cloud:"numa"`
+
 	// BridgeName specifies the name of first bridge interface
 	BridgeName string `cloud:"bridgename"`
 
@@ -206,6 +205,9 @@ type ProxmoxConfig struct {
 	// BridgeName1 (secondary interface) specifies the name of first bridge interface (Not used yet)
 	BridgeName1 string `cloud:"bridgename1"`
 
+	// ImageName
+	ImageName string `cloud:"imagename"`
+
 	// IsoStorageName is used for upload intermediate iso images via ProxMox API
 	IsoStorageName string `cloud:"isostoragename"`
 
@@ -214,6 +216,9 @@ type ProxmoxConfig struct {
 
 	// Protection is used to define vm/image protection for instance (Used only for ProxMox yet)
 	Protection bool `cloud:"protection"`
+
+	// Sockets of CPUs
+	Sockets uint `cloud:"sockets"`
 
 	// StorageName is used for create bootable raw image for instance via ProxMox API from iso image
 	StorageName string `cloud:"storagename"`
