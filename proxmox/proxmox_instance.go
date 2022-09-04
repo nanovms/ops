@@ -12,7 +12,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/go-units"
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
@@ -73,12 +72,13 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	numaStr := strconv.FormatBool(config.CloudConfig.Numa)
 	memoryHmn := config.CloudConfig.Memory
 	imageName := config.CloudConfig.ImageName
-	storageName := config.CloudConfig.StorageName
-	isoStorageName := config.CloudConfig.IsoStorageName
-	bridgeName := config.CloudConfig.BridgeName
-	bridgeName0 := config.CloudConfig.BridgeName0
-	onbootStr := strconv.FormatBool(config.CloudConfig.Onboot)
-	protectionStr := strconv.FormatBool(config.CloudConfig.Protection)
+
+	storageName := config.ProxmoxConfig.StorageName
+	isoStorageName := config.ProxmoxConfig.IsoStorageName
+	bridgeName := config.ProxmoxConfig.BridgeName
+	bridgeName0 := config.ProxmoxConfig.BridgeName0
+	onbootStr := strconv.FormatBool(config.ProxmoxConfig.Onboot)
+	protectionStr := strconv.FormatBool(config.ProxmoxConfig.Protection)
 
 	// Check CloudConfig options
 
@@ -108,7 +108,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		memoryHmn = "512M"
 	}
 
-	memoryInt, err := units.RAMInBytes(memoryHmn)
+	memoryInt, err := lepton.RAMInBytes(memoryHmn)
 	if err != nil {
 		return err
 	}
