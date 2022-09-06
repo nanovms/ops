@@ -27,6 +27,10 @@ type Config struct {
 	// CloudConfig configures various attributes about the cloud provider.
 	CloudConfig ProviderConfig
 
+	// TargetConfig allows config that is pertinent to a specific
+	// provider.
+	TargetConfig map[string]string
+
 	// Debugflags
 	Debugflags []string
 
@@ -79,9 +83,6 @@ type Config struct {
 	// ProgramPath specifies the original path of the program to refer to on
 	// attach/detach.
 	ProgramPath string
-
-	// ProxmoxConfig configures various attributes about the ProxMox provider.
-	ProxmoxConfig ProxmoxConfig
 
 	// RebootOnExit defines whether the image should automatically reboot
 	// if an error/failure occurs.
@@ -176,52 +177,6 @@ type ProviderConfig struct {
 	// azure: https://azure.microsoft.com/en-us/global-infrastructure/geographies/#overview
 	// gcp: https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `cloud:"zone"`
-}
-
-// ProxmoxConfig give provider details
-type ProxmoxConfig struct {
-
-	// Arch specifies the type of CPU architecture
-	Arch string `cloud:"arch"`
-
-	// Cores of CPU
-	Cores uint `cloud:"cores"`
-
-	// Machine specifies the type of machine
-	Machine string `cloud:"machine"`
-
-	// Memory
-	Memory string `cloud:"memory"`
-
-	// Numa
-	Numa bool `cloud:"numa"`
-
-	// BridgeName specifies the name of first bridge interface
-	BridgeName string `cloud:"bridgename"`
-
-	// BridgeName0 (alias for BridgeName) specifies the name of first bridge interface
-	BridgeName0 string `cloud:"bridgename0"`
-
-	// BridgeName1 (secondary interface) specifies the name of first bridge interface (Not used yet)
-	BridgeName1 string `cloud:"bridgename1"`
-
-	// ImageName
-	ImageName string `cloud:"imagename"`
-
-	// IsoStorageName is used for upload intermediate iso images via ProxMox API
-	IsoStorageName string `cloud:"isostoragename"`
-
-	// Onboot is used to define automatic startup option for instance (Used only for ProxMox yet)
-	Onboot bool `cloud:"onboot"`
-
-	// Protection is used to define vm/image protection for instance (Used only for ProxMox yet)
-	Protection bool `cloud:"protection"`
-
-	// Sockets of CPUs
-	Sockets uint `cloud:"sockets"`
-
-	// StorageName is used for create bootable raw image for instance via ProxMox API from iso image
-	StorageName string `cloud:"storagename"`
 }
 
 // Tag is used as property on creating instances

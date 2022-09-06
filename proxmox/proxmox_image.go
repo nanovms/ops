@@ -63,17 +63,14 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	var err error
 
-	c := ctx.Config()
+	p.imageName = ctx.Config().TargetConfig["ImageName"]
+	p.isoStorageName = ctx.Config().TargetConfig["IsoStorageName"]
 
-	imageName := c.ProxmoxConfig.ImageName
-
-	isoStorageName := c.ProxmoxConfig.IsoStorageName
-
-	if isoStorageName == "" {
-		isoStorageName = "local"
+	if p.isoStorageName == "" {
+		p.isoStorageName = "local"
 	}
 
-	err = p.CheckStorage(isoStorageName, "iso")
+	err = p.CheckStorage(p.isoStorageName, "iso")
 	if err != nil {
 		return err
 	}
@@ -81,7 +78,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 	opshome := lepton.GetOpsHome()
 
 	fieldName := "filename"
-	fileName := opshome + "/images/" + imageName
+	fileName := opshome + "/images/" + p.imageName
 
 	var b bytes.Buffer
 
@@ -111,7 +108,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	w.Close()
 
-	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+isoStorageName+"/upload", &b)
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+p.isoStorageName+"/upload", &b)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -137,7 +134,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "createimage", isoStorageName)
+	err = p.CheckResultType(body, "createimage", p.isoStorageName)
 	if err != nil {
 		return err
 	}
@@ -171,20 +168,18 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 
 	var err error
 
-	c := ctx.Config()
+	p.isoStorageName = ctx.Config().TargetConfig["IsoStorageName"]
 
-	isoStorageName := c.ProxmoxConfig.StorageName
-
-	if isoStorageName == "" {
-		isoStorageName = "local"
+	if p.isoStorageName == "" {
+		p.isoStorageName = "local"
 	}
 
-	err = p.CheckStorage(isoStorageName, "iso")
+	err = p.CheckStorage(p.isoStorageName, "iso")
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+isoStorageName+"/content", nil)
+	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+p.isoStorageName+"/content", nil)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -208,7 +203,7 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "listimages", isoStorageName)
+	err = p.CheckResultType(body, "listimages", p.isoStorageName)
 	if err != nil {
 		return err
 	}
