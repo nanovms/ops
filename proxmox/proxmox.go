@@ -15,6 +15,8 @@ type ProxMox struct {
 	secret   string
 	apiURL   string
 	nodeNAME string
+
+	isoStorageName string
 }
 
 // Initialize provider

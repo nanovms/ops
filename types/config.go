@@ -27,6 +27,10 @@ type Config struct {
 	// CloudConfig configures various attributes about the cloud provider.
 	CloudConfig ProviderConfig
 
+	// TargetConfig allows config that is pertinent to a specific
+	// provider.
+	TargetConfig map[string]string
+
 	// Debugflags
 	Debugflags []string
 
