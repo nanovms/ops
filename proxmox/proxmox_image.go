@@ -63,8 +63,8 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	var err error
 
-	p.imageName = ctx.Config().TargetConfig["ImageName"]
-	p.isoStorageName = ctx.Config().TargetConfig["IsoStorageName"]
+	p.imageName = ctx.Config().TargetConfig["imageName"]
+	p.isoStorageName = ctx.Config().TargetConfig["isoStorageName"]
 
 	if p.isoStorageName == "" {
 		p.isoStorageName = "local"
@@ -168,7 +168,7 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 
 	var err error
 
-	p.isoStorageName = ctx.Config().TargetConfig["IsoStorageName"]
+	p.isoStorageName = ctx.Config().TargetConfig["isoStorageName"]
 
 	if p.isoStorageName == "" {
 		p.isoStorageName = "local"
