@@ -65,15 +65,19 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	instanceName := config.RunConfig.InstanceName
 
-	p.isoStorageName = ctx.Config().TargetConfig["isoStorageName"]
+	p.isoStorageName = config.TargetConfig["isoStorageName"]
 
-	p.imageName = ctx.Config().TargetConfig["imageName"]
+	p.imageName = config.TargetConfig["imageName"]
 
-	p.arch = ctx.Config().TargetConfig["arch"]
-	p.machine = ctx.Config().TargetConfig["machine"]
+	p.arch = config.TargetConfig["arch"]
+	if p.arch == "" {
+		p.arch = "x86_64"
+	}
 
-	socketsStr := ctx.Config().TargetConfig["sockets"]
-	p.sockets, err = strconv.Atoi(ctx.Config().TargetConfig["sockets"])
+	p.machine = config.TargetConfig["machine"]
+
+	socketsStr := config.TargetConfig["sockets"]
+	p.sockets, err = strconv.Atoi(config.TargetConfig["sockets"])
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -96,40 +100,42 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	p.memory = ctx.Config().TargetConfig["memory"]
-
-	p.storageName = ctx.Config().TargetConfig["storageName"]
-	p.isoStorageName = ctx.Config().TargetConfig["isoStorageName"]
-
-	p.onboot, err = strconv.ParseBool(ctx.Config().TargetConfig["onboot"])
-	if err != nil {
-		fmt.Println(err)
+	numa := "0"
+	if p.numa {
+		numa = "1"
 	}
 
-	p.protection, err = strconv.ParseBool(ctx.Config().TargetConfig["protection"])
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// Check ProxMox configuration options
-
-	if p.arch == "" {
-		p.arch = "x86_64"
-	}
-
+	p.memory = config.TargetConfig["memory"]
 	if p.memory == "" {
 		p.memory = "512M"
 	}
-
 	memoryInt, err := lepton.RAMInBytes(p.memory)
 	if err != nil {
 		return err
 	}
-
 	memoryInt = memoryInt / 1024 / 1024
-
 	memoryStr := strconv.FormatInt(memoryInt, 10)
+
+	p.storageName = config.TargetConfig["storageName"]
+	p.isoStorageName = config.TargetConfig["isoStorageName"]
+
+	onboot := "0"
+	p.onboot, err = strconv.ParseBool(config.TargetConfig["onboot"])
+	if err != nil {
+		fmt.Println(err)
+	}
+	if p.onboot {
+		onboot = "1"
+	}
+
+	p.protection, err = strconv.ParseBool(config.TargetConfig["protection"])
+	if err != nil {
+		fmt.Println(err)
+	}
+	protectionStr := "0"
+	if p.protection {
+		protectionStr = "1"
+	}
 
 	if p.storageName == "" {
 		p.storageName = "local-lvm"
@@ -139,7 +145,8 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		p.isoStorageName = "local"
 	}
 
-	// don't need to pass it here
+	// might be preferential to move some of this to a lint check
+	// instead
 	err = p.CheckStorage(p.storageName, "images")
 	if err != nil {
 		return err
@@ -151,43 +158,37 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	// stubbed for now - see #1372
-	err = p.CheckBridge("vmbr0")
-	if err != nil {
-		return err
-	}
-
-	onboot := "0"
-	if p.onboot {
-		onboot = "1"
-	}
-
-	protectionStr := "0"
-	if p.protection {
-		protectionStr = "1"
-	}
-
 	data := url.Values{}
 	data.Set("vmid", nextid)
 	data.Set("name", instanceName)
-	// Not work correctly through ProxMox API (Uses auto detecting by ProxMox)
-	// data.Set("arch", arch)
 	if p.machine != "" {
 		data.Set("machine", p.machine)
 	}
 	data.Set("sockets", socketsStr)
 	data.Set("cores", coresStr)
 
-	numa := "0"
-	if p.numa {
-		numa = "1"
-	}
-
 	data.Set("numa", numa)
 	data.Set("memory", memoryStr)
-	data.Set("net0", "model=virtio,bridge="+"vmbr0") // #1372
 	data.Set("onboot", onboot)
 	data.Set("protection", protectionStr)
+
+	data.Set("name", imageName)
+
+	nics := config.RunConfig.Nics
+	for i := 0; i < len(nics); i++ {
+		is := strconv.Itoa(i)
+		brName := nics[i].BridgeName
+		if brName == "" {
+			brName = "vmbr" + is
+		}
+
+		err = p.CheckBridge(brName)
+		if err != nil {
+			return err
+		}
+
+		data.Set("net"+is, "model=virtio,bridge="+brName)
+	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {

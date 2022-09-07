@@ -244,6 +244,11 @@ type RunConfig struct {
 	// NetMask
 	NetMask string
 
+	// Nics is a list of pre-configured network cards
+	// Meant to eventually deprecate the existing single-nic configuration
+	// Currently only supported for Proxmox
+	Nics []Nic
+
 	// Background runs unikernel in background
 	// use onprem instances commands to manage the unikernel
 	Background bool
@@ -274,6 +279,25 @@ type RunConfig struct {
 
 	// VolumeSizeInGb is an optional parameter only available for OpenStack.
 	VolumeSizeInGb int
+}
+
+// Nic describes a nic
+// Currently only supported for Proxmox
+type Nic struct {
+	// IPAddress
+	IPAddress string
+
+	// IPv6Address
+	IPv6Address string
+
+	// NetMask
+	NetMask string
+
+	// Gateway
+	Gateway string
+
+	// BridgeName
+	BridgeName string
 }
 
 // RuntimeConfig constructs runtime config
