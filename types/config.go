@@ -27,6 +27,10 @@ type Config struct {
 	// CloudConfig configures various attributes about the cloud provider.
 	CloudConfig ProviderConfig
 
+	// TargetConfig allows config that is pertinent to a specific
+	// provider.
+	TargetConfig map[string]string
+
 	// Debugflags
 	Debugflags []string
 
@@ -118,6 +122,7 @@ type Config struct {
 
 // ProviderConfig give provider details
 type ProviderConfig struct {
+
 	// BucketName specifies the bucket to store the ops built image artifacts.
 	BucketName string `cloud:"bucketname"`
 

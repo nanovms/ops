@@ -15,6 +15,42 @@ type ProxMox struct {
 	secret   string
 	apiURL   string
 	nodeNAME string
+
+	// many of these belong in their own structs
+	// {Image, Instance, etc..}
+
+	// arch specifies the type of CPU architecture
+	arch string `cloud:"arch"`
+
+	// cores of CPU
+	cores int `cloud:"cores"`
+
+	// machine specifies the type of machine
+	machine string `cloud:"machine"`
+
+	// memory
+	memory string `cloud:"memory"`
+
+	// numa
+	numa bool `cloud:"numa"`
+
+	// imageName
+	imageName string `cloud:"imagename"`
+
+	// isoStorageName is used for upload intermediate iso images via ProxMox API
+	isoStorageName string `cloud:"isostoragename"`
+
+	// onboot is used to define automatic startup option for instance
+	onboot bool `cloud:"onboot"`
+
+	// protection is used to define vm/image protection for instance
+	protection bool `cloud:"protection"`
+
+	// sockets of CPUs
+	sockets int `cloud:"sockets"`
+
+	// storageName is used for create bootable raw image for instance via ProxMox API from iso image
+	storageName string `cloud:"storagename"`
 }
 
 // Initialize provider

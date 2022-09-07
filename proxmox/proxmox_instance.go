@@ -43,7 +43,7 @@ func (p *ProxMox) getNextID() string {
 		fmt.Println(err)
 	}
 
-	err = p.CheckResultType(body, "getnextid")
+	err = p.CheckResultType(body, "getnextid", "")
 	if err != nil {
 		return ""
 	}
@@ -56,23 +56,151 @@ func (p *ProxMox) getNextID() string {
 
 // CreateInstance - Creates instance on Proxmox.
 func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
+
+	var err error
+
 	config := ctx.Config()
 
 	nextid := p.getNextID()
 
-	imageName := config.CloudConfig.ImageName
+	instanceName := config.RunConfig.InstanceName
+
+	p.isoStorageName = config.TargetConfig["isoStorageName"]
+
+	p.imageName = config.CloudConfig.ImageName
+
+	p.arch = config.TargetConfig["arch"]
+	if p.arch == "" {
+		p.arch = "x86_64"
+	}
+
+	p.machine = config.TargetConfig["machine"]
+
+	socketsStr := "1"
+	p.sockets = 1
+	if config.TargetConfig["sockets"] != "" {
+		socketsStr = config.TargetConfig["sockets"]
+		p.sockets, err = strconv.Atoi(config.TargetConfig["sockets"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	if p.sockets == 0 {
+		p.sockets = 1
+		socketsStr = "1"
+	}
+
+	coresStr := "1"
+	if config.TargetConfig["cores"] != "" {
+		coresStr = config.TargetConfig["cores"]
+		p.cores, err = strconv.Atoi(config.TargetConfig["cores"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	if p.cores == 0 {
+		p.cores = 1
+		coresStr = "1"
+	}
+
+	numa := "0"
+	if config.TargetConfig["numa"] != "" {
+		p.numa, err = strconv.ParseBool(config.TargetConfig["numa"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	if p.numa {
+		numa = "1"
+	}
+
+	p.memory = "512M"
+	if config.TargetConfig["memory"] != "" {
+		p.memory = config.TargetConfig["memory"]
+	}
+
+	memoryInt, err := lepton.RAMInBytes(p.memory)
+	if err != nil {
+		return err
+	}
+	memoryInt = memoryInt / 1024 / 1024
+	memoryStr := strconv.FormatInt(memoryInt, 10)
+
+	p.storageName = "local-lvm"
+	if config.TargetConfig["storageName"] != "" {
+		p.storageName = config.TargetConfig["storageName"]
+	}
+
+	p.isoStorageName = "local"
+	if config.TargetConfig["isoStorageName"] != "" {
+		p.isoStorageName = config.TargetConfig["isoStorageName"]
+	}
+
+	onboot := "0"
+	if config.TargetConfig["onboot"] != "" {
+		p.onboot, err = strconv.ParseBool(config.TargetConfig["onboot"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	if p.onboot {
+		onboot = "1"
+	}
+
+	if config.TargetConfig["protection"] != "" {
+		p.protection, err = strconv.ParseBool(config.TargetConfig["protection"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	protectionStr := "0"
+	if p.protection {
+		protectionStr = "1"
+	}
+
+	// might be preferential to move some of this to a lint check
+	// instead
+	err = p.CheckStorage(p.storageName, "images")
+	if err != nil {
+		return err
+	}
+
+	// don't need to pass it here
+	err = p.CheckStorage(p.isoStorageName, "iso")
+	if err != nil {
+		return err
+	}
 
 	data := url.Values{}
 	data.Set("vmid", nextid)
-	data.Set("name", imageName)
+	data.Set("name", instanceName)
+	if p.machine != "" {
+		data.Set("machine", p.machine)
+	}
+	data.Set("sockets", socketsStr)
+	data.Set("cores", coresStr)
+
+	data.Set("numa", numa)
+	data.Set("memory", memoryStr)
+	data.Set("onboot", onboot)
+	data.Set("protection", protectionStr)
+
+	data.Set("name", p.imageName)
 
 	nics := config.RunConfig.Nics
 	for i := 0; i < len(nics); i++ {
 		is := strconv.Itoa(i)
 		brName := nics[i].BridgeName
 		if brName == "" {
-			brName = "br" + is
+			brName = "vmbr" + is
 		}
+
+		err = p.CheckBridge(brName)
+		if err != nil {
+			return err
+		}
+
 		data.Set("net"+is, "model=virtio,bridge="+brName)
 	}
 
@@ -100,36 +228,34 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = p.CheckResultType(body, "createinstance")
+	debug := false
+	if debug {
+		fmt.Println(string(body))
+	}
+
+	err = p.CheckResultType(body, "createinstance", "file="+p.isoStorageName+":iso/"+p.imageName+".iso")
 	if err != nil {
 		return err
 	}
 
-	err = p.addVirtioDisk(ctx, nextid, imageName)
+	err = p.addVirtioDisk(ctx, nextid, p.imageName, p.isoStorageName)
 	if err != nil {
 		return err
 	}
 
-	err = p.movDisk(ctx, nextid, imageName)
+	err = p.movDisk(ctx, nextid, p.imageName, p.storageName)
 
 	return err
 }
 
-func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) error {
-
-	var err error
+func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string, storageName string) error {
 
 	data := url.Values{}
 	data.Set("disk", "virtio0")
 	data.Set("node", p.nodeNAME)
 	data.Set("format", "raw")
-	data.Set("storage", "local-lvm")
+	data.Set("storage", storageName)
 	data.Set("vmid", vmid)
-
-	err = p.CheckStorage("local-lvm")
-	if err != nil {
-		return err
-	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -155,7 +281,7 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) er
 		return err
 	}
 
-	err = p.CheckResultType(body, "movdisk")
+	err = p.CheckResultType(body, "movdisk", storageName)
 	if err != nil {
 		return err
 	}
@@ -168,11 +294,12 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string) er
 	return nil
 }
 
-func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string) error {
+func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string, isoStorageName string) error {
+
 	data := url.Values{}
 
 	// attach disk
-	data.Set("virtio0", "file=local:iso/"+imageName+".iso")
+	data.Set("virtio0", "file="+isoStorageName+":iso/"+imageName+".iso")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -198,7 +325,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
-	err = p.CheckResultType(body, "addvirtiodisk")
+	err = p.CheckResultType(body, "addvirtiodisk", isoStorageName)
 	if err != nil {
 		return err
 	}
@@ -225,7 +352,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
-	err = p.CheckResultType(body, "bootorderset")
+	err = p.CheckResultType(body, "bootorderset", "")
 	if err != nil {
 		return err
 	}
