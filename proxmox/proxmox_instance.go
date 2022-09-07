@@ -67,7 +67,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	p.isoStorageName = config.TargetConfig["isoStorageName"]
 
-	p.imageName = config.TargetConfig["imageName"]
+	p.imageName = config.CloudConfig.ImageName
 
 	p.arch = config.TargetConfig["arch"]
 	if p.arch == "" {
@@ -76,39 +76,50 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	p.machine = config.TargetConfig["machine"]
 
-	socketsStr := config.TargetConfig["sockets"]
-	p.sockets, err = strconv.Atoi(config.TargetConfig["sockets"])
-	if err != nil {
-		fmt.Println(err)
+	socketsStr := "1"
+	p.sockets = 1
+	if config.TargetConfig["sockets"] != "" {
+		socketsStr = config.TargetConfig["sockets"]
+		p.sockets, err = strconv.Atoi(config.TargetConfig["sockets"])
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
+
 	if p.sockets == 0 {
 		p.sockets = 1
 		socketsStr = "1"
 	}
 
-	coresStr := ctx.Config().TargetConfig["cores"]
-	p.cores, err = strconv.Atoi(ctx.Config().TargetConfig["cores"])
-	if err != nil {
-		fmt.Println(err)
+	coresStr := "1"
+	if config.TargetConfig["cores"] != "" {
+		coresStr = config.TargetConfig["cores"]
+		p.cores, err = strconv.Atoi(config.TargetConfig["cores"])
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	if p.cores == 0 {
 		p.cores = 1
 		coresStr = "1"
 	}
 
-	p.numa, err = strconv.ParseBool(ctx.Config().TargetConfig["numa"])
-	if err != nil {
-		fmt.Println(err)
-	}
 	numa := "0"
+	if config.TargetConfig["numa"] != "" {
+		p.numa, err = strconv.ParseBool(config.TargetConfig["numa"])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 	if p.numa {
 		numa = "1"
 	}
 
-	p.memory = config.TargetConfig["memory"]
-	if p.memory == "" {
-		p.memory = "512M"
+	p.memory = "512M"
+	if config.TargetConfig["memory"] != "" {
+		p.memory = config.TargetConfig["memory"]
 	}
+
 	memoryInt, err := lepton.RAMInBytes(p.memory)
 	if err != nil {
 		return err
@@ -116,33 +127,36 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	memoryInt = memoryInt / 1024 / 1024
 	memoryStr := strconv.FormatInt(memoryInt, 10)
 
-	p.storageName = config.TargetConfig["storageName"]
-	p.isoStorageName = config.TargetConfig["isoStorageName"]
+	p.storageName = "local-lvm"
+	if config.TargetConfig["storageName"] != "" {
+		p.storageName = config.TargetConfig["storageName"]
+	}
+
+	p.isoStorageName = "local"
+	if config.TargetConfig["isoStorageName"] != "" {
+		p.isoStorageName = config.TargetConfig["isoStorageName"]
+	}
 
 	onboot := "0"
-	p.onboot, err = strconv.ParseBool(config.TargetConfig["onboot"])
-	if err != nil {
-		fmt.Println(err)
+	if config.TargetConfig["onboot"] != "" {
+		p.onboot, err = strconv.ParseBool(config.TargetConfig["onboot"])
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	if p.onboot {
 		onboot = "1"
 	}
 
-	p.protection, err = strconv.ParseBool(config.TargetConfig["protection"])
-	if err != nil {
-		fmt.Println(err)
+	if config.TargetConfig["protection"] != "" {
+		p.protection, err = strconv.ParseBool(config.TargetConfig["protection"])
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	protectionStr := "0"
 	if p.protection {
 		protectionStr = "1"
-	}
-
-	if p.storageName == "" {
-		p.storageName = "local-lvm"
-	}
-
-	if p.isoStorageName == "" {
-		p.isoStorageName = "local"
 	}
 
 	// might be preferential to move some of this to a lint check
@@ -172,7 +186,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	data.Set("onboot", onboot)
 	data.Set("protection", protectionStr)
 
-	data.Set("name", imageName)
+	data.Set("name", p.imageName)
 
 	nics := config.RunConfig.Nics
 	for i := 0; i < len(nics); i++ {
