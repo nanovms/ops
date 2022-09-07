@@ -65,7 +65,16 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	data := url.Values{}
 	data.Set("vmid", nextid)
 	data.Set("name", imageName)
-	data.Set("net0", "model=virtio,bridge=vmbr0")
+
+	nics := config.RunConfig.Nics
+	for i := 0; i < len(nics); i++ {
+		is := strconv.Itoa(i)
+		brName := nics[i].BridgeName
+		if brName == "" {
+			brName = "br" + is
+		}
+		data.Set("net"+is, "model=virtio,bridge="+brName)
+	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
