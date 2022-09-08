@@ -36,16 +36,21 @@ type device struct {
 	devtype string
 	mac     string
 	devid   string
+	addr    string
 }
 
 func (dv device) String() string {
 	var sb strings.Builder
 
+	if dv.addr == "" {
+		dv.addr = "0x0"
+	}
+
 	// simple pci net hack -- FIXME
 	if dv.driver == "virtio-net" {
 
 		if isx86() {
-			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=0x0,%s=%s", dv.driver, dv.devtype, dv.devid))
+			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=%s,%s=%s", dv.driver, dv.addr, dv.devtype, dv.devid))
 		} else {
 			sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 		}

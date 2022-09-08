@@ -123,11 +123,15 @@ func (q *qemu) addSerial(serialType string) {
 // Backend interface are created for each device and their ids are auto
 // incremented.
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
-	id := fmt.Sprintf("n%d", len(q.ifaces))
+	i := len(q.ifaces)
+	si := strconv.Itoa(i)
+
+	id := "n" + si
 	dv := device{
 		driver:  "virtio-net",
 		devtype: "netdev",
 		devid:   id,
+		addr:    "0x" + si,
 	}
 	ndv := netdev{
 		nettype: devType,
@@ -141,11 +145,15 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 	if devType != "user" {
 		ndv.ifname = ifaceName
 	} else {
-		for _, p := range hostPorts {
-			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
-		}
-		for _, p := range udpPorts {
-			ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+		// hack - FIXME
+		// this is user-mode
+		if i == 0 {
+			for _, p := range hostPorts {
+				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
+			}
+			for _, p := range udpPorts {
+				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+			}
 		}
 	}
 
@@ -373,7 +381,15 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	q.setAccel(rconfig)
 
 	if goos != "freebsd" {
-		q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+		nics := rconfig.Nics
+
+		if len(nics) > 0 {
+			for i := 0; i < len(nics); i++ {
+				q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+			}
+		} else {
+			q.addNetDevice(netDevType, ifaceName, "", rconfig.Ports, rconfig.UDPPorts)
+		}
 	}
 
 	q.addDisplay("none")
