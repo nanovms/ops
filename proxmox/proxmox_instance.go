@@ -201,6 +201,12 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 			return err
 		}
 
+		if nics[i].IPAddress != "" {
+			data.Set("ipconfig"+is, "ip="+nics[i].IPAddress+"/24,gw="+nics[i].Gateway)
+		} else {
+			data.Set("ipconfig"+is, "dhcp")
+		}
+
 		data.Set("net"+is, "model=virtio,bridge="+brName)
 	}
 
