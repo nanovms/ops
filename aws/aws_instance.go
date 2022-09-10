@@ -253,7 +253,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if cloudConfig.Flavor == "" {
-		cloudConfig.Flavor = "t2.micro"
+		cloudConfig.Flavor = "t3.micro"
 	}
 
 	// Create tags to assign to the instance
