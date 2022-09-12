@@ -352,6 +352,7 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		m.AddFile(libpath, hostpath)
 	}
 
+	// legacy sigle nic/instance method
 	if c.RunConfig.IPAddress != "" || c.RunConfig.IPv6Address != "" {
 		m.AddNetworkConfig(&fs.ManifestNetworkConfig{
 			IP:      c.RunConfig.IPAddress,
@@ -359,6 +360,30 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 			Gateway: c.RunConfig.Gateway,
 			NetMask: c.RunConfig.NetMask,
 		})
+	}
+
+	// new many nics/instance
+	// only for proxmox atm
+	// this overrides anything in legacy RunConfig ip address setting
+	nics := c.RunConfig.Nics
+	for i := 0; i < len(nics); i++ {
+		if i == 0 {
+			m.AddNetworkConfig(&fs.ManifestNetworkConfig{
+				IP:      nics[i].IPAddress,
+				Gateway: nics[i].Gateway,
+				NetMask: nics[i].NetMask,
+			})
+		} else {
+			ifaces := make(map[string]interface{})
+
+			// only set if ip given otherwise assume dhcp
+			ifaces["ipaddr"] = nics[i].IPAddress
+			ifaces["netmask"] = nics[i].NetMask
+			ifaces["gateway"] = nics[i].Gateway
+
+			s := strconv.Itoa(i + 1)
+			m.AddPassthrough("en"+s, ifaces)
+		}
 	}
 
 	for k, v := range c.ManifestPassthrough {
@@ -410,6 +435,10 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 	}
 
 	defer cleanup(c)
+
+	if c.RunConfig.ShowDebug {
+		fmt.Printf("Manifest:\n\t%+v\n", m)
+	}
 
 	mkfsCommand := fs.NewMkfsCommand(m)
 
