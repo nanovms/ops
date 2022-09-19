@@ -12,32 +12,120 @@ import (
 	"os"
 	"path"
 	"strings"
+	"strconv"
 )
 
+// returns immediately for background job
 func execCmd(cmdStr string) (output string, err error) {
 	cmd := exec.Command("/usr/local/bin/bash", "-c", cmdStr)
-	out, err := cmd.CombinedOutput()
+	err = cmd.Run()
 	if err != nil {
 		return
 	}
-	
+
+	output = ""
+	return output, nil
+}
+
+// blocks
+func blockExecCmd(cmdStr string) (output string, err error) {
+	cmd := exec.Command("/usr/local/bin/bash", "-c", cmdStr)
+	out, err := cmd.CombinedOutput()
+
 	output = string(out)
-	return
+	return output, err
 }
 
 // CreateInstance - Creates instance on Bhyve - only local support for now
+// need to load nmdm module: kldload nmdm
 func (p *Bhyve) CreateInstance(ctx *lepton.Context) error {
+
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
+
+	i := len(instances)
+	si := strconv.Itoa(i)
+
+	tapN := "tap" + si
+	nm := "/dev/nmdm" + si + "A"
+
+	cmd := "ifconfig " + tapN + " create"
+	out, err := blockExecCmd(cmd)
+	if err != nil {
+		fmt.Println(out)
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(out)
+
+	cmd = "sysctl net.link.tap.up_on_open=1"
+	out, err = blockExecCmd(cmd)
+	if err != nil {
+		fmt.Println(out)
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(out)
+
+	if i == 0 {
+		cmd = "ifconfig bridge0 create"
+		out, err = blockExecCmd(cmd)
+		if err != nil {
+			fmt.Println(out)
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println(out)
+
+		cmd = "ifconfig bridge0 addm em0 addm " + tapN
+		out, err = blockExecCmd(cmd)
+		if err != nil {
+			fmt.Println(out)
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println(out)
+
+	} else {
+
+		cmd = "ifconfig bridge0 addm " + tapN
+		out, err = blockExecCmd(cmd)
+		if err != nil {
+			fmt.Println(out)
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println(out)
+
+	}
+
+	cmd = "ifconfig bridge0 up"
+	out, err = blockExecCmd(cmd)
+	if err != nil {
+		fmt.Println(out)
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(out)
 
 	c := ctx.Config()
 
 	rimg := path.Join(lepton.GetOpsHome(), "images", c.CloudConfig.ImageName)
 
-	cmd := "bhyve -AHP -s 0:0,hostbridge -s 1:0,virtio-blk," + rimg + " " +
-	 "-s 2:0,virtio-net,tap0 -s 3:0,virtio-rnd -s 31:0,lpc " + 
+	cmd = "bhyve -AHP -s 0:0,hostbridge -s 1:0,virtio-blk," + rimg + " " +
+	 "-s 2:0,virtio-net," + tapN + " -s 3:0,virtio-rnd -s 31:0,lpc " + 
 	 "-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd " +
-	 "-l com1,/dev/nmdm0A nanos >> /tmp/" + c.CloudConfig.ImageName + ".log 2>&1 &"
+	 "-l com1," + nm + " " + c.CloudConfig.ImageName + " >> /tmp/" + c.CloudConfig.ImageName + ".log &"
 
-	out, err := execCmd(cmd)
+	 fmt.Println(cmd)
+
+	out, err = execCmd(cmd)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	fmt.Println(out)
 
 	return err
@@ -80,8 +168,28 @@ func (p *Bhyve) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Clo
 }
 
 // GetInstances return all instances on Bhyve
-func (p *Bhyve) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	return nil, nil
+func (p *Bhyve) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInstance, err error) {
+	cmd := "ls /dev/vmm"
+	out, err := blockExecCmd(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	ins := strings.Split(out, "\n")
+
+	// scrape ip from logs or do arp lookup
+
+	for i:=0; i<len(ins); i++ {
+		iname := strings.TrimSpace(ins[i])
+
+		if iname != "" {
+			instances = append(instances, lepton.CloudInstance{
+				Name: iname,
+			})
+		}
+	}
+
+	return instances, nil
 }
 
 // DeleteInstance deletes instance from Bhyve
@@ -117,6 +225,10 @@ func (p *Bhyve) PrintInstanceLogs(ctx *lepton.Context, instancename string, watc
 }
 
 // GetInstanceLogs gets instance related logs
+// would use simple serial redirection but there is a bug with backgrounding it:
+// https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=264038
+// instead we use the null modem kernel module
+// cu -l /dev/nmdm0B -s 9600
 func (p *Bhyve) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 
 	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
