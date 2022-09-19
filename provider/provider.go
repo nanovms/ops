@@ -5,6 +5,7 @@ import (
 
 	"github.com/nanovms/ops/aws"
 	"github.com/nanovms/ops/azure"
+	"github.com/nanovms/ops/bhyve"
 	"github.com/nanovms/ops/digitalocean"
 	"github.com/nanovms/ops/gcp"
 	"github.com/nanovms/ops/hyperv"
@@ -26,6 +27,8 @@ func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provide
 	var provider lepton.Provider
 
 	switch providerName {
+	case "bhyve":
+		provider = &bhyve.Bhyve{}
 	case "gcp":
 		provider = gcp.NewGCloud()
 	case "onprem":
