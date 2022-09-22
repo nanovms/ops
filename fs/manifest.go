@@ -147,7 +147,10 @@ func (m *Manifest) AddKernel(path string) {
 	if m.boot == nil {
 		m.boot = mkFS()
 	}
-	m.AddFileTo(m.bootDir(), "kernel", path)
+	err := m.AddFileTo(m.bootDir(), "kernel", path)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // AddDirectory adds all files in dir to image
