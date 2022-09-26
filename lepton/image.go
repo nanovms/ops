@@ -451,6 +451,11 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 		if c.UefiBoot == "" {
 			return errors.New("this Nanos version does not support UEFI, consider changing image type")
 		}
+
+		if strings.Contains(c.Kernel, "arm") {
+			c.UefiBoot = strings.Replace(c.UefiBoot, "/bootx64.efi", "-arm/bootaa64.efi", -1)
+		}
+
 		mkfsCommand.SetUefi(c.UefiBoot)
 	}
 	mkfsCommand.SetFileSystemPath(c.RunConfig.Imagename)
@@ -534,9 +539,21 @@ func CheckNanosVersionExists(version string) (bool, error) {
 }
 
 // DownloadReleaseImages downloads nanos for particular release version
-func DownloadReleaseImages(version string) error {
+// arch defaults to x86-64 if empty
+func DownloadReleaseImages(version string, arch string) error {
 	url := getReleaseURL(version)
+	if arch == "arm" {
+		// we don't cut darwin-aarch64 today but that's ok cause it'd
+		// only be dump/mkfs that won't work and ops uses native mkfs
+		url = strings.Replace(url, "darwin", "linux", -1)
+		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
+	}
+
 	localFolder := getReleaseLocalFolder(version)
+
+	if arch == "arm" {
+		localFolder = localFolder + "-arm"
+	}
 
 	localtar := path.Join("/tmp", releaseFileName(version))
 	defer os.Remove(localtar)

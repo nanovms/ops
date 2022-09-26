@@ -22,6 +22,8 @@ const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 func amendConfig(c *types.Config) {
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		c.Uefi = true
+
+		c.Kernel = strings.Replace(c.Kernel, "/kernel.img", "-arm/kernel.img", -1)
 	}
 }
 

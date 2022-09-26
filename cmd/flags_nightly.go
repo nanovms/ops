@@ -95,7 +95,7 @@ func getCurrentVersion() (string, error) {
 
 	local, remote := api.LocalReleaseVersion, api.LatestReleaseVersion
 	if local == "0.0" {
-		err = api.DownloadReleaseImages(remote)
+		err = api.DownloadReleaseImages(remote, "")
 		if err != nil {
 			return "", err
 		}

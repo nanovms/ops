@@ -24,7 +24,7 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 		}
 
 		if !exists {
-			err = lepton.DownloadReleaseImages(nanosVersion)
+			err = lepton.DownloadReleaseImages(nanosVersion, "")
 			if err != nil {
 				return
 			}
