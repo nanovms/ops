@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -51,6 +52,7 @@ type Azure struct {
 
 func getAzureDefaultTags() map[string]*string {
 	return map[string]*string{
+		"CreatedAt": to.StringPtr(fmt.Sprintf(time.Now().Format(time.RFC3339))),
 		"CreatedBy": to.StringPtr("ops"),
 	}
 }
