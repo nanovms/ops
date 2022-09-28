@@ -33,7 +33,7 @@ jobs:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - run: CI=1 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+      - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu
       - run: go install github.com/jstemmer/go-junit-report
       - run: make deps

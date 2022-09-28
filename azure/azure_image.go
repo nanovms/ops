@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -116,6 +117,18 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 		},
 	}
 
+	images, err := a.GetImages(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(images); i++ {
+		if images[i].Name == imgName {
+			fmt.Printf("image %s already exists - please delete this first", imgName)
+			os.Exit(1)
+		}
+	}
+
 	_, err = imagesClient.CreateOrUpdate(context.TODO(), a.groupName, imgName, imageParams)
 	if err != nil {
 		log.Error(err)
@@ -141,9 +154,22 @@ func (a *Azure) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 
 	for _, image := range imgs {
 		if hasAzureOpsTags(image.Tags) {
+
+			var t time.Time
+			val, ok := image.Tags["CreatedAt"]
+			if ok {
+				t, err = time.Parse(time.RFC3339, *val)
+				if err != nil {
+					fmt.Println(err)
+				}
+			} else {
+				t = time.Now() // hack
+			}
+
 			cImage := lepton.CloudImage{
-				Name:   *image.Name,
-				Status: *(*image.ImageProperties).ProvisioningState,
+				Name:    *image.Name,
+				Created: t,
+				Status:  *(*image.ImageProperties).ProvisioningState,
 			}
 
 			cimages = append(cimages, cImage)
@@ -173,7 +199,7 @@ func (a *Azure) ListImages(ctx *lepton.Context) error {
 		var row []string
 		row = append(row, image.Name)
 		row = append(row, image.Status)
-		row = append(row, "")
+		row = append(row, fmt.Sprintf("%v", image.Created))
 		table.Append(row)
 	}
 
