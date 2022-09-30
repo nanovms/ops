@@ -63,110 +63,115 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	nextid := p.getNextID()
 
-	instanceName := config.RunConfig.InstanceName
+	p.instanceName = config.RunConfig.InstanceName
 
-	p.isoStorageName = config.TargetConfig["isoStorageName"]
+	p.isoStorageName = config.TargetConfig["IsoStorageName"]
 
 	p.imageName = config.CloudConfig.ImageName
 
-	p.arch = config.TargetConfig["arch"]
-	if p.arch == "" {
-		p.arch = "x86_64"
+	p.arch = "x86_64"
+	if config.TargetConfig["Arch"] != "" {
+		p.arch = config.TargetConfig["Arch"]
 	}
 
-	p.machine = config.TargetConfig["machine"]
+	p.machine = "q35"
+	if config.TargetConfig["Machine"] != "" {
+		p.machine = config.TargetConfig["Machine"]
+	}
 
-	socketsStr := "1"
-	p.sockets = 1
-	if config.TargetConfig["sockets"] != "" {
-		socketsStr = config.TargetConfig["sockets"]
-		p.sockets, err = strconv.Atoi(config.TargetConfig["sockets"])
+	p.sockets = "1"
+	if config.TargetConfig["Sockets"] != "" {
+		socketsInt, err := strconv.Atoi(config.TargetConfig["Sockets"])
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
+		if socketsInt < 1 {
+			return errors.New("Bad configuration option; Sockets can only be set postitive starting from \"1\"")
+		}
+		p.sockets = config.TargetConfig["Sockets"]
 	}
 
-	if p.sockets == 0 {
-		p.sockets = 1
-		socketsStr = "1"
-	}
-
-	coresStr := "1"
-	if config.TargetConfig["cores"] != "" {
-		coresStr = config.TargetConfig["cores"]
-		p.cores, err = strconv.Atoi(config.TargetConfig["cores"])
+	p.cores = "1"
+	if config.TargetConfig["Cores"] != "" {
+		coresInt, err := strconv.Atoi(config.TargetConfig["Cores"])
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
-	}
-	if p.cores == 0 {
-		p.cores = 1
-		coresStr = "1"
+		if coresInt < 1 {
+			return errors.New("Bad configuration option; Cores can only be set postitive starting from \"1\"")
+		}
+		p.cores = config.TargetConfig["Cores"]
 	}
 
-	numa := "0"
-	if config.TargetConfig["numa"] != "" {
-		p.numa, err = strconv.ParseBool(config.TargetConfig["numa"])
+	p.numa = "0"
+	if config.TargetConfig["Numa"] != "" {
+		if config.TargetConfig["Numa"] != "0" && config.TargetConfig["Numa"] != "1" {
+			return errors.New("Bad configuration option; Numa can only be set to \"0\" or \"1\"")
+		}
+		p.numa = config.TargetConfig["Numa"]
+	}
+
+	// Memory
+
+	p.memory = "512"
+	if config.TargetConfig["Memory"] != "" {
+		memoryInt, err := lepton.RAMInBytes(config.TargetConfig["Memory"])
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
-	}
-	if p.numa {
-		numa = "1"
-	}
-
-	p.memory = "512M"
-	if config.TargetConfig["memory"] != "" {
-		p.memory = config.TargetConfig["memory"]
+		memoryInt = memoryInt / 1024 / 1024
+		p.memory = strconv.FormatInt(memoryInt, 10)
 	}
 
-	memoryInt, err := lepton.RAMInBytes(p.memory)
-	if err != nil {
-		return err
-	}
-	memoryInt = memoryInt / 1024 / 1024
-	memoryStr := strconv.FormatInt(memoryInt, 10)
+	// Main storage
 
 	p.storageName = "local-lvm"
-	if config.TargetConfig["storageName"] != "" {
-		p.storageName = config.TargetConfig["storageName"]
+	if config.TargetConfig["StorageName"] != "" {
+		p.storageName = config.TargetConfig["StorageName"]
 	}
+
+	// Iso storage
 
 	p.isoStorageName = "local"
-	if config.TargetConfig["isoStorageName"] != "" {
-		p.isoStorageName = config.TargetConfig["isoStorageName"]
+	if config.TargetConfig["IsoStorageName"] != "" {
+		p.isoStorageName = config.TargetConfig["IsoStorageName"]
 	}
 
-	onboot := "0"
-	if config.TargetConfig["onboot"] != "" {
-		p.onboot, err = strconv.ParseBool(config.TargetConfig["onboot"])
-		if err != nil {
-			fmt.Println(err)
+	// Bridge prefix
+
+	p.bridgePrefix = "vmbr"
+	if config.TargetConfig["BridgePrefix"] != "" {
+		p.bridgePrefix = config.TargetConfig["BridgePrefix"]
+	}
+
+	// Onboot
+
+	p.onboot = "0"
+	if config.TargetConfig["Onboot"] != "" {
+		if config.TargetConfig["Onboot"] != "0" && config.TargetConfig["Onboot"] != "1" {
+			return errors.New("Bad configuration option; Onboot can only be set to \"0\" or \"1\"")
 		}
-	}
-	if p.onboot {
-		onboot = "1"
+		p.onboot = config.TargetConfig["Onboot"]
 	}
 
-	if config.TargetConfig["protection"] != "" {
-		p.protection, err = strconv.ParseBool(config.TargetConfig["protection"])
-		if err != nil {
-			fmt.Println(err)
+	// Protection
+
+	p.protection = "0"
+	if config.TargetConfig["Protection"] != "" {
+		if config.TargetConfig["Protection"] != "0" && config.TargetConfig["Protection"] != "1" {
+			return errors.New("Bad configuration option; Protection can only be set to \"0\" or \"1\"")
 		}
-	}
-	protectionStr := "0"
-	if p.protection {
-		protectionStr = "1"
+		p.protection = config.TargetConfig["Protection"]
 	}
 
-	// might be preferential to move some of this to a lint check
-	// instead
+	// These two preventive checks here, because Proxmox will not return
+	// an error if the storage is missing and a misconfigured instance will be created.
+
 	err = p.CheckStorage(p.storageName, "images")
 	if err != nil {
 		return err
 	}
 
-	// don't need to pass it here
 	err = p.CheckStorage(p.isoStorageName, "iso")
 	if err != nil {
 		return err
@@ -174,26 +179,24 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	data := url.Values{}
 	data.Set("vmid", nextid)
-	data.Set("name", instanceName)
-	if p.machine != "" {
-		data.Set("machine", p.machine)
-	}
-	data.Set("sockets", socketsStr)
-	data.Set("cores", coresStr)
-
-	data.Set("numa", numa)
-	data.Set("memory", memoryStr)
-	data.Set("onboot", onboot)
-	data.Set("protection", protectionStr)
-
+	data.Set("name", p.instanceName)
 	data.Set("name", p.imageName)
+	data.Set("machine", p.machine)
+	data.Set("sockets", p.sockets)
+	data.Set("cores", p.cores)
+	data.Set("numa", p.numa)
+	data.Set("memory", p.memory)
+	data.Set("onboot", p.onboot)
+	data.Set("protection", p.protection)
+
+	// Configuring network interfaces
 
 	nics := config.RunConfig.Nics
 	for i := 0; i < len(nics); i++ {
 		is := strconv.Itoa(i)
 		brName := nics[i].BridgeName
 		if brName == "" {
-			brName = "vmbr" + is
+			brName = p.bridgePrefix + is
 		}
 
 		err = p.CheckBridge(brName)
@@ -202,7 +205,18 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		}
 
 		if nics[i].IPAddress != "" {
-			data.Set("ipconfig"+is, "ip="+nics[i].IPAddress+"/24,gw="+nics[i].Gateway)
+			cidr := "24"
+
+			if nics[i].NetMask != "" {
+				cidrInt := lepton.CCidr(nics[i].NetMask)
+				cidr = strconv.FormatInt(int64(cidrInt), 10)
+			}
+
+			if nics[i].Gateway != "" {
+				data.Set("ipconfig"+is, "ip="+nics[i].IPAddress+"/"+cidr+","+"gw="+nics[i].Gateway)
+			} else {
+				data.Set("ipconfig"+is, "ip="+nics[i].IPAddress+"/"+cidr)
+			}
 		} else {
 			data.Set("ipconfig"+is, "dhcp")
 		}
@@ -244,23 +258,23 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	err = p.addVirtioDisk(ctx, nextid, p.imageName, p.isoStorageName)
+	err = p.addVirtioDisk(ctx, nextid)
 	if err != nil {
 		return err
 	}
 
-	err = p.movDisk(ctx, nextid, p.imageName, p.storageName)
+	err = p.movDisk(ctx, nextid)
 
 	return err
 }
 
-func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string, storageName string) error {
+func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 
 	data := url.Values{}
 	data.Set("disk", "virtio0")
 	data.Set("node", p.nodeNAME)
 	data.Set("format", "raw")
-	data.Set("storage", storageName)
+	data.Set("storage", p.storageName)
 	data.Set("vmid", vmid)
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
@@ -287,7 +301,7 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string, st
 		return err
 	}
 
-	err = p.CheckResultType(body, "movdisk", storageName)
+	err = p.CheckResultType(body, "movdisk", p.storageName)
 	if err != nil {
 		return err
 	}
@@ -300,12 +314,12 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string, imageName string, st
 	return nil
 }
 
-func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName string, isoStorageName string) error {
+func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 
 	data := url.Values{}
 
 	// attach disk
-	data.Set("virtio0", "file="+isoStorageName+":iso/"+imageName+".iso")
+	data.Set("virtio0", "file="+p.isoStorageName+":iso/"+p.imageName+".iso")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -331,7 +345,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string, imageName stri
 		return err
 	}
 
-	err = p.CheckResultType(body, "addvirtiodisk", isoStorageName)
+	err = p.CheckResultType(body, "addvirtiodisk", p.isoStorageName)
 	if err != nil {
 		return err
 	}

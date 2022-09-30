@@ -23,7 +23,7 @@ type ProxMox struct {
 	arch string `cloud:"arch"`
 
 	// cores of CPU
-	cores int `cloud:"cores"`
+	cores string `cloud:"cores"`
 
 	// machine specifies the type of machine
 	machine string `cloud:"machine"`
@@ -32,22 +32,28 @@ type ProxMox struct {
 	memory string `cloud:"memory"`
 
 	// numa
-	numa bool `cloud:"numa"`
+	numa string `cloud:"numa"`
+
+	// instanceName
+	instanceName string `cloud:"instancename"`
 
 	// imageName
 	imageName string `cloud:"imagename"`
+
+	// bridgePrefix - prefix for network bridge interfaces on bare metal host (like br/vmbr/bridge)
+	bridgePrefix string `cloud:"bridgeprefix"`
 
 	// isoStorageName is used for upload intermediate iso images via ProxMox API
 	isoStorageName string `cloud:"isostoragename"`
 
 	// onboot is used to define automatic startup option for instance
-	onboot bool `cloud:"onboot"`
+	onboot string `cloud:"onboot"`
 
 	// protection is used to define vm/image protection for instance
-	protection bool `cloud:"protection"`
+	protection string `cloud:"protection"`
 
 	// sockets of CPUs
-	sockets int `cloud:"sockets"`
+	sockets string `cloud:"sockets"`
 
 	// storageName is used for create bootable raw image for instance via ProxMox API from iso image
 	storageName string `cloud:"storagename"`

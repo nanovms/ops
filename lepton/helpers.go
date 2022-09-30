@@ -3,6 +3,7 @@ package lepton
 import (
 	"fmt"
 	"math"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
@@ -141,7 +142,7 @@ func CustomRelTime(a, b time.Time, albl, blbl string, magnitudes []RelTimeMagnit
 	return fmt.Sprintf(mag.Format, args...)
 }
 
-// Bytes2Human parses bytes to other byte units as MegaByte and Gigabyte
+// Bytes2Human parses bytes to other byte units as MegaByte and Gigabyte.
 func Bytes2Human(b int64) string {
 	const unit = 1000
 	if b < unit {
@@ -164,7 +165,14 @@ func RAMInBytes(size string) (int64, error) {
 	return parseSize(size, binaryMap)
 }
 
-// Parses the human-readable size string into the amount it represents.
+// CCidr converts network mask to CIDR size.
+func CCidr(netmask string) int {
+	ip := net.ParseIP(netmask)
+	sz, _ := net.IPMask(ip.To4()).Size()
+	return sz
+}
+
+// parseSize parses the human-readable size string into the amount it represents.
 func parseSize(sizeStr string, uMap unitMap) (int64, error) {
 	// TODO: rewrite to use strings.Cut if there's a space
 	// once Go < 1.18 is deprecated.
