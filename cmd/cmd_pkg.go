@@ -74,6 +74,12 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdFromDockerPackage,
 	}
 
+	var cmdFromPackage = &cobra.Command{
+		Use:   "from-pkg [old]",
+		Short: "create a new package from an existing package",
+		Run:   cmdFromPackage,
+	}
+
 	var cmdPkgLogin = &cobra.Command{
 		Use:   "login [apikey]",
 		Short: "login to pkghub account using the apikey",
@@ -92,7 +98,7 @@ func PackageCommands() *cobra.Command {
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login"},
+		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login", "from-pkg"},
 	}
 
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
@@ -111,12 +117,19 @@ func PackageCommands() *cobra.Command {
 
 	cmdPkgPush.PersistentFlags().BoolP("private", "p", false, "set the package as private")
 
+	cmdFromPackage.PersistentFlags().StringP("name", "n", "", "name of the new package")
+	cmdFromPackage.PersistentFlags().StringP("version", "v", "", "version of the package")
+
+	persistentFlags := cmdFromPackage.PersistentFlags()
+	PersistConfigCommandFlags(persistentFlags)
+
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdPkgSearch)
 	cmdPkg.AddCommand(cmdGetPackage)
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
+	cmdPkg.AddCommand(cmdFromPackage)
 	cmdPkg.AddCommand(cmdFromDockerPackage)
 	cmdPkg.AddCommand(cmdPkgLogin)
 	cmdPkg.AddCommand(cmdPkgPush)
@@ -321,6 +334,36 @@ func cmdAddPackage(cmd *cobra.Command, args []string) {
 	extractFilePackage(args[0], name, api.NewConfig())
 
 	fmt.Println(name)
+}
+
+func cmdFromPackage(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	c := api.NewConfig()
+	configFlags := NewConfigCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	newpkg, _ := flags.GetString("name")
+	if newpkg == "" {
+		fmt.Println("missing new pkg name")
+		os.Exit(1)
+	}
+
+	version, _ := flags.GetString("version")
+	if newpkg == "" {
+		fmt.Println("missing new version")
+		os.Exit(1)
+	}
+
+	oldpkg := args[0]
+	oldpkg = strings.ReplaceAll(oldpkg, ":", "_")
+
+	clonePackage(oldpkg, newpkg, version, c)
 }
 
 func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
