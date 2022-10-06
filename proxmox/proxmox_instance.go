@@ -223,6 +223,10 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 		data.Set("net"+is, "model=virtio,bridge="+brName)
 	}
+	if len(nics) == 0 {
+		// single dhcp nic
+		data.Set("net0", "model=virtio,bridge=vmbr0")
+	}
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
