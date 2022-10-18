@@ -151,6 +151,30 @@ ops run -p <port> <app>
 ops run -p <port> -c <file> <app>
 ```
 
+# Use golang string interoplation in config files
+To enable set `ops_render_config` to `true`. Both `${ENV_VAR}` and `$ENV_VAR` are supported.
+
+## Example Command
+```sh
+ops_render_config=true ops run -p <port> -c <file> <app>
+# or
+export ops_render_config=true
+ops run -p <port> -c <file> <app>
+```
+
+## Example config
+```JSON
+{
+  "Args":[
+    "--user",
+    "${USER}",
+    "--password",
+    "$PASSWORD"
+  ],
+  "Dirs":["myapp/static"]
+}
+```
+
 # Example config file
 
 OPS config files are plain JSON, below is an example.
@@ -176,7 +200,7 @@ Only advanced/power users should use the bridge networking option.
 
 The following environment variables are available to you
 
-* `ops_render_config=true` - Use Golang ENV var interpolation to render your JSON configs.
+* `ops_render_config` - Set to `true` to use Golang ENV var interpolation to render your JSON configs.
 
 
 ## Reporting Bugs
