@@ -151,6 +151,30 @@ ops run -p <port> <app>
 ops run -p <port> -c <file> <app>
 ```
 
+# Use golang string interoplation in config files
+To enable set `ops_render_config` to `true`. Both `${ENV_VAR}` and `$ENV_VAR` are supported.
+
+## Example Command
+```sh
+ops_render_config=true ops run -p <port> -c <file> <app>
+# or
+export ops_render_config=true
+ops run -p <port> -c <file> <app>
+```
+
+## Example config
+```JSON
+{
+  "Args":[
+    "--user",
+    "${USER}",
+    "--password",
+    "$PASSWORD"
+  ],
+  "Dirs":["myapp/static"]
+}
+```
+
 # Example config file
 
 OPS config files are plain JSON, below is an example.
@@ -172,12 +196,19 @@ handle networking for you.
 
 Only advanced/power users should use the bridge networking option.
 
+## Useful Ops Environment Variables
+
+The following environment variables are available to you
+
+* `ops_render_config` - Set to `true` to use Golang ENV var interpolation to render your JSON configs.
+
+
 ## Reporting Bugs
 
 Feel free to open up a pull request. It's helpful to have your OPS
 version and the release channel you are using.
 
-Also, if it doesn't work on the main release, then you can try the nightly. 
+Also, if it doesn't work on the main release, then you can try the nightly.
 The main release can tail the nightly by many weeks sometimes.
 
 ```sh

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -50,9 +51,12 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 func unWarpConfig(file string, c *types.Config) (err error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Fatalf("error reading config: %v\n", err)
+		log.Fatalf("error reading config: %v\nIf you are trying to use interoplation in your\nconfig's JSON set 'ops_render_config=true' in your ENV", err)
 	}
-
+	if os.Getenv("ops_render_config") == "true" {
+		loadedEnvJSON := os.ExpandEnv(string(data))
+		return ConvertJSONToConfig([]byte(loadedEnvJSON), c)
+	}
 	return ConvertJSONToConfig(data, c)
 }
 
