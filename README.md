@@ -172,12 +172,19 @@ handle networking for you.
 
 Only advanced/power users should use the bridge networking option.
 
+## Useful Ops Environment Variables
+
+The following environment variables are available to you
+
+* `ops_render_config=true` - Use Golang ENV var interpolation to render your JSON configs.
+
+
 ## Reporting Bugs
 
 Feel free to open up a pull request. It's helpful to have your OPS
 version and the release channel you are using.
 
-Also, if it doesn't work on the main release, then you can try the nightly. 
+Also, if it doesn't work on the main release, then you can try the nightly.
 The main release can tail the nightly by many weeks sometimes.
 
 ```sh
