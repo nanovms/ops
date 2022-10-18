@@ -56,9 +56,8 @@ func unWarpConfig(file string, c *types.Config) (err error) {
 	if os.Getenv("ops_render_config") == "true" {
 		loadedEnvJSON := os.ExpandEnv(string(data))
 		return ConvertJSONToConfig([]byte(loadedEnvJSON), c)
-	} else {
-		return ConvertJSONToConfig(data, c)
 	}
+	return ConvertJSONToConfig(data, c)
 }
 
 // ConvertJSONToConfig converts a byte array to an object of type configuration
