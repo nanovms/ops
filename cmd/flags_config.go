@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -52,8 +53,8 @@ func unWarpConfig(file string, c *types.Config) (err error) {
 	if err != nil {
 		log.Fatalf("error reading config: %v\n", err)
 	}
-
-	return ConvertJSONToConfig(data, c)
+	loadedEnvJSON := os.ExpandEnv(string(data))
+	return ConvertJSONToConfig([]byte(loadedEnvJSON), c)
 }
 
 // ConvertJSONToConfig converts a byte array to an object of type configuration
