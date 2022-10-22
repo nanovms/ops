@@ -203,6 +203,9 @@ type RunConfig struct {
 	// CPUs specifies the number of CPU cores to use
 	CPUs int
 
+	GPUs    int
+	GPUType string
+
 	// Debug
 	Debug bool
 

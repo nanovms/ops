@@ -78,6 +78,21 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 			Items: []string{instanceName},
 		},
 	}
+	if c.RunConfig.GPUs > 0 {
+		if c.RunConfig.GPUType == "" {
+			return errors.New("GPU type must be specified")
+		}
+		rb.GuestAccelerators = []*compute.AcceleratorConfig{
+			{
+				AcceleratorCount: int64(c.RunConfig.GPUs),
+				AcceleratorType:  fmt.Sprintf("zones/%s/acceleratorTypes/%s", c.CloudConfig.Zone, c.RunConfig.GPUType),
+			},
+		}
+		rb.Scheduling = &compute.Scheduling{
+			// instances with guest accelerators do not support live migration
+			OnHostMaintenance: "TERMINATE",
+		}
+	}
 	op, err := p.Service.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context.TODO()).Do()
 	if err != nil {
 		return err
