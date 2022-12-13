@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export VERSION="0.1.25"
+export VERSION="0.1.34"
 plat="$(uname -s | awk '{print tolower($0)}')"
 
 GO111MODULE=on GOOS=linux go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"

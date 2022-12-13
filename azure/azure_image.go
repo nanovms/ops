@@ -71,7 +71,21 @@ func (a *Azure) CustomizeImage(ctx *lepton.Context) (string, error) {
 
 // BuildImageWithPackage to upload on Azure
 func (a *Azure) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
+
 	c := ctx.Config()
+
+	a.hyperVGen = compute.HyperVGenerationTypesV1
+	imageType := strings.ToLower(c.CloudConfig.ImageType)
+	if imageType != "" {
+		if imageType == "gen1" {
+		} else if imageType == "gen2" {
+			c.Uefi = true
+			a.hyperVGen = compute.HyperVGenerationTypesV2
+		} else {
+			return "", fmt.Errorf("invalid image type '%s'; available types: 'gen1', 'gen2'", c.CloudConfig.ImageType)
+		}
+	}
+
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
 		return "", err
