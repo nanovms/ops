@@ -144,10 +144,16 @@ func (p *GCloud) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 			if val, ok := image.Labels["createdby"]; ok && val == "ops" {
 				imageCreatedAt, _ := time.Parse("2006-01-02T15:04:05-07:00", image.CreationTimestamp)
 
+				labels := []string{}
+				for k, v := range image.Labels {
+					labels = append(labels, k+":"+v)
+				}
+
 				ci := lepton.CloudImage{
 					Name:    image.Name,
 					Status:  fmt.Sprintf("%v", image.Status),
 					Created: imageCreatedAt,
+					Labels:  labels,
 				}
 
 				images = append(images, ci)
@@ -168,8 +174,9 @@ func (p *GCloud) ListImages(ctx *lepton.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "Created"})
+	table.SetHeader([]string{"Name", "Status", "Created", "Labels"})
 	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
@@ -180,6 +187,7 @@ func (p *GCloud) ListImages(ctx *lepton.Context) error {
 		row = append(row, image.Name)
 		row = append(row, image.Status)
 		row = append(row, lepton.Time2Human(image.Created))
+		row = append(row, strings.Join(image.Labels[:], ","))
 		table.Append(row)
 	}
 
