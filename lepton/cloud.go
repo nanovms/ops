@@ -10,7 +10,8 @@ type CloudImage struct {
 	Size    int64
 	Path    string
 	Created time.Time
-	Tag     string
+	Tag     string // could merge w/below
+	Labels  []string
 }
 
 // CloudInstance represents the instance that widely use in different

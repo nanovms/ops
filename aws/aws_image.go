@@ -607,6 +607,11 @@ func (p *AWS) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 			tagName = &ec2.Tag{Value: aws.String("n/a")}
 		}
 
+		labels := []string{}
+		for _, tag := range image.Tags {
+			labels = append(labels, *tag.Key+":"+*tag.Value)
+		}
+
 		imageCreatedAt, _ := time.Parse("2006-01-02T15:04:05Z", *image.CreationDate)
 
 		cimage := lepton.CloudImage{
@@ -614,6 +619,7 @@ func (p *AWS) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 			Name:    *image.Name,
 			ID:      *image.ImageId,
 			Status:  *image.State,
+			Labels:  labels,
 			Created: imageCreatedAt,
 		}
 
@@ -638,8 +644,9 @@ func (p *AWS) ListImages(ctx *lepton.Context) error {
 	} else {
 		// default of table output
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"AmiID", "AmiName", "Name", "Status", "Created"})
+		table.SetHeader([]string{"AmiID", "AmiName", "Name", "Status", "Created", "Labels"})
 		table.SetHeaderColor(
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
@@ -655,6 +662,7 @@ func (p *AWS) ListImages(ctx *lepton.Context) error {
 			row = append(row, image.Tag)
 			row = append(row, image.Status)
 			row = append(row, lepton.Time2Human(image.Created))
+			row = append(row, strings.Join(image.Labels[:], ","))
 
 			table.Append(row)
 		}
