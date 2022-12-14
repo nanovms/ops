@@ -32,6 +32,24 @@ If you don't like this option you can also download pre-made packages
 for various systems [here](https://ops.city/downloads) and you can also
 build from source.
 
+## Debian / Redhat:
+
+Add a deb src:
+
+```
+sudo vi /etc/apt/sources.list.d/fury.list
+```
+
+```
+deb [trusted=yes] https://apt.fury.io/nanovms/ /
+```
+
+Update your sources && install:
+
+```
+sudo apt-get update && sudo apt-get install ops
+```
+
 ## Build and Install from source
 
 Building from source is easy if you have used Go before.
