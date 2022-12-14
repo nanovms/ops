@@ -1,0 +1,26 @@
+# nfpm example config file
+#
+# check https://nfpm.goreleaser.com/configuration for detailed usage
+#
+name: "ops"
+arch: "amd64"
+platform: "linux"
+version: "v0.1.34"
+section: "default"
+priority: "extra"
+provides:
+- ops
+suggests:
+- something-else
+conflicts:
+- not-foo
+- not-bar
+maintainer: "Ian Eyberg <ian@nanovmz.com>"
+description: |
+  OPS is a unikernel build tool for the Nanos unikernel.
+vendor: "NanoVMs"
+homepage: "http://nanovms.com"
+license: "Apache-2.0"
+contents:
+- src: ./ops
+  dst: /usr/local/bin/ops
