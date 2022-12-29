@@ -50,6 +50,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	instanceName := c.RunConfig.InstanceName
+	canIPForward := c.RunConfig.CanIPForward
 
 	rb := &compute.Instance{
 		Name:        instanceName,
@@ -64,6 +65,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 				},
 			},
 		},
+		CanIpForward:      canIPForward,
 		NetworkInterfaces: nic,
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{

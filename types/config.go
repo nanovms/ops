@@ -200,6 +200,9 @@ type RunConfig struct {
 	// BridgeName
 	BridgeName string
 
+	// CanIPForward enable IP forwarding when creating an instance on GCP
+	CanIPForward bool
+
 	// CPUs specifies the number of CPU cores to use
 	CPUs int
 
