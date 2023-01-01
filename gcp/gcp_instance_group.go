@@ -13,6 +13,7 @@ func (p *GCloud) createInstanceTemplate(ctx *lepton.Context, instanceGroup strin
 	c := ctx.Config()
 
 	instanceName := c.RunConfig.InstanceName
+	canIPForward := c.RunConfig.CanIPForward
 	machineType := c.CloudConfig.Flavor
 
 	imageName := fmt.Sprintf("projects/%v/global/images/%v",
@@ -40,6 +41,7 @@ func (p *GCloud) createInstanceTemplate(ctx *lepton.Context, instanceGroup strin
 					},
 				},
 			},
+			CanIpForward:      canIPForward,
 			NetworkInterfaces: nic,
 			Metadata: &compute.Metadata{
 				Items: []*compute.MetadataItems{
