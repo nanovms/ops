@@ -224,8 +224,9 @@ out:
 	}
 
 	containerInfo, err := cli.ContainerCreate(ctx, &dockerContainer.Config{
-		Image: image,
-		Cmd:   command,
+		Image:      image,
+		Cmd:        command,
+		Entrypoint: []string{},
 	}, nil, nil, nil, "")
 	if err != nil {
 		return nil, nil, dockerContainer.ContainerCreateCreatedBody{}, err
