@@ -41,12 +41,12 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		colors=""
 
 		read_libs() {
-			ldd "$1" | rev | cut -d' ' -f2 | rev | while read lib; do
+			for lib in $(echo "$(ldd "$1" | rev | cut -d' ' -f2 | rev)"); do
 				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
 					exists=0
 					resolved_lib=$(readlink -f $lib)
 
-					for i in $colors; do
+					for i in $(echo "$colors"); do
 						if [ "$i" = "'$lib'" ] || [ "$i" = "'$resolved_lib'" ]; then
 							exists=1
 							break
