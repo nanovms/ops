@@ -41,12 +41,12 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		colors=""
 
 		read_libs() {
-			ldd "$1" | rev | cut -d' ' -f2 | rev | while read lib; do
+			for lib in $(echo "$(ldd "$1" | rev | cut -d' ' -f2 | rev)"); do
 				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
 					exists=0
 					resolved_lib=$(readlink -f $lib)
 
-					for i in $colors; do
+					for i in $(echo "$colors"); do
 						if [ "$i" = "'$lib'" ] || [ "$i" = "'$resolved_lib'" ]; then
 							exists=1
 							break
@@ -143,9 +143,12 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 			log.Fatalf("Invalid library declaration: %s", libraryLine)
 		}
 
-		libraryPath, libraryDestination := parts[0], parts[1]
+		libraryPath, libraryDestination := parts[0], sysroot+parts[1]
 
-		err = copyFromContainer(cli, containerInfo.ID, libraryPath, sysroot+libraryDestination)
+		if _, err = os.Stat(libraryDestination); err == nil {
+			continue
+		}
+		err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
 		if err != nil {
 			log.Fatal(err)
 		}
