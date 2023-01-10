@@ -143,7 +143,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 			log.Fatalf("Invalid library declaration: %s", libraryLine)
 		}
 
-		libraryPath, libraryDestination := parts[0], sysroot+parts[1]
+		libraryPath, libraryDestination := parts[0], sysroot+path.Clean(parts[1])
 
 		if _, err = os.Stat(libraryDestination); err == nil {
 			continue
