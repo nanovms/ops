@@ -95,6 +95,14 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 			OnHostMaintenance: "TERMINATE",
 		}
 	}
+	if c.CloudConfig.InstanceProfile != "" {
+		rb.ServiceAccounts = []*compute.ServiceAccount{
+			{
+				Email:  c.CloudConfig.InstanceProfile,
+				Scopes: []string{"https://www.googleapis.com/auth/cloud-platform"},
+			},
+		}
+	}
 	op, err := p.Service.Instances.Insert(c.CloudConfig.ProjectID, c.CloudConfig.Zone, rb).Context(context.TODO()).Do()
 	if err != nil {
 		return err
