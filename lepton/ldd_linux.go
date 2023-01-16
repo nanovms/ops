@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/nanovms/ops/types"
 )
 
 // GetElfFileInfo returns an object with elf information of the path program
@@ -47,7 +48,7 @@ func IsDynamicLinked(efd *elf.File) bool {
 
 // works only on linux, need to
 // replace looking up in dynamic section in ELF
-func getSharedLibs(targetRoot string, path string) (map[string]string, error) {
+func getSharedLibs(targetRoot string, path string, c *types.Config) (map[string]string, error) {
 	var notExistLib []string
 	var absTargetRoot string
 	if targetRoot != "" {
