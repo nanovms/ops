@@ -159,6 +159,7 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 		}
 		// don't include the terminating NUL in path string
 		ipath := string(ipathbuf[:len(ipathbuf)-1])
+		ipath = filepath.Base(ipath)
 		ipath, absIpath, err := findLib(targetRoot, filepath.Dir(path), libDirs, ipath)
 		if err != nil {
 			return errors.WrapPrefix(err, ipath, 0)
