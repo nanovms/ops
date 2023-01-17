@@ -11,6 +11,7 @@ import (
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/fs"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
 )
 
 // GetElfFileInfo returns an object with elf information of the path program
@@ -75,7 +76,7 @@ func findLib(targetRoot string, origin string, libDirs []string, path string) (s
 	return "", "", os.ErrNotExist
 }
 
-func _getSharedLibs(libs map[string]string, targetRoot string, path string) error {
+func _getSharedLibs(libs map[string]string, targetRoot string, path string, c *types.Config) error {
 	path, err := fs.LookupFile(targetRoot, path)
 	if err != nil {
 		return errors.WrapPrefix(err, path, 0)
@@ -120,6 +121,11 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 			libDirs = append(libDirs, strings.Split(d, ":")...)
 		}
 	}
+
+	// 3. read LD_LIBRARY_PATH from config
+	if configEnv, hasLibPaths := c.Env["LD_LIBRARY_PATH"]; hasLibPaths {
+		libDirs = append(libDirs, strings.Split(configEnv, ":")...)
+	}
 	libDirs = append(libDirs, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
 
 	dtNeeded, err := fd.DynString(elf.DT_NEEDED)
@@ -141,7 +147,7 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 			libs[libpath] = absLibpath
 
 			// append library dependencies
-			err := _getSharedLibs(libs, targetRoot, absLibpath)
+			err := _getSharedLibs(libs, targetRoot, absLibpath, c)
 			if err != nil {
 				return err
 			}
@@ -166,7 +172,7 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 		}
 		if _, ok := libs[ipath]; !ok {
 			libs[ipath] = absIpath
-			err := _getSharedLibs(libs, targetRoot, ipath)
+			err := _getSharedLibs(libs, targetRoot, ipath, c)
 			if err != nil {
 				return err
 			}
@@ -176,9 +182,9 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string) erro
 	return nil
 }
 
-func getSharedLibs(targetRoot string, path string) (map[string]string, error) {
+func getSharedLibs(targetRoot string, path string, c *types.Config) (map[string]string, error) {
 	libs := make(map[string]string)
-	err := _getSharedLibs(libs, targetRoot, path)
+	err := _getSharedLibs(libs, targetRoot, path, c)
 	if err != nil {
 		return nil, err
 	}

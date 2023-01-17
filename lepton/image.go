@@ -344,7 +344,7 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		return nil, errors.Wrap(err, 1)
 	}
 
-	deps, err := getSharedLibs(c.TargetRoot, c.Program)
+	deps, err := getSharedLibs(c.TargetRoot, c.Program, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
