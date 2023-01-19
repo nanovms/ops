@@ -3,7 +3,7 @@ package lepton
 import (
 	"fmt"
 
-	pb "github.com/schollz/progressbar/v2"
+	pb "github.com/schollz/progressbar/v3"
 )
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer

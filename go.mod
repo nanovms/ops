@@ -26,7 +26,6 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.21.2
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v2 v2.13.2
 	github.com/schollz/progressbar/v3 v3.7.3
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
