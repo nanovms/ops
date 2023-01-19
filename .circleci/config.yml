@@ -6,15 +6,15 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/go:1.17.3
+      - image: cimg/go:1.19.5
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - run: go get -u golang.org/x/lint/golint
+      - run: go install golang.org/x/lint/golint@latest
       - run: sudo apt-get update
       - run: sudo apt-get install qemu-system-x86
-      - run: go get -u github.com/jstemmer/go-junit-report
+      - run: go install github.com/jstemmer/go-junit-report@latest
       - run: make deps
       - run: ./hack/verify-gofmt.sh
       - run: ./hack/verify-govet.sh
@@ -35,7 +35,7 @@ jobs:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu
-      - run: go install github.com/jstemmer/go-junit-report
+      - run: go install github.com/jstemmer/go-junit-report@latest
       - run: make deps
       - run: mkdir -p $TEST_RESULTS
       - run: go run ops.go update
@@ -46,7 +46,7 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   nightly-build:
     docker:
-      - image: cimg/go:1.17.3
+      - image: cimg/go:1.19.5
     steps:
       - checkout
       - run: go build
