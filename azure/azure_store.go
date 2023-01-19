@@ -215,7 +215,7 @@ func (az *Storage) DeleteFromBucket(config *types.Config, key string) error {
 	return nil
 }
 
-//Exists() function not available in sdk. So for now this is a work around
+// Exists() function not available in sdk. So for now this is a work around
 func containerExists(containerURL azblob.ContainerURL) bool {
 	_, err := containerURL.GetProperties(context.Background(), azblob.LeaseAccessConditions{})
 	return err == nil
