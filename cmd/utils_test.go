@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -24,7 +23,7 @@ func buildNodejsProgram() (path string) {
 	randomString := testutils.String(5)
 	path = "nodejs-" + randomString + ".js"
 
-	err := ioutil.WriteFile(path, program, 0644)
+	err := os.WriteFile(path, program, 0644)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -126,7 +125,7 @@ func attachVolume(instanceName, volumeName string) {
 func writeConfigToFile(config *types.Config, fileName string) {
 	json, _ := json.MarshalIndent(config, "", "  ")
 
-	err := ioutil.WriteFile(fileName, json, 0666)
+	err := os.WriteFile(fileName, json, 0666)
 	if err != nil {
 		log.Panic(err)
 	}

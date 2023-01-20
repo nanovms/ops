@@ -3,7 +3,7 @@ package lepton
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -53,7 +53,7 @@ func ValidateAPIKey(apikey string) (*ValidateSuccessResponse, error) {
 		return nil, errors.New("incorrect api-key")
 	} else {
 		// at this point its mostly a internal server error
-		reason, err := ioutil.ReadAll(resp.Body)
+		reason, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func StoreCredentials(creds Credentials) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(credentialFilePath, data, 0644)
+	return os.WriteFile(credentialFilePath, data, 0644)
 }
 
 // ReadCredsFromLocal gets the credentials from the credential file in the ops home
@@ -83,7 +83,7 @@ func ReadCredsFromLocal() (*Credentials, error) {
 	if _, err := os.Stat(credentialFilePath); os.IsNotExist(err) {
 		return nil, ErrCredentialsNotExist
 	}
-	data, err := ioutil.ReadFile(credentialFilePath)
+	data, err := os.ReadFile(credentialFilePath)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -38,7 +38,7 @@ func (p *ProxMox) getNextID() string {
 		fmt.Println(err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -246,7 +246,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -299,7 +299,7 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -343,7 +343,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -370,7 +370,7 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -433,7 +433,7 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -488,7 +488,7 @@ func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -520,7 +520,7 @@ func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -550,7 +550,7 @@ func (p *ProxMox) StopInstance(ctx *lepton.Context, instanceID string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err

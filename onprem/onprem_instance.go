@@ -3,7 +3,6 @@ package onprem
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -77,7 +76,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 		log.Error(err)
 	}
 
-	err = ioutil.WriteFile(instances+"/"+pid, d1, 0644)
+	err = os.WriteFile(instances+"/"+pid, d1, 0644)
 	if err != nil {
 		log.Error(err)
 	}
@@ -106,7 +105,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 	opshome := lepton.GetOpsHome()
 	instancesPath := path.Join(opshome, "instances")
 
-	files, err := ioutil.ReadDir(instancesPath)
+	files, err := os.ReadDir(instancesPath)
 	if err != nil {
 		return
 	}
@@ -132,7 +131,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			}
 		}
 
-		body, err := ioutil.ReadFile(fullpath)
+		body, err := os.ReadFile(fullpath)
 		if err != nil {
 			return nil, err
 		}
@@ -142,12 +141,17 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			return nil, err
 		}
 
+		fi, err := f.Info()
+		if err != nil {
+			return nil, err
+		}
+
 		instances = append(instances, lepton.CloudInstance{
 			ID:         f.Name(),
 			Name:       i.Instance,
 			Image:      i.Image,
 			Status:     "Running",
-			Created:    lepton.Time2Human(f.ModTime()),
+			Created:    lepton.Time2Human(fi.ModTime()),
 			PrivateIps: []string{"127.0.0.1"},
 			PublicIps:  strings.Split(i.portList(), ","),
 		})
@@ -250,7 +254,7 @@ func (p *OnPrem) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 // GetInstanceLogs for onprem instance logs
 func (p *OnPrem) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 
-	body, err := ioutil.ReadFile("/tmp/" + instancename + ".log")
+	body, err := os.ReadFile("/tmp/" + instancename + ".log")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -2,7 +2,6 @@ package lepton
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/user"
 
@@ -16,7 +15,7 @@ func NewConfig() *types.Config {
 
 	conf := os.Getenv("OPS_DEFAULT_CONFIG")
 	if conf != "" {
-		data, err := ioutil.ReadFile(conf)
+		data, err := os.ReadFile(conf)
 		if err != nil {
 			log.Errorf("error reading config: %v\n", err)
 		}
@@ -32,7 +31,7 @@ func NewConfig() *types.Config {
 		conf = usr.HomeDir + "/.opsrc"
 
 		if _, err = os.Stat(conf); err == nil {
-			data, err := ioutil.ReadFile(conf)
+			data, err := os.ReadFile(conf)
 			if err != nil {
 				log.Fatalf("error reading config: %v\n", err)
 			}

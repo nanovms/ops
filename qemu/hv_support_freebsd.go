@@ -1,7 +1,7 @@
 package qemu
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -9,7 +9,7 @@ func hvSupport() (bool, error) {
 	const intel string = "EPT"
 	const amd string = "POPCNT"
 
-	b, err := ioutil.ReadFile("/var/run/dmesg.boot")
+	b, err := os.ReadFile("/var/run/dmesg.boot")
 	if err != nil {
 		return false, err
 	}

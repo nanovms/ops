@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -35,7 +34,7 @@ func (p *Profile) save() {
 
 	local := path.Join(api.GetOpsHome(), "profile")
 
-	err := ioutil.WriteFile(local, []byte(str), 0644)
+	err := os.WriteFile(local, []byte(str), 0644)
 	if err != nil {
 		log.Error(err)
 	}
@@ -69,7 +68,7 @@ func (p *Profile) virtualized() bool {
 		return false
 	}
 
-	content, err := ioutil.ReadFile(s)
+	content, err := os.ReadFile(s)
 	if err != nil {
 		log.Error(err)
 	}

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -56,7 +55,7 @@ func copyFile(src, dst string) error {
 
 func copyDirectory(src string, dst string) error {
 	var err error
-	var fds []os.FileInfo
+	var fds []os.DirEntry
 	var srcinfo os.FileInfo
 
 	if srcinfo, err = os.Stat(src); err != nil {
@@ -67,7 +66,7 @@ func copyDirectory(src string, dst string) error {
 		return err
 	}
 
-	if fds, err = ioutil.ReadDir(src); err != nil {
+	if fds, err = os.ReadDir(src); err != nil {
 		return err
 	}
 	for _, fd := range fds {
@@ -101,7 +100,7 @@ func extractFilePackage(pkg string, name string, config *types.Config) string {
 		log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
 	}
 
-	tempDirectory, err := ioutil.TempDir("", "*")
+	tempDirectory, err := os.MkdirTemp("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +110,7 @@ func extractFilePackage(pkg string, name string, config *types.Config) string {
 }
 
 func extractArchivedPackage(pkg string, target string, config *types.Config) string {
-	tempDirectory, err := ioutil.TempDir("", "*")
+	tempDirectory, err := os.MkdirTemp("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,7 +135,7 @@ func MovePackageFiles(origin string, target string) string {
 		log.Fatal(err)
 	}
 
-	files, err := ioutil.ReadDir(origin)
+	files, err := os.ReadDir(origin)
 	if err != nil {
 		log.Fatal(err)
 	}

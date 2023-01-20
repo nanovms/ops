@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -123,7 +122,7 @@ func (ps *PowerShellCmd) getPowerShellPath() (string, error) {
 }
 
 func saveScript(fileContents string) (string, error) {
-	file, err := ioutil.TempFile(os.TempDir(), "ps")
+	file, err := os.CreateTemp(os.TempDir(), "ps")
 	if err != nil {
 		return "", err
 	}

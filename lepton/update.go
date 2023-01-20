@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -55,7 +54,7 @@ func Apply(update io.Reader, opts Options) error {
 
 	var newBytes []byte
 
-	if newBytes, err = ioutil.ReadAll(update); err != nil {
+	if newBytes, err = io.ReadAll(update); err != nil {
 		return err
 	}
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -96,7 +95,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	}
 	defer outReader.Close()
 
-	bytes, err := ioutil.ReadAll(outReader)
+	bytes, err := io.ReadAll(outReader)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +103,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	lines := strings.Split(strings.TrimSpace(string(bytes)), "\n")
 	targetExecutablePath, librariesPath := sanitizeLine(lines[0]), lines[1:]
 
-	tempDirectory, err := ioutil.TempDir("", "*")
+	tempDirectory, err := os.MkdirTemp("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -166,7 +165,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 
 	json, _ := json.MarshalIndent(c, "", "  ")
 
-	err = ioutil.WriteFile(path.Join(tempDirectory, "package.manifest"), json, 0666)
+	err = os.WriteFile(path.Join(tempDirectory, "package.manifest"), json, 0666)
 	if err != nil {
 		log.Panic(err)
 	}

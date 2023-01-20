@@ -2,7 +2,6 @@ package onprem_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -40,12 +39,12 @@ func NewTestContext(c *types.Config) *lepton.Context {
 
 func TestOnPremVolume(t *testing.T) {
 	// set up here since linter/vet complains about using testing.Main
-	tmp, err := ioutil.TempDir("/tmp", "test-ops-*")
+	tmp, err := os.MkdirTemp("/tmp", "test-ops-*")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
-	tmpdata, err := ioutil.TempDir(tmp, testVolume2.Data)
+	tmpdata, err := os.MkdirTemp(tmp, testVolume2.Data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +124,7 @@ func assignVolumeData(src lepton.NanosVolume, dst *lepton.NanosVolume) {
 }
 
 func TestOnPremVolume_AddMounts(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "testOPs-test-*")
+	dir, err := os.MkdirTemp("/tmp", "testOPs-test-*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +162,7 @@ func TestOnPremVolume_AddMounts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
 			var mounts []string
-			err := ioutil.WriteFile(path.Join(dir, fmt.Sprintf("%s:%s.raw", tt.name, tt.uuid)), []byte{}, 0644)
+			err := os.WriteFile(path.Join(dir, fmt.Sprintf("%s:%s.raw", tt.name, tt.uuid)), []byte{}, 0644)
 			if err != nil {
 				t.Errorf("TempFile: %v", err)
 				return

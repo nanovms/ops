@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 
@@ -130,7 +129,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -200,7 +199,7 @@ func (p *ProxMox) ListImages(ctx *lepton.Context) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err

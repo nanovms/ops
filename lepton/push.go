@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ func newfileUploadRequest(uri string, params map[string]string, fileParamName, p
 	if err != nil {
 		return nil, err
 	}
-	fileContents, err := ioutil.ReadAll(file)
+	fileContents, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

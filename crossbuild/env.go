@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -196,7 +195,7 @@ func (env *Environment) IsReady() bool {
 
 // RunCommands runs a sequence of commands in the VM.
 func (env *Environment) RunCommands(cmdFile string) error {
-	contents, err := ioutil.ReadFile(cmdFile)
+	contents, err := os.ReadFile(cmdFile)
 	if err != nil {
 		return fmt.Errorf("cannot read command file: %v", err)
 	}
