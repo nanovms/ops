@@ -318,8 +318,7 @@ func getRootDir(root map[string]interface{}) map[string]interface{} {
 	return root["children"].(map[string]interface{})
 }
 
-/* Creates the EFI System Partition, i.e. a FAT32 filesystem with the UEFI
-loader file in the EFI/Boot directory. */
+// Creates the EFI System Partition, i.e. a FAT32 filesystem with the UEFI loader file in the EFI/Boot directory.
 func writeUefiPart(imgFile *os.File, offset uint64, uefiPath string) (uint64, error) {
 	uefiLoader, err := os.Open(uefiPath)
 	if err != nil {

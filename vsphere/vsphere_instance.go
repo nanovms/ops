@@ -306,8 +306,7 @@ func (v *Vsphere) ListInstances(ctx *lepton.Context) error {
 // waits for up to 1hr!?? wtf
 //
 // if we get empty string set the following && try again
-//  govc host.esxcli system settings advanced set -o /Net/GuestIPHack -i
-//  1
+// govc host.esxcli system settings advanced set -o /Net/GuestIPHack -i 1
 func (v *Vsphere) ipFor(instancename string) string {
 
 	f := find.NewFinder(v.client, true)
