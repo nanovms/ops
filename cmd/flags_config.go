@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -49,7 +48,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 
 // unWarpConfig parses lepton config file from file
 func unWarpConfig(file string, c *types.Config) (err error) {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatalf("error reading config: %v\nIf you are trying to use interoplation in your\nconfig's JSON set 'ops_render_config=true' in your ENV", err)
 	}

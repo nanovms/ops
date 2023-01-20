@@ -1,7 +1,7 @@
 package qemu
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -9,7 +9,7 @@ func hvSupport() (bool, error) {
 	const intel string = "vmx"
 	const amd string = "svm"
 
-	b, err := ioutil.ReadFile("/proc/cpuinfo")
+	b, err := os.ReadFile("/proc/cpuinfo")
 	if err != nil {
 		return false, err
 	}

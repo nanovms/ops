@@ -2,7 +2,6 @@ package crossbuild
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -60,7 +59,7 @@ func supportedEnvironments() ([]Environment, error) {
 			return nil, err
 		}
 	}
-	content, err := ioutil.ReadFile(listFilePath)
+	content, err := os.ReadFile(listFilePath)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -61,7 +60,7 @@ func addDNSConfig(m *fs.Manifest, c *types.Config) {
 	for _, ns := range c.NameServers {
 		data = append(data, []byte(fmt.Sprintln("nameserver ", ns))...)
 	}
-	err := ioutil.WriteFile(resolv, data, 0644)
+	err := os.WriteFile(resolv, data, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +75,7 @@ func addHostName(m *fs.Manifest, c *types.Config) {
 	temp := getImageTempDir(c)
 	hostname := path.Join(temp, "hostname")
 	data := []byte("uniboot")
-	err := ioutil.WriteFile(hostname, data, 0644)
+	err := os.WriteFile(hostname, data, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +93,7 @@ func addPasswd(m *fs.Manifest, c *types.Config) {
 	temp := getImageTempDir(c)
 	passwd := path.Join(temp, "passwd")
 	data := []byte("root:x:0:0:root:/root:/bin/nobash")
-	err := ioutil.WriteFile(passwd, data, 0644)
+	err := os.WriteFile(passwd, data, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -595,7 +594,7 @@ func DownloadFileWithProgress(filepath string, url string, timeout int) error {
 
 // DownloadFile downloads file using URL
 func DownloadFile(fpath string, url string, timeout int, showProgress bool) error {
-	out, err := ioutil.TempFile(filepath.Dir(fpath), fmt.Sprintf("*%s", filepath.Base(fpath)))
+	out, err := os.CreateTemp(filepath.Dir(fpath), fmt.Sprintf("*%s", filepath.Base(fpath)))
 	if err != nil {
 		return err
 	}

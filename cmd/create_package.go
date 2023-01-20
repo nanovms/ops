@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -62,7 +61,7 @@ func clonePackage(old string, new string, version string, newconfig *types.Confi
 	json, _ := json.MarshalIndent(c, "", "  ")
 
 	// would be nice to write only needed config not all config
-	err = ioutil.WriteFile(ppath, json, 0666)
+	err = os.WriteFile(ppath, json, 0666)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

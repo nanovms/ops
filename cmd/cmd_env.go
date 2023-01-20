@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/nanovms/ops/crossbuild"
@@ -104,7 +103,7 @@ func envBuild(cmd *cobra.Command, args []string) {
 	tmpRoot := false
 	if c.TargetRoot == "" {
 		if createImage {
-			c.TargetRoot, err = ioutil.TempDir("", "*")
+			c.TargetRoot, err = os.MkdirTemp("", "*")
 			if err != nil {
 				exitWithError(err.Error())
 			}

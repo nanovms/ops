@@ -2,7 +2,6 @@ package testutils
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -28,7 +27,7 @@ func BuildBasicProgram() (binaryPath string) {
 	binaryPath = "./basic" + randomString
 	sourcePath := fmt.Sprintf("basic%s.go", randomString)
 
-	err := ioutil.WriteFile(sourcePath, program, 0644)
+	err := os.WriteFile(sourcePath, program, 0644)
 	if err != nil {
 		log.Panic(err)
 	}

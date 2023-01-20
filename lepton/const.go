@@ -2,7 +2,7 @@ package lepton
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -115,7 +115,7 @@ func getImageTempDir(c *types.Config) string {
 	temp := filepath.Base(c.Program) + "_temp"
 
 	if c.BuildDir == "" {
-		dir, err := ioutil.TempDir("", temp)
+		dir, err := os.MkdirTemp("", temp)
 		if err != nil {
 			log.Error(err)
 		}
@@ -162,7 +162,7 @@ var NightlyLocalFolder = nightlyLocalFolder()
 // LocalTimeStamp gives local timestamp from download nightly build
 func LocalTimeStamp() (string, error) {
 	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
-	data, err := ioutil.ReadFile(path.Join(NightlyLocalFolder, timestamp))
+	data, err := os.ReadFile(path.Join(NightlyLocalFolder, timestamp))
 	// first time download?
 	if os.IsNotExist(err) {
 		return "", nil
@@ -182,7 +182,7 @@ func RemoteTimeStamp() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -191,14 +191,14 @@ func RemoteTimeStamp() (string, error) {
 
 func updateLocalTimestamp(timestamp string) error {
 	fname := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
-	return ioutil.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
+	return os.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
 }
 
 // UpdateLocalRelease updates nanos version used on ops operations
 func UpdateLocalRelease(version string) error {
 	local := path.Join(GetOpsHome(), "latest.txt")
 	LocalReleaseVersion = version
-	return ioutil.WriteFile(local, []byte(version), 0755)
+	return os.WriteFile(local, []byte(version), 0755)
 }
 
 // LatestReleaseVersion give latest stable release for nanos
@@ -213,7 +213,7 @@ func getLatestRelVersion() string {
 		}
 		return LocalReleaseVersion
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	return strings.TrimSuffix(string(data), "\n")
 }
@@ -222,7 +222,7 @@ func getLatestRelVersion() string {
 var LocalReleaseVersion = getLocalRelVersion()
 
 func getLocalRelVersion() string {
-	data, err := ioutil.ReadFile(path.Join(GetOpsHome(), "latest.txt"))
+	data, err := os.ReadFile(path.Join(GetOpsHome(), "latest.txt"))
 	// nothing yet, force a download
 	if os.IsNotExist(err) {
 		return "0.0"

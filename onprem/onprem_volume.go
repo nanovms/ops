@@ -2,7 +2,6 @@ package onprem
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -100,7 +99,7 @@ func (op *OnPrem) parseSize(vol lepton.NanosVolume) string {
 func GetVolumes(dir string, query map[string]string) ([]lepton.NanosVolume, error) {
 	var vols []lepton.NanosVolume
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return vols, err
 	}
@@ -116,13 +115,18 @@ func GetVolumes(dir string, query map[string]string) ([]lepton.NanosVolume, erro
 			continue
 		}
 
+		fi, err := info.Info()
+		if err != nil {
+			return nil, err
+		}
+
 		vols = append(vols, lepton.NanosVolume{
 			ID:        nameParts[1],
 			Name:      nameParts[0],
 			Label:     nameParts[0],
-			Size:      lepton.Bytes2Human(info.Size()),
+			Size:      lepton.Bytes2Human(fi.Size()),
 			Path:      path.Join(dir, info.Name()),
-			CreatedAt: info.ModTime().String(),
+			CreatedAt: fi.ModTime().String(),
 		})
 	}
 

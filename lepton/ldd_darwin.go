@@ -2,7 +2,7 @@ package lepton
 
 import (
 	"debug/elf"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -159,7 +159,7 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string, c *t
 			continue
 		}
 		r := prog.Open()
-		ipathbuf, err := ioutil.ReadAll(r)
+		ipathbuf, err := io.ReadAll(r)
 		if err != nil {
 			return err
 		}

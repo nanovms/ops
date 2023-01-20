@@ -1,7 +1,6 @@
 package upcloud_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +15,7 @@ import (
 func TestCreateImage(t *testing.T) {
 	p, s := NewProvider(t)
 
-	file, _ := ioutil.TempFile("/tmp", "test-path")
+	file, _ := os.CreateTemp("/tmp", "test-path")
 	defer os.Remove(file.Name())
 
 	storageUUID := "1"

@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -223,7 +222,7 @@ func GetPackageList(config *types.Config) (*PackageList, error) {
 	}
 
 	var packages PackageList
-	data, err := ioutil.ReadFile(packageManifest)
+	data, err := os.ReadFile(packageManifest)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +241,7 @@ func GetLocalPackageList() ([]Package, error) {
 
 	localPackagesDir := GetOpsHome() + "/local_packages"
 
-	localPackages, err := ioutil.ReadDir(localPackagesDir)
+	localPackages, err := os.ReadDir(localPackagesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +255,7 @@ func GetLocalPackageList() ([]Package, error) {
 			manifestLoc := fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName)
 			if _, err := os.Stat(manifestLoc); err == nil {
 
-				data, err := ioutil.ReadFile(manifestLoc)
+				data, err := os.ReadFile(manifestLoc)
 				if err != nil {
 					return nil, err
 				}
