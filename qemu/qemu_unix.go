@@ -123,31 +123,44 @@ func (q *qemu) addSerial(serialType string) {
 // Backend interface are created for each device and their ids are auto
 // incremented.
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
-	i := len(q.ifaces)
-	si := strconv.Itoa(i)
+	if 1 == 1 {
+		//id := fmt.Sprintf("n%d", len(q.ifaces))
 
-	id := "n" + si
-	dv := device{
-		driver:  "virtio-net",
-		devtype: "netdev",
-		devid:   id,
-		addr:    "0x" + si,
-	}
-	ndv := netdev{
-		nettype: devType,
-		id:      id,
-	}
+		dv := device{
+			driver:  "virtio-net-pci",
+			devtype: "netdev=vmnet",
+		}
 
-	if mac == "" {
+		ndv := netdev{
+			nettype: "vmnet-bridged",
+			id:      "vmnet",
+		}
+
 		dv.mac = generateMac()
-	}
+		ndv.ifname = "en0"
 
-	if devType != "user" {
-		ndv.ifname = ifaceName
+		q.devices = append(q.devices, dv)
+		q.ifaces = append(q.ifaces, ndv)
+
 	} else {
-		// hack - FIXME
-		// this is user-mode
-		if i == 0 {
+		id := fmt.Sprintf("n%d", len(q.ifaces))
+		dv := device{
+			driver:  "virtio-net",
+			devtype: "netdev",
+			devid:   id,
+		}
+		ndv := netdev{
+			nettype: devType,
+			id:      id,
+		}
+
+		if mac == "" {
+			dv.mac = generateMac()
+		}
+
+		if devType != "user" {
+			ndv.ifname = ifaceName
+		} else {
 			for _, p := range hostPorts {
 				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
 			}
@@ -155,10 +168,10 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
 			}
 		}
-	}
 
-	q.devices = append(q.devices, dv)
-	q.ifaces = append(q.ifaces, ndv)
+		q.devices = append(q.devices, dv)
+		q.ifaces = append(q.ifaces, ndv)
+	}
 }
 
 func (q *qemu) addDiskDevice(id, driver string) {

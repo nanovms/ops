@@ -55,6 +55,9 @@ func (dv device) String() string {
 			sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 		}
 
+	} else if dv.driver == "virtio-net-pci" {
+		sb.WriteString(fmt.Sprintf("-device %s,%s", dv.driver, dv.devtype))
+
 	} else {
 		sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 	}
@@ -80,7 +83,7 @@ func (nd netdev) String() string {
 	if len(nd.ifname) > 0 {
 		sb.WriteString(fmt.Sprintf(",ifname=%s", nd.ifname))
 	}
-	if nd.nettype != "user" {
+	if nd.nettype != "user" && nd.nettype != "vmnet-bridged" {
 		if len(nd.script) > 0 {
 			sb.WriteString(fmt.Sprintf(",script=%s", nd.script))
 		} else {
