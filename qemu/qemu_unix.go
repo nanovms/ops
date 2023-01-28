@@ -117,15 +117,17 @@ func (q *qemu) addSerial(serialType string) {
 	q.serial = serial{serialtype: serialType}
 }
 
+// we inject at release build time to enable virtio-net-pci
+// this is only for a packaged macos release
+var opsD = ""
+
 // addDevice adds a device to the qemu for rendering to string arguments. If the
 // devType is "user" then the ifaceName is ignored and host forward ports are
 // added. If the mac address is empty then a random mac address is chosen.
 // Backend interface are created for each device and their ids are auto
 // incremented.
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
-	if 1 == 1 {
-		//id := fmt.Sprintf("n%d", len(q.ifaces))
-
+	if opsD != "" {
 		dv := device{
 			driver:  "virtio-net-pci",
 			devtype: "netdev=vmnet",
@@ -143,11 +145,15 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 		q.ifaces = append(q.ifaces, ndv)
 
 	} else {
-		id := fmt.Sprintf("n%d", len(q.ifaces))
+		i := len(q.ifaces)
+		si := strconv.Itoa(i)
+
+		id := fmt.Sprintf("n%d", i)
 		dv := device{
 			driver:  "virtio-net",
 			devtype: "netdev",
 			devid:   id,
+			addr:    "0x" + si,
 		}
 		ndv := netdev{
 			nettype: devType,
@@ -161,11 +167,15 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 		if devType != "user" {
 			ndv.ifname = ifaceName
 		} else {
-			for _, p := range hostPorts {
-				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
-			}
-			for _, p := range udpPorts {
-				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+			// hack - FIXME
+			// this is user-mode
+			if i == 0 {
+				for _, p := range hostPorts {
+					ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
+				}
+				for _, p := range udpPorts {
+					ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+				}
 			}
 		}
 

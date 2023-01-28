@@ -27,6 +27,8 @@ gsutil setacl public-read gs://cli/linux/release/"$VERSION"/ops
 gsutil cp "$hash" gs://cli/linux/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/linux/release/"$VERSION"/"$hash"
 
+# TODO:
+# flag here with "-X github.com/nanovms/ops/qemu.opsD=true" for signed/packaged mac binaries
 GO111MODULE=on GOOS=darwin go build -ldflags "-w -X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/darwin
 
