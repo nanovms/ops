@@ -1,3 +1,6 @@
+*.pb.go
+*.pb.gw.go
+*.swagger.json
 *.md5
 /.staging
 /image

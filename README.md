@@ -76,6 +76,14 @@ macOS notes:
 GO111MODULE=on go build -ldflags "-w"
 ```
 
+For protobufs/grpc we use https://buf.build/ .
+
+To generate protobufs (but do not check in to vcs):
+
+```
+make generate
+```
+
 For [detailed instructions](https://nanovms.gitbook.io/ops/developer/prerequisites), please consult the documentation.
 
 # Hello World
