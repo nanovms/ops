@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -99,6 +100,9 @@ func (do *DigitalOcean) ListImages(ctx *lepton.Context) error {
 	images, err := do.GetImages(ctx)
 	if err != nil {
 		return err
+	}
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(images)
 	}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created"})
