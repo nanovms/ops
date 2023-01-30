@@ -117,48 +117,71 @@ func (q *qemu) addSerial(serialType string) {
 	q.serial = serial{serialtype: serialType}
 }
 
+// we inject at release build time to enable virtio-net-pci
+// this is only for a packaged macos release
+var opsD = ""
+
 // addDevice adds a device to the qemu for rendering to string arguments. If the
 // devType is "user" then the ifaceName is ignored and host forward ports are
 // added. If the mac address is empty then a random mac address is chosen.
 // Backend interface are created for each device and their ids are auto
 // incremented.
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
-	i := len(q.ifaces)
-	si := strconv.Itoa(i)
+	if opsD != "" {
+		dv := device{
+			driver:  "virtio-net-pci",
+			devtype: "netdev=vmnet",
+		}
 
-	id := "n" + si
-	dv := device{
-		driver:  "virtio-net",
-		devtype: "netdev",
-		devid:   id,
-		addr:    "0x" + si,
-	}
-	ndv := netdev{
-		nettype: devType,
-		id:      id,
-	}
+		ndv := netdev{
+			nettype: "vmnet-bridged",
+			id:      "vmnet",
+		}
 
-	if mac == "" {
 		dv.mac = generateMac()
-	}
+		ndv.ifname = "en0"
 
-	if devType != "user" {
-		ndv.ifname = ifaceName
+		q.devices = append(q.devices, dv)
+		q.ifaces = append(q.ifaces, ndv)
+
 	} else {
-		// hack - FIXME
-		// this is user-mode
-		if i == 0 {
-			for _, p := range hostPorts {
-				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
-			}
-			for _, p := range udpPorts {
-				ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+		i := len(q.ifaces)
+		si := strconv.Itoa(i)
+
+		id := fmt.Sprintf("n%d", i)
+		dv := device{
+			driver:  "virtio-net",
+			devtype: "netdev",
+			devid:   id,
+			addr:    "0x" + si,
+		}
+		ndv := netdev{
+			nettype: devType,
+			id:      id,
+		}
+
+		if mac == "" {
+			dv.mac = generateMac()
+		}
+
+		if devType != "user" {
+			ndv.ifname = ifaceName
+		} else {
+			// hack - FIXME
+			// this is user-mode
+			if i == 0 {
+				for _, p := range hostPorts {
+					ndv.hports = append(ndv.hports, portfwd{port: p, proto: "tcp"})
+				}
+				for _, p := range udpPorts {
+					ndv.hports = append(ndv.hports, portfwd{port: p, proto: "udp"})
+				}
 			}
 		}
-	}
 
-	q.devices = append(q.devices, dv)
-	q.ifaces = append(q.ifaces, ndv)
+		q.devices = append(q.devices, dv)
+		q.ifaces = append(q.ifaces, ndv)
+	}
 }
 
 func (q *qemu) addDiskDevice(id, driver string) {

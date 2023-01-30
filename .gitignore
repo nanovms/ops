@@ -1,3 +1,5 @@
+*.dmg
+*.zip
 *.md5
 /.staging
 /image
