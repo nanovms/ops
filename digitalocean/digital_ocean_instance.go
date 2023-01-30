@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -138,6 +139,9 @@ func (do *DigitalOcean) ListInstances(ctx *lepton.Context) error {
 	instances, err := do.GetInstances(ctx)
 	if err != nil {
 		return err
+	}
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(instances)
 	}
 	// print list of images in table
 	table := tablewriter.NewWriter(os.Stdout)
