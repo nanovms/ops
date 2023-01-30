@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package imageservice;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/nanovms/ops/protos;imageservice";
+
+service Images {
+  rpc GetImages (ImageListRequest) returns (ImagesResponse) {
+    option (google.api.http) = {
+      get: "/v1/images"
+    };
+  }
+}
+
+message ImageListRequest {}
+
+message ImagesResponse {
+  int32 count = 1;
+  repeated Image images = 2;
+}
+
+message Image {
+  string name = 1;
+  string path = 2;
+  int64 size = 3;
+  string created = 4;
+}
