@@ -27,6 +27,8 @@ gsutil setacl public-read gs://cli/linux/release/"$VERSION"/ops
 gsutil cp "$hash" gs://cli/linux/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/linux/release/"$VERSION"/"$hash"
 
+# TODO:
+# flag here with "-X github.com/nanovms/ops/qemu.opsD=true" for signed/packaged mac binaries
 GO111MODULE=on GOOS=darwin go build -ldflags "-w -X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/darwin
 
@@ -44,6 +46,12 @@ gsutil setacl public-read gs://cli/darwin/release/"$VERSION"/ops
 
 gsutil cp "$hash" gs://cli/darwin/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/darwin/release/"$VERSION"/"$hash"
+
+# export AC_PASSWORD=
+# export AC_EMAIL=
+# gon config.hcl
+# /usr/local/bin/packagesbuild -v ops-d/ops-d.pkgproj
+# scp ~/ops-d/build/ops-d.pkg
 
 GO111MODULE=on GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/linux/aarch64/
