@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/network"
-	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 )
 
@@ -241,12 +241,14 @@ func (p AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *e
 
 	fromPortInt, err := strconv.Atoi(fromPort)
 	if err != nil {
-		printer.Fatalf("Failed convert source port to integer, error is: %s", err)
+		fmt.Printf("Failed convert source port to integer, error is: %s", err)
+		os.Exit(1)
 	}
 
 	toPortInt, err := strconv.Atoi(toPort)
 	if err != nil {
-		printer.Fatalf("Failed convert destination port to integer, error is: %s", err)
+		fmt.Printf("Failed convert destination port to integer, error is: %s", err)
+		os.Exit(1)
 	}
 
 	var ec2Permission = new(ec2.IpPermission)

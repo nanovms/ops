@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nanovms/ops/printer"
-
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
@@ -153,7 +151,7 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 
 	allPages, err := images.List(imageClient, listOpts).AllPages()
 	if err != nil {
-		printer.Errorf("Cannot get image list, error is: %s", err)
+		fmt.Printf("Cannot get image list, error is: %s", err)
 		return nil, err
 	}
 

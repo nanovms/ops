@@ -15,7 +15,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
@@ -73,7 +72,8 @@ func (a *Azure) Environment() *azure.Environment {
 	env, err := azure.EnvironmentFromName(cloudName)
 	if err != nil {
 		// TODO: move to initialization of var
-		printer.Fatalf("invalid cloud name '%s' specified, cannot continue", cloudName)
+		fmt.Printf("invalid cloud name '%s' specified, cannot continue", cloudName)
+		os.Exit(1)
 	}
 	environment = &env
 	return environment

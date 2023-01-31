@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"regexp"
 
-	"github.com/nanovms/ops/printer"
-
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -301,7 +299,7 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 		if errors.Is(err, *netError) {
 			fmt.Printf(constants.WarningColor, "missing internet?, using local manifest.\n")
 		} else {
-			printer.Errorf("probably bad URL: %s, got error %s", remoteURL, err)
+			fmt.Printf("probably bad URL: %s, got error %s", remoteURL, err)
 		}
 
 		return false
@@ -352,11 +350,13 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 
 	in, err := os.Open(archive)
 	if err != nil {
-		printer.Fatalf("File missing: %s", archive)
+		fmt.Printf("File missing: %s", archive)
+		os.Exit(1)
 	}
 	gzip, err := gzip.NewReader(in)
 	if err != nil {
-		printer.Fatalf("%s", err)
+		fmt.Printf(err)
+		os.Exit(1)
 	}
 	defer gzip.Close()
 	tr := tar.NewReader(gzip)
@@ -366,7 +366,8 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 			return
 		}
 		if err != nil {
-			printer.Fatalf("%s", err)
+			fmt.Printf(err)
+			os.Exit(1)
 		}
 		if header == nil {
 			continue
@@ -376,19 +377,23 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
 				if err := os.MkdirAll(target, 0755); err != nil {
-					printer.Fatalf("Directory creation failed", err)
+					fmt.Printf("Failed to create directory %s", err)
+					os.Exit(1)
 				}
 			}
 		case tar.TypeReg:
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 			if err != nil {
-				printer.Fatalf("Failed open file %s, error is %s", target, err)
+				fmt.Printf("Failed open file %s, error is %s", target, err)
+				os.Exit(1)
 			}
 			if err := f.Truncate(0); err != nil {
-				printer.Fatalf("Failed truncate file %s, error is %s", target, err)
+				fmt.Printf("Failed truncate file %s, error is %s", target, err)
+				os.Exit(1)
 			}
 			if _, err := io.Copy(f, tr); err != nil {
-				printer.Fatalf("Failed truncate file %s, error is %s", target, err.Error())
+				fmt.Printf("Failed tar file %s, error is %s", target, err.Error())
+				os.Exit(1)
 			}
 			f.Close()
 		case tar.TypeSymlink:

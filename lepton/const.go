@@ -12,7 +12,6 @@ import (
 
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 )
 
@@ -58,7 +57,8 @@ var PackagesCache = getPackageCache()
 func GetOpsHome() string {
 	home, err := HomeDir()
 	if err != nil {
-		printer.Fatalf("%s", err)
+		fmt.Printf(err)
+		os.Exit(1)
 	}
 	opshome := path.Join(home, ".ops")
 

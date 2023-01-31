@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -60,7 +61,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if !runLocalInstanceFlags.SkipBuild {
 		err = api.BuildImage(*c)
 		if err != nil {
-			printer.Fatalf("Failed build image, error is: %s", err)
+			fmt.Printf("Failed to build image, error is: %s", err)
+			os.Exit(1)
 		}
 	}
 

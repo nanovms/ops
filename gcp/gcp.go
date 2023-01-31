@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nanovms/ops/log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
-	"google.golang.org/api/dns/v1"
 )
 
 var (
@@ -67,7 +66,8 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 	case "global":
 		op, err = gop.service.GlobalOperations.Get(gop.projectID, gop.name).Context(ctx).Do()
 	default:
-		printer.Fatalf("Unexpected error happened. Unknown operation type: %s", gop.operationType)
+		fmt.Printf("Unexpected error happened. Unknown operation type: %s", gop.operationType)
+		os.Exit(1)
 	}
 	if err != nil {
 		return false, err
