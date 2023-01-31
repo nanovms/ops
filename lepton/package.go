@@ -377,7 +377,7 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
 				if err := os.MkdirAll(target, 0755); err != nil {
-					fmt.Printf("Failed to create directory %s", err)
+					fmt.Printf("Failed to create directory %s, error is: %s", target, err)
 					os.Exit(1)
 				}
 			}

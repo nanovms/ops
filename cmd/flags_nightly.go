@@ -120,7 +120,7 @@ func parseVersion(s string, width int) int64 {
 	var result int64
 	var err error
 	if result, err = strconv.ParseInt(v, 10, 64); err != nil {
-		fmt.Printf("Failed to parse version, error is: %s", err)
+		fmt.Printf("Failed to parse version %s, error is: %s", v, err)
 		os.Exit(1)
 	}
 	return result
