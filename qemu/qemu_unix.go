@@ -22,6 +22,7 @@ import (
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 )
 
@@ -485,7 +486,7 @@ func generateMac() string {
 	octets := make([]byte, 6)
 	_, err := rand.Read(octets)
 	if err != nil {
-		panic(err)
+		printer.Fatalf("Cannot generate Mac, error is: %s", err)
 	}
 	octets[0] |= 2
 	octets[0] &= 0xFE //mask most sig bit for unicast at layer 2

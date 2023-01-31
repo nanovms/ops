@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 
 	"github.com/spf13/cobra"
@@ -230,7 +231,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 
 	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
 	if err != nil {
-		panic(err)
+		printer.Fatalf("%s", err)
 	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)

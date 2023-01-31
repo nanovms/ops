@@ -10,6 +10,7 @@ import (
 
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -66,7 +67,7 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 	case "global":
 		op, err = gop.service.GlobalOperations.Get(gop.projectID, gop.name).Context(ctx).Do()
 	default:
-		panic("We should never reach here")
+		printer.Fatalf("Unexpected error happened. Unknown operation type: %s", gop.operationType)
 	}
 	if err != nil {
 		return false, err

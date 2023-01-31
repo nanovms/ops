@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nanovms/ops/printer"
+
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
@@ -57,12 +59,12 @@ func (o *OpenStack) findImage(name string) (id string, err error) {
 
 	allPages, err := images.List(imageClient, listOpts).AllPages()
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to get image list, error is: %w", err)
 	}
 
 	allImages, err := images.ExtractImages(allPages)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to extract images, error is: %w", err)
 	}
 
 	// yolo
@@ -151,7 +153,8 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 
 	allPages, err := images.List(imageClient, listOpts).AllPages()
 	if err != nil {
-		panic(err)
+		printer.Errorf("Cannot get image list, error is: %s", err)
+		return nil, err
 	}
 
 	allImages, err := images.ExtractImages(allPages)

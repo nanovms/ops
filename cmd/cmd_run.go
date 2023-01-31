@@ -5,6 +5,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +60,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if !runLocalInstanceFlags.SkipBuild {
 		err = api.BuildImage(*c)
 		if err != nil {
-			panic(err)
+			printer.Fatalf("Failed build image, error is: %s", err)
 		}
 	}
 

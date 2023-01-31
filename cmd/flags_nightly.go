@@ -9,6 +9,7 @@ import (
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/ttacon/chalk"
@@ -120,7 +121,7 @@ func parseVersion(s string, width int) int64 {
 	var result int64
 	var err error
 	if result, err = strconv.ParseInt(v, 10, 64); err != nil {
-		panic(err)
+		printer.Fatalf("Cannot parse version, error is: %s", err)
 	}
 	return result
 }

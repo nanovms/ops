@@ -20,6 +20,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/printer"
 )
 
 // PackageCommands gives package related commands
@@ -159,7 +160,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
-		panic(err)
+		printer.Errorf("%s", err)
 	}
 
 	table := pkgTable(packages)
@@ -519,7 +520,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
-			panic(err)
+			printer.Fatalf("Failed build image from package, error is: %s", err)
 		}
 	}
 

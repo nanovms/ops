@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
@@ -76,11 +77,11 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 
 	err := os.Mkdir(pkgFlags.PackagePath(), 0666)
 	if err != nil {
-		panic(err)
+		printer.Fatalf("Cannot create dir %s, error is: %s", pkgFlags.PackagePath(), err)
 	}
 	err = os.Chmod(pkgFlags.PackagePath(), 0777)
 	if err != nil {
-		panic(err)
+		printer.Fatalf("Cannot chmod dir %s, error is: %s", pkgFlags.PackagePath(), err)
 	}
 	writeConfigToFile(pkgConfig, manifestPath)
 	defer os.RemoveAll(pkgFlags.PackagePath())

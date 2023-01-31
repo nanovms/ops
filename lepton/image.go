@@ -16,6 +16,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/printer"
 	"github.com/nanovms/ops/types"
 )
 
@@ -62,11 +63,11 @@ func addDNSConfig(m *fs.Manifest, c *types.Config) {
 	}
 	err := os.WriteFile(resolv, data, 0644)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed save dns in temporary resolv.conf, error: %s", err)
 	}
 	err = m.AddFile("/etc/resolv.conf", resolv)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed add resolv.conf, error: %s", err)
 	}
 }
 
@@ -77,11 +78,11 @@ func addHostName(m *fs.Manifest, c *types.Config) {
 	data := []byte("uniboot")
 	err := os.WriteFile(hostname, data, 0644)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed save hostname tmp file, error: %s", err)
 	}
 	err = m.AddFile("/proc/sys/kernel/hostname", hostname)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed add hostname, error: %s", err)
 	}
 }
 
@@ -95,11 +96,11 @@ func addPasswd(m *fs.Manifest, c *types.Config) {
 	data := []byte("root:x:0:0:root:/root:/bin/nobash")
 	err := os.WriteFile(passwd, data, 0644)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed save passwd in temporary file, error: %s", err)
 	}
 	err = m.AddFile("/etc/passwd", passwd)
 	if err != nil {
-		panic(err)
+		printer.Errorf("Failed add passwd, error: %s", err)
 	}
 }
 
