@@ -80,6 +80,13 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 			Items: []string{instanceName},
 		},
 	}
+
+	if c.CloudConfig.Spot {
+		rb.Scheduling = &compute.Scheduling{
+			ProvisioningModel: "SPOT",
+		}
+	}
+
 	if c.RunConfig.GPUs > 0 {
 		if c.RunConfig.GPUType == "" {
 			return errors.New("GPU type must be specified")
