@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -240,12 +241,14 @@ func (p AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *e
 
 	fromPortInt, err := strconv.Atoi(fromPort)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Failed convert source port to integer, error is: %s", err)
+		os.Exit(1)
 	}
 
 	toPortInt, err := strconv.Atoi(toPort)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Failed convert destination port to integer, error is: %s", err)
+		os.Exit(1)
 	}
 
 	var ec2Permission = new(ec2.IpPermission)

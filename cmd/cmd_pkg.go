@@ -159,7 +159,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
-		panic(err)
+		fmt.Printf(err)
 	}
 
 	table := pkgTable(packages)
@@ -519,7 +519,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {
-			panic(err)
+			exitWithError("Failed to build image from package, error is: " + err.Error())
 		}
 	}
 

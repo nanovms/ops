@@ -57,7 +57,8 @@ var PackagesCache = getPackageCache()
 func GetOpsHome() string {
 	home, err := HomeDir()
 	if err != nil {
-		panic(err)
+		fmt.Printf(err)
+		os.Exit(1)
 	}
 	opshome := path.Join(home, ".ops")
 

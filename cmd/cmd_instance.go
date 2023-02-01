@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -230,7 +231,8 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 
 	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
 	if err != nil {
-		panic(err)
+		fmt.Printf(err)
+		os.Exit(1)
 	}
 
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)

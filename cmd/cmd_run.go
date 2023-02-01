@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/nanovms/ops/lepton"
@@ -59,7 +61,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	if !runLocalInstanceFlags.SkipBuild {
 		err = api.BuildImage(*c)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Failed to build image, error is: %s", err)
+			os.Exit(1)
 		}
 	}
 

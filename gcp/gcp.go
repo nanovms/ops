@@ -13,7 +13,7 @@ import (
 	"github.com/nanovms/ops/types"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
-	"google.golang.org/api/dns/v1"
+	dns "google.golang.org/api/dns/v1"
 )
 
 var (
@@ -66,7 +66,8 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 	case "global":
 		op, err = gop.service.GlobalOperations.Get(gop.projectID, gop.name).Context(ctx).Do()
 	default:
-		panic("We should never reach here")
+		fmt.Printf("Unexpected error happened. Unknown operation type: %s", gop.operationType)
+		os.Exit(1)
 	}
 	if err != nil {
 		return false, err

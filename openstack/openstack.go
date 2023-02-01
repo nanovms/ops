@@ -2,6 +2,7 @@ package openstack
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
@@ -50,12 +51,12 @@ func (o *OpenStack) findFlavorByName(name string) (id string, err error) {
 
 	allPages, err := flavors.ListDetail(client, listOpts).AllPages()
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to find flavor by name, error is: %w", err)
 	}
 
 	allFlavors, err := flavors.ExtractFlavors(allPages)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to extract flavors , error is: %w", err)
 	}
 
 	if name == "" {

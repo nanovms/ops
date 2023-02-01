@@ -295,10 +295,12 @@ func GetPackageManifestFile() string {
 func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	res, err := http.Head(remoteURL)
 	if err != nil {
-		if err, ok := err.(net.Error); ok {
+		var netError *net.Error
+		if errors.Is(err, *netError) {
 			fmt.Printf(constants.WarningColor, "missing internet?, using local manifest.\n")
 		} else {
-			panic(err)
+			fmt.Printf("probably bad URL: %s, got error %s", remoteURL, err)
+			os.Exit(1)
 		}
 
 		return false
@@ -349,11 +351,13 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 
 	in, err := os.Open(archive)
 	if err != nil {
-		panic(err)
+		fmt.Printf("File missing: %s", archive)
+		os.Exit(1)
 	}
 	gzip, err := gzip.NewReader(in)
 	if err != nil {
-		panic(err)
+		fmt.Printf(err)
+		os.Exit(1)
 	}
 	defer gzip.Close()
 	tr := tar.NewReader(gzip)
@@ -363,7 +367,8 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 			return
 		}
 		if err != nil {
-			panic(err)
+			fmt.Printf(err)
+			os.Exit(1)
 		}
 		if header == nil {
 			continue
@@ -373,19 +378,23 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
 				if err := os.MkdirAll(target, 0755); err != nil {
-					panic(err)
+					fmt.Printf("Failed to create directory %s, error is: %s", target, err)
+					os.Exit(1)
 				}
 			}
 		case tar.TypeReg:
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 			if err != nil {
-				panic(err)
+				fmt.Printf("Failed open file %s, error is %s", target, err)
+				os.Exit(1)
 			}
 			if err := f.Truncate(0); err != nil {
-				panic(err)
+				fmt.Printf("Failed truncate file %s, error is %s", target, err)
+				os.Exit(1)
 			}
 			if _, err := io.Copy(f, tr); err != nil {
-				panic(err)
+				fmt.Printf("Failed tar file %s, error is %s", target, err.Error())
+				os.Exit(1)
 			}
 			f.Close()
 		case tar.TypeSymlink:
