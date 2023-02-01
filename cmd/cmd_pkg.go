@@ -159,7 +159,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
-		fmt.Printf(err)
+		fmt.Printf(err.Error())
 	}
 
 	table := pkgTable(packages)
