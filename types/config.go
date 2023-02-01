@@ -162,6 +162,9 @@ type ProviderConfig struct {
 	// SecurityGroup
 	SecurityGroup string `json:",omitempty"`
 
+	// Spot enables spot provisioning
+	Spot bool `json:",omitempty"`
+
 	// Subnet
 	Subnet string `json:",omitempty"`
 
