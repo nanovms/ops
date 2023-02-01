@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nanovms/ops/log"
 	"os"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/nanovms/ops/types"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
+	dns "google.golang.org/api/dns/v1"
 )
 
 var (

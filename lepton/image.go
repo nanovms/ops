@@ -63,10 +63,12 @@ func addDNSConfig(m *fs.Manifest, c *types.Config) {
 	err := os.WriteFile(resolv, data, 0644)
 	if err != nil {
 		fmt.Printf("Failed save dns in temporary resolv.conf, error: %s", err)
+		os.Exit(1)
 	}
 	err = m.AddFile("/etc/resolv.conf", resolv)
 	if err != nil {
 		fmt.Printf("Failed add resolv.conf, error: %s", err)
+		os.Exit(1)
 	}
 }
 
@@ -78,10 +80,12 @@ func addHostName(m *fs.Manifest, c *types.Config) {
 	err := os.WriteFile(hostname, data, 0644)
 	if err != nil {
 		fmt.Printf("Failed save hostname tmp file, error: %s", err)
+		os.Exit(1)
 	}
 	err = m.AddFile("/proc/sys/kernel/hostname", hostname)
 	if err != nil {
 		fmt.Printf("Failed add hostname, error: %s", err)
+		os.Exit(1)
 	}
 }
 
@@ -96,10 +100,12 @@ func addPasswd(m *fs.Manifest, c *types.Config) {
 	err := os.WriteFile(passwd, data, 0644)
 	if err != nil {
 		fmt.Printf("Failed save passwd in temporary file, error: %s", err)
+		os.Exit(1)
 	}
 	err = m.AddFile("/etc/passwd", passwd)
 	if err != nil {
 		fmt.Printf("Failed add passwd, error: %s", err)
+		os.Exit(1)
 	}
 }
 

@@ -509,6 +509,7 @@ func generateMac() string {
 	_, err := rand.Read(octets)
 	if err != nil {
 		fmt.Printf("Failed generate Mac, error is: %s", err)
+		os.Exit(1)
 	}
 	octets[0] |= 2
 	octets[0] &= 0xFE //mask most sig bit for unicast at layer 2

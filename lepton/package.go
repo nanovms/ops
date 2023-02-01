@@ -300,6 +300,7 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 			fmt.Printf(constants.WarningColor, "missing internet?, using local manifest.\n")
 		} else {
 			fmt.Printf("probably bad URL: %s, got error %s", remoteURL, err)
+			os.Exit(1)
 		}
 
 		return false
