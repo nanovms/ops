@@ -356,7 +356,7 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	}
 	gzip, err := gzip.NewReader(in)
 	if err != nil {
-		fmt.Printf(err)
+		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
 	defer gzip.Close()
@@ -367,7 +367,7 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 			return
 		}
 		if err != nil {
-			fmt.Printf(err)
+			fmt.Printf(err.Error())
 			os.Exit(1)
 		}
 		if header == nil {

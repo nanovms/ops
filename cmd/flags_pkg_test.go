@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"fmt"
-	"github.com/nanovms/ops/log"
 	"os"
 	"testing"
 

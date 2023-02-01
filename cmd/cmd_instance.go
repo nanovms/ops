@@ -231,7 +231,7 @@ func instanceLogsCommandHandler(cmd *cobra.Command, args []string) {
 
 	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
 	if err != nil {
-		fmt.Printf(err)
+		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
 
