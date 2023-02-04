@@ -39,7 +39,7 @@ jobs:
       - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu
       - run: go install github.com/jstemmer/go-junit-report@latest
       - run: make deps
-      - run: make prototools
+      - run: make prototools GOPATH=$HOME/go
       - run: make generate PATH=$PATH:~/go/bin
       - run: mkdir -p $TEST_RESULTS
       - run: go run ops.go update
