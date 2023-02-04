@@ -3,7 +3,7 @@ package aws_test
 import (
 	"testing"
 
-	"github.com/nanovms/ops/aws"
+	"github.com/nanovms/ops/provider/aws"
 )
 
 func TestGetEnaSupport(t *testing.T) {

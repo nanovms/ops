@@ -33,8 +33,8 @@ generate:
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
-	rm -rf proto/imageservice/*.go
-	rm -rf proto/imageservice/*.json
+	rm -rf protos/imageservice/*.go
+	rm -rf protos/imageservice/*.json
 
 run:
 	$(GOBUILD) -o $(BINARY_NAME) -v .
@@ -45,8 +45,8 @@ deps:
 
 update-mocks:
 	mockgen --source=network/setup_network_interfaces.go > mock_network/setup_network_interfaces.go
-	mockgen --source=upcloud/upcloud.go > mock_upcloud/upcloud.go
-	mockgen --source=oci/oci.go > mock_oci/oci.go
+	mockgen --source=provider/upcloud/upcloud.go > mock_provider/mock_upcloud/upcloud.go
+	mockgen --source=provider/oci/oci.go > mock_provider/mock_oci/oci.go
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build

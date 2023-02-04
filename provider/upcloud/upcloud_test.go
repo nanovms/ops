@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/mock_upcloud"
-	"github.com/nanovms/ops/upcloud"
+	"github.com/nanovms/ops/mock_provider/mock_upcloud"
+	"github.com/nanovms/ops/provider/upcloud"
 	"github.com/stretchr/testify/assert"
 )
 

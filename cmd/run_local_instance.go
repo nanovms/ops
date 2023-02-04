@@ -5,7 +5,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/network"
-	"github.com/nanovms/ops/onprem"
+	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/qemu"
 	"github.com/nanovms/ops/types"
 )
