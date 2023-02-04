@@ -27,14 +27,17 @@ post-test: do-test
 
 test: post-test
 
+prototools:
+	cd _prototools && $(MAKE) tools
+
 generate:
 	buf generate --path ./protos/imageservice/imageservice.proto
 
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
-	rm -rf proto/imageservice/*.go
-	rm -rf proto/imageservice/*.json
+	rm -rf protos/imageservice/*.go
+	rm -rf protos/imageservice/*.json
 
 run:
 	$(GOBUILD) -o $(BINARY_NAME) -v .
