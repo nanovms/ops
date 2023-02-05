@@ -8,7 +8,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/onprem"
+	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/types"
 )
 
