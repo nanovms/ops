@@ -4,7 +4,9 @@ import (
 	"debug/elf"
 	"fmt"
 	"net"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nanovms/ops/log"
@@ -142,10 +144,8 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 			conn.Close()
 
 			message := fmt.Sprintf("Port %v is being used by other application", port)
-			pid, err := checkPortUserPID(port)
-			if err != nil {
-				return err
-			}
+			lsofOut, _ := exec.Command("lsof", "-t", "-i", ":"+port).CombinedOutput()
+			pid := strings.TrimSpace(string(lsofOut))
 			if pid != "" {
 				message += fmt.Sprintf(" (PID %s)", pid)
 			}
