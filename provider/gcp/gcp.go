@@ -16,6 +16,9 @@ import (
 	dns "google.golang.org/api/dns/v1"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "gcp"
+
 var (
 	errGCloudProjectIDMissing = func() error { return errors.New("projectid is missing. Please set env variable GCLOUD_PROJECT_ID") }
 	errGCloudZoneMissing      = func() error { return errors.New("zone is missing. Please set env variable GCLOUD_ZONE") }
@@ -83,7 +86,7 @@ func (gop *GCloudOperation) isDone(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// GCloud contains all operations for GCP
+// GCloud Provider to interact with GCP cloud infrastructure
 type GCloud struct {
 	Storage    *Storage
 	Service    *compute.Service
@@ -92,8 +95,8 @@ type GCloud struct {
 	dnsService *dns.Service
 }
 
-// NewGCloud returns an instance of GCloud
-func NewGCloud() *GCloud {
+// NewProvider GCP
+func NewProvider() *GCloud {
 	return &GCloud{}
 }
 

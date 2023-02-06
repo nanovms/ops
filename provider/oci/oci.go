@@ -12,6 +12,9 @@ import (
 	"github.com/spf13/afero"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "oci"
+
 var (
 	ociOpsTags = map[string]string{"CreatedBy": "OPS"}
 )
@@ -61,7 +64,7 @@ type BlockstorageService interface {
 	DeleteVolume(ctx context.Context, request core.DeleteVolumeRequest) (response core.DeleteVolumeResponse, err error)
 }
 
-// Provider has methods to interact with oracle cloud infrastructure
+// Provider to interact with Oracle Cloud Infrastructure
 type Provider struct {
 	computeClient      ComputeService
 	storageClient      StorageService
@@ -73,7 +76,7 @@ type Provider struct {
 	availabilityDomain string
 }
 
-// NewProvider returns an instance of OCI Provider
+// NewProvider OCI
 func NewProvider() *Provider {
 	return &Provider{
 		computeClient: nil,

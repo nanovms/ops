@@ -20,6 +20,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "azure"
+
 // most of this is ripped from the samples repo:
 // https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/master/compute/vm.go
 // the azure sdk is fairly round-a-bout and could use some heavy
@@ -35,7 +38,7 @@ var (
 	cloudName     = "AzurePublicCloud"
 )
 
-// Azure contains all operations for Azure
+// Azure Provider to interact with Azure cloud infrastructure
 type Azure struct {
 	Storage         *Storage
 	subID           string
@@ -48,6 +51,11 @@ type Azure struct {
 	hyperVGen       compute.HyperVGenerationTypes
 
 	authorizer *autorest.Authorizer
+}
+
+// NewProvider Azure
+func NewProvider() *Azure {
+	return &Azure{}
 }
 
 func getAzureDefaultTags() map[string]*string {

@@ -8,10 +8,18 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-// DigitalOcean provides access to the DigitalOcean API.
+// ProviderName of the cloud platform provider
+const ProviderName = "do"
+
+// DigitalOcean Provider to interact with DigitalOcean cloud infrastructure
 type DigitalOcean struct {
 	Storage *Spaces
 	Client  *godo.Client
+}
+
+// NewProvider DigitalOcean
+func NewProvider() *DigitalOcean {
+	return &DigitalOcean{}
 }
 
 // Initialize DigialOcean related things

@@ -15,13 +15,21 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-// AWS contains all operations for AWS
+// ProviderName of the cloud platform provider
+const ProviderName = "aws"
+
+// AWS Provider to interact with AWS cloud infrastructure
 type AWS struct {
 	Storage       *S3
 	dnsService    *route53.Route53
 	volumeService *ebs.EBS
 	session       *session.Session
 	ec2           *ec2.EC2
+}
+
+// NewProvider AWS
+func NewProvider() *AWS {
+	return &AWS{}
 }
 
 // strips any zone qualifier from 'zone' string

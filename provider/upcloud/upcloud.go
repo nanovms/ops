@@ -13,6 +13,9 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "upcloud"
+
 // Service is the interface implemented by upcloud service
 type Service interface {
 	service.Server
@@ -21,13 +24,13 @@ type Service interface {
 	service.Account
 }
 
-// Provider provides access to the Upcloud API.
+// Provider provides access to the UpCloud API.
 type Provider struct {
 	upcloud Service
 	zone    string
 }
 
-// NewProvider returns an instance of Upcloud provider
+// NewProvider UpCloud
 func NewProvider() *Provider {
 	return &Provider{}
 }

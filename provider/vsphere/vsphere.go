@@ -15,7 +15,10 @@ import (
 	vmwareTypes "github.com/vmware/govmomi/vim25/types"
 )
 
-// Vsphere provides access to the Vsphere API.
+// ProviderName of the cloud platform provider
+const ProviderName = "vsphere"
+
+// Vsphere Provider to interact with Vsphere infrastructure
 type Vsphere struct {
 	Storage *Datastores
 	client  *vim25.Client
@@ -24,6 +27,11 @@ type Vsphere struct {
 	datastore    string
 	network      string
 	resourcePool string
+}
+
+// NewProvider Vsphere
+func NewProvider() *Vsphere {
+	return &Vsphere{}
 }
 
 // Initialize Vsphere related things

@@ -2,10 +2,13 @@ package vbox
 
 import "github.com/nanovms/ops/types"
 
-// Provider provides access to the VirtualBox API.
+// ProviderName of the cloud platform provider
+const ProviderName = "vbox"
+
+// Provider to interact with VirtualBox infrastructure
 type Provider struct{}
 
-// NewProvider returns an instance of VirtualBox Provider
+// NewProvider VirtualBox
 func NewProvider() *Provider {
 	return &Provider{}
 }

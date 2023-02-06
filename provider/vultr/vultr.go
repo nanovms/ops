@@ -11,10 +11,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Vultr provides access to the Vultr API.
+// ProviderName of the cloud platform provider
+const ProviderName = "vultr"
+
+// Vultr Provider to interact with Vultr infrastructure
 type Vultr struct {
 	Storage *Objects
 	Client  *govultr.Client
+}
+
+// NewProvider Vultr
+func NewProvider() *Vultr {
+	return &Vultr{}
 }
 
 // Initialize provider

@@ -227,7 +227,7 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	return vpc, nil
 }
 
-func (p AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *ec2.IpPermission {
+func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *ec2.IpPermission {
 	fromPort := port
 	toPort := port
 
