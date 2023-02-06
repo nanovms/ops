@@ -1,5 +1,5 @@
-//go:build lin
-// +build lin
+//go:build linux
+// +build linux
 
 package lepton
 
@@ -8,23 +8,17 @@ import (
 	"testing"
 )
 
-func TestGetSharedLibs(t *testing.T) {
-	targetRoot := os.Getenv("NANOS_TARGET_ROOT")
-	deps, err := getSharedLibs(targetRoot, "../data/webg")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(deps) == 0 {
-		t.Fatal("No deps for ../data/webg")
-	}
-}
-
 func TestGetSharedLibsSystemLs(t *testing.T) {
 	if _, err := os.Stat("/bin/ls"); err != nil {
 		t.Skip("could not stat /bin/ls:", err)
 	}
+	c := NewConfig()
 	targetRoot := os.Getenv("NANOS_TARGET_ROOT")
-	if _, err := getSharedLibs(targetRoot, "/bin/ls"); err != nil {
+	libs, err := getSharedLibs(targetRoot, "/bin/ls", c)
+	if err != nil {
 		t.Fatal(err)
+	}
+	for k, v := range libs {
+		t.Logf("%s -> %s", k, v)
 	}
 }
