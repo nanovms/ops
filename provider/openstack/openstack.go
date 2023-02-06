@@ -13,13 +13,21 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "openstack"
+
 func getOpenstackOpsTags() []string {
 	return []string{"CreatedBy:ops"}
 }
 
-// OpenStack provides access to the OpenStack API.
+// OpenStack Provider to interact with OpenStack infrastructure
 type OpenStack struct {
 	provider *gophercloud.ProviderClient
+}
+
+// NewProvider OpenStack
+func NewProvider() *OpenStack {
+	return &OpenStack{}
 }
 
 // Initialize OpenStack related things

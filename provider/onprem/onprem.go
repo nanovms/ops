@@ -5,11 +5,16 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-// ProviderName is the name of the cloud platform provider.
+// ProviderName of the cloud platform provider
 const ProviderName = "onprem"
 
-// OnPrem provider for ops
+// OnPrem Provider to interact with OnPrem infrastructure
 type OnPrem struct{}
+
+// NewProvider OnPrem
+func NewProvider() *OnPrem {
+	return &OnPrem{}
+}
 
 // Initialize on prem provider
 func (p *OnPrem) Initialize(config *types.ProviderConfig) error {

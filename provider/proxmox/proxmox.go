@@ -8,6 +8,9 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+// ProviderName of the cloud platform provider
+const ProviderName = "proxmox"
+
 // ProxMox provides access to the ProxMox API.
 type ProxMox struct {
 	Storage  *Objects
@@ -57,6 +60,11 @@ type ProxMox struct {
 
 	// storageName is used for create bootable raw image for instance via ProxMox API from iso image
 	storageName string `cloud:"storagename"`
+}
+
+// NewProvider ProxMox
+func NewProvider() *ProxMox {
+	return &ProxMox{}
 }
 
 // Initialize provider

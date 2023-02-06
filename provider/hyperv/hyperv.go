@@ -8,11 +8,13 @@ import (
 	"github.com/nanovms/ops/wsl"
 )
 
-// Provider provides access to the Hyper-V API.
-type Provider struct {
-}
+// ProviderName of the cloud platform provider
+const ProviderName = "hyper-v"
 
-// NewProvider returns an instance of Hyper-V provider
+// Provider to interact with Hyper-V cloud infrastructure
+type Provider struct{}
+
+// NewProvider Hyper-V
 func NewProvider() *Provider {
 	return &Provider{}
 }

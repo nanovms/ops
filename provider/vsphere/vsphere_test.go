@@ -56,7 +56,7 @@ func TestVsphere_getCredentials(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-	v := &Vsphere{}
+	v := NewProvider()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Setenv("GOVC_URL", tt.govcURL)
