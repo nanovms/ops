@@ -118,7 +118,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	imageName := c.CloudConfig.ImageName
-	if c.CloudConfig.Platform == "onprem" {
+	if c.CloudConfig.Platform == onprem.ProviderName {
 		imageName = c.RunConfig.Imagename
 	}
 
@@ -365,7 +365,7 @@ func imageSyncCommand() *cobra.Command {
 		Run:   imageSyncCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-	cmdImageSync.PersistentFlags().StringVarP(&sourceCloud, "source-cloud", "s", "onprem", "cloud platform [gcp, aws, do, vultr, onprem, hyper-v, upcloud]")
+	cmdImageSync.PersistentFlags().StringVarP(&sourceCloud, "source-cloud", "s", onprem.ProviderName, "cloud platform [gcp, aws, do, vultr, onprem, hyper-v, upcloud]")
 	return cmdImageSync
 }
 
@@ -373,7 +373,7 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	image := args[0]
 	// TODO only accepts onprem for now, implement for other source providers later
 	source, _ := cmd.Flags().GetString("source-cloud")
-	if source != "onprem" {
+	if source != onprem.ProviderName {
 		exitWithError(source + " sync not yet implemented")
 	}
 
@@ -655,7 +655,7 @@ func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	if c.CloudConfig.Platform != "onprem" {
+	if c.CloudConfig.Platform != onprem.ProviderName {
 		exitWithError("Image subcommand not implemented yet for cloud images")
 	}
 	imageName := args[0]

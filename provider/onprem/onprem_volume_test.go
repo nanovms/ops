@@ -30,7 +30,7 @@ var (
 		Size:  "",
 		Path:  "",
 	}
-	testOP = &onprem.OnPrem{}
+	testOP = onprem.NewProvider()
 )
 
 func NewTestContext(c *types.Config) *lepton.Context {
