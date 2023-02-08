@@ -117,8 +117,9 @@ func (q *qemu) addSerial(serialType string) {
 	q.serial = serial{serialtype: serialType}
 }
 
-// we inject at release build time to enable virtio-net-pci
-// this is only for a packaged macos release
+// OPSD is injected at release build time to enable vmnet-bridged
+// this is only for a packaged macos release that wish to run N
+// instances locally.
 var OPSD = ""
 
 // addDevice adds a device to the qemu for rendering to string arguments. If the

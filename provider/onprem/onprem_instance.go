@@ -111,8 +111,8 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 // super hacky mac extraction, arp resolution; revisit in future
 // could also potentially extract from logs || could have nanos ping
 // upon boot
-func findBridgedIP(instanceId string) string {
-	out, err := execCmd("ps aux | grep " + instanceId) //fixme: cmd injection
+func findBridgedIP(instanceID string) string {
+	out, err := execCmd("ps aux | grep " + instanceID) //fixme: cmd injection
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -121,7 +121,7 @@ func findBridgedIP(instanceId string) string {
 	ooz := strings.Split(oo[1], " ")
 	mac := ooz[0]
 
-	out, err = execCmd("ps aux  |grep -a " + instanceId + " | grep -v grep | awk {'print $2'}")
+	out, err = execCmd("ps aux  |grep -a " + instanceID + " | grep -v grep | awk {'print $2'}")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -136,19 +136,17 @@ func findBridgedIP(instanceId string) string {
 		fmt.Println(err)
 	}
 
-	if !strings.Contains(out, "(") {
-		// maybe no mac entry
-		return ""
-	} else {
-
+	if strings.Contains(out, "(") {
 		oo = strings.Split(out, "(")
 		ooz = strings.Split(oo[1], ")")
 		ip := ooz[0]
 
-		logMac(instanceId, pid, mac, ip)
+		logMac(instanceID, pid, mac, ip)
 
 		return ip
 	}
+
+	return ""
 }
 
 // returns a mac with leading zeros dropped which is what mac does
@@ -172,7 +170,7 @@ func formatOctet(mac string) string {
 //
 // also should throw a lock on this at some point unless we migrate to
 // something else that is a bit more industrial
-func logMac(instanceId string, pid string, mac string, ip string) {
+func logMac(instanceID string, pid string, mac string, ip string) {
 
 	opshome := lepton.GetOpsHome()
 	instancesPath := path.Join(opshome, "instances")

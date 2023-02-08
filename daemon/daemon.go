@@ -145,6 +145,8 @@ func (*server) GetVolumes(_ context.Context, in *volumeservice.VolumeListRequest
 	return pb, nil
 }
 
+// Daemonize starts a grpc server along with a json frontend to interact
+// with local/'onprem' installations.
 func Daemonize() {
 	lis, err := net.Listen("tcp", ":8080")
 	if err != nil {
