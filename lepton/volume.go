@@ -20,7 +20,7 @@ type NanosVolume struct {
 	Name       string `json:"name"`
 	Label      string `json:"label"`
 	Data       string `json:"data"`
-	Size       string `json:"size"`
+	Size       string `json:"size"` // this has extra meta in it that should be converted to just bytes
 	Path       string `json:"path"`
 	AttachedTo string `json:"attached_to"`
 	CreatedAt  string `json:"created_at"`

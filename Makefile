@@ -29,12 +29,18 @@ test: post-test
 
 generate:
 	buf generate --path ./protos/imageservice/imageservice.proto
+	buf generate --path ./protos/instanceservice/instanceservice.proto
+	buf generate --path ./protos/volumeservice/volumeservice.proto
 
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
 	rm -rf protos/imageservice/*.go
 	rm -rf protos/imageservice/*.json
+	rm -rf protos/instanceservice/*.go
+	rm -rf protos/instanceservice/*.json
+	rm -rf protos/volumeservice/*.go
+	rm -rf protos/volumeservice/*.json
 
 run:
 	$(GOBUILD) -o $(BINARY_NAME) -v .

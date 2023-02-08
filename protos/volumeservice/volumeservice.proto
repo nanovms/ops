@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package volumeservice;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/nanovms/ops/protos;volumeservice";
+
+service Volumes {
+  rpc GetVolumes (VolumeListRequest) returns (VolumesResponse) {
+    option (google.api.http) = {
+      get: "/v1/volumes"
+    };
+  }
+}
+
+message VolumeListRequest {}
+
+message VolumesResponse {
+  int32 count = 1;
+  repeated Volume volumes = 2;
+}
+
+message Volume {
+  string Id = 1;
+  string Name = 2;
+  string Label = 3;
+  string Size = 4;      // FIXME: should be int64 in bytes
+  string Path = 5;
+  string Created = 6;
+}

@@ -154,6 +154,21 @@ You can find more examples and tutorial on youtube as well:
 
 [https://www.youtube.com/channel/UC3mqDqCVu3moVKzmP2YNmlg](https://www.youtube.com/channel/UC3mqDqCVu3moVKzmP2YNmlg)
 
+## Daemon
+
+OPS started out as a daemon-less cli tool to build and run unikernels
+locally and to also interact with the various clouds. We will keep that
+functionality as-is, however, ops can also run as a daemon locally for
+software that is a composition of multiple services. The daemon expects
+to have elevated privileges (currently via suid bit) in order to place
+the various programs on their class c network (vs relying on user-mode).
+This is not necessary for 'ops run', 'ops pkg load' or 'ops instance
+create' but only for multipl services ran locally that expect to
+communicate to each other vs just the host.
+
+For now the daemon and 'ops instance create' share metadata but that is
+expected to change in the future.
+
 ## Apple M1/M2 Users
 
 The Apple M1 and M2 are ARM based. OPS is built for users primarily
