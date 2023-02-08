@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package instanceservice;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/nanovms/ops/protos;instanceservice";
+
+service Instances {
+  rpc GetInstances (InstanceListRequest) returns (InstancesResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances"
+    };
+  }
+}
+
+message InstanceListRequest {}
+
+message InstancesResponse {
+  int32 count = 1;
+  repeated Instance instances = 2;
+}
+
+message Instance {
+  string Name = 1;
+  string Image = 2;
+  repeated string ports = 3;
+  bool Bridged = 4;
+  string PrivateIp = 5;
+  string Mac = 6;
+  string Pid = 7;
+  string Status = 8;
+  string Created = 9;
+}

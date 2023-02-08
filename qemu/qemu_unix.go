@@ -119,7 +119,7 @@ func (q *qemu) addSerial(serialType string) {
 
 // we inject at release build time to enable virtio-net-pci
 // this is only for a packaged macos release
-var opsD = ""
+var OPSD = ""
 
 // addDevice adds a device to the qemu for rendering to string arguments. If the
 // devType is "user" then the ifaceName is ignored and host forward ports are
@@ -127,7 +127,7 @@ var opsD = ""
 // Backend interface are created for each device and their ids are auto
 // incremented.
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
-	if opsD != "" {
+	if OPSD != "" {
 		dv := device{
 			driver:  "virtio-net-pci",
 			devtype: "netdev=vmnet",

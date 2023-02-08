@@ -16,6 +16,7 @@ type CloudImage struct {
 
 // CloudInstance represents the instance that widely use in different
 // Cloud Providers.
+// mainly used for formatting standard response from any cloud provider
 type CloudInstance struct {
 	ID         string
 	Name       string

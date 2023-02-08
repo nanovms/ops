@@ -4,15 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/qemu"
 	"github.com/olekukonko/tablewriter"
+
+	"golang.org/x/sys/unix"
 )
 
 // CreateInstance on premise
@@ -71,6 +75,10 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 		Ports:    c.RunConfig.Ports,
 	}
 
+	if qemu.OPSD != "" {
+		i.Bridged = true
+	}
+
 	d1, err := json.Marshal(i)
 	if err != nil {
 		log.Error(err)
@@ -98,6 +106,113 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 	}
 
 	return nil, lepton.ErrInstanceNotFound(name)
+}
+
+// super hacky mac extraction, arp resolution; revisit in future
+// could also potentially extract from logs || could have nanos ping
+// upon boot
+func findBridgedIP(instanceId string) string {
+	out, err := execCmd("ps aux | grep " + instanceId) //fixme: cmd injection
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	oo := strings.Split(out, "netdev=vmnet,mac=")
+	ooz := strings.Split(oo[1], " ")
+	mac := ooz[0]
+
+	out, err = execCmd("ps aux  |grep -a " + instanceId + " | grep -v grep | awk {'print $2'}")
+	if err != nil {
+		fmt.Println(err)
+	}
+	pid := strings.TrimSpace(out)
+
+	/// only use for resolution not for storage
+	dmac := formatOctet(mac)
+
+	// needs recent activity to register
+	out, err = execCmd("arp -a | grep " + dmac)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if !strings.Contains(out, "(") {
+		// maybe no mac entry
+		return ""
+	} else {
+
+		oo = strings.Split(out, "(")
+		ooz = strings.Split(oo[1], ")")
+		ip := ooz[0]
+
+		logMac(instanceId, pid, mac, ip)
+
+		return ip
+	}
+}
+
+// returns a mac with leading zeros dropped which is what mac does
+// d6:3f:9b:0f:0c:c8
+// d6:3f:9b:f:c:c8
+func formatOctet(mac string) string {
+	octets := strings.Split(mac, ":")
+	newmac := ""
+	for i := 0; i < len(octets); i++ {
+		oi := strings.TrimLeft(octets[i], "0")
+		newmac += oi + ":"
+	}
+
+	newmac = strings.TrimRight(newmac, ":")
+	return newmac
+}
+
+// log our mac,ip,pid so we don't have to lookup again
+// FIXME: for bridged we can store in a more proper fashion
+// we still want to support daemon-less as much as we can
+//
+// also should throw a lock on this at some point unless we migrate to
+// something else that is a bit more industrial
+func logMac(instanceId string, pid string, mac string, ip string) {
+
+	opshome := lepton.GetOpsHome()
+	instancesPath := path.Join(opshome, "instances")
+
+	fullpath := path.Join(instancesPath, pid)
+
+	body, err := os.ReadFile(fullpath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var i instance
+	if err := json.Unmarshal(body, &i); err != nil {
+		fmt.Println(err)
+	}
+
+	i.PrivateIP = ip
+	i.Pid = pid
+	i.Mac = mac
+
+	d1, err := json.Marshal(i)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = os.WriteFile(instancesPath+"/"+pid, d1, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func execCmd(cmdStr string) (output string, err error) {
+	cmd := exec.Command("/bin/bash", "-c", cmdStr)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return
+	}
+
+	output = string(out)
+	return
 }
 
 // GetInstances return all instances on prem
@@ -141,18 +256,41 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			return nil, err
 		}
 
-		fi, err := f.Info()
+		pips := []string{}
+		if i.Bridged {
+			if i.PrivateIP == "" || i.Mac == "" {
+				i.PrivateIP = findBridgedIP(i.Instance)
+			}
+
+			pips = append(pips, i.PrivateIP)
+		} else {
+			pips = append(pips, "127.0.0.1")
+		}
+
+		file, err := os.Open(fullpath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		stat := &unix.Stat_t{}
+		err = unix.Fstat(int(file.Fd()), stat)
 		if err != nil {
 			return nil, err
 		}
 
+		// rather un-helpful if we're just overwriting it though
+		ctime := time.Unix(int64(stat.Ctim.Sec), int64(stat.Ctim.Nsec))
+
+		// perhaps return proto'd version here instead then wrap
+		// w/cloudinstance for cli
 		instances = append(instances, lepton.CloudInstance{
-			ID:         f.Name(),
+			ID:         f.Name(), // pid
 			Name:       i.Instance,
 			Image:      i.Image,
 			Status:     "Running",
-			Created:    lepton.Time2Human(fi.ModTime()),
-			PrivateIps: []string{"127.0.0.1"},
+			Created:    lepton.Time2Human(ctime),
+			PrivateIps: pips,
 			PublicIps:  strings.Split(i.portList(), ","),
 		})
 	}
