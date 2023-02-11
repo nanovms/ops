@@ -272,9 +272,9 @@ func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *
 }
 
 // DeleteSG deletes a security group
-func (p *AWS) DeleteSG(groupId *string) {
+func (p *AWS) DeleteSG(groupID *string) {
 	input := &ec2.DeleteSecurityGroupInput{
-		GroupId: groupId,
+		GroupId: groupID,
 	}
 
 	_, err := p.ec2.DeleteSecurityGroup(input)
