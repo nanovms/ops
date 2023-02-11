@@ -271,17 +271,45 @@ func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *
 	return ec2Permission
 }
 
+// DeleteSG deletes a security group
+func (p *AWS) DeleteSG(groupId *string) {
+	input := &ec2.DeleteSecurityGroupInput{
+		GroupId: groupId,
+	}
+
+	result, err := p.ec2.DeleteSecurityGroup(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			fmt.Println(err.Error())
+		}
+		return
+	}
+}
+
 // CreateSG - Create security group
-func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, imgName string, vpcID string) (sg *ec2.SecurityGroup, err error) {
+// instance specific
+func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, iname string, vpcID string) (sg *ec2.SecurityGroup, err error) {
 	t := time.Now().UnixNano()
 	s := strconv.FormatInt(t, 10)
 
-	sgName := imgName + s
+	sgName := iname + "-" + s
+
+	// Create tags to assign to the instance
+	tags := []*ec2.Tag{}
+	tags = append(tags, &ec2.Tag{Key: aws.String("ops-created"), Value: aws.String("true")})
 
 	createRes, err := svc.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(sgName),
-		Description: aws.String("security group for " + imgName),
+		Description: aws.String("security group for " + iname),
 		VpcId:       aws.String(vpcID),
+		TagSpecifications: []*ec2.TagSpecification{
+			{ResourceType: aws.String("security-group"), Tags: tags},
+		},
 	})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -291,12 +319,12 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, imgName string, vpcID 
 				err = errors.New(errstr)
 				return
 			case "InvalidGroup.Duplicate":
-				errstr := fmt.Sprintf("Security group %q already exists.", imgName)
+				errstr := fmt.Sprintf("Security group %q already exists.", iname)
 				err = errors.New(errstr)
 				return
 			}
 		}
-		errstr := fmt.Sprintf("Unable to create security group %q, %v", imgName, err)
+		errstr := fmt.Sprintf("Unable to create security group %q, %v", iname, err)
 		err = errors.New(errstr)
 		return
 	}
@@ -329,7 +357,7 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, imgName string, vpcID 
 			IpPermissions: ec2Permissions,
 		})
 		if err != nil {
-			errstr := fmt.Sprintf("Unable to set security group %q ingress, %v", imgName, err)
+			errstr := fmt.Sprintf("Unable to set security group %q ingress, %v", iname, err)
 			err = errors.New(errstr)
 			return
 		}
