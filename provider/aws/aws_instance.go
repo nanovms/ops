@@ -231,8 +231,9 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			return err
 		}
 	} else {
+		iname := ctx.Config().RunConfig.InstanceName
 		ctx.Logger().Debugf("creating new security group in vpc %s", *vpc.VpcId)
-		sg, err = p.CreateSG(ctx, svc, imgName, *vpc.VpcId)
+		sg, err = p.CreateSG(ctx, svc, iname, *vpc.VpcId)
 		if err != nil {
 			return err
 		}
@@ -457,6 +458,8 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 }
 
 // DeleteInstance deletes instance from AWS
+// if deleting sgs created by ops it can take a while so might be worth
+// optionally making this go into the background
 func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 	if instanceName == "" {
 		return errors.New("enter instance name")
@@ -473,6 +476,11 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		},
 	}
 
+	sg, err := p.findSGByName(instanceName)
+	if err != nil {
+		return err
+	}
+
 	_, err = p.ec2.TerminateInstances(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -486,7 +494,22 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		return err
 	}
 
-	// kill off any old security group as well
+	if sg != nil {
+		fmt.Println("waiting for sg to be removed")
+
+		i2 := &ec2.DescribeInstancesInput{
+			InstanceIds: []*string{
+				aws.String(*instance.InstanceId),
+			},
+		}
+
+		err = p.ec2.WaitUntilInstanceTerminated(i2)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		p.DeleteSG(sg.GroupId)
+	}
 
 	return nil
 }
@@ -561,4 +584,24 @@ func (p *AWS) findInstanceByName(name string) (*ec2.Instance, error) {
 	}
 
 	return result.Reservations[0].Instances[0], nil
+}
+
+// bit of a hack here
+// can convert to explicit tag
+// currently only returns sgs created by ops
+func (p *AWS) findSGByName(name string) (*ec2.SecurityGroup, error) {
+	filter := []*ec2.Filter{
+		{Name: aws.String("tag:ops-created"), Values: aws.StringSlice([]string{"true"})},
+		{Name: aws.String("description"), Values: aws.StringSlice([]string{"security group for " + name})},
+	}
+
+	request := ec2.DescribeSecurityGroupsInput{
+		Filters: filter,
+	}
+	result, err := p.ec2.DescribeSecurityGroups(&request)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting security group: %v", err)
+	}
+
+	return result.SecurityGroups[0], nil
 }
