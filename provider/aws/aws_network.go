@@ -277,7 +277,7 @@ func (p *AWS) DeleteSG(groupId *string) {
 		GroupId: groupId,
 	}
 
-	result, err := p.ec2.DeleteSecurityGroup(input)
+	_, err := p.ec2.DeleteSecurityGroup(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -289,6 +289,7 @@ func (p *AWS) DeleteSG(groupId *string) {
 		}
 		return
 	}
+
 }
 
 // CreateSG - Create security group
