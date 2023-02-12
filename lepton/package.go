@@ -3,6 +3,7 @@ package lepton
 import (
 	"archive/tar"
 	"crypto/sha256"
+	"os/exec"
 	"regexp"
 
 	"compress/gzip"
@@ -446,4 +447,161 @@ func ExtractNS(identifier string) (string, string) {
 		pkgIdf = pkgIdfs[1]
 	}
 	return namespace, pkgIdf
+}
+
+func localPackageDirectoryPath() string {
+	return path.Join(GetOpsHome(), "local_packages")
+}
+
+// ClonePackage will cloned a package from ~/.ops/packages to
+// ~/.ops/local_packages.
+func ClonePackage(old string, newPkg string, version string, oldconfig *types.Config, newconfig *types.Config) {
+	fmt.Println("cloning old pkg to new")
+	o := path.Join(GetOpsHome(), "packages", old)
+	n := path.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+
+	cmd := exec.Command("mkdir", "-p", n)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(string(out))
+	}
+
+	str := "cp -R " + o + "/* " + n + "/"
+
+	execCmd(str)
+
+	ppath := n + "/package.manifest"
+
+	c := oldconfig
+	p := strings.Split(c.Program, "/")
+	c.Program = newPkg + "_" + version + "/" + p[1]
+	c.Version = version
+
+	addToPackage(newconfig, n)
+
+	// nil out Dirs, Files, MapDirs or anything else we already resolved
+	newconfig.Dirs = []string{}
+	newconfig.MapDirs = map[string]string{}
+	newconfig.Files = []string{}
+
+	// iterate through fields and copy over anything that is not nil value
+	// things like env vars need to be appended
+	for i := 0; i < len(newconfig.Args); i++ {
+		c.Args = append(c.Args, newconfig.Args[i])
+	}
+
+	json, _ := json.MarshalIndent(c, "", "  ")
+
+	// would be nice to write only needed config not all config
+	err = os.WriteFile(ppath, json, 0666)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+}
+
+// CreatePackageFromRun builds a new package as if you were doing an
+// 'ops run myprogram'
+func CreatePackageFromRun(newPkg string, version string, newconfig *types.Config) {
+	fmt.Println("creating new pkg")
+	n := path.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+
+	cmd := exec.Command("mkdir", "-p", n)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(string(out))
+	}
+
+	c := newconfig
+
+	str := "cp " + c.Program + " " + n + "/."
+	execCmd(str)
+
+	c.Args = []string{c.Program}
+
+	oprogram := c.Program
+	c.Program = newPkg + "_" + version + "/" + c.Program
+	c.Version = version
+
+	// nil out a bunch of crap
+	c.Boot = ""
+	c.UefiBoot = ""
+	c.Kernel = ""
+	c.NanosVersion = ""
+	c.VolumesDir = ""
+	c.NameServers = []string{}
+	c.LocalFilesParentDirectory = ""
+	c.ProgramPath = ""
+	c.CloudConfig = types.ProviderConfig{}
+	c.RunConfig = types.RunConfig{}
+
+	json, _ := json.MarshalIndent(c, "", "  ")
+
+	err = os.WriteFile(path.Join(n, "package.manifest"), json, 0666)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	addToPackage(newconfig, n)
+
+	deps, err := getSharedLibs("", oprogram, c)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// create dir layout
+	for _, v := range deps {
+		str := "mkdir -p " + n + "/sysroot" + filepath.Dir(v)
+		execCmd(str)
+	}
+
+	// cp files
+	for k, v := range deps {
+		str := "cp " + v + " " + n + "/sysroot/" + k
+		execCmd(str)
+	}
+
+}
+
+func addToPackage(newconfig *types.Config, newpath string) {
+	// add any directories/files
+	// {dirs, mapdirs, files}
+
+	// add config that might be present in our directory
+	// we typically use mkfs to build an image directly from config versus building
+	// a package with the files
+	if len(newconfig.Dirs) > 0 {
+		for i := 0; i < len(newconfig.Dirs); i++ {
+			str := "cp -R " + newconfig.Dirs[i] + " " + newpath + "/sysroot/."
+			execCmd(str)
+		}
+	}
+
+	if len(newconfig.Files) > 0 {
+		for i := 0; i < len(newconfig.Files); i++ {
+			str := "cp -R " + newconfig.Files[i] + " " + newpath + "/sysroot/."
+			execCmd(str)
+		}
+	}
+
+	if len(newconfig.MapDirs) > 0 {
+		for k, v := range newconfig.MapDirs {
+			newDir := newpath + "/sysroot" + v
+
+			str := "mkdir -p " + newDir + " && cp -R " + k + " " + newDir + "/."
+			execCmd(str)
+		}
+	}
+}
+
+func execCmd(str string) {
+	cmd := exec.Command("/bin/bash", "-c", str)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(string(out))
+	}
 }
