@@ -13,13 +13,13 @@ import (
 	"sort"
 	"strings"
 
+	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
+
 	"github.com/go-errors/errors"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-
-	"github.com/nanovms/ops/lepton"
-	api "github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/log"
 )
 
 // PackageCommands gives package related commands
@@ -80,6 +80,12 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdFromPackage,
 	}
 
+	var cmdFromRun = &cobra.Command{
+		Use:   "from-run [binary]",
+		Short: "create a new package from an existing binary",
+		Run:   cmdFromRun,
+	}
+
 	var cmdPkgLogin = &cobra.Command{
 		Use:   "login [apikey]",
 		Short: "login to pkghub account using the apikey",
@@ -120,6 +126,15 @@ func PackageCommands() *cobra.Command {
 	cmdFromPackage.PersistentFlags().StringP("name", "n", "", "name of the new package")
 	cmdFromPackage.PersistentFlags().StringP("version", "v", "", "version of the package")
 
+	cmdFromRun.PersistentFlags().StringP("name", "n", "", "name of the new package")
+	cmdFromRun.PersistentFlags().StringP("version", "v", "", "version of the package")
+
+	cmdFromRunFlags := cmdFromRun.PersistentFlags()
+
+	PersistConfigCommandFlags(cmdFromRunFlags)
+	PersistBuildImageCommandFlags(cmdFromRunFlags)
+	PersistNanosVersionCommandFlags(cmdFromRunFlags)
+
 	persistentFlags := cmdFromPackage.PersistentFlags()
 	PersistConfigCommandFlags(persistentFlags)
 
@@ -130,6 +145,7 @@ func PackageCommands() *cobra.Command {
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
 	cmdPkg.AddCommand(cmdFromPackage)
+	cmdPkg.AddCommand(cmdFromRun)
 	cmdPkg.AddCommand(cmdFromDockerPackage)
 	cmdPkg.AddCommand(cmdPkgLogin)
 	cmdPkg.AddCommand(cmdPkgPush)
@@ -363,7 +379,52 @@ func cmdFromPackage(cmd *cobra.Command, args []string) {
 	oldpkg := args[0]
 	oldpkg = strings.ReplaceAll(oldpkg, ":", "_")
 
-	clonePackage(oldpkg, newpkg, version, c)
+	o := path.Join(api.GetOpsHome(), "packages", oldpkg)
+	ppath := o + "/package.manifest"
+	oldConfig := &types.Config{}
+	unWarpConfig(ppath, oldConfig)
+
+	api.ClonePackage(oldpkg, newpkg, version, oldConfig, c)
+}
+
+func cmdFromRun(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	c := api.NewConfig()
+
+	newpkg, _ := flags.GetString("name")
+	if newpkg == "" {
+		fmt.Println("missing new pkg name")
+		os.Exit(1)
+	}
+
+	version, _ := flags.GetString("version")
+	if newpkg == "" {
+		fmt.Println("missing new version")
+		os.Exit(1)
+	}
+
+	program := args[0]
+	c.Program = program
+	var err error
+	c.ProgramPath, err = filepath.Abs(c.Program)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	checkProgramExists(c.Program)
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+	buildImageFlags := NewBuildImageCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nanosVersionFlags, buildImageFlags)
+	err = mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	api.CreatePackageFromRun(newpkg, version, c)
 }
 
 func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
@@ -433,17 +494,17 @@ func cmdPkgPush(cmd *cobra.Command, args []string) {
 
 	// build the archive here
 	archiveName := filepath.Join(localPackages, packageFolder) + ".tar.gz"
-	err = lepton.CreateTarGz(filepath.Join(localPackages, packageFolder), archiveName)
+	err = api.CreateTarGz(filepath.Join(localPackages, packageFolder), archiveName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := lepton.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
+	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set(lepton.APIKeyHeader, creds.APIKey)
+	req.Header.Set(api.APIKeyHeader, creds.APIKey)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
