@@ -247,6 +247,9 @@ type RunConfig struct {
 	// Vga whether to emulate a VGA output device
 	Vga bool `json:",omitempty"`
 
+	// host directories shared with guest via VirtFS
+	VirtfsShares []string `json:",omitempty"`
+
 	// Mounts
 	Mounts []string `json:",omitempty"`
 
