@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"golang.org/x/oauth2/google"
@@ -47,10 +46,10 @@ func buildGcpTags(tags []types.Tag) map[string]string {
 func checkGCCredentialsProvided() error {
 	creds, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !ok {
-		return fmt.Errorf(constants.ErrorColor, "error: GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up.\n")
+		return fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS not set.\nFollow https://cloud.google.com/storage/docs/reference/libraries to set it up")
 	}
 	if _, err := os.Stat(creds); os.IsNotExist(err) {
-		return fmt.Errorf(constants.ErrorColor, fmt.Sprintf("error: File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist.", creds))
+		return fmt.Errorf("File %s mentioned in GOOGLE_APPLICATION_CREDENTIALS does not exist", creds)
 	}
 	return nil
 }

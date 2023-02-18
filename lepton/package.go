@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -298,7 +297,7 @@ func PackageManifestChanged(fino os.FileInfo, remoteURL string) bool {
 	if err != nil {
 		var netError *net.Error
 		if errors.Is(err, *netError) {
-			fmt.Printf(constants.WarningColor, "missing internet?, using local manifest.\n")
+			fmt.Println("missing internet?, using local manifest.")
 		} else {
 			fmt.Printf("probably bad URL: %s, got error %s", remoteURL, err)
 			os.Exit(1)

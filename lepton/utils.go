@@ -7,12 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"unicode/utf8"
-
-	"github.com/nanovms/ops/constants"
 )
 
 func exitWithError(errs string) {
-	log.Fatal(fmt.Sprintf(constants.ErrorColor, errs))
+	log.Fatal(errs)
 }
 
 // isDomainValid returns an error if the domain name is not valid

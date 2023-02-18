@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -208,9 +207,9 @@ var LatestReleaseVersion = getLatestRelVersion()
 func getLatestRelVersion() string {
 	resp, err := http.Get(releaseBaseURL + "latest.txt")
 	if err != nil {
-		fmt.Printf(constants.WarningColor, "version lookup failed, using local.\n")
+		fmt.Println("version lookup failed, using local.")
 		if LocalReleaseVersion == "0.0" {
-			log.Fatalf(constants.ErrorColor, "No local build found.")
+			log.Fatalf("No local build found.")
 		}
 		return LocalReleaseVersion
 	}

@@ -2,9 +2,6 @@ package qemu
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/nanovms/ops/constants"
 )
 
 type errCustom struct {
@@ -39,27 +36,27 @@ func qemuAccelWarningMessage(err error) (message string, terminate bool) {
 		targetQemuHWAccelNotSupported        *errQemuHWAccelNotSupported
 	)
 	if errors.As(err, &targetErrQemuHWAccelDisabledInConfig) {
-		return fmt.Sprintf(constants.WarningColor, "You have disabled hardware acceleration\n"), false
+		return "You have disabled hardware acceleration", false
 	}
 	if errors.As(err, &targetErrQemuNotInstalled) {
-		return fmt.Sprintf(constants.WarningColor, "Cannot find QEMU (looks like it is not installed)\n"+
-			"Please install QEMU using your package manager and re-run current command\n"), true
+		return "Cannot find QEMU (looks like it is not installed)\n" +
+			"Please install QEMU using your package manager and re-run current command\n", true
 	}
 	if errors.As(err, &targetErrQemuCannotExecute) {
-		return fmt.Sprintf(constants.WarningColor, "QEMU installed, but cannot be executed\n"+
-			"Please check current user rights\n"), true
+		return "QEMU installed, but cannot be executed\n" +
+			"Please check current user rights\n", true
 	}
 
 	if errors.As(err, &targetQemuHWAccelNoUserRights) {
-		return fmt.Sprintf(constants.WarningColor, "You don't have rights for using hardware acceleration\n"+
-			"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n"+
-			"You'll need to re-login for this to take affect\n"), false
+		return "You don't have rights for using hardware acceleration\n" +
+			"Try adding yourself to the kvm group: `sudo adduser $user kvm`\n" +
+			"You'll need to re-login for this to take affect\n", false
 	}
 
 	if errors.As(err, &targetQemuHWAccelNotSupported) {
-		return fmt.Sprintf(constants.WarningColor, "You specified hardware acceleration, but it is not supported\n"+
-			"Are you running inside a vm? If so disable accel with --accel=false\n"), false
+		return "You specified hardware acceleration, but it is not supported\n" +
+			"Are you running inside a vm? If so disable accel with --accel=false\n", false
 	}
 
-	return fmt.Sprintf(constants.WarningColor, "Hardware acceleration cannot be used on the current host"), false
+	return "Hardware acceleration cannot be used on the current host", false
 }
