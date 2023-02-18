@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/core"
@@ -15,7 +14,7 @@ import (
 
 func TestCreateInstance(t *testing.T) {
 	p, c, _, _, n, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 	instanceName := "instance-test"
 	imageName := "image-test"
 
@@ -148,7 +147,7 @@ func TestCreateInstance(t *testing.T) {
 
 func TestGetInstances(t *testing.T) {
 	p, c, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	c.EXPECT().
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
@@ -168,7 +167,7 @@ func TestGetInstances(t *testing.T) {
 
 func TestGetInstanceByID(t *testing.T) {
 	p, c, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	c.EXPECT().
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
@@ -185,7 +184,7 @@ func TestGetInstanceByID(t *testing.T) {
 
 func TestDeleteInstance(t *testing.T) {
 	p, c, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	c.EXPECT().
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
@@ -202,7 +201,7 @@ func TestDeleteInstance(t *testing.T) {
 
 func TestStartInstance(t *testing.T) {
 	p, c, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	c.EXPECT().
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
@@ -219,7 +218,7 @@ func TestStartInstance(t *testing.T) {
 
 func TestStopInstance(t *testing.T) {
 	p, c, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	c.EXPECT().
 		ListInstances(context.TODO(), core.ListInstancesRequest{CompartmentId: types.StringPtr("")}).
@@ -275,7 +274,7 @@ func TestAddInstancesNetworkDetails(t *testing.T) {
 			},
 		}, nil)
 
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	err := p.AddInstancesNetworkDetails(ctx, instances)
 
