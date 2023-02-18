@@ -9,8 +9,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"github.com/nanovms/ops/wsl"
 )
 
 const (
@@ -143,10 +141,11 @@ func saveScript(fileContents string) (string, error) {
 		return "", err
 	}
 
-	scriptWindowsPath, err := wsl.ConvertPathFromWSLtoWindows(newFilename)
+	windowsPath, err := exec.Command("wslpath", "-w", newFilename).CombinedOutput()
 	if err != nil {
 		return "", err
 	}
+	scriptWindowsPath := strings.Trim(string(windowsPath), "\n")
 
 	return scriptWindowsPath, nil
 }

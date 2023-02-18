@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/wsl"
 	"github.com/olekukonko/tablewriter"
 	"github.com/terra-farm/go-virtualbox"
 	vbox "github.com/terra-farm/go-virtualbox"
@@ -22,58 +21,61 @@ var (
 )
 
 // CreateInstance uses an image to launch a vm in VirtualBox
-func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
+func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 	name := ctx.Config().RunConfig.InstanceName
 
 	vmPath, err := findOrCreateVmsDir()
 	if err != nil {
 		ctx.Logger().Errorf("failed converting vms path")
-		return
+		return err
 	}
 
 	vmPath = path.Join(vmPath, name)
 	err = os.Mkdir(vmPath, 0755)
 	if err != nil {
 		ctx.Logger().Errorf("failed creating vm directory")
-		return
+		return err
 	}
 
 	imagesDir, err := findOrCreateVdiImagesDir()
 	if err != nil {
 		ctx.Logger().Errorf("failed converting vdi images dir")
-		return
+		return err
 	}
 
 	imageName := ctx.Config().CloudConfig.ImageName + ".vdi"
 	imagePath := path.Join(imagesDir, imageName)
-	vmImagePath := path.Join(vmPath, imageName)
 
-	if wsl.IsWSL() {
-		vmPath, err = wsl.ConvertPathFromWSLtoWindows(vmPath)
-		if err != nil {
-			ctx.Logger().Errorf("failed converting vm path")
-			return
-		}
-
-		imagePath, err = wsl.ConvertPathFromWSLtoWindows(imagePath)
-		if err != nil {
-			ctx.Logger().Errorf("failed converting image path %s", imagePath)
-			return
-		}
-
-		vmImagePath = vmPath + "\\" + imageName
+	if _, err := exec.LookPath("wslpath"); err != nil {
+		return err
 	}
+
+	windowsPath, err := exec.Command("wslpath", "-w", vmPath).CombinedOutput()
+	if err != nil {
+		ctx.Logger().Errorf("failed converting vm path %s", vmPath)
+		return err
+	}
+	vmPath = strings.Trim(string(windowsPath), "\n")
+
+	windowsPath, err = exec.Command("wslpath", "-w", imagePath).CombinedOutput()
+	if err != nil {
+		ctx.Logger().Errorf("failed converting image path %s", imagePath)
+		return err
+	}
+	imagePath = strings.Trim(string(windowsPath), "\n")
+
+	vmImagePath := vmPath + "\\" + imageName
 
 	err = vbox.CloneHD(imagePath, vmImagePath)
 	if err != nil {
 		ctx.Logger().Errorf("failed cloning hdd")
-		return
+		return err
 	}
 
 	vm, err := vbox.CreateMachine(name, vmPath)
 	if err != nil {
 		ctx.Logger().Errorf("failed creating machine")
-		return
+		return err
 	}
 
 	err = vm.AddStorageCtl("IDE", vbox.StorageController{
@@ -85,7 +87,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	})
 	if err != nil {
 		ctx.Logger().Errorf("failed adding storage controller")
-		return
+		return err
 	}
 
 	err = vm.AttachStorage("IDE", vbox.StorageMedium{
@@ -96,7 +98,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	})
 	if err != nil {
 		ctx.Logger().Errorf("failed attaching storage")
-		return
+		return err
 	}
 
 	modifyVM := exec.Command("VBoxManage", "modifyvm", vm.Name, "--memory", "1024")
@@ -104,13 +106,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	err = modifyVM.Run()
 	if err != nil {
 		ctx.Logger().Errorf("failed changing vm memory")
-		return
+		return err
 	}
 
 	err = virtualbox.SetGuestProperty(vm.Name, "Image", imageName)
 	if err != nil {
 		ctx.Logger().Errorf("failed to set image as guest property")
-		return
+		return err
 	}
 
 	err = vm.SetNIC(1, vbox.NIC{
@@ -119,13 +121,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 	})
 	if err != nil {
 		ctx.Logger().Errorf("failed setting NIC")
-		return
+		return err
 	}
 
 	err = vm.Start()
 	if err != nil {
 		ctx.Logger().Errorf("failed started vm")
-		return
+		return err
 	}
 
 	for _, p := range ctx.Config().RunConfig.Ports {
@@ -148,11 +150,11 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		err = virtualbox.SetGuestProperty(vm.Name, "Ports", strings.Join(ctx.Config().RunConfig.Ports, ","))
 		if err != nil {
 			ctx.Logger().Errorf("failed to set ports as guest property")
-			return
+			return err
 		}
 	}
 
-	return
+	return nil
 }
 
 // ListInstances prints vms list managed by VirtualBox in table

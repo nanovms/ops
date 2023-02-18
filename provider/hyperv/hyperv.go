@@ -2,10 +2,10 @@ package hyperv
 
 import (
 	"errors"
+	"os/exec"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
-	"github.com/nanovms/ops/wsl"
 )
 
 // ProviderName of the cloud platform provider
@@ -32,8 +32,8 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 		return errors.New("this feature is only supported on terminals with elevated privileges")
 	}
 
-	if !wsl.IsWSL() {
-		return errors.New("Hyper-v is only supported on WSL")
+	if _, err := exec.LookPath("wslpath"); err != nil {
+		return errors.New("Hyper-v is only supported on WSL." + err.Error())
 	}
 
 	return nil

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/wsl"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -40,10 +40,11 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 			return fmt.Errorf("invalid instance flavor '%s'; available flavors: 'gen1', 'gen2'", c.CloudConfig.Flavor)
 		}
 	}
-	windowsImagePath, err := wsl.ConvertPathFromWSLtoWindows(imagePath)
+	windowsPath, err := exec.Command("wslpath", "-w", imagePath).CombinedOutput()
 	if err != nil {
 		return err
 	}
+	windowsImagePath := strings.Trim(string(windowsPath), "\n")
 
 	err = CreateVirtualMachineWithNoHD(vmName, int64(1024*math.Pow10(6)), vmGeneration)
 	if err != nil {

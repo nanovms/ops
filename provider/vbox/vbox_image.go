@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/types"
-	"github.com/nanovms/ops/wsl"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
@@ -127,28 +126,25 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 }
 
 // DeleteImage removes VirtualBox image
-func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) (err error) {
+func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) error {
 
-	imgpath := path.Join(vdiImagesDir, imagename+".vdi")
+	imagePath := path.Join(vdiImagesDir, imagename+".vdi")
 
-	if wsl.IsWSL() {
-		imgpath, err = wsl.ConvertPathFromWSLtoWindows(imgpath)
-		if err != nil {
-			return
-		}
+	if _, err := exec.LookPath("wslpath"); err != nil {
+		return err
 	}
-
-	cmd := exec.Command("VBoxManage", "closemedium", "disk", imgpath, "--delete")
+	windowsPath, err := exec.Command("wslpath", "-w", imagePath).CombinedOutput()
 	if err != nil {
-		return
+		return err
 	}
+	windowsImagePath := strings.Trim(string(windowsPath), "\n")
 
-	output, err := cmd.CombinedOutput()
+	output, err := exec.Command("VBoxManage", "closemedium", "disk", windowsImagePath, "--delete").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(output))
 	}
 
-	return
+	return err
 }
 
 // ResizeImage is a stub
