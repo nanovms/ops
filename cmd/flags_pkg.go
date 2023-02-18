@@ -125,10 +125,10 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		c.TargetRoot = pkgConfig.TargetRoot
 	}
 
-	imageName := c.RunConfig.Imagename
+	imageName := c.RunConfig.ImageName
 	images := path.Join(lepton.GetOpsHome(), "images")
 	if imageName == "" {
-		c.RunConfig.Imagename = path.Join(images, filepath.Base(pkgConfig.Program))
+		c.RunConfig.ImageName = path.Join(images, filepath.Base(pkgConfig.Program))
 		c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(pkgConfig.Program))
 	} else if c.CloudConfig.ImageName == "" {
 		imageName = path.Join(images, filepath.Base(imageName))

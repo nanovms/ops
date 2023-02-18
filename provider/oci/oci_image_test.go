@@ -83,7 +83,7 @@ func TestBuildImage(t *testing.T) {
 	imageName := "oci-build-image-test"
 
 	ctx.Config().CloudConfig.ImageName = imageName
-	ctx.Config().RunConfig.Imagename = imageName
+	ctx.Config().RunConfig.ImageName = imageName
 	ctx.Config().Program = testutils.BuildBasicProgram()
 	defer os.Remove(ctx.Config().Program)
 

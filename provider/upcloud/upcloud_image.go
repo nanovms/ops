@@ -21,7 +21,7 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
-	return c.RunConfig.Imagename, nil
+	return c.RunConfig.ImageName, nil
 }
 
 // BuildImageWithPackage creates local image using package image
@@ -32,7 +32,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	return ctx.Config().RunConfig.Imagename, nil
+	return ctx.Config().RunConfig.ImageName, nil
 }
 
 // CreateImage creates a storage object and upload image
