@@ -55,7 +55,7 @@ var PackagesCache = getPackageCache()
 // GetOpsHome get ops directory path
 // We store all ops related info, packages, images in this directory
 func GetOpsHome() string {
-	home, err := HomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)

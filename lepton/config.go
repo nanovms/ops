@@ -3,7 +3,7 @@ package lepton
 import (
 	"encoding/json"
 	"os"
-	"os/user"
+	"path/filepath"
 
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
@@ -24,11 +24,11 @@ func NewConfig() *types.Config {
 			log.Errorf("error config: %v\n", err)
 		}
 	} else {
-		usr, err := user.Current()
+		home, err := os.UserHomeDir()
 		if err != nil {
 			return c
 		}
-		conf = usr.HomeDir + "/.opsrc"
+		conf = filepath.Join(home, ".opsrc")
 
 		if _, err = os.Stat(conf); err == nil {
 			data, err := os.ReadFile(conf)
