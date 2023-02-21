@@ -52,17 +52,17 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 	}
 
 	if flags.ImageName != "" {
-		c.RunConfig.Imagename = flags.ImageName
+		c.RunConfig.ImageName = flags.ImageName
 	}
 
 	setNanosBaseImage(c)
 
-	if c.RunConfig.Imagename == "" && c.Program != "" {
-		c.RunConfig.Imagename = c.Program
+	if c.RunConfig.ImageName == "" && c.Program != "" {
+		c.RunConfig.ImageName = c.Program
 	}
 
-	if c.RunConfig.Imagename != "" {
-		imageName := strings.Split(path.Base(c.RunConfig.Imagename), ".")[0]
+	if c.RunConfig.ImageName != "" {
+		imageName := strings.Split(path.Base(c.RunConfig.ImageName), ".")[0]
 		if imageName == "" {
 			imageName = lepton.GenerateImageName(filepath.Base(c.Program))
 			c.CloudConfig.ImageName = fmt.Sprintf("%v-image", filepath.Base(c.Program))
@@ -71,7 +71,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 			images := path.Join(lepton.GetOpsHome(), "images")
 			imageName = path.Join(images, filepath.Base(imageName))
 		}
-		c.RunConfig.Imagename = imageName
+		c.RunConfig.ImageName = imageName
 	}
 
 	if c.Args != nil {

@@ -335,7 +335,7 @@ func (q *qemu) addAccel() (bool, error) {
 
 func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	// add virtio drive
-	q.addDrive("hd0", rconfig.Imagename, "none")
+	q.addDrive("hd0", rconfig.ImageName, "none")
 
 	pciBus := ""
 	if isx86() {
@@ -387,10 +387,17 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addOption("-device", "virtio-rng-pci")
 
+	disks := 1
+	for _, hostDir := range rconfig.VirtfsShares {
+		q.addOption("-virtfs", fmt.Sprintf("local,path=%s,mount_tag=%d,security_model=none,multidevs=remap,id=hd%d", hostDir, disks, disks))
+		disks++
+	}
+
 	// add mounted volumes
-	for n, file := range rconfig.Mounts {
-		q.addDrive(fmt.Sprintf("hd%d", n+1), file, "none")
-		q.addOption("-device", fmt.Sprintf("scsi-hd,bus=scsi0.0,drive=hd%d", n+1))
+	for _, file := range rconfig.Mounts {
+		q.addDrive(fmt.Sprintf("hd%d", disks), file, "none")
+		q.addOption("-device", fmt.Sprintf("scsi-hd,bus=scsi0.0,drive=hd%d", disks))
+		disks++
 	}
 
 	netDevType := "user"

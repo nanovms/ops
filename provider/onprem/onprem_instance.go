@@ -54,7 +54,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	opshome := lepton.GetOpsHome()
 	imgpath := path.Join(opshome, "images", c.CloudConfig.ImageName)
 
-	c.RunConfig.Imagename = imgpath
+	c.RunConfig.ImageName = imgpath
 	c.RunConfig.Background = true
 
 	err := hypervisor.Start(&c.RunConfig)
@@ -71,7 +71,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 
 	i := instance{
 		Instance: c.RunConfig.InstanceName,
-		Image:    c.RunConfig.Imagename,
+		Image:    c.RunConfig.ImageName,
 		Ports:    c.RunConfig.Ports,
 	}
 

@@ -253,6 +253,6 @@ func (p *ProxMox) ResizeImage(ctx *lepton.Context, imagename string, hbytes stri
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (p *ProxMox) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }
