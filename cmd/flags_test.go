@@ -23,7 +23,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 
 	configFile := &types.Config{
 		RunConfig: types.RunConfig{
-			Imagename: "config-image-name",
+			ImageName: "config-image-name",
 		},
 	}
 
@@ -43,7 +43,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 		err := container.Merge(config)
 
 		assert.Nil(t, err)
-		assert.Equal(t, config.RunConfig.Imagename, imagesPath+"/build-image")
+		assert.Equal(t, config.RunConfig.ImageName, imagesPath+"/build-image")
 	})
 
 	t.Run("if build image flags are placed before the config image flags imagename overrides the value", func(t *testing.T) {
@@ -55,6 +55,6 @@ func TestMergeMultipleFlags(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		assert.Equal(t, config.RunConfig.Imagename, "config-image-name")
+		assert.Equal(t, config.RunConfig.ImageName, "config-image-name")
 	})
 }

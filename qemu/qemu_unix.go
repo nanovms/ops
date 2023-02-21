@@ -335,7 +335,7 @@ func (q *qemu) addAccel() (bool, error) {
 
 func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	// add virtio drive
-	q.addDrive("hd0", rconfig.Imagename, "none")
+	q.addDrive("hd0", rconfig.ImageName, "none")
 
 	pciBus := ""
 	if isx86() {

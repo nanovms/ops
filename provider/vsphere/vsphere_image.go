@@ -185,6 +185,6 @@ func (v *Vsphere) SyncImage(config *types.Config, target lepton.Provider, image 
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (v *Vsphere) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }

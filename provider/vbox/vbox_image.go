@@ -32,7 +32,7 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}
@@ -177,7 +177,7 @@ func (p *Provider) createVdiImage(c *types.Config) (imagePath string, err error)
 	args := []string{
 		"convert",
 		"-O", "vdi",
-		c.RunConfig.Imagename, imagePath,
+		c.RunConfig.ImageName, imagePath,
 	}
 
 	cmd := exec.Command("qemu-img", args...)

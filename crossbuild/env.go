@@ -120,7 +120,7 @@ func (env *Environment) Boot() error {
 		}
 		cmd := hypervisor.Command(&types.RunConfig{
 			Accel:     true,
-			Imagename: filepath.Join(EnvironmentImageDirPath, env.ID+EnvironmentImageFileExtension),
+			ImageName: filepath.Join(EnvironmentImageDirPath, env.ID+EnvironmentImageFileExtension),
 			Vga:       true,
 			Memory:    "2G",
 			Ports: []string{
