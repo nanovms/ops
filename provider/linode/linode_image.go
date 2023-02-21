@@ -167,6 +167,6 @@ func (v *Linode) ResizeImage(ctx *lepton.Context, imagename string, hbytes strin
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (v *Linode) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }
