@@ -15,6 +15,7 @@ import (
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/types"
 
 	"github.com/go-errors/errors"
@@ -577,6 +578,13 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
 	}
 	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
+
+	if c.Mounts != nil {
+		err = onprem.AddVirtfsShares(c)
+		if err != nil {
+			exitWithError("Failed to add VirtFS shares: " + err.Error())
+		}
+	}
 
 	if !runLocalInstanceFlags.SkipBuild {
 		if err = api.BuildImageFromPackage(pkgFlags.PackagePath(), *c); err != nil {

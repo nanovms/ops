@@ -148,6 +148,44 @@ func filterVolume(all []lepton.NanosVolume, query map[string]string) ([]lepton.N
 	return vols, nil
 }
 
+// AddVirtfsShares sets up RunConfig.VirtfsShares for the hypervisor
+func AddVirtfsShares(config *types.Config) error {
+	query := make(map[string]string)
+	virtfsShares := make(map[string]string)
+
+	for label, mountDir := range config.Mounts {
+		query["id"] = label
+		query["label"] = label
+		vols, err := GetVolumes(lepton.LocalVolumeDir, query)
+		if err != nil {
+			return err
+		}
+		if len(vols) == 0 {
+			// There are no local volumes matching this mount directive: look for a matching local folder
+			var hostDir string
+			if path.IsAbs(label) {
+				hostDir = label
+			} else {
+				hostDir = path.Join(config.LocalFilesParentDirectory, label)
+			}
+			info, err := os.Stat(hostDir)
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				log.Info("Adding virtFS share", hostDir)
+				virtfsShares[hostDir] = mountDir
+				delete(config.Mounts, label) // This mount entry is replaced with an entry containing a virtual ID
+			}
+		}
+	}
+	for hostDir, mountDir := range virtfsShares {
+		config.RunConfig.VirtfsShares = append(config.RunConfig.VirtfsShares, hostDir)
+		config.Mounts[fmt.Sprintf("%%%d", len(config.RunConfig.VirtfsShares))] = mountDir
+	}
+	return nil
+}
+
 // AddMountsFromConfig adds RunConfig.Mounts to image from existing Mounts
 // to simulate attach/detach volume locally
 func AddMountsFromConfig(config *types.Config) error {
@@ -157,6 +195,9 @@ func AddMountsFromConfig(config *types.Config) error {
 	query := make(map[string]string)
 
 	for label := range config.Mounts {
+		if label[0] == '%' { // virtual ID
+			continue
+		}
 		query["id"] = label
 		query["label"] = label
 		vols, err := GetVolumes(config.VolumesDir, query)

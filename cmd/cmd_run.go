@@ -7,6 +7,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/provider/onprem"
 	"github.com/spf13/cobra"
 )
 
@@ -56,6 +57,13 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
+	}
+
+	if c.Mounts != nil {
+		err = onprem.AddVirtfsShares(c)
+		if err != nil {
+			exitWithError("Failed to add VirtFS shares: " + err.Error())
+		}
 	}
 
 	if !runLocalInstanceFlags.SkipBuild {
