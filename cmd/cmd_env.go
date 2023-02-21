@@ -96,8 +96,8 @@ func envBuild(cmd *cobra.Command, args []string) {
 		if c.Program == "" {
 			exitForCmd(cmd, "When creating an image, program must be specified in config file")
 		}
-		if c.RunConfig.Imagename == "" {
-			c.RunConfig.Imagename = c.Program
+		if c.RunConfig.ImageName == "" {
+			c.RunConfig.ImageName = c.Program
 		}
 	}
 	tmpRoot := false
@@ -139,7 +139,7 @@ func envBuild(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Errorf("Failed to build image: %v", err)
 		} else {
-			fmt.Printf("On-prem image '%s' created...\n", c.RunConfig.Imagename)
+			fmt.Printf("On-prem image '%s' created...\n", c.RunConfig.ImageName)
 		}
 	}
 cleanup:

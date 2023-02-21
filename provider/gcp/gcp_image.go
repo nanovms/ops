@@ -45,7 +45,7 @@ func (p *GCloud) getArchiveName(ctx *lepton.Context) string {
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (p *GCloud) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
 
 	if _, err := os.Lstat(symlink); err == nil {

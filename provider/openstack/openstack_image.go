@@ -239,6 +239,6 @@ func (o *OpenStack) SyncImage(config *types.Config, target lepton.Provider, imag
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (o *OpenStack) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }

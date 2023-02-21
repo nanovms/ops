@@ -76,7 +76,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 				ImageName: "test-image",
 			},
 			RunConfig: types.RunConfig{
-				Imagename: imagesPath + "/test-image",
+				ImageName: imagesPath + "/test-image",
 				NetMask:   "255.255.255.0",
 			},
 			Args:                []string{"MyTestApp", "a b c d"},

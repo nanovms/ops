@@ -40,7 +40,7 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +61,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +81,7 @@ func (p *Provider) createVhdxImage(c *types.Config) (imagePath string, err error
 	args := []string{
 		"convert",
 		"-O", "vhdx",
-		c.RunConfig.Imagename, vhdxPath,
+		c.RunConfig.ImageName, vhdxPath,
 	}
 
 	cmd := exec.Command("qemu-img", args...)

@@ -754,13 +754,13 @@ func (p *AWS) SyncImage(config *types.Config, target lepton.Provider, image stri
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (p *AWS) CustomizeImage(ctx *lepton.Context) (string, error) {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }
 
 // not an archive - just raw disk image
 func (p *AWS) getArchiveName(ctx *lepton.Context) string {
-	imagePath := ctx.Config().RunConfig.Imagename
+	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath
 }
 
