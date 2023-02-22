@@ -78,7 +78,7 @@ func PutObjectMatcher(x objectstorage.PutObjectRequest) gomock.Matcher {
 func TestBuildImage(t *testing.T) {
 	p, _, _, _, _, _, _ := NewProvider(t)
 
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	imageName := "oci-build-image-test"
 
@@ -103,7 +103,7 @@ func TestCreateImage(t *testing.T) {
 	cloudImageName := "main"
 	bucketName := "test-bucket"
 	bucketNamespace := "test-namespace"
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	ctx.Config().CloudConfig.ImageName = cloudImageName
 	ctx.Config().CloudConfig.BucketName = bucketName
@@ -141,7 +141,7 @@ func TestCreateImage(t *testing.T) {
 
 func TestListImages(t *testing.T) {
 	p, computeService, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	computeService.EXPECT().
 		ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr("")}).
@@ -186,7 +186,7 @@ func TestListImages(t *testing.T) {
 
 func TestDeleteImage(t *testing.T) {
 	p, computeService, _, _, _, _, _ := NewProvider(t)
-	ctx := testutils.NewMockContext()
+	ctx := lepton.NewContext(lepton.NewConfig())
 
 	computeService.EXPECT().
 		ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr("")}).
