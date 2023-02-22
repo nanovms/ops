@@ -135,7 +135,7 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 		},
 		RunConfig: types.RunConfig{
 			Memory:    "2G",
-			Imagename: lepton.GetOpsHome() + "/images/ops",
+			ImageName: lepton.GetOpsHome() + "/images/ops",
 		},
 	}
 

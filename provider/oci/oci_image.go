@@ -35,7 +35,7 @@ func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +54,7 @@ func (p *Provider) createQcow2Image(c *types.Config) (imagePath string, err erro
 	args := []string{
 		"convert",
 		"-O", "qcow2",
-		c.RunConfig.Imagename, imagePath,
+		c.RunConfig.ImageName, imagePath,
 	}
 
 	cmd := exec.Command("qemu-img", args...)
@@ -89,7 +89,7 @@ func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 		return "", err
 	}
 
-	err = os.Remove(c.RunConfig.Imagename)
+	err = os.Remove(c.RunConfig.ImageName)
 	if err != nil {
 		return "", err
 	}

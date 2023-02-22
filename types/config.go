@@ -221,8 +221,8 @@ type RunConfig struct {
 	// GdbPort
 	GdbPort int `json:",omitempty"`
 
-	// Imagename (FIXME)
-	Imagename string `json:",omitempty"`
+	// ImageName
+	ImageName string `json:",omitempty"`
 
 	// InstanceGroup
 	InstanceGroup string `json:",omitempty"`
@@ -246,6 +246,9 @@ type RunConfig struct {
 
 	// Vga whether to emulate a VGA output device
 	Vga bool `json:",omitempty"`
+
+	// host directories shared with guest via VirtFS
+	VirtfsShares []string `json:",omitempty"`
 
 	// Mounts
 	Mounts []string `json:",omitempty"`
@@ -311,5 +314,5 @@ type Nic struct {
 
 // RuntimeConfig constructs runtime config
 func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
-	return RunConfig{Imagename: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
+	return RunConfig{ImageName: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
 }

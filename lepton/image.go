@@ -431,7 +431,7 @@ func addMappedFiles(src string, dest string, m *fs.Manifest) error {
 
 func createImageFile(c *types.Config, m *fs.Manifest) error {
 	// produce final image, boot + kernel + elf
-	fd, err := createFile(c.RunConfig.Imagename)
+	fd, err := createFile(c.RunConfig.ImageName)
 	defer func() {
 		fd.Close()
 	}()
@@ -463,7 +463,7 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 
 		mkfsCommand.SetUefi(c.UefiBoot)
 	}
-	mkfsCommand.SetFileSystemPath(c.RunConfig.Imagename)
+	mkfsCommand.SetFileSystemPath(c.RunConfig.ImageName)
 
 	err = mkfsCommand.Execute()
 	if err != nil {

@@ -119,7 +119,7 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	imageName := c.CloudConfig.ImageName
 	if c.CloudConfig.Platform == onprem.ProviderName {
-		imageName = c.RunConfig.Imagename
+		imageName = c.RunConfig.ImageName
 	}
 
 	fmt.Printf("%s image '%s' created...\n", c.CloudConfig.Platform, imageName)
