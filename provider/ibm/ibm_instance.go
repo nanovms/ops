@@ -22,7 +22,7 @@ func extractRegionFromZone(zone string) string {
 	return s[0] + "-" + s[1]
 }
 
-// CreateInstance - Creates instance on Digital Ocean Platform
+// CreateInstance - Creates instance on IBM Cloud Platform
 func (v *IBM) CreateInstance(ctx *lepton.Context) error {
 	c := ctx.Config()
 	zone := c.CloudConfig.Zone
@@ -215,7 +215,12 @@ func (v *IBM) ListInstances(ctx *lepton.Context) error {
 
 // DeleteInstance deletes instance from IBM
 func (v *IBM) DeleteInstance(ctx *lepton.Context, instanceID string) error {
-	uri := "https://us-south.iaas.cloud.ibm.com/v1/instances/$instance_id?version=2023-02-28&generation=2"
+	c := ctx.Config()
+	zone := c.CloudConfig.Zone
+
+	region := extractRegionFromZone(zone)
+
+	uri := "https://" + region + ".iaas.cloud.ibm.com/v1/instances/$instance_id?version=2023-02-28&generation=2"
 
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", uri, nil)
