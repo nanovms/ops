@@ -11,6 +11,7 @@ import (
 	"github.com/nanovms/ops/provider/digitalocean"
 	"github.com/nanovms/ops/provider/gcp"
 	"github.com/nanovms/ops/provider/hyperv"
+	"github.com/nanovms/ops/provider/ibm"
 	"github.com/nanovms/ops/provider/linode"
 	"github.com/nanovms/ops/provider/oci"
 	"github.com/nanovms/ops/provider/onprem"
@@ -42,6 +43,9 @@ func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provide
 
 	case hyperv.ProviderName:
 		p = hyperv.NewProvider()
+
+	case ibm.ProviderName:
+		p = ibm.NewProvider()
 
 	case linode.ProviderName:
 		p = linode.NewProvider()
