@@ -1,3 +1,5 @@
+//go:build ibm || !onlyprovider
+
 package ibm
 
 import "github.com/nanovms/ops/lepton"

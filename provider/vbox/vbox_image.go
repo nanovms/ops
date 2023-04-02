@@ -1,3 +1,5 @@
+//go:build vbox || !onlyprovider
+
 package vbox
 
 import (
@@ -8,10 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/nanovms/ops/wsl"
-
-	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
 

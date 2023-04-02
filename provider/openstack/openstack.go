@@ -1,3 +1,5 @@
+//go:build openstack || !onlyprovider
+
 package openstack
 
 import (
@@ -5,12 +7,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
-
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
 )
 
 // ProviderName of the cloud platform provider

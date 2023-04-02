@@ -1,3 +1,5 @@
+//go:build proxmox || !onlyprovider
+
 package proxmox
 
 import (
@@ -8,7 +10,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-
 	"os"
 	"strconv"
 	"strings"

@@ -1,3 +1,5 @@
+//go:build azure || !onlyprovider
+
 package azure
 
 import "testing"

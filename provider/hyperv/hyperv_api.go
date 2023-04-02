@@ -1,3 +1,5 @@
+//go:build hyperv || !onlyprovider
+
 package hyperv
 
 import (

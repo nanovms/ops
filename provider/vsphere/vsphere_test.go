@@ -1,3 +1,5 @@
+//go:build vsphere || !onlyprovider
+
 package vsphere
 
 import (

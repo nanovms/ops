@@ -1,3 +1,5 @@
+//go:build linode || !onlyprovider
+
 package linode
 
 import (
@@ -12,7 +14,6 @@ import (
 	"time"
 
 	"github.com/nanovms/ops/lepton"
-
 	"github.com/olekukonko/tablewriter"
 )
 

@@ -1,3 +1,5 @@
+//go:build vbox || !onlyprovider
+
 package vbox
 
 import (

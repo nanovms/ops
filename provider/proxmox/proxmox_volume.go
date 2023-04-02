@@ -1,3 +1,5 @@
+//go:build proxmox || !onlyprovider
+
 package proxmox
 
 import "github.com/nanovms/ops/lepton"

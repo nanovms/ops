@@ -1,3 +1,5 @@
+//go:build openstack || !onlyprovider
+
 package openstack
 
 import (

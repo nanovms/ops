@@ -1,13 +1,16 @@
+//go:build ibm || !onlyprovider
+
 package ibm
 
 import (
 	"bufio"
 	"fmt"
-	"github.com/nanovms/ops/types"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/nanovms/ops/types"
 )
 
 // Objects represent storage specific information for cloud object

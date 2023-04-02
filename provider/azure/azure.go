@@ -1,3 +1,5 @@
+//go:build azure || !onlyprovider
+
 package azure
 
 import (
@@ -8,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -16,8 +19,6 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
-
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
 )
 
 // ProviderName of the cloud platform provider

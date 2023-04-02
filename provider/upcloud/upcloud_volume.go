@@ -1,3 +1,5 @@
+//go:build upcloud || !onlyprovider
+
 package upcloud
 
 import (

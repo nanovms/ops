@@ -1,3 +1,5 @@
+//go:build linode || !onlyprovider
+
 package linode
 
 import "github.com/nanovms/ops/lepton"

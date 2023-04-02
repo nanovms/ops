@@ -1,3 +1,5 @@
+//go:build gcp || !onlyprovider
+
 package gcp
 
 import (

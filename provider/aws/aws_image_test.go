@@ -1,3 +1,5 @@
+//go:build aws || !onlyprovider
+
 package aws_test
 
 import (
