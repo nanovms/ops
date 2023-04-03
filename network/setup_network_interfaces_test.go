@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/nanovms/ops/mock_network"
 	"github.com/nanovms/ops/network"
+	mock_network "github.com/nanovms/ops/network/mocks"
 )
 
 func TestSetupNetworkInterfaces(t *testing.T) {
