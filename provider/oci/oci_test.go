@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/nanovms/ops/mock_provider/mock_oci"
 	"github.com/nanovms/ops/provider/oci"
+	mock_oci "github.com/nanovms/ops/provider/oci/mocks"
 	"github.com/spf13/afero"
 )
 

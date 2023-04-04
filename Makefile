@@ -27,6 +27,10 @@ post-test: do-test
 
 test: post-test
 
+
+# go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+# go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# go install github.com/bufbuild/buf/cmd/buf@latest
 generate:
 	buf generate --path ./protos/imageservice/imageservice.proto
 	buf generate --path ./protos/instanceservice/instanceservice.proto
@@ -49,10 +53,11 @@ run:
 deps:
 	@GO111MODULE=on go mod download
 
+# go install github.com/golang/mock/mockgen@latest
 update-mocks:
-	mockgen --source=network/setup_network_interfaces.go > mock_network/setup_network_interfaces.go
-	mockgen --source=provider/upcloud/upcloud.go > mock_provider/mock_upcloud/upcloud.go
-	mockgen --source=provider/oci/oci.go > mock_provider/mock_oci/oci.go
+	go generate network/setup_network_interfaces.go
+	go generate provider/upcloud/upcloud.go
+	go generate provider/oci/oci.go
 
 .PHONY: all build test clean run deps
 .PHONY: pre-build do-build post-build
