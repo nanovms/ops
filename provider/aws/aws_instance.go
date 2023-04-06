@@ -281,6 +281,12 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		},
 	}
 
+	if ctx.Config().CloudConfig.DedicatedHostID != "" {
+		instanceInput.Placement = &ec2.Placement{
+			HostId: aws.String(ctx.Config().CloudConfig.DedicatedHostID),
+		}
+	}
+
 	if ctx.Config().RunConfig.IPAddress != "" {
 		instanceNIS.PrivateIpAddress = aws.String(ctx.Config().RunConfig.IPAddress)
 	}

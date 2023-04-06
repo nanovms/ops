@@ -129,6 +129,9 @@ type ProviderConfig struct {
 	// BucketNamespace is required on uploading files to cloud providers as oci
 	BucketNamespace string `json:",omitempty"`
 
+	// DedicatedHostID
+	DedicatedHostID string `json:",omitempty"`
+
 	// DomainName
 	DomainName string `json:",omitempty"`
 
