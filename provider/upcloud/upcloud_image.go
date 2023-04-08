@@ -1,3 +1,5 @@
+//go:build upcloud || !onlyprovider
+
 package upcloud
 
 import (
@@ -5,11 +7,10 @@ import (
 	"math"
 	"os"
 
-	"github.com/nanovms/ops/types"
-
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 )
 

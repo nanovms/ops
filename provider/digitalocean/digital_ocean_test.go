@@ -1,3 +1,5 @@
+//go:build digitalocean || do || !onlyprovider
+
 package digitalocean
 
 import (

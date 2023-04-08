@@ -1,3 +1,5 @@
+//go:build oci || !onlyprovider
+
 package oci_test
 
 import (

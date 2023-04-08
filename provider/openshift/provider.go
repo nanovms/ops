@@ -1,3 +1,5 @@
+//go:build openshift || !onlyprovider
+
 package openshift
 
 import (

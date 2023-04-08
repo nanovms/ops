@@ -1,3 +1,5 @@
+//go:build upcloud || !onlyprovider
+
 //go:generate mockgen -source=$GOFILE -destination=$PWD/mocks/${GOFILE} -package=mocks
 
 package upcloud
@@ -11,7 +13,6 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/client"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/UpCloudLtd/upcloud-go-api/upcloud/service"
-
 	"github.com/nanovms/ops/types"
 )
 

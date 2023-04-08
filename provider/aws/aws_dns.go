@@ -1,14 +1,15 @@
+//go:build aws || !onlyprovider
+
 package aws
 
 import (
 	"strconv"
 	"time"
 
-	"github.com/nanovms/ops/types"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 )
 
 // FindOrCreateZoneIDByName searches for a DNS zone with the name passed by argument and if it doesn't exist it creates one

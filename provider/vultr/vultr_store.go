@@ -1,3 +1,5 @@
+//go:build vultr || !onlyprovider
+
 package vultr
 
 import (

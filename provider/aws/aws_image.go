@@ -1,3 +1,5 @@
+//go:build aws || !onlyprovider
+
 package aws
 
 import (
@@ -24,7 +26,6 @@ import (
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
-
 	"github.com/schollz/progressbar/v3"
 )
 

@@ -1,3 +1,5 @@
+//go:build aws || !onlyprovider
+
 package aws
 
 import (
@@ -5,14 +7,13 @@ import (
 	"math"
 	"os"
 
-	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/types"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
 )
 
 // S3 provides AWS storage related operations

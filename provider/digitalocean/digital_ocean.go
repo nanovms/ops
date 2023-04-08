@@ -1,6 +1,9 @@
+//go:build digitalocean || do || !onlyprovider
+
 package digitalocean
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/digitalocean/godo"
@@ -25,6 +28,9 @@ func NewProvider() *DigitalOcean {
 // Initialize DigialOcean related things
 func (do *DigitalOcean) Initialize(c *types.ProviderConfig) error {
 	doToken := os.Getenv("DO_TOKEN")
+	if doToken == "" {
+		return fmt.Errorf("set DO_TOKEN")
+	}
 	do.Client = godo.NewFromToken(doToken)
 	return nil
 }

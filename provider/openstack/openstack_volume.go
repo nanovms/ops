@@ -1,3 +1,5 @@
+//go:build openstack || !onlyprovider
+
 package openstack
 
 import (
@@ -7,14 +9,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/log"
-
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/volumeattach"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
 )
 
 func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
