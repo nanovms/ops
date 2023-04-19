@@ -1,5 +1,10 @@
 package types
 
+import (
+	"encoding/json"
+	"reflect"
+)
+
 // Config for Build
 type Config struct {
 	// Args defines an array of commands to execute when the image is launched.
@@ -318,4 +323,36 @@ type Nic struct {
 // RuntimeConfig constructs runtime config
 func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
 	return RunConfig{ImageName: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
+}
+
+// MarshalJSON ...
+func (c Config) MarshalJSON() ([]byte, error) {
+	var skipBaseFields []string
+
+	if reflect.ValueOf(c.CloudConfig).IsZero() {
+		skipBaseFields = append(skipBaseFields, "CloudConfig")
+	}
+	if reflect.ValueOf(c.RunConfig).IsZero() {
+		skipBaseFields = append(skipBaseFields, "RunConfig")
+	}
+
+	type _mj Config
+	cJSON, err := json.Marshal((*_mj)(&c))
+	if err != nil {
+		return nil, err
+	}
+	if len(skipBaseFields) == 0 {
+		return cJSON, nil
+	}
+
+	cMap := map[string]interface{}{}
+	err = json.Unmarshal(cJSON, &cMap)
+	if err != nil {
+		return nil, err
+	}
+	for _, field := range skipBaseFields {
+		delete(cMap, field)
+	}
+
+	return json.Marshal(cMap)
 }
