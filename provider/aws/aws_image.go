@@ -242,14 +242,19 @@ func (p *AWS) createSnapshot(imagePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	snapshotSize := fi.Size()
+	sizeInGb := snapshotSize / (1024 * 1024 * 1024)
+	if sizeInGb*1024*1024*1024 < snapshotSize {
+		sizeInGb++
+	}
 
 	// maxBar include process of createSnapshot, completeSnapshot, putSnapshot (include request and response from ebs api)
-	maxBar := (fi.Size()/int64(SnapshotBlockDataLength))*2 + 2
+	maxBar := (snapshotSize/int64(SnapshotBlockDataLength))*2 + 2
 	bar := progressbar.Default(maxBar)
 
 	snapshotOutput, err := p.volumeService.StartSnapshot(&ebs.StartSnapshotInput{
 		Tags:       []*ebs.Tag{},
-		VolumeSize: aws.Int64(1),
+		VolumeSize: aws.Int64(sizeInGb),
 	})
 	if err != nil {
 		return "", err
