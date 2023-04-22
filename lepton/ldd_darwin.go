@@ -123,8 +123,10 @@ func _getSharedLibs(libs map[string]string, targetRoot string, path string, c *t
 	}
 
 	// 3. read LD_LIBRARY_PATH from config
-	if configEnv, hasLibPaths := c.Env["LD_LIBRARY_PATH"]; hasLibPaths {
-		libDirs = append(libDirs, strings.Split(configEnv, ":")...)
+	if c != nil {
+		if configEnv, hasLibPaths := c.Env["LD_LIBRARY_PATH"]; hasLibPaths {
+			libDirs = append(libDirs, strings.Split(configEnv, ":")...)
+		}
 	}
 	libDirs = append(libDirs, "/lib64", "/lib/x86_64-linux-gnu", "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu")
 
