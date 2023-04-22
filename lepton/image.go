@@ -38,6 +38,19 @@ func BuildImage(c types.Config) error {
 	return nil
 }
 
+// BuildImageFromPackage builds nanos image using a package
+func BuildImageFromPackage(packagepath string, c types.Config) error {
+	m, err := BuildPackageManifest(packagepath, &c)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	if err := createImageFile(&c, m); err != nil {
+		return errors.Wrap(err, 1)
+	}
+	return nil
+}
+
 func createFile(filepath string) (*os.File, error) {
 	path := path.Dir(filepath)
 	var _, err = os.Stat(path)
