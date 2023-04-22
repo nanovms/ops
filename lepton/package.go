@@ -406,19 +406,6 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	}
 }
 
-// BuildImageFromPackage builds nanos image using a package
-func BuildImageFromPackage(packagepath string, c types.Config) error {
-	m, err := BuildPackageManifest(packagepath, &c)
-	if err != nil {
-		return errors.Wrap(err, 1)
-	}
-
-	if err := createImageFile(&c, m); err != nil {
-		return errors.Wrap(err, 1)
-	}
-	return nil
-}
-
 // GetNSPkgnameAndVersion gets the namespace, name and version from the pkg identifier
 func GetNSPkgnameAndVersion(pkgIdentifier string) (string, string, string) {
 	namespace, pkgIdf := ExtractNS(pkgIdentifier)
@@ -460,16 +447,7 @@ func ClonePackage(old string, newPkg string, version string, oldconfig *types.Co
 	o := path.Join(GetOpsHome(), "packages", old)
 	n := path.Join(localPackageDirectoryPath(), newPkg+"_"+version)
 
-	cmd := exec.Command("mkdir", "-p", n)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println(string(out))
-	}
-
-	str := "cp -R " + o + "/* " + n + "/"
-
-	execCmd(str)
+	execCmd("mkdir -p", n, "&&", "cp -R", o+"/*", n+"/")
 
 	ppath := n + "/package.manifest"
 
@@ -494,7 +472,7 @@ func ClonePackage(old string, newPkg string, version string, oldconfig *types.Co
 	json, _ := json.MarshalIndent(c, "", "  ")
 
 	// would be nice to write only needed config not all config
-	err = os.WriteFile(ppath, json, 0666)
+	err := os.WriteFile(ppath, json, 0666)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -504,64 +482,44 @@ func ClonePackage(old string, newPkg string, version string, oldconfig *types.Co
 
 // CreatePackageFromRun builds a new package as if you were doing an
 // 'ops run myprogram'
-func CreatePackageFromRun(newPkg string, version string, newconfig *types.Config) {
+func CreatePackageFromRun(newPkg string, version string, mergedCfg *types.Config) {
 	fmt.Println("creating new pkg")
-	n := path.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+	pkgDir := filepath.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+	pkgSysrootDir := filepath.Join(pkgDir, PackageSysRootFolderName)
 
-	cmd := exec.Command("mkdir", "-p", n)
-	out, err := cmd.CombinedOutput()
+	execCmd("mkdir -p", pkgDir)
+
+	// package - manifest
+	pkgCfg := newManifestConfig(mergedCfg)
+	// customize
+	pkgCfg.Args = []string{mergedCfg.Program}
+	pkgCfg.Program = newPkg + "_" + version + "/" + mergedCfg.Program
+	pkgCfg.Version = version
+
+	json, err := json.MarshalIndent(pkgCfg, "", "  ")
 	if err != nil {
 		fmt.Println(err)
-		fmt.Println(string(out))
 	}
-
-	c := newconfig
-
-	str := "cp " + c.Program + " " + n + "/."
-	execCmd(str)
-
-	c.Args = []string{c.Program}
-
-	oprogram := c.Program
-	c.Program = newPkg + "_" + version + "/" + c.Program
-	c.Version = version
-
-	// nil out a bunch of crap
-	c.Boot = ""
-	c.UefiBoot = ""
-	c.Kernel = ""
-	c.NanosVersion = ""
-	c.VolumesDir = ""
-	c.NameServers = []string{}
-	c.LocalFilesParentDirectory = ""
-	c.ProgramPath = ""
-	c.CloudConfig = types.ProviderConfig{}
-	c.RunConfig = types.RunConfig{}
-
-	json, _ := json.MarshalIndent(c, "", "  ")
-
-	err = os.WriteFile(path.Join(n, "package.manifest"), json, 0666)
+	err = os.WriteFile(filepath.Join(pkgDir, "package.manifest"), json, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	addToPackage(newconfig, n)
+	// package - program
+	execCmd("cp", mergedCfg.Program, pkgDir+"/.")
 
-	deps, err := getSharedLibs("", oprogram, c)
+	// package - {dirs, mapdirs, files} - config won't be present in manifest
+	addToPackage(mergedCfg, pkgDir)
+
+	// package - shared libs
+	deps, err := getSharedLibs("", mergedCfg.Program, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	// create dir layout
-	for _, v := range deps {
-		str := "mkdir -p " + n + "/sysroot" + filepath.Dir(v)
-		execCmd(str)
-	}
-
-	// cp files
+	// create dir layout + cp files
 	for k, v := range deps {
-		str := "cp " + v + " " + n + "/sysroot/" + k
-		execCmd(str)
+		execCmd("mkdir -p", filepath.Join(pkgSysrootDir, filepath.Dir(v)))
+		execCmd("cp", v, filepath.Join(pkgSysrootDir, k))
 	}
 
 }
@@ -573,35 +531,85 @@ func addToPackage(newconfig *types.Config, newpath string) {
 	// add config that might be present in our directory
 	// we typically use mkfs to build an image directly from config versus building
 	// a package with the files
-	if len(newconfig.Dirs) > 0 {
-		for i := 0; i < len(newconfig.Dirs); i++ {
-			str := "cp -R " + newconfig.Dirs[i] + " " + newpath + "/sysroot/."
-			execCmd(str)
-		}
+
+	if len(newconfig.Dirs) == 0 && len(newconfig.Files) == 0 && len(newconfig.MapDirs) == 0 {
+		return
 	}
 
-	if len(newconfig.Files) > 0 {
-		for i := 0; i < len(newconfig.Files); i++ {
-			str := "cp -R " + newconfig.Files[i] + " " + newpath + "/sysroot/."
-			execCmd(str)
-		}
+	pkgSysrootDir := filepath.Join(newpath, PackageSysRootFolderName)
+	execCmd("mkdir -p", pkgSysrootDir)
+
+	for i := 0; i < len(newconfig.Dirs); i++ {
+		execCmd("cp -R", newconfig.Dirs[i], pkgSysrootDir+"/.")
 	}
-
-	if len(newconfig.MapDirs) > 0 {
-		for k, v := range newconfig.MapDirs {
-			newDir := newpath + "/sysroot" + v
-
-			str := "mkdir -p " + newDir + " && cp -R " + k + " " + newDir + "/."
-			execCmd(str)
-		}
+	for i := 0; i < len(newconfig.Files); i++ {
+		execCmd("cp -R", newconfig.Files[i], pkgSysrootDir+"/.")
+	}
+	for k, v := range newconfig.MapDirs {
+		newDir := filepath.Join(pkgSysrootDir, v)
+		execCmd("mkdir -p", newDir, "&&", "cp -R", k, newDir+"/.")
 	}
 }
 
-func execCmd(str string) {
-	cmd := exec.Command("/bin/bash", "-c", str)
+func execCmd(str ...string) {
+	cmd := exec.Command("/bin/bash", "-c", strings.Join(str, " "))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println(string(out))
+	}
+}
+
+// NewManifestConfig - from a merged config, select configs for manifest file,
+//
+//	contains shallow copies
+func newManifestConfig(c *types.Config) *types.Config {
+	return &types.Config{
+		Program:             c.Program,             //
+		Args:                c.Args,                // shallow copy
+		BaseVolumeSz:        c.BaseVolumeSz,        //
+		Debugflags:          c.Debugflags,          // shallow copy
+		Env:                 c.Env,                 // shallow copy
+		ManifestPassthrough: c.ManifestPassthrough, // shallow copy
+		RebootOnExit:        c.RebootOnExit,        //
+		RunConfig: types.RunConfig{
+			CanIPForward: c.RunConfig.CanIPForward, // gcp
+			GPUs:         c.RunConfig.GPUs,         // gcp
+			GPUType:      c.RunConfig.GPUType,      // gcp
+			Klibs:        c.RunConfig.Klibs,        // shallow copy
+			Ports:        c.RunConfig.Ports,        // shallow copy
+			UDPPorts:     c.RunConfig.UDPPorts,     // shallow copy
+		},
+		Version:     c.Version,
+		Language:    c.Language,
+		Runtime:     c.Runtime,
+		Description: c.Description,
+
+		// default zero value
+
+		// NoTrace:                   c.NoTrace,                   // shallow copy
+		// Dirs:                      c.Dirs,                      // shallow copy
+		// Files:                     c.Files,                     // shallow copy
+		// DisableArgsCopy:           c.DisableArgsCopy,           //
+		// Boot:                      c.Boot,                      //
+		// UefiBoot:                  c.UefiBoot,                  //
+		// Uefi:                      c.Uefi,                      //
+		// BuildDir:                  c.BuildDir,                  //
+		// CloudConfig:               c.CloudConfig,               // shallow copy
+		// TargetConfig:              c.TargetConfig,              // shallow copy
+		// Force:                     c.Force,                     //
+		// Kernel:                    c.Kernel,                    //
+		// KlibDir:                   c.KlibDir,                   //
+		// MapDirs:                   c.MapDirs,                   // shallow copy
+		// Mounts:                    c.Mounts,                    // shallow copy
+		// NameServers:               c.NameServers,               // shallow copy
+		// NanosVersion:              c.NanosVersion,              //
+		// NightlyBuild:              c.NightlyBuild,              //
+		// ProgramPath:               c.ProgramPath,               //
+		// LocalFilesParentDirectory: c.LocalFilesParentDirectory, //
+		// TargetRoot:                c.TargetRoot,                //
+		// VolumesDir:                c.VolumesDir,                //
+		// PackageBaseURL:            c.PackageBaseURL,            //
+		// PackageManifestURL:        c.PackageManifestURL,        //
 	}
 }
