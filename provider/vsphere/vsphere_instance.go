@@ -5,6 +5,7 @@ package vsphere
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -67,6 +68,11 @@ func (v *Vsphere) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	dpath := ds.Path(imgName + "/" + imgName + "2.vmdk")
+	_, err = ds.Stat(context.TODO(), dpath)
+	if err != nil {
+		log.Debug(err)
+		return errors.New("Image " + imgName + " not found")
+	}
 	disk := devices.CreateDisk(dcontroller, ds.Reference(), dpath)
 
 	disk = devices.ChildDisk(disk)
