@@ -2,6 +2,7 @@ package onprem
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,22 +20,25 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// CreateInstance on premise
-// assumes local
-func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
+// CreateInstancePID creates an instance and returns the pid.
+func (p *OnPrem) CreateInstancePID(ctx *lepton.Context) (string, error) {
+	return p.createInstance(ctx)
+}
+
+func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
 
 	imageName := c.CloudConfig.ImageName
 
 	if _, err := os.Stat(path.Join(lepton.GetOpsHome(), "images", c.CloudConfig.ImageName)); os.IsNotExist(err) {
-		return fmt.Errorf("image \"%s\" not found", imageName)
+		return "", fmt.Errorf("image \"%s\" not found", imageName)
 	}
 
 	if c.Mounts != nil {
 		c.VolumesDir = lepton.LocalVolumeDir
 		err := AddMountsFromConfig(c)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
@@ -59,12 +63,12 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 
 	err := hypervisor.Start(&c.RunConfig)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	pid, err := hypervisor.PID()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	instances := path.Join(opshome, "instances")
@@ -89,7 +93,14 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 		log.Error(err)
 	}
 
-	return nil
+	return pid, err
+}
+
+// CreateInstance on premise
+// assumes local
+func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
+	_, err := p.createInstance(ctx)
+	return err
 }
 
 // GetInstanceByName returns instance with given name
@@ -108,40 +119,46 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 	return nil, lepton.ErrInstanceNotFound(name)
 }
 
-// super hacky mac extraction, arp resolution; revisit in future
-// could also potentially extract from logs || could have nanos ping
-// upon boot
-func findBridgedIP(instanceID string) string {
-	out, err := execCmd("ps aux | grep " + instanceID) //fixme: cmd injection
+// FindBridgedIPByPID finds a qemu process with the pid and returns the
+// ip.
+func FindBridgedIPByPID(pid string) string {
+	out, err := execCmd("ps -p " + pid) //fixme: cmd injection
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	oo := strings.Split(out, "netdev=vmnet,mac=")
-	ooz := strings.Split(oo[1], " ")
-	mac := ooz[0]
+	mac := ""
+	if len(oo) > 1 {
+		ooz := strings.Split(oo[1], " ")
+		mac = ooz[0]
+	} else {
+		fmt.Println("couldn't find mac")
+	}
 
-	out, err = execCmd("ps aux  |grep -a " + instanceID + " | grep -v grep | awk {'print $2'}")
+	return arpMac(pid, mac)
+}
+
+func arpMac(pid string, mac string) string {
+	/// only use for resolution not for storage
+	dmac, err := formatOctet(mac)
 	if err != nil {
 		fmt.Println(err)
+		return ""
 	}
-	pid := strings.TrimSpace(out)
-
-	/// only use for resolution not for storage
-	dmac := formatOctet(mac)
 
 	// needs recent activity to register
-	out, err = execCmd("arp -a | grep " + dmac)
+	out, err := execCmd("arp -a | grep " + dmac)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	if strings.Contains(out, "(") {
-		oo = strings.Split(out, "(")
-		ooz = strings.Split(oo[1], ")")
+		oo := strings.Split(out, "(")
+		ooz := strings.Split(oo[1], ")")
 		ip := ooz[0]
 
-		logMac(instanceID, pid, mac, ip)
+		logMac(pid, mac, ip)
 
 		return ip
 	}
@@ -149,10 +166,46 @@ func findBridgedIP(instanceID string) string {
 	return ""
 }
 
+// FindBridgedIP returns the ip for an instance by forcing arp
+// resolution. You should probably use the other function that takes a
+// pid though.
+//
+// super hacky mac extraction, arp resolution; revisit in future
+// could also potentially extract from logs || could have nanos ping
+// upon boot
+func FindBridgedIP(instanceID string) string {
+	out, err := execCmd("ps aux | grep " + instanceID + " | grep -v grep") //fixme: cmd injection
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	oo := strings.Split(out, "netdev=vmnet,mac=")
+	mac := ""
+	if len(oo) > 1 {
+		ooz := strings.Split(oo[1], " ")
+		mac = ooz[0]
+	} else {
+		fmt.Println("couldn't find mac")
+	}
+
+	// hack hack hack
+	out, err = execCmd("ps aux  |grep -a " + instanceID + " | grep qemu | grep -v grep | awk {'print $2'}")
+	if err != nil {
+		fmt.Println(err)
+	}
+	pid := strings.TrimSpace(out)
+
+	return arpMac(pid, mac)
+}
+
 // returns a mac with leading zeros dropped which is what mac does
 // d6:3f:9b:0f:0c:c8
 // d6:3f:9b:f:c:c8
-func formatOctet(mac string) string {
+func formatOctet(mac string) (string, error) {
+	if mac == "" {
+		return "", errors.New("mac is an empty string")
+	}
+
 	octets := strings.Split(mac, ":")
 	newmac := ""
 	for i := 0; i < len(octets); i++ {
@@ -161,7 +214,7 @@ func formatOctet(mac string) string {
 	}
 
 	newmac = strings.TrimRight(newmac, ":")
-	return newmac
+	return newmac, nil
 }
 
 // log our mac,ip,pid so we don't have to lookup again
@@ -170,7 +223,7 @@ func formatOctet(mac string) string {
 //
 // also should throw a lock on this at some point unless we migrate to
 // something else that is a bit more industrial
-func logMac(instanceID string, pid string, mac string, ip string) {
+func logMac(pid string, mac string, ip string) {
 
 	opshome := lepton.GetOpsHome()
 	instancesPath := path.Join(opshome, "instances")
@@ -257,7 +310,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 		pips := []string{}
 		if i.Bridged {
 			if i.PrivateIP == "" || i.Mac == "" {
-				i.PrivateIP = findBridgedIP(i.Instance)
+				i.PrivateIP = FindBridgedIP(i.Instance)
 			}
 
 			pips = append(pips, i.PrivateIP)
