@@ -48,6 +48,7 @@ func BuildImageFromPackage(packagepath string, c types.Config) error {
 	if err := createImageFile(&c, m); err != nil {
 		return errors.Wrap(err, 1)
 	}
+
 	return nil
 }
 
@@ -476,6 +477,7 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 
 		mkfsCommand.SetUefi(c.UefiBoot)
 	}
+
 	mkfsCommand.SetFileSystemPath(c.RunConfig.ImageName)
 
 	err = mkfsCommand.Execute()

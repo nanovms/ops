@@ -53,6 +53,8 @@ func GetRootCommand() *cobra.Command {
 	rootCmd.AddCommand(ProfileCommand())
 	rootCmd.AddCommand(PackageCommands())
 	rootCmd.AddCommand(RunCommand())
+	rootCmd.AddCommand(ComposeCommands())
+
 	rootCmd.AddCommand(UpdateCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(VolumeCommands())
