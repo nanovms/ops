@@ -14,7 +14,7 @@ type APIMetadataRequest struct {
 	Namespace string `json:"namespace"`
 	PkgName   string `json:"pkg_name"`
 	Version   string `json:"version"`
-	Arch string `json:"arch"`
+	Arch      string `json:"arch"`
 }
 
 // GetPackageMetadata get metadata for the package

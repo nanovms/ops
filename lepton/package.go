@@ -15,8 +15,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"runtime"
+	"strings"
 
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/constants"
