@@ -358,7 +358,11 @@ checkHWAccelSupport() {
 }
 
 ops_update() {
-  "$HOME/.ops/bin/ops" update
+  if [ "$ARCH" = "aarch64" ]; then
+    "$HOME/.ops/bin/ops" update --arm
+  else
+    "$HOME/.ops/bin/ops" update
+  fi
 }
 
 ops_install() {
