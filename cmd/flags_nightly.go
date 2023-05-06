@@ -6,6 +6,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"runtime"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -54,17 +55,28 @@ func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
 }
 
 func updateNanosToolsPaths(c *types.Config, version string) {
+	// FIXME: mv me out elsewhere
+	arm := false
+	if runtime.GOARCH == "arm64" {
+	version += "-arm"
+	arm = true
+	}
+
 	if c.NightlyBuild {
 		version = "nightly"
 		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		if !arm {
 		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
+		}
 	}
 
-	if c.Boot == "" {
+	if c.Boot == "" && !arm {
 		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	}
 
 	c.UefiBoot = api.GetUefiBoot(version)
+
+	fmt.Printf("%+v", c.UefiBoot)
 
 	if c.Kernel == "" {
 		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
@@ -74,8 +86,15 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 		log.Fatalf("error: %v: %v\n", c.Kernel, err)
 	}
 
+	if !arm {
 	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
 		log.Fatalf("error: %v: %v\n", c.Boot, err)
+	}
+	}
+
+	fmt.Printf("%+v", c.Uefi)
+	if arm {
+		c.Uefi = true
 	}
 
 	if len(c.NameServers) == 0 {

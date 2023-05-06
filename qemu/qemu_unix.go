@@ -373,7 +373,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
 
-		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion, "kernel.img")
+		
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion + "-arm", "kernel.img")
 
 		q.addOption("-kernel", kernel)
 

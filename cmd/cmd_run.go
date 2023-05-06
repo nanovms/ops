@@ -74,6 +74,8 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	fmt.Println("running")
+
 	err = RunLocalInstance(c)
 	if err != nil {
 		exitWithError(err.Error())
