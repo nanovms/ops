@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"runtime"
 )
 
 // APIMetadataRequest is payload sent to get metadata for a package
@@ -13,6 +14,7 @@ type APIMetadataRequest struct {
 	Namespace string `json:"namespace"`
 	PkgName   string `json:"pkg_name"`
 	Version   string `json:"version"`
+	Arch      string `json:"arch"`
 }
 
 // GetPackageMetadata get metadata for the package
@@ -22,13 +24,19 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 	// we ignore the error here
 	creds, _ := ReadCredsFromLocal()
 
-	// this would never error out
-	metadataURL, _ := url.Parse(PkghubBaseURL + "/api/v1/pkg/metadata")
-	data, err := json.Marshal(APIMetadataRequest{
+	ar := APIMetadataRequest{
 		Namespace: namespace,
 		PkgName:   pkgName,
 		Version:   version,
-	})
+	}
+
+	if runtime.GOARCH == "arm64" {
+		ar.Arch = "arm64"
+	}
+
+	// this would never error out
+	metadataURL, _ := url.Parse(PkghubBaseURL + "/api/v1/pkg/metadata")
+	data, err := json.Marshal(ar)
 	if err != nil {
 		return nil, err
 	}

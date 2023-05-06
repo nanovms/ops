@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -92,6 +93,7 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if pkg == nil {
 		return "", fmt.Errorf("package %q does not exist", identifier)
 	}
@@ -135,6 +137,10 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 			fileURL = pkgBaseURL + archivePath
 		} else {
 			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivePath)
+		}
+
+		if runtime.GOARCH == "arm64" {
+			fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
 		}
 
 		if err = DownloadFileWithProgress(packagepath, fileURL, 600); err != nil {
