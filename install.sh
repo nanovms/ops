@@ -357,6 +357,10 @@ checkHWAccelSupport() {
   fi
 }
 
+ops_update() {
+  "$HOME/.ops/bin/ops" update
+}
+
 ops_install() {
   magenta1="${reset}\033[34;1m"
   magenta2="${reset}\033[34m"
@@ -376,6 +380,7 @@ ops_install() {
   checkHWAccelSupport
   ops_download
   ops_link
+  ops_update
 }
 
 ops_install
