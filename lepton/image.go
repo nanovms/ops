@@ -459,7 +459,7 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 		fmt.Printf("Manifest:\n\t%+v\n", m)
 	}
 
-	mkfsCommand := fs.NewMkfsCommand(m)
+	mkfsCommand := fs.NewMkfsCommand(m, true)
 
 	if c.BaseVolumeSz != "" {
 		mkfsCommand.SetFileSystemSize(c.BaseVolumeSz)

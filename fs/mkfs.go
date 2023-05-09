@@ -130,24 +130,26 @@ var uefiFileBootaa64 = []byte{
 
 // MkfsCommand wraps mkfs calls
 type MkfsCommand struct {
-	bootPath string
-	uefiPath string
-	label    string
-	manifest *Manifest
-	size     int64
-	outPath  string
-	rootTfs  *tfs
+	bootPath   string
+	uefiPath   string
+	label      string
+	manifest   *Manifest
+	partitions bool
+	size       int64
+	outPath    string
+	rootTfs    *tfs
 }
 
 // NewMkfsCommand returns an instance of MkfsCommand
-func NewMkfsCommand(m *Manifest) *MkfsCommand {
+func NewMkfsCommand(m *Manifest, partitions bool) *MkfsCommand {
 	return &MkfsCommand{
-		bootPath: "",
-		uefiPath: "",
-		label:    "",
-		manifest: m,
-		size:     0,
-		outPath:  "",
+		bootPath:   "",
+		uefiPath:   "",
+		label:      "",
+		manifest:   m,
+		partitions: partitions,
+		size:       0,
+		outPath:    "",
 	}
 }
 
@@ -189,11 +191,13 @@ func (m *MkfsCommand) SetFileSystemSize(size string) error {
 // SetBoot adds argument that sets file system boot
 func (m *MkfsCommand) SetBoot(boot string) {
 	m.bootPath = boot
+	m.partitions = true
 }
 
 // SetUefi sets path of UEFI bootloader
 func (m *MkfsCommand) SetUefi(uefi string) {
 	m.uefiPath = uefi
+	m.partitions = true
 }
 
 // SetFileSystemPath add argument that sets file system path
@@ -210,9 +214,6 @@ func (m *MkfsCommand) SetLabel(label string) {
 func (m *MkfsCommand) Execute() error {
 	if m.outPath == "" {
 		return fmt.Errorf("output image file path not set")
-	}
-	if (m.bootPath == "") && (m.uefiPath != "") {
-		return fmt.Errorf("UEFI loader can only be supplied together with boot image")
 	}
 	var outFile *os.File
 	var err error
@@ -243,12 +244,24 @@ func (m *MkfsCommand) Execute() error {
 			}
 			outOffset += uint64(n)
 		}
+	} else if m.partitions {
+		// Create a Master Boot Record with a partition table
+		mbr := make([]byte, sectorSize)
+		mbr[sectorSize-2] = 0x55
+		mbr[sectorSize-1] = 0xAA
+		_, err = outFile.Write(mbr)
+		if err != nil {
+			return fmt.Errorf("cannot write partition table: %v", err)
+		}
+		outOffset = sectorSize
+	}
+	if m.partitions {
 		outOffset += klogDumpSize
-		if m.uefiPath != "" {
-			outOffset, err = writeUefiPart(outFile, outOffset, m.uefiPath)
-			if err != nil {
-				return fmt.Errorf("cannot write UEFI partition: %v", err)
-			}
+	}
+	if m.uefiPath != "" {
+		outOffset, err = writeUefiPart(outFile, outOffset, m.uefiPath)
+		if err != nil {
+			return fmt.Errorf("cannot write UEFI partition: %v", err)
 		}
 	}
 	manifest := m.manifest
@@ -283,7 +296,7 @@ func (m *MkfsCommand) Execute() error {
 			}
 		}
 	}
-	if m.bootPath != "" {
+	if m.partitions {
 		err = writeMBR(outFile, m.uefiPath != "")
 		if err != nil {
 			return fmt.Errorf("cannot write MBR: %v", err)
@@ -479,11 +492,10 @@ func writeMBR(imgFile *os.File, uefi bool) error {
 	// FS region comes right before MBR partitions
 	var fsRegionType uint32
 	_ = binary.Read(bytes.NewBuffer(mbr[parts-4:parts]), binary.LittleEndian, &fsRegionType)
-	if fsRegionType != regionFilesystem {
-		return fmt.Errorf("invalid boot record (missing filesystem region)")
-	}
 	var fsRegionLength uint64
-	_ = binary.Read(bytes.NewBuffer(mbr[parts-12:parts-4]), binary.LittleEndian, &fsRegionLength)
+	if fsRegionType == regionFilesystem {
+		_ = binary.Read(bytes.NewBuffer(mbr[parts-12:parts-4]), binary.LittleEndian, &fsRegionLength)
+	}
 
 	fsOffset := sectorSize + fsRegionLength + klogDumpSize
 	partNum := 0
