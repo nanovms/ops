@@ -56,12 +56,13 @@ func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
 func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
-		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
-		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	}
 
 	if c.Boot == "" {
-		c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
+		bootPath := path.Join(api.GetOpsHome(), version, "boot.img")
+		if _, err := os.Stat(bootPath); err == nil {
+			c.Boot = bootPath
+		}
 	}
 
 	c.UefiBoot = api.GetUefiBoot(version)
@@ -74,8 +75,10 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 		log.Fatalf("error: %v: %v\n", c.Kernel, err)
 	}
 
-	if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
-		log.Fatalf("error: %v: %v\n", c.Boot, err)
+	if c.Boot != "" {
+		if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
+			log.Fatalf("error: boot file '%v' not found\n", c.Boot)
+		}
 	}
 
 	if len(c.NameServers) == 0 {

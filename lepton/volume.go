@@ -85,9 +85,9 @@ func CreateLocalVolume(config *types.Config, name, data, provider string) (Nanos
 			return vol, err
 		}
 
-		mkfsCommand = fs.NewMkfsCommand(m)
+		mkfsCommand = fs.NewMkfsCommand(m, false)
 	} else {
-		mkfsCommand = fs.NewMkfsCommand(nil)
+		mkfsCommand = fs.NewMkfsCommand(nil, false)
 	}
 
 	mkfsCommand.SetLabel(name)

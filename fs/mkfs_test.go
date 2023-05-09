@@ -14,7 +14,7 @@ func CheckMKFSSize(t *testing.T, mkfs *MkfsCommand, s string, size int64) {
 }
 
 func TestMKFSCommand(t *testing.T) {
-	mkfs := NewMkfsCommand(nil)
+	mkfs := NewMkfsCommand(nil, false)
 
 	t.Run("filesystem size", func(t *testing.T) {
 		err := mkfs.SetFileSystemSize("size")
