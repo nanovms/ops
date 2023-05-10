@@ -373,7 +373,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
 
-		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion, "kernel.img")
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion + "-arm", "kernel.img")
 
 		q.addOption("-kernel", kernel)
 
@@ -433,7 +433,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addFlag("-no-reboot")
 
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" {
 		q.addOption("-cpu", "max,-rdtscp")
 	} else {
 		q.addOption("-cpu", "max")
