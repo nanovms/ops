@@ -416,6 +416,7 @@ var (
 		"c6g":  true,
 		"c6gd": true,
 		"c6gn": true,
+		"c6i":  true,
 		"d3":   true,
 		"d3en": true,
 		"g4dn": true,
