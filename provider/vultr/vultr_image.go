@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -111,6 +112,9 @@ func (v *Vultr) ListImages(ctx *lepton.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(snaps)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
