@@ -58,6 +58,9 @@ type Config struct {
 	// Klibs host location
 	KlibDir string `json:",omitempty"`
 
+	// Klibs
+	Klibs []string `json:",omitempty"`
+
 	// MapDirs specifies a map of local directories to add to into the image.
 	// These directory paths are then adjusted from local path specification
 	// to image path specification.
@@ -243,9 +246,6 @@ type RunConfig struct {
 
 	// IPv6Address
 	IPv6Address string `json:",omitempty"`
-
-	// Klibs
-	Klibs []string `json:",omitempty"`
 
 	// Memory configures the amount of memory to allocate to qemu (default
 	// is 128 MiB). Optionally, a suffix of "M" or "G" can be used to

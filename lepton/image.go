@@ -252,7 +252,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 		m.SetKlibDir(getKlibsDir(c.NightlyBuild, c.NanosVersion))
 	}
 
-	m.AddKlibs(c.RunConfig.Klibs)
+	m.AddKlibs(c.Klibs)
 
 	for _, f := range c.Files {
 		hostPath := f
