@@ -363,6 +363,13 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		return nil, errors.Wrap(err, 1)
 	}
 
+	for x := 0; x < len(c.RunConfig.Klibs); x++ {
+		// disable serial/vga by default if syslog is being used
+		if c.RunConfig.Klibs[x] == "syslog" {
+			c.ManifestPassthrough["consoles"] = []string{"-serial", "-vga"}
+		}
+	}
+
 	deps, err := getSharedLibs(c.TargetRoot, c.Program, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
