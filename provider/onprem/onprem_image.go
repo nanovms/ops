@@ -1,6 +1,7 @@
 package onprem
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -82,6 +83,10 @@ func (p *OnPrem) ListImages(ctx *lepton.Context) error {
 	images, err := p.GetImages(ctx)
 	if err != nil {
 		return err
+	}
+
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(images)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
