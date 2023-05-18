@@ -368,7 +368,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
 
-		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion + "-arm", "kernel.img")
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion+"-arm", "kernel.img")
 
 		q.addOption("-kernel", kernel)
 
@@ -430,7 +430,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" {
 		q.addOption("-cpu", "max,-rdtscp")
-	} else	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		q.addOption("-cpu", "host")
 	} else {
 		q.addOption("-cpu", "max")
