@@ -308,11 +308,6 @@ func (q *qemu) addAccel() (bool, error) {
 	}
 
 	if runtime.GOOS == "darwin" {
-		// currently Nanos dont support hardware acceleration in M1 Macbooks
-		if runtime.GOARCH == "arm64" {
-			return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
-		}
-
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
 			q.addOption("-cpu", "host,-rdtscp")
@@ -373,7 +368,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
 
-		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion, "kernel.img")
+		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion+"-arm", "kernel.img")
 
 		q.addOption("-kernel", kernel)
 
@@ -433,8 +428,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addFlag("-no-reboot")
 
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" {
 		q.addOption("-cpu", "max,-rdtscp")
+	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		q.addOption("-cpu", "host")
 	} else {
 		q.addOption("-cpu", "max")
 	}
