@@ -23,7 +23,7 @@ func (flags *ProviderCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	}
 
 	if c.CloudConfig.Platform == "azure" {
-		c.RunConfig.Klibs = append(c.RunConfig.Klibs, "cloud_init", "tls")
+		c.Klibs = append(c.Klibs, "cloud_init", "tls")
 	}
 
 	if len(c.CloudConfig.Platform) == 0 {

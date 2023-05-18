@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+
 	"fmt"
 	"net/http"
 	"os"
@@ -179,6 +181,11 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		fmt.Printf(err.Error())
 	}
 
+	jsonOutput, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
 	table := pkgTable(packages)
 
 	var r *regexp.Regexp
@@ -191,6 +198,12 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 			filter = false
 		}
 	}
+
+	if jsonOutput {
+		json.NewEncoder(os.Stdout).Encode(packages)
+		return
+	}
+
 	var rows [][]string
 	for _, pkg := range packages {
 		var row []string

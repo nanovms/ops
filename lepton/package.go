@@ -582,10 +582,11 @@ func newManifestConfig(c *types.Config) *types.Config {
 			CanIPForward: c.RunConfig.CanIPForward, // gcp
 			GPUs:         c.RunConfig.GPUs,         // gcp
 			GPUType:      c.RunConfig.GPUType,      // gcp
-			Klibs:        c.RunConfig.Klibs,        // shallow copy
 			Ports:        c.RunConfig.Ports,        // shallow copy
 			UDPPorts:     c.RunConfig.UDPPorts,     // shallow copy
 		},
+		Klibs: c.Klibs, // shallow copy
+
 		Version:     c.Version,
 		Language:    c.Language,
 		Runtime:     c.Runtime,

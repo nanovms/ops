@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -96,6 +97,9 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	}
 
 	log.Debug("instances:", instances)
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(instances)
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"ID", "Plan", "MainIP", "Status", "ImageID", "Region"})

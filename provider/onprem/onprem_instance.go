@@ -356,6 +356,10 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		return err
 	}
 
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(instances)
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"PID", "Name", "Image", "Status", "Created", "Private Ips", "Port"})
 	table.SetHeaderColor(

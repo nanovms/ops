@@ -100,6 +100,16 @@ func (m *Manifest) AddEnvironmentVariable(name string, value string) {
 	env[name] = value
 }
 
+func (m *Manifest) hasklib(klibs []string, klib string) bool {
+	for k := 0; k < len(klibs); k++ {
+		if klibs[k] == klib {
+			return true
+		}
+	}
+
+	return false
+}
+
 // AddKlibs append klibs to manifest file if they don't exist
 func (m *Manifest) AddKlibs(klibs []string) {
 	if len(klibs) == 0 {
@@ -110,6 +120,11 @@ func (m *Manifest) AddKlibs(klibs []string) {
 	}
 	klibDir := mkDir(m.bootDir(), "klib")
 	hostDir := m.klibHostDir
+
+	if m.hasklib(klibs, "cloud_init") && !m.hasklib(klibs, "tls") {
+		klibs = append(klibs, "tls")
+	}
+
 	for _, klib := range klibs {
 		klibPath := hostDir + "/" + klib
 		if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
