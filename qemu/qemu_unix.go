@@ -428,6 +428,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addFlag("-no-reboot")
 
+	if OPSD != "" {
+		q.addOption("-L", "/Applications/qemu.app/Contents/MacOS/")
+	}
+
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" {
 		q.addOption("-cpu", "max,-rdtscp")
 	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
