@@ -6,6 +6,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"runtime"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -68,7 +69,11 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	c.UefiBoot = api.GetUefiBoot(version)
 
 	if c.Kernel == "" {
-		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		if runtime.GOARCH == "arm64" {
+			c.Kernel = path.Join(api.GetOpsHome(), version + "-arm", "kernel.img")
+		} else {
+			c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		}
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {

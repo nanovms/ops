@@ -566,6 +566,9 @@ func DownloadReleaseImages(version string, arch string) error {
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
 	}
 
+	// mkfs, dump aren't needed anymore
+	url = strings.Replace(url, "-darwin-", "-linux-", -1)
+
 	localFolder := getReleaseLocalFolder(version)
 
 	if arch == "arm" {
