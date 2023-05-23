@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
-	"runtime"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -70,7 +70,7 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 
 	if c.Kernel == "" {
 		if runtime.GOARCH == "arm64" {
-			c.Kernel = path.Join(api.GetOpsHome(), version + "-arm", "kernel.img")
+			c.Kernel = path.Join(api.GetOpsHome(), version+"-arm", "kernel.img")
 		} else {
 			c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 		}
