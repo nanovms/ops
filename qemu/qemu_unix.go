@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	//	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -20,7 +19,6 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	//	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -372,9 +370,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
-
-		//            c.Kernel = path.Join(api.GetOpsHome(), "nightly-arm", "kernel.img")
-		// kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion+"-arm", "kernel.img")
 
 		q.addOption("-kernel", rconfig.Kernel)
 
