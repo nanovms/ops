@@ -24,6 +24,10 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 		}
 
 		if !exists {
+			arch := ""
+			if runtime.GOARCH == "arm64" {
+				arch = "arm"
+			}
 			err = lepton.DownloadReleaseImages(nanosVersion, "")
 			if err != nil {
 				return
