@@ -152,17 +152,15 @@ func nightlyFileName() string {
 	a := realGOARCH
 	if a == "arm64" {
 		return "nanos-nightly-linux-virt.tar.gz"
-	} else {
-		return "nanos-nightly-linux.tar.gz"
 	}
+	return "nanos-nightly-linux.tar.gz"
 }
 
 func nightlyTimestamp() string {
 	if realGOARCH == "arm64" {
 		return "nanos-nightly-linux-virt.timestamp"
-	} else {
-		return "nanos-nightly-linux.timestamp"
 	}
+	return "nanos-nightly-linux.timestamp"
 }
 
 func nightlyReleaseURL() string {
@@ -175,9 +173,8 @@ func nightlyReleaseURL() string {
 func nightlyLocalFolder() string {
 	if realGOARCH == "arm64" {
 		return path.Join(GetOpsHome(), "nightly-arm")
-	} else {
-		return path.Join(GetOpsHome(), "nightly")
 	}
+	return path.Join(GetOpsHome(), "nightly")
 }
 
 // NightlyLocalFolder is directory path where nightly builds are stored
