@@ -78,7 +78,9 @@ ops_download() {
 
   # Download ops
   if [ "$ARCH" = "aarch64" ]; then
-    BINARY_URL="$RELEASES_URL/${OS}/${ARCH}/ops"
+    BINARY_URL="$RELEASES_URL/${OS}/aarch64/ops"
+  elif [ "$ARCH" = "arm64" ]; then
+    BINARY_URL="$RELEASES_URL/${OS}/aarch64/ops"
   else 
     BINARY_URL="$RELEASES_URL/${OS}/ops"
   fi
@@ -359,6 +361,8 @@ checkHWAccelSupport() {
 
 ops_update() {
   if [ "$ARCH" = "aarch64" ]; then
+    "$HOME/.ops/bin/ops" update --arm
+  elif [ "$ARCH" = "arm64" ]; then
     "$HOME/.ops/bin/ops" update --arm
   else
     "$HOME/.ops/bin/ops" update
