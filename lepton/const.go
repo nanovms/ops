@@ -133,6 +133,12 @@ var NightlyReleaseURL = nightlyReleaseURL()
 
 var realGOOS = getGOOS()
 
+var realGOARCH = getGOARCH()
+
+func getGOARCH() string {
+	return runtime.GOARCH
+}
+
 func getGOOS() string {
 	goos := runtime.GOOS
 	if goos == "freebsd" {
@@ -143,7 +149,20 @@ func getGOOS() string {
 }
 
 func nightlyFileName() string {
-	return fmt.Sprintf("nanos-nightly-%v.tar.gz", realGOOS)
+	a := realGOARCH
+	if a == "arm64" {
+		return "nanos-nightly-linux-virt.tar.gz"
+	} else {
+		return "nanos-nightly-linux.tar.gz"
+	}
+}
+
+func nightlyTimestamp() string {
+	if realGOARCH == "arm64" {
+		return "nanos-nightly-linux-virt.timestamp"
+	} else {
+		return "nanos-nightly-linux.timestamp"
+	}
 }
 
 func nightlyReleaseURL() string {
@@ -154,7 +173,11 @@ func nightlyReleaseURL() string {
 }
 
 func nightlyLocalFolder() string {
-	return path.Join(GetOpsHome(), "nightly")
+	if realGOARCH == "arm64" {
+		return path.Join(GetOpsHome(), "nightly-arm")
+	} else {
+		return path.Join(GetOpsHome(), "nightly")
+	}
 }
 
 // NightlyLocalFolder is directory path where nightly builds are stored
@@ -162,8 +185,9 @@ var NightlyLocalFolder = nightlyLocalFolder()
 
 // LocalTimeStamp gives local timestamp from download nightly build
 func LocalTimeStamp() (string, error) {
-	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
+	timestamp := nightlyTimestamp()
 	data, err := os.ReadFile(path.Join(NightlyLocalFolder, timestamp))
+
 	// first time download?
 	if os.IsNotExist(err) {
 		return "", nil
@@ -177,7 +201,7 @@ func LocalTimeStamp() (string, error) {
 
 // RemoteTimeStamp gives latest nightly build timestamp
 func RemoteTimeStamp() (string, error) {
-	timestamp := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
+	timestamp := nightlyTimestamp()
 	resp, err := http.Get(nightlyReleaseBaseURL + timestamp)
 	if err != nil {
 		return "", err
@@ -191,7 +215,7 @@ func RemoteTimeStamp() (string, error) {
 }
 
 func updateLocalTimestamp(timestamp string) error {
-	fname := fmt.Sprintf("nanos-nightly-%v.timestamp", realGOOS)
+	fname := nightlyTimestamp()
 	return os.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
 }
 

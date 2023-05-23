@@ -172,10 +172,12 @@ expected to change in the future.
 ## Apple M1/M2 Users
 
 The Apple M1 and M2 are ARM based. OPS is built for users primarily
-deploying to x86 based servers. While you can certainly run ARM builds
-with Nanos and OPS be aware that if you are trying to run x86 builds
-(the default) on ARM based M1s you won't be able to use hardware
-acceleration for x86.
+deploying to x86 based servers. We now have full support for running
+native ARM applications (ELFs) on M1 and M2s natively. That means
+without relying on Rosetta and with full hardware acceleration.
+
+Be aware that if you wish to deploy your applications to x86 servers
+you'll need to re-build your images as x86 versus the default of arm64.
 
 # Build a bootable image
 `ops build <app>`
