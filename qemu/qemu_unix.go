@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -20,7 +19,6 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -33,10 +31,15 @@ type qemu struct {
 	display display
 	serial  serial
 	flags   []string
+	kernel  string
 }
 
 func newQemu() Hypervisor {
 	return &qemu{}
+}
+
+func (q *qemu) SetKernel(kernel string) {
+	q.kernel = kernel
 }
 
 func (q *qemu) Stop() {
@@ -368,9 +371,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		q.addOption("-machine", "gic-version=2")
 		q.addOption("-machine", "highmem=off")
 
-		kernel := path.Join(api.GetOpsHome(), api.LocalReleaseVersion+"-arm", "kernel.img")
-
-		q.addOption("-kernel", kernel)
+		q.addOption("-kernel", rconfig.Kernel)
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
 
