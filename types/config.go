@@ -247,6 +247,9 @@ type RunConfig struct {
 	// IPv6Address
 	IPv6Address string `json:",omitempty"`
 
+	// Kernel
+	Kernel string `json:",omitempty"`
+
 	// Memory configures the amount of memory to allocate to qemu (default
 	// is 128 MiB). Optionally, a suffix of "M" or "G" can be used to
 	// signify a value in megabytes or gigabytes respectively.

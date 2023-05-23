@@ -45,6 +45,9 @@ func RunLocalInstance(c *types.Config) (err error) {
 		}
 	}
 
+	c.RunConfig.Kernel = c.Kernel
+	//	hypervisor.(qemu.qemu).SetKernel(c.Kernel)
+
 	fmt.Printf("booting %s ...\n", c.RunConfig.ImageName)
 	hypervisor.Start(&c.RunConfig)
 
