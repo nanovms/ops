@@ -563,11 +563,11 @@ func CheckNanosVersionExists(version string) (bool, error) {
 func DownloadReleaseImages(version string, arch string) error {
 	url := getReleaseURL(version)
 	if arch == "arm" {
-		// we don't cut darwin-aarch64 today but that's ok cause it'd
-		// only be dump/mkfs that won't work and ops uses native mkfs
-		url = strings.Replace(url, "darwin", "linux", -1)
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
 	}
+
+	// mkfs, dump aren't needed anymore
+	url = strings.Replace(url, "-darwin-", "-linux-", -1)
 
 	localFolder := getReleaseLocalFolder(version)
 

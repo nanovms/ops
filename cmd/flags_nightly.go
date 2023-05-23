@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -68,7 +69,11 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	c.UefiBoot = api.GetUefiBoot(version)
 
 	if c.Kernel == "" {
-		c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		if runtime.GOARCH == "arm64" {
+			c.Kernel = path.Join(api.GetOpsHome(), version+"-arm", "kernel.img")
+		} else {
+			c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+		}
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {

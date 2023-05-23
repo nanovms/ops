@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"runtime"
+
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
@@ -24,7 +26,11 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 		}
 
 		if !exists {
-			err = lepton.DownloadReleaseImages(nanosVersion, "")
+			arch := ""
+			if runtime.GOARCH == "arm64" {
+				arch = "arm"
+			}
+			err = lepton.DownloadReleaseImages(nanosVersion, arch)
 			if err != nil {
 				return
 			}
