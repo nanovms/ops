@@ -16,6 +16,10 @@ import (
 // ProviderName of the cloud platform provider
 const ProviderName = "vultr"
 
+func stripZone(zone string) string {
+	return zone[0:3]
+}
+
 // Vultr Provider to interact with Vultr infrastructure
 type Vultr struct {
 	Storage *Objects
