@@ -43,7 +43,7 @@ func (a *Azure) getNicClient() *network.InterfacesClient {
 
 // CreateNIC creates a new network interface. The Network Security Group
 // is not a required parameter
-func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string) (nic network.Interface, err error) {
+func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string, enableIPForwarding bool) (nic network.Interface, err error) {
 	subnet, err := a.GetVirtualNetworkSubnet(ctx, vnetName, subnetName)
 	if err != nil {
 		log.Fatalf("failed to get subnet: %v", err)
@@ -68,6 +68,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 					},
 				},
 			},
+			EnableIPForwarding: &enableIPForwarding,
 		},
 		Tags: getAzureDefaultTags(),
 	}
