@@ -32,6 +32,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 		Region:     c.CloudConfig.Zone,
 		Plan:       flavor,
 		SnapshotID: c.CloudConfig.ImageName,
+		Tags:       []string{"created-by-ops"},
 	})
 	if err != nil {
 		return err
@@ -64,6 +65,7 @@ func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error
 	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
+		Tag:     "created-by-ops",
 	})
 	if err != nil {
 		return nil, err
@@ -91,6 +93,7 @@ func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
+		Tag:     "created-by-ops",
 	})
 	if err != nil {
 		return err

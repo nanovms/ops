@@ -36,7 +36,7 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
-	github.com/vultr/govultr/v2 v2.10.0
+	github.com/vultr/govultr/v2 v2.17.2
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
 	golang.org/x/oauth2 v0.3.0
 	golang.org/x/sys v0.3.0
@@ -83,7 +83,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
