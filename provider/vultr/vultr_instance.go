@@ -28,8 +28,10 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 		return fmt.Errorf("zone is required (-z)")
 	}
 
+	zone := stripZone(c.CloudConfig.Zone)
+
 	instance, err := v.Client.Instance.Create(context.TODO(), &govultr.InstanceCreateReq{
-		Region:     c.CloudConfig.Zone,
+		Region:     zone,
 		Plan:       flavor,
 		SnapshotID: c.CloudConfig.ImageName,
 		Tags:       []string{"created-by-ops"},
