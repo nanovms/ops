@@ -243,6 +243,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 
 func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	m.AddKernel(c.Kernel)
+
 	addDNSConfig(m, c)
 	addHostName(m, c)
 	addPasswd(m, c)
