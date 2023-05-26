@@ -1,0 +1,281 @@
+package cmd
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"math/rand"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
+	api "github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/provider/onprem"
+	"github.com/nanovms/ops/types"
+
+	"net/http"
+
+	"gopkg.in/yaml.v2"
+)
+
+// the following starts a compose session
+//
+// (eg: starts a dns server for svc discovery && associated unikernels
+// in same network; each unikernel gets an address of name.service)
+//
+// ops compose up
+//
+// experimental and objective should be to *not* interfere with existing
+// 'ops run', 'ops pkg load', 'ops instance create' functionality
+//
+// run first:
+//
+//	ops pkg get eyberg/ops-dns:0.0.1
+//
+// compose.yaml:
+//
+// packages:
+//   - pkg: myserver
+//     name: mynewserver:0.0.1
+//   - pkg: myclient
+//     name: mynewclient:0.0.1
+//
+// much of this probably belongs in a diff. pkg but not sure what to do
+// there yet
+
+type Compose struct {
+	config *types.Config // don't think this belongs here
+}
+
+func (com Compose) UP() {
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	body, err := os.ReadFile(dir + "/compose.yaml")
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("are you running compose in the same directory as a compose.yaml?")
+		os.Exit(1)
+	}
+
+	y := ComposeFile{}
+
+	err = yaml.Unmarshal(body, &y)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	non := genNon(32)
+	pid := com.spawnDNS(non)
+
+	dnsIP, err := com.waitForIP(pid)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// FIXME
+	version := api.LocalReleaseVersion
+	com.config.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
+	com.config.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+
+	// spawn other pkgs
+	for i := 0; i < len(y.Packages); i++ {
+		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, dnsIP, com.config)
+		ip, err := com.waitForIP(pid)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		com.addDNS(dnsIP, y.Packages[i].Pkg, ip, non)
+	}
+}
+
+func (com Compose) waitForIP(pid string) (string, error) {
+	ip := ""
+	for i := 0; i < 10; i++ {
+		ip = onprem.FindBridgedIPByPID(pid)
+		if ip == "" {
+			if com.config.RunConfig.ShowDebug {
+
+				fmt.Println("no ip found")
+			}
+			time.Sleep(time.Millisecond * 500)
+		} else {
+			if com.config.RunConfig.ShowDebug {
+				fmt.Printf("found ip of %s\n", ip)
+			}
+			return ip, nil
+		}
+	}
+
+	return "", errors.New("ip timeout")
+}
+
+func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
+	client := &http.Client{}
+	if com.config.RunConfig.ShowDebug {
+		fmt.Printf("adding record %s for %s\n", host, ip)
+	}
+	req, err := http.NewRequest("GET", "http://"+dnsIP+":8080/add?svc="+host+".service&ip="+ip, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer res.Body.Close()
+
+	body, error := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(error)
+	}
+
+	if com.config.RunConfig.ShowDebug {
+		fmt.Println(string(body))
+	}
+}
+
+func (com Compose) spawnProgram(pkgName string, pname string, dnsIP string, c *types.Config) string {
+	pkgFlags := PkgCommandFlags{
+		Package: pkgName,
+	}
+
+	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
+	unWarpConfig(ppath, c)
+
+	executableName := c.Program
+
+	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", pname)
+	c.RunConfig.InstanceName = pname
+
+	c.NameServers = []string{dnsIP}
+
+	api.ValidateELF(filepath.Join(api.GetOpsHome(), "packages", executableName))
+
+	p, ctx, err := getProviderAndContext(c, "onprem")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var keypath string
+	if pkgFlags.Package != "" {
+		keypath, err = p.BuildImageWithPackage(ctx, pkgFlags.PackagePath())
+		if err != nil {
+			exitWithError(err.Error())
+		}
+	} else {
+		keypath, err = p.BuildImage(ctx)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+	}
+
+	err = p.CreateImage(ctx, keypath)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	c.RunConfig.InstanceName = pname
+	c.CloudConfig.ImageName = pname
+
+	z := p.(*onprem.OnPrem)
+	pid, err := z.CreateInstancePID(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	if c.RunConfig.ShowDebug {
+		fmt.Printf("%s instance with pid %s '%s' created...\n", c.CloudConfig.Platform, pid, c.RunConfig.InstanceName)
+	}
+
+	return pid
+}
+
+func (com Compose) spawnDNS(non string) string {
+	c := api.NewConfig()
+	c.Program = "dns"
+
+	version := api.LocalReleaseVersion
+	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
+	c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
+	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", "dns")
+
+	pkgFlags := PkgCommandFlags{
+		Package: "eyberg/ops-dns:0.0.1",
+	}
+
+	executableName := c.Program
+
+	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
+
+	_, err := os.Stat(ppath)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("you need the dns package to use compose\ndownload it via:\n\tops pkg get eyberg/ops-dns:0.0.1")
+		os.Exit(1)
+	}
+
+	unWarpConfig(ppath, c)
+
+	e := strings.ReplaceAll(pkgFlags.Package, ":", "_")
+	api.ValidateELF(filepath.Join(api.GetOpsHome(), "packages", e+"/"+executableName))
+
+	p, ctx, err := getProviderAndContext(c, "onprem")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	c.RunConfig.InstanceName = "dns"
+
+	keypath, err := p.BuildImageWithPackage(ctx, pkgFlags.PackagePath())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = p.CreateImage(ctx, keypath)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	c.CloudConfig.ImageName = "dns"
+
+	env := map[string]string{"non": non}
+
+	c.Env = env
+
+	z := p.(*onprem.OnPrem)
+	pid, err := z.CreateInstancePID(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	if c.RunConfig.ShowDebug {
+		fmt.Printf("%s instance with pid %s '%s' created...\n", c.CloudConfig.Platform, pid, c.RunConfig.InstanceName)
+	}
+
+	return pid
+}
+
+// Package is a part of the compose yaml file.
+type Package struct {
+	Pkg  string
+	Name string
+}
+
+// ComposeFile represents a configuration for ops compose.
+type ComposeFile struct {
+	Packages []Package
+}
+
+func genNon(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, length+2)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)[2 : length+2]
+}

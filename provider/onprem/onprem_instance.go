@@ -124,7 +124,9 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 func FindBridgedIPByPID(pid string) string {
 	out, err := execCmd("ps -p " + pid) //fixme: cmd injection
 	if err != nil {
-		fmt.Println(err)
+		if 1 == 2 {
+			fmt.Println(err)
+		}
 	}
 
 	oo := strings.Split(out, "netdev=vmnet,mac=")
@@ -150,7 +152,9 @@ func arpMac(pid string, mac string) string {
 	// needs recent activity to register
 	out, err := execCmd("arp -a | grep " + dmac)
 	if err != nil {
-		fmt.Println(err)
+		if 1 == 2 {
+			fmt.Println(err)
+		}
 	}
 
 	if strings.Contains(out, "(") {
