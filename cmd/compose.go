@@ -20,7 +20,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// the following starts a compose session
+// Compose holds information related to a compose session.
 //
 // (eg: starts a dns server for svc discovery && associated unikernels
 // in same network; each unikernel gets an address of name.service)
@@ -44,11 +44,12 @@ import (
 //
 // much of this probably belongs in a diff. pkg but not sure what to do
 // there yet
-
 type Compose struct {
 	config *types.Config // don't think this belongs here
 }
 
+// UP reads in a compose.yaml and starts all services listed with svc
+// discovery.
 func (com Compose) UP() {
 	dir, err := os.Getwd()
 	if err != nil {
