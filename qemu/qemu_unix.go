@@ -19,9 +19,34 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
+
+func qemuBaseCommand() string {
+	x86 := "qemu-system-x86_64"
+	arm := "qemu-system-aarch64"
+
+	if lepton.AltGOARCH != "" {
+		if lepton.AltGOARCH == "amd64" {
+			return x86
+		}
+		if lepton.AltGOARCH == "arm64" {
+			return arm
+		}
+	}
+
+	if lepton.RealGOARCH == "amd64" {
+		return x86
+	}
+
+	if lepton.RealGOARCH == "arm64" {
+		return arm
+	}
+
+	return x86
+}
 
 type qemu struct {
 	cmd     *exec.Cmd
@@ -61,8 +86,8 @@ func logv(rconfig *types.RunConfig, msg string) {
 
 func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
-	logv(rconfig, qemuBaseCommand+" "+strings.Join(args, " "))
-	q.cmd = exec.Command(qemuBaseCommand, args...)
+	logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
+	q.cmd = exec.Command(qemuBaseCommand(), args...)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
@@ -310,6 +335,10 @@ func (q *qemu) addAccel() (bool, error) {
 		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 	}
 
+	if lepton.AltGOARCH != "" {
+		return false, nil
+	}
+
 	if runtime.GOOS == "darwin" {
 		if ok, _ := q.versionCompare(qemuVersion, hvfSupportedVersion); ok {
 			q.addOption("-accel", "hvf")
@@ -336,12 +365,13 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	q.addDrive("hd0", rconfig.ImageName, "none")
 
 	pciBus := ""
-	if isx86() {
+	if isx86() && lepton.AltGOARCH == "" {
 		pciBus = "pcie.0"
 	}
 
 	// pcie root ports need to come before virtio/scsi devices
-	if isx86() {
+	if isx86() && lepton.AltGOARCH == "" {
+
 		q.addOption("-machine", "q35")
 
 		// x86
@@ -429,7 +459,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	q.addFlag("-no-reboot")
 
-	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" {
+	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
 	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		q.addOption("-cpu", "host")
@@ -455,7 +485,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 }
 
 func (q *qemu) isInstalled() bool {
-	qemuCommand := qemuBaseCommand
+	qemuCommand := qemuBaseCommand()
 	if filepath.Base(qemuCommand) == qemuCommand {
 		lp, err := exec.LookPath(qemuCommand)
 		if err != nil {
@@ -525,7 +555,7 @@ func generateMac() string {
 
 // Version gives the version of qemu running locally.
 func Version() (string, error) {
-	versionData, err := exec.Command(qemuBaseCommand, "--version").Output()
+	versionData, err := exec.Command(qemuBaseCommand(), "--version").Output()
 	if err != nil {
 		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
 	}

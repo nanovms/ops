@@ -35,6 +35,7 @@ type RunLocalInstanceCommandFlags struct {
 	TapName        string
 	Trace          bool
 	Verbose        bool
+	Arch           string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values

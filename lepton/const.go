@@ -133,7 +133,9 @@ var NightlyReleaseURL = nightlyReleaseURL()
 
 var realGOOS = getGOOS()
 
-var realGOARCH = getGOARCH()
+var RealGOARCH = getGOARCH()
+
+var AltGOARCH = ""
 
 func getGOARCH() string {
 	return runtime.GOARCH
@@ -149,15 +151,14 @@ func getGOOS() string {
 }
 
 func nightlyFileName() string {
-	a := realGOARCH
-	if a == "arm64" {
+	if RealGOARCH == "arm64" || AltGOARCH == "arm64" {
 		return "nanos-nightly-linux-virt.tar.gz"
 	}
 	return "nanos-nightly-linux.tar.gz"
 }
 
 func nightlyTimestamp() string {
-	if realGOARCH == "arm64" {
+	if RealGOARCH == "arm64" || AltGOARCH == "arm64" {
 		return "nanos-nightly-linux-virt.timestamp"
 	}
 	return "nanos-nightly-linux.timestamp"
@@ -171,7 +172,7 @@ func nightlyReleaseURL() string {
 }
 
 func nightlyLocalFolder() string {
-	if realGOARCH == "arm64" {
+	if RealGOARCH == "arm64" || AltGOARCH == "arm64" {
 		return path.Join(GetOpsHome(), "nightly-arm")
 	}
 	return path.Join(GetOpsHome(), "nightly")

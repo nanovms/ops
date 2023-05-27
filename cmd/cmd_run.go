@@ -50,6 +50,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	globalFlags := NewGlobalCommandFlags(flags)
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+
 	buildImageFlags := NewBuildImageCommandFlags(flags)
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 

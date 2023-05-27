@@ -563,7 +563,7 @@ func CheckNanosVersionExists(version string) (bool, error) {
 // arch defaults to x86-64 if empty
 func DownloadReleaseImages(version string, arch string) error {
 	url := getReleaseURL(version)
-	if arch == "arm" {
+	if arch == "arm" || AltGOARCH == "arm64" {
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
 	}
 
@@ -572,7 +572,7 @@ func DownloadReleaseImages(version string, arch string) error {
 
 	localFolder := getReleaseLocalFolder(version)
 
-	if arch == "arm" {
+	if arch == "arm" || AltGOARCH == "arm64" {
 		localFolder = localFolder + "-arm"
 	}
 
