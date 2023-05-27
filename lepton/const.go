@@ -128,13 +128,15 @@ func getImageTempDir(c *types.Config) string {
 	return c.BuildDir
 }
 
-// NightlyReleaseURL give URL for nightly build
+// NightlyReleaseURLm give URL for nightly build.
 var NightlyReleaseURLm = NightlyReleaseURL()
 
 var realGOOS = getGOOS()
 
+// RealGOARCH is the underlying host architecture.
 var RealGOARCH = getGOARCH()
 
+// AltGOARCH is an optional user-supplied cross-build arch for both build and run.
 var AltGOARCH = ""
 
 func getGOARCH() string {
@@ -164,6 +166,8 @@ func nightlyTimestamp() string {
 	return "nanos-nightly-linux.timestamp"
 }
 
+// NightlyReleaseURL points to the latest nightly release url that is
+// arch dependent upon flag set.
 func NightlyReleaseURL() string {
 	var sb strings.Builder
 	sb.WriteString(nightlyReleaseBaseURL)
@@ -171,6 +175,8 @@ func NightlyReleaseURL() string {
 	return sb.String()
 }
 
+// NightlyLocalFolder points to the latest nightly release url that is
+// arch dependent upon flag set.
 func NightlyLocalFolder() string {
 	if RealGOARCH == "arm64" || AltGOARCH == "arm64" {
 		return path.Join(GetOpsHome(), "nightly-arm")
@@ -178,7 +184,7 @@ func NightlyLocalFolder() string {
 	return path.Join(GetOpsHome(), "nightly")
 }
 
-// NightlyLocalFolder is directory path where nightly builds are stored
+// NightlyLocalFolderm is directory path where nightly builds are stored
 var NightlyLocalFolderm = NightlyLocalFolder()
 
 // LocalTimeStamp gives local timestamp from download nightly build
