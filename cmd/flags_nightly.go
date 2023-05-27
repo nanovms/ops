@@ -25,6 +25,13 @@ type NightlyCommandFlags struct {
 func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	config.NightlyBuild = flags.Nightly
 
+	if flags.Arch != "" {
+		api.AltGOARCH = flags.Arch
+		// this is dumb, FIXME
+		api.NightlyLocalFolderm = api.NightlyLocalFolder()
+		api.NightlyReleaseURLm = api.NightlyReleaseURL()
+	}
+
 	if config.NightlyBuild {
 		var version string
 		version, err = downloadNightlyImages(config)
@@ -32,10 +39,6 @@ func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error
 			return
 		}
 		updateNanosToolsPaths(config, version)
-	}
-
-	if flags.Arch != "" {
-		api.AltGOARCH = flags.Arch
 	}
 
 	return
@@ -66,18 +69,22 @@ func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
 }
 
 func getKernelVersion(version string) string {
+	return path.Join(api.GetOpsHome(), version, "kernel.img")
+}
+
+func setKernelVersion(version string) string {
 	if api.AltGOARCH != "" {
 		if runtime.GOARCH == "amd64" {
-			return path.Join(api.GetOpsHome(), version+"-arm", "kernel.img")
+			return version + "-arm"
 		} else {
-			return path.Join(api.GetOpsHome(), version, "kernel.img")
+			return version
 		}
 
 	} else {
 		if runtime.GOARCH == "arm64" {
-			return path.Join(api.GetOpsHome(), version+"-arm", "kernel.img")
+			return version + "-arm"
 		} else {
-			return path.Join(api.GetOpsHome(), version, "kernel.img")
+			return version
 		}
 	}
 }
@@ -86,6 +93,8 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
 	}
+
+	version = setKernelVersion(version)
 
 	if c.Boot == "" {
 		bootPath := path.Join(api.GetOpsHome(), version, "boot.img")
@@ -119,7 +128,13 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 func downloadNightlyImages(c *types.Config) (string, error) {
 	var err error
 	err = api.DownloadNightlyImages(c)
-	return "nightly", err
+
+	if runtime.GOARCH == "arm64" || api.AltGOARCH == "arm64" {
+		return "nightly-arm", err
+	} else {
+		return "nightly", err
+	}
+
 }
 
 func getCurrentVersion() (string, error) {

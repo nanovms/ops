@@ -55,6 +55,7 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags)
+
 	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())

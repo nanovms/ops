@@ -512,18 +512,19 @@ func DownloadNightlyImages(c *types.Config) error {
 		return err
 	}
 
-	if _, err := os.Stat(NightlyLocalFolder); os.IsNotExist(err) {
-		os.MkdirAll(NightlyLocalFolder, 0755)
+	if _, err := os.Stat(NightlyLocalFolderm); os.IsNotExist(err) {
+		os.MkdirAll(NightlyLocalFolderm, 0755)
 	}
-	localtar := path.Join(NightlyLocalFolder, nightlyFileName())
+	localtar := path.Join(NightlyLocalFolderm, nightlyFileName())
 	// we have an update, let's download since it's nightly
+
 	if remote != local || c.Force {
-		if err = DownloadFileWithProgress(localtar, NightlyReleaseURL, 600); err != nil {
+		if err = DownloadFileWithProgress(localtar, NightlyReleaseURLm, 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 		// update local timestamp
 		updateLocalTimestamp(remote)
-		ExtractPackage(localtar, NightlyLocalFolder, c)
+		ExtractPackage(localtar, NightlyLocalFolderm, c)
 	}
 
 	return nil

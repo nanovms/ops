@@ -129,7 +129,7 @@ func getImageTempDir(c *types.Config) string {
 }
 
 // NightlyReleaseURL give URL for nightly build
-var NightlyReleaseURL = nightlyReleaseURL()
+var NightlyReleaseURLm = NightlyReleaseURL()
 
 var realGOOS = getGOOS()
 
@@ -164,14 +164,14 @@ func nightlyTimestamp() string {
 	return "nanos-nightly-linux.timestamp"
 }
 
-func nightlyReleaseURL() string {
+func NightlyReleaseURL() string {
 	var sb strings.Builder
 	sb.WriteString(nightlyReleaseBaseURL)
 	sb.WriteString(nightlyFileName())
 	return sb.String()
 }
 
-func nightlyLocalFolder() string {
+func NightlyLocalFolder() string {
 	if RealGOARCH == "arm64" || AltGOARCH == "arm64" {
 		return path.Join(GetOpsHome(), "nightly-arm")
 	}
@@ -179,12 +179,12 @@ func nightlyLocalFolder() string {
 }
 
 // NightlyLocalFolder is directory path where nightly builds are stored
-var NightlyLocalFolder = nightlyLocalFolder()
+var NightlyLocalFolderm = NightlyLocalFolder()
 
 // LocalTimeStamp gives local timestamp from download nightly build
 func LocalTimeStamp() (string, error) {
 	timestamp := nightlyTimestamp()
-	data, err := os.ReadFile(path.Join(NightlyLocalFolder, timestamp))
+	data, err := os.ReadFile(path.Join(NightlyLocalFolderm, timestamp))
 
 	// first time download?
 	if os.IsNotExist(err) {
@@ -214,7 +214,7 @@ func RemoteTimeStamp() (string, error) {
 
 func updateLocalTimestamp(timestamp string) error {
 	fname := nightlyTimestamp()
-	return os.WriteFile(path.Join(NightlyLocalFolder, fname), []byte(timestamp), 0755)
+	return os.WriteFile(path.Join(NightlyLocalFolderm, fname), []byte(timestamp), 0755)
 }
 
 // UpdateLocalRelease updates nanos version used on ops operations
@@ -276,7 +276,7 @@ func getLastReleaseLocalFolder() string {
 
 func getKlibsDir(nightly bool, nanosVersion string) string {
 	if nightly {
-		return nightlyLocalFolder() + "/klibs"
+		return NightlyLocalFolder() + "/klibs"
 	} else if nanosVersion != "" && nanosVersion != "0.0" {
 		return getReleaseLocalFolder(nanosVersion) + "/klibs"
 	}
