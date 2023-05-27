@@ -365,12 +365,12 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	q.addDrive("hd0", rconfig.ImageName, "none")
 
 	pciBus := ""
-	if isx86() && lepton.AltGOARCH == "" {
+	if isx86() || lepton.AltGOARCH == "amd64" {
 		pciBus = "pcie.0"
 	}
 
 	// pcie root ports need to come before virtio/scsi devices
-	if isx86() && lepton.AltGOARCH == "" {
+	if isx86() || lepton.AltGOARCH == "amd64" {
 
 		q.addOption("-machine", "q35")
 
@@ -461,7 +461,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
-	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "host")
 	} else {
 		q.addOption("-cpu", "max")
