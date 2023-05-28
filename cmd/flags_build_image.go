@@ -199,6 +199,7 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
 	return
 }
 

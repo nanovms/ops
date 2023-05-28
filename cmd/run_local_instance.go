@@ -45,6 +45,8 @@ func RunLocalInstance(c *types.Config) (err error) {
 		}
 	}
 
+	fmt.Println("running local instance")
+
 	c.RunConfig.Kernel = c.Kernel
 
 	fmt.Printf("booting %s ...\n", c.RunConfig.ImageName)
