@@ -14,6 +14,14 @@ type NanosVersionCommandFlags struct {
 	NanosVersion string
 }
 
+func archPath() string {
+	if runtime.GOARCH == "arm64" || lepton.AltGOARCH == "arm64" {
+		return "arm"
+	}
+
+	return ""
+}
+
 // MergeToConfig downloads specified nanos version build and change configuration nanos tools paths
 func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	nanosVersion := flags.NanosVersion
@@ -26,10 +34,7 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 		}
 
 		if !exists {
-			arch := ""
-			if runtime.GOARCH == "arm64" {
-				arch = "arm"
-			}
+			arch := archPath()
 			err = lepton.DownloadReleaseImages(nanosVersion, arch)
 			if err != nil {
 				return

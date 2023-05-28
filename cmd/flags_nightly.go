@@ -18,11 +18,19 @@ import (
 // NightlyCommandFlags is used to change configuration to use nightly build tools paths
 type NightlyCommandFlags struct {
 	Nightly bool
+	Arch    string
 }
 
 // MergeToConfig downloads nightly build and change configuration nanos tools paths
 func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	config.NightlyBuild = flags.Nightly
+
+	if flags.Arch != "" {
+		api.AltGOARCH = flags.Arch
+		// this is dumb, FIXME
+		api.NightlyLocalFolderm = api.NightlyLocalFolder()
+		api.NightlyReleaseURLm = api.NightlyReleaseURL()
+	}
 
 	if config.NightlyBuild {
 		var version string
@@ -46,18 +54,43 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 		exitWithError(err.Error())
 	}
 
+	flags.Arch, err = cmdFlags.GetString("arch")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	return
 }
 
 // PersistNightlyCommandFlags append nightly flag to a command
 func PersistNightlyCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.BoolP("nightly", "n", false, "nightly build")
+	cmdFlags.StringP("arch", "", "", "set different architecture")
+}
+
+func getKernelVersion(version string) string {
+	return path.Join(api.GetOpsHome(), version, "kernel.img")
+}
+
+func setKernelVersion(version string) string {
+	if api.AltGOARCH != "" {
+		if runtime.GOARCH == "amd64" {
+			return version + "-arm"
+		}
+		return version
+	}
+	if runtime.GOARCH == "arm64" {
+		return version + "-arm"
+	}
+	return version
 }
 
 func updateNanosToolsPaths(c *types.Config, version string) {
 	if c.NightlyBuild {
 		version = "nightly"
 	}
+
+	version = setKernelVersion(version)
 
 	if c.Boot == "" {
 		bootPath := path.Join(api.GetOpsHome(), version, "boot.img")
@@ -69,11 +102,7 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	c.UefiBoot = api.GetUefiBoot(version)
 
 	if c.Kernel == "" {
-		if runtime.GOARCH == "arm64" {
-			c.Kernel = path.Join(api.GetOpsHome(), version+"-arm", "kernel.img")
-		} else {
-			c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
-		}
+		c.Kernel = getKernelVersion(version)
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
@@ -95,7 +124,12 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 func downloadNightlyImages(c *types.Config) (string, error) {
 	var err error
 	err = api.DownloadNightlyImages(c)
+
+	if runtime.GOARCH == "arm64" || api.AltGOARCH == "arm64" {
+		return "nightly-arm", err
+	}
 	return "nightly", err
+
 }
 
 func getCurrentVersion() (string, error) {

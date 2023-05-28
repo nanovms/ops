@@ -512,18 +512,19 @@ func DownloadNightlyImages(c *types.Config) error {
 		return err
 	}
 
-	if _, err := os.Stat(NightlyLocalFolder); os.IsNotExist(err) {
-		os.MkdirAll(NightlyLocalFolder, 0755)
+	if _, err := os.Stat(NightlyLocalFolderm); os.IsNotExist(err) {
+		os.MkdirAll(NightlyLocalFolderm, 0755)
 	}
-	localtar := path.Join(NightlyLocalFolder, nightlyFileName())
+	localtar := path.Join(NightlyLocalFolderm, nightlyFileName())
 	// we have an update, let's download since it's nightly
+
 	if remote != local || c.Force {
-		if err = DownloadFileWithProgress(localtar, NightlyReleaseURL, 600); err != nil {
+		if err = DownloadFileWithProgress(localtar, NightlyReleaseURLm, 600); err != nil {
 			return errors.Wrap(err, 1)
 		}
 		// update local timestamp
 		updateLocalTimestamp(remote)
-		ExtractPackage(localtar, NightlyLocalFolder, c)
+		ExtractPackage(localtar, NightlyLocalFolderm, c)
 	}
 
 	return nil
@@ -563,7 +564,7 @@ func CheckNanosVersionExists(version string) (bool, error) {
 // arch defaults to x86-64 if empty
 func DownloadReleaseImages(version string, arch string) error {
 	url := getReleaseURL(version)
-	if arch == "arm" {
+	if arch == "arm" || AltGOARCH == "arm64" {
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
 	}
 
@@ -572,7 +573,7 @@ func DownloadReleaseImages(version string, arch string) error {
 
 	localFolder := getReleaseLocalFolder(version)
 
-	if arch == "arm" {
+	if arch == "arm" || AltGOARCH == "arm64" {
 		localFolder = localFolder + "-arm"
 	}
 
