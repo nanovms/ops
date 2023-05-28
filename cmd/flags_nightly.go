@@ -78,12 +78,11 @@ func setKernelVersion(version string) string {
 			return version + "-arm"
 		}
 		return version
-	} else {
-		if runtime.GOARCH == "arm64" {
-			return version + "-arm"
-		}
-		return version
 	}
+	if runtime.GOARCH == "arm64" {
+		return version + "-arm"
+	}
+	return version
 }
 
 func updateNanosToolsPaths(c *types.Config, version string) {
@@ -128,9 +127,8 @@ func downloadNightlyImages(c *types.Config) (string, error) {
 
 	if runtime.GOARCH == "arm64" || api.AltGOARCH == "arm64" {
 		return "nightly-arm", err
-	} else {
-		return "nightly", err
 	}
+	return "nightly", err
 
 }
 
