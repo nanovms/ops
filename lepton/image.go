@@ -200,20 +200,33 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		p = ss[0]
 	}
 
-	err = m.AddFile("/"+p, packagepath+"/"+p)
-	if err != nil {
-		return nil, err
+	// historically one can include an absolute path /some/binary which
+	// is inside sysroot
+	// one can also do mypk_0.0.1/mybinary to specify the binary outside
+	// of syroot
+	//
+	// either add file from path of if abs then we know it's already in the
+	// pkg..
+	if string(c.Program[0]) != "/" {
+		err = m.AddFile("/"+p, packagepath+"/"+p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	m.SetProgram(p)
+	if string(c.Program[0]) != "/" {
+		m.SetProgram(p)
+	}
 
-	err = setManifestFromConfig(m, c)
+	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
 
 	if !c.DisableArgsCopy && len(c.Args) > 1 {
 
+		// ok to swallow this error as the Args might be pointing to
+		// something inside the pkg vs cli args outside of it
 		f, err := os.Stat(ppath + "/" + c.Args[1])
 		if err == nil {
 			if f.IsDir() {
@@ -225,8 +238,6 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			fmt.Println(err)
 		}
 	}
 
@@ -237,7 +248,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 	return m, nil
 }
 
-func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
+func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error {
 	m.AddKernel(c.Kernel)
 
 	addDNSConfig(m, c)
@@ -258,6 +269,11 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 			hostPath = filepath.Join(c.TargetRoot, f)
 		} else {
 			hostPath = path.Join(c.LocalFilesParentDirectory, f)
+		}
+
+		// hack
+		if ppath != "" {
+			hostPath = ppath + "/" + f
 		}
 
 		err := m.AddFile(f, hostPath)
@@ -355,7 +371,7 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 		return nil, err
 	}
 
-	err = setManifestFromConfig(m, c)
+	err = setManifestFromConfig(m, c, "")
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
