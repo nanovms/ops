@@ -173,7 +173,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 		if e.IsDir() {
 			err = m.AddDirectory(e.Name(), rootPath)
 		} else {
-			err = m.AddFile(e.Name(), rootPath)
+			err = m.AddFile(e.Name(), rootPath+"/"+e.Name())
 		}
 	}
 
@@ -181,6 +181,11 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 
 // BuildPackageManifest builds manifest using package
 func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, error) {
+	ppath, err := os.Getwd() // save wd as it gets changed later on
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	m := fs.NewManifest(c.TargetRoot)
 
 	addFilesFromPackage(packagepath, m)
@@ -195,7 +200,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		p = ss[0]
 	}
 
-	err := m.AddFile("/"+p, packagepath+"/"+p)
+	err = m.AddFile("/"+p, packagepath+"/"+p)
 	if err != nil {
 		return nil, err
 	}
@@ -208,16 +213,20 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 	}
 
 	if !c.DisableArgsCopy && len(c.Args) > 1 {
-		if f, err := os.Stat(c.Args[1]); err == nil {
+
+		f, err := os.Stat(ppath + "/" + c.Args[1])
+		if err == nil {
 			if f.IsDir() {
-				err = m.AddDirectory(c.Args[1], c.Args[1])
+				err = m.AddDirectory(c.Args[1], ppath+"/"+c.Args[1])
 			} else {
-				err = m.AddFile(c.Args[1], c.Args[1])
+				err = m.AddFile(c.Args[1], ppath+"/"+c.Args[1])
 			}
 
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			fmt.Println(err)
 		}
 	}
 
