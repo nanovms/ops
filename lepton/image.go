@@ -162,49 +162,21 @@ func addCommonFilesToManifest(m *fs.Manifest) error {
 }
 
 func addFilesFromPackage(packagepath string, m *fs.Manifest) {
-
 	rootPath := filepath.Join(packagepath, "sysroot")
-	packageName := filepath.Base(packagepath)
 
-	filepath.Walk(rootPath, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	entries, err := os.ReadDir(rootPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		filePath := strings.Split(hostpath, rootPath)
-		if info.IsDir() {
-			m.MkdirPath(strings.TrimPrefix(filePath[1], string(filepath.Separator)))
-			return nil
+	for _, e := range entries {
+		if e.IsDir() {
+			err = m.AddDirectory(e.Name(), rootPath)
+		} else {
+			err = m.AddFile(e.Name(), rootPath)
 		}
+	}
 
-		err = m.AddFile(filePath[1], hostpath)
-		if err != nil {
-			log.Error(err)
-		}
-		return nil
-	})
-
-	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() && info.Name() == "sysroot" {
-			return filepath.SkipDir
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		filePath := strings.Split(hostpath, packagepath)
-		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
-		err = m.AddFile(vmpath, hostpath)
-		if err != nil {
-			log.Error(err)
-		}
-		return nil
-	})
 }
 
 // BuildPackageManifest builds manifest using package
@@ -215,7 +187,22 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 
 	m.SetProgram(c.Program)
 
-	err := setManifestFromConfig(m, c)
+	ss := strings.Split(c.Program, "/")
+	p := ""
+	if len(ss) > 1 {
+		p = ss[len(ss)-1]
+	} else {
+		p = ss[0]
+	}
+
+	err := m.AddFile("/"+p, packagepath+"/"+p)
+	if err != nil {
+		return nil, err
+	}
+
+	m.SetProgram(p)
+
+	err = setManifestFromConfig(m, c)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}

@@ -1,8 +1,9 @@
 #!/bin/sh
 
-export VERSION="0.1.36"
+export VERSION="0.1.37"
 plat="$(uname -s | awk '{print tolower($0)}')"
 
+# x86-linux
 GO111MODULE=on GOOS=linux go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/linux
 
@@ -27,6 +28,7 @@ gsutil setacl public-read gs://cli/linux/release/"$VERSION"/ops
 gsutil cp "$hash" gs://cli/linux/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/linux/release/"$VERSION"/"$hash"
 
+# x86-darwin
 # TODO:
 # flag here with "-X github.com/nanovms/ops/qemu.OPSD=true" for signed/packaged mac binaries
 GO111MODULE=on GOOS=darwin go build -ldflags "-w -X github.com/nanovms/ops/lepton.Version=$VERSION"
@@ -47,6 +49,7 @@ gsutil setacl public-read gs://cli/darwin/release/"$VERSION"/ops
 gsutil cp "$hash" gs://cli/darwin/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/darwin/release/"$VERSION"/"$hash"
 
+# arm64-linux
 GO111MODULE=on GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/linux/aarch64/
 
@@ -65,6 +68,7 @@ gsutil setacl public-read gs://cli/linux/aarch64/release/"$VERSION"/ops
 gsutil cp "$hash" gs://cli/linux/aarch64/release/"$VERSION"/"$hash"
 gsutil setacl public-read gs://cli/linux/aarch64/release/"$VERSION"/"$hash"
 
+# arm64-darwin
 GO111MODULE=on GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/darwin/aarch64/
 
