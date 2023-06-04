@@ -161,7 +161,7 @@ func addCommonFilesToManifest(m *fs.Manifest) error {
 	return nil
 }
 
-func addFilesFromPackage(packagepath string, m *fs.Manifest) {
+func addFilesFromPackage(packagepath string, m *fs.Manifest, ppath string) {
 	rootPath := filepath.Join(packagepath, "sysroot")
 
 	entries, err := os.ReadDir(rootPath)
@@ -171,7 +171,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest) {
 
 	for _, e := range entries {
 		if e.IsDir() {
-			err = m.AddDirectory(e.Name(), rootPath)
+			err = m.AddDirectory(rootPath+"/"+e.Name(), rootPath+"/"+e.Name(), ppath, true)
 		} else {
 			err = m.AddFile(e.Name(), rootPath+"/"+e.Name())
 		}
@@ -188,7 +188,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 
 	m := fs.NewManifest(c.TargetRoot)
 
-	addFilesFromPackage(packagepath, m)
+	addFilesFromPackage(packagepath, m, ppath)
 
 	m.SetProgram(c.Program)
 
@@ -230,7 +230,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 		f, err := os.Stat(ppath + "/" + c.Args[1])
 		if err == nil {
 			if f.IsDir() {
-				err = m.AddDirectory(c.Args[1], ppath+"/"+c.Args[1])
+				err = m.AddDirectory(c.Args[1], ppath+"/"+c.Args[1], ppath, false)
 			} else {
 				err = m.AddFile(c.Args[1], ppath+"/"+c.Args[1])
 			}
@@ -301,7 +301,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 	}
 
 	for _, d := range c.Dirs {
-		err := m.AddDirectory(d, c.LocalFilesParentDirectory)
+		err := m.AddDirectory(d, ppath, ppath, false)
 		if err != nil {
 			return err
 		}
@@ -362,16 +362,21 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 
 // BuildManifest builds manifest using config
 func BuildManifest(c *types.Config) (*fs.Manifest, error) {
+	ppath, err := os.Getwd() // save wd as it gets changed later on
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	m := fs.NewManifest(c.TargetRoot)
 
 	addCommonFilesToManifest(m)
 
-	err := m.AddUserProgram(c.Program)
+	err = m.AddUserProgram(c.Program)
 	if err != nil {
 		return nil, err
 	}
 
-	err = setManifestFromConfig(m, c, "")
+	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
