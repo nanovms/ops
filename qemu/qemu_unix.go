@@ -150,6 +150,10 @@ func (q *qemu) addSerial(serialType string) {
 // instances locally.
 var OPSD = ""
 
+// MACPKGD is a flag for apps that have been packed for a macos installer.
+// It is injected at release build time to enable vmnet-bridged and location of fw.
+var MACPKGD = ""
+
 // addDevice adds a device to the qemu for rendering to string arguments. If the
 // devType is "user" then the ifaceName is ignored and host forward ports are
 // added. If the mac address is empty then a random mac address is chosen.
@@ -466,6 +470,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	}
 
 	q.addFlag("-no-reboot")
+
+	if OPSD != "" || MACPKGD != "" {
+		q.addOption("-L", "/Applications/qemu.app/Contents/MacOS/")
+	}
 
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
