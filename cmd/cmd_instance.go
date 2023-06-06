@@ -46,7 +46,11 @@ func instanceCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 
-	PersistCreateInstanceFlags(cmdInstanceCreate.PersistentFlags())
+	persistentFlags := cmdInstanceCreate.PersistentFlags()
+	PersistCreateInstanceFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
+
 	cmdInstanceCreate.PersistentFlags().StringP("instance-name", "i", "", "instance name (overrides default instance name format)")
 	cmdInstanceCreate.PersistentFlags().StringP("instance-group", "", "", "instance group")
 
@@ -58,12 +62,14 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 	configFlags := NewConfigCommandFlags(flags)
 	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 	createInstanceFlags := NewCreateInstanceCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
 
 	c := lepton.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags, createInstanceFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, providerFlags, createInstanceFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
@@ -93,10 +99,13 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitForCmd(cmd, err.Error())
 	}
 
+	c.RunConfig.Kernel = c.Kernel
+
 	err = p.CreateInstance(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
 
 	fmt.Printf("%s instance '%s' created...\n", c.CloudConfig.Platform, c.RunConfig.InstanceName)
 }
