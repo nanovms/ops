@@ -245,6 +245,17 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 		fmt.Println("No packages found.")
 		return
 	}
+
+	jsonOutput, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	if jsonOutput {
+		json.NewEncoder(os.Stdout).Encode(pkgs.Packages)
+		return
+	}
+
 	table := pkgTable(pkgs.Packages)
 
 	var rows [][]string
