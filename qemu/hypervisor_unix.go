@@ -10,6 +10,10 @@ import (
 )
 
 func checkExists(key string) bool {
+	if MACPKGD != "" {
+		return true
+	}
+
 	_, err := exec.LookPath(key)
 	if err != nil {
 		return false

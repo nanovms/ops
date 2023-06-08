@@ -28,6 +28,10 @@ func qemuBaseCommand() string {
 	x86 := "qemu-system-x86_64"
 	arm := "qemu-system-aarch64"
 
+	if MACPKGD != "" {
+		arm = "/usr/local/bin/qemu-system-aarch64"
+	}
+
 	if lepton.AltGOARCH != "" {
 		if lepton.AltGOARCH == "amd64" {
 			return x86
