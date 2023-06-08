@@ -365,9 +365,8 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		if len(instances) == 0 {
 			fmt.Println("[]")
 			return nil
-		} else {
-			return json.NewEncoder(os.Stdout).Encode(instances)
 		}
+		return json.NewEncoder(os.Stdout).Encode(instances)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
