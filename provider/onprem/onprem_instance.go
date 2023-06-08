@@ -360,8 +360,14 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		return err
 	}
 
+	// perhaps this could be a new type
 	if ctx.Config().RunConfig.JSON {
-		return json.NewEncoder(os.Stdout).Encode(instances)
+		if len(instances) == 0 {
+			fmt.Println("[]")
+			return nil
+		} else {
+			return json.NewEncoder(os.Stdout).Encode(instances)
+		}
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
