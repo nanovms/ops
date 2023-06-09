@@ -346,7 +346,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			Status:     "Running",
 			Created:    lepton.Time2Human(ctime),
 			PrivateIps: pips,
-			PublicIps:  strings.Split(i.portList(), ","),
+			Ports:      strings.Split(i.portList(), ","),
 		})
 	}
 
@@ -391,7 +391,7 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		rows = append(rows, i.Status)
 		rows = append(rows, i.Created)
 		rows = append(rows, strings.Join(i.PrivateIps, ","))
-		rows = append(rows, strings.Join(i.PublicIps, ","))
+		rows = append(rows, strings.Join(i.Ports, ","))
 
 		table.Append(rows)
 	}
