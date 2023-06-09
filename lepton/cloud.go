@@ -31,6 +31,8 @@ type CloudInstance struct {
 	Image      string
 }
 
+// MarshalJSON ensures correct json serialization of potential null
+// vals.
 func (c CloudInstance) MarshalJSON() ([]byte, error) {
 	type Alias CloudInstance
 
