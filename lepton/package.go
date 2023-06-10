@@ -494,9 +494,11 @@ func CreatePackageFromRun(newPkg string, version string, mergedCfg *types.Config
 	pkgSysrootDir := filepath.Join(pkgDir, PackageSysRootFolderName)
 
 	execCmd("mkdir -p", pkgDir)
+	execCmd("mkdir -p", pkgSysrootDir)
 
 	// package - manifest
 	pkgCfg := newManifestConfig(mergedCfg)
+
 	// customize
 	pkgCfg.Args = []string{mergedCfg.Program}
 	pkgCfg.Program = newPkg + "_" + version + "/" + mergedCfg.Program

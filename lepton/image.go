@@ -161,71 +161,78 @@ func addCommonFilesToManifest(m *fs.Manifest) error {
 	return nil
 }
 
-func addFilesFromPackage(packagepath string, m *fs.Manifest) {
-
+func addFilesFromPackage(packagepath string, m *fs.Manifest, ppath string) {
 	rootPath := filepath.Join(packagepath, "sysroot")
-	packageName := filepath.Base(packagepath)
 
-	filepath.Walk(rootPath, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	entries, err := os.ReadDir(rootPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		filePath := strings.Split(hostpath, rootPath)
-		if info.IsDir() {
-			m.MkdirPath(strings.TrimPrefix(filePath[1], string(filepath.Separator)))
-			return nil
+	for _, e := range entries {
+		if e.IsDir() {
+			err = m.AddDirectory(rootPath+"/"+e.Name(), rootPath+"/"+e.Name(), ppath, true)
+		} else {
+			err = m.AddFile(e.Name(), rootPath+"/"+e.Name())
 		}
+	}
 
-		err = m.AddFile(filePath[1], hostpath)
-		if err != nil {
-			log.Error(err)
-		}
-		return nil
-	})
-
-	filepath.Walk(packagepath, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() && info.Name() == "sysroot" {
-			return filepath.SkipDir
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		filePath := strings.Split(hostpath, packagepath)
-		vmpath := filepath.Join(string(os.PathSeparator), packageName, filePath[1])
-		err = m.AddFile(vmpath, hostpath)
-		if err != nil {
-			log.Error(err)
-		}
-		return nil
-	})
 }
 
 // BuildPackageManifest builds manifest using package
 func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, error) {
+	ppath, err := os.Getwd() // save wd as it gets changed later on
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	m := fs.NewManifest(c.TargetRoot)
 
-	addFilesFromPackage(packagepath, m)
+	addFilesFromPackage(packagepath, m, ppath)
 
 	m.SetProgram(c.Program)
 
-	err := setManifestFromConfig(m, c)
+	ss := strings.Split(c.Program, "/")
+	p := ""
+	if len(ss) > 1 {
+		p = ss[len(ss)-1]
+	} else {
+		p = ss[0]
+	}
+
+	// historically one can include an absolute path /some/binary which
+	// is inside sysroot
+	// one can also do mypk_0.0.1/mybinary to specify the binary outside
+	// of syroot
+	//
+	// either add file from path of if abs then we know it's already in the
+	// pkg..
+	if string(c.Program[0]) != "/" {
+		err = m.AddFile("/"+p, packagepath+"/"+p)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if string(c.Program[0]) != "/" {
+		m.SetProgram(p)
+	}
+
+	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}
 
 	if !c.DisableArgsCopy && len(c.Args) > 1 {
-		if f, err := os.Stat(c.Args[1]); err == nil {
+
+		// ok to swallow this error as the Args might be pointing to
+		// something inside the pkg vs cli args outside of it
+		f, err := os.Stat(ppath + "/" + c.Args[1])
+		if err == nil {
 			if f.IsDir() {
-				err = m.AddDirectory(c.Args[1], c.Args[1])
+				err = m.AddDirectory(c.Args[1], ppath+"/"+c.Args[1], ppath, false)
 			} else {
-				err = m.AddFile(c.Args[1], c.Args[1])
+				err = m.AddFile(c.Args[1], ppath+"/"+c.Args[1])
 			}
 
 			if err != nil {
@@ -241,7 +248,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 	return m, nil
 }
 
-func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
+func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error {
 	m.AddKernel(c.Kernel)
 
 	addDNSConfig(m, c)
@@ -262,6 +269,11 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 			hostPath = filepath.Join(c.TargetRoot, f)
 		} else {
 			hostPath = path.Join(c.LocalFilesParentDirectory, f)
+		}
+
+		// hack
+		if ppath != "" {
+			hostPath = ppath + "/" + f
 		}
 
 		err := m.AddFile(f, hostPath)
@@ -289,7 +301,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 	}
 
 	for _, d := range c.Dirs {
-		err := m.AddDirectory(d, c.LocalFilesParentDirectory)
+		err := m.AddDirectory(d, ppath, ppath, false)
 		if err != nil {
 			return err
 		}
@@ -350,16 +362,21 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config) error {
 
 // BuildManifest builds manifest using config
 func BuildManifest(c *types.Config) (*fs.Manifest, error) {
+	ppath, err := os.Getwd() // save wd as it gets changed later on
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	m := fs.NewManifest(c.TargetRoot)
 
 	addCommonFilesToManifest(m)
 
-	err := m.AddUserProgram(c.Program)
+	err = m.AddUserProgram(c.Program)
 	if err != nil {
 		return nil, err
 	}
 
-	err = setManifestFromConfig(m, c)
+	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
 		return nil, errors.Wrap(err, 1)
 	}

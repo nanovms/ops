@@ -168,19 +168,26 @@ func (m *Manifest) AddKernel(path string) {
 	}
 }
 
+func resetPath(opath string) {
+	if err := os.Chdir(opath); err != nil {
+		fmt.Println(err)
+	}
+}
+
 // AddDirectory adds all files in dir to image
-func (m *Manifest) AddDirectory(dir string, workDir string) error {
+//
+// If insidepkg is not set then strip path prefix
+// opath is currently passed in only because of this chdir call which
+// gets cleaned up afterwards; should look at removing that in the
+// future.
+func (m *Manifest) AddDirectory(dir string, workDir string, opath string, insidepkg bool) error {
+	// if we can just nuke this we should; calling AddDirectory multiple
+	// times w/a mix of abs/relative blows things up
 	if err := os.Chdir(workDir); err != nil {
 		return err
 	}
+	defer resetPath(opath)
 
-	var absPath bool
-	if filepath.IsAbs(dir) {
-		dir = filepath.Join(m.targetRoot, dir)
-		absPath = true
-	} else {
-		absPath = false
-	}
 	err := filepath.Walk(dir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -188,12 +195,10 @@ func (m *Manifest) AddDirectory(dir string, workDir string) error {
 
 		// if the path is relative then root it to image path
 		var vmpath string
-		if absPath {
-			vmpath = strings.TrimPrefix(hostpath, m.targetRoot)
-		} else if hostpath[0] != '/' {
-			vmpath = "/" + hostpath
-		} else {
-			vmpath = hostpath
+		vmpath = hostpath
+		if insidepkg {
+			s := strings.Split(vmpath, "sysroot/")
+			vmpath = s[1]
 		}
 
 		if (info.Mode() & os.ModeSymlink) != 0 {
