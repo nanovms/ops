@@ -1,6 +1,9 @@
 package lepton
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // CloudImage abstracts images for various cloud providers
 type CloudImage struct {
@@ -26,4 +29,22 @@ type CloudInstance struct {
 	PublicIps  []string
 	Ports      []string
 	Image      string
+}
+
+// MarshalJSON ensures correct json serialization of potential null
+// vals.
+func (c CloudInstance) MarshalJSON() ([]byte, error) {
+	type Alias CloudInstance
+
+	a := struct {
+		Alias
+	}{
+		Alias: (Alias)(c),
+	}
+
+	if a.PublicIps == nil {
+		a.PublicIps = make([]string, 0)
+	}
+
+	return json.Marshal(a)
 }

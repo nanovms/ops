@@ -346,7 +346,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			Status:     "Running",
 			Created:    lepton.Time2Human(ctime),
 			PrivateIps: pips,
-			PublicIps:  strings.Split(i.portList(), ","),
+			Ports:      strings.Split(i.portList(), ","),
 		})
 	}
 
@@ -360,7 +360,12 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		return err
 	}
 
+	// perhaps this could be a new type
 	if ctx.Config().RunConfig.JSON {
+		if len(instances) == 0 {
+			fmt.Println("[]")
+			return nil
+		}
 		return json.NewEncoder(os.Stdout).Encode(instances)
 	}
 
@@ -386,7 +391,7 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 		rows = append(rows, i.Status)
 		rows = append(rows, i.Created)
 		rows = append(rows, strings.Join(i.PrivateIps, ","))
-		rows = append(rows, strings.Join(i.PublicIps, ","))
+		rows = append(rows, strings.Join(i.Ports, ","))
 
 		table.Append(rows)
 	}
