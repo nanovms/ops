@@ -54,8 +54,6 @@ func (v *relayered) CreateImage(ctx *lepton.Context, imagePath string) error {
 func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string) {
 	filename := lepton.GetOpsHome() + "/" + "images/" + imgName
 
-	fmt.Println("using %s ", filename)
-
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
@@ -80,17 +78,8 @@ func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string
 
 	uri := "http://dev.relayered.net/images/create"
 
-	/*
-		res, err := http.Post(uri, contentType, bodyBuf)
-		if err != nil {
-			fmt.Println(err)
-		}
-	*/
-
-	//	reqBody := []byte(j)
-
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", uri, bodyBuf) // bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", uri, bodyBuf)
 	if err != nil {
 		fmt.Println(err)
 	}
