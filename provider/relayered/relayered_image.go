@@ -52,7 +52,9 @@ func (v *relayered) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string) {
-	filename := GetOpsHome() + "images/" + imgName
+	filename := lepton.GetOpsHome() + "/" + "images/" + imgName
+
+	fmt.Println("using %s ", filename)
 
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -78,33 +80,30 @@ func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string
 
 	uri := "http://dev.relayered.net/images/create"
 
-	res, err := http.Post(uri, contentType, bodyBuf)
+	/*
+		res, err := http.Post(uri, contentType, bodyBuf)
+		if err != nil {
+			fmt.Println(err)
+		}
+	*/
+
+	//	reqBody := []byte(j)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", uri, bodyBuf) // bytes.NewBuffer(reqBody))
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	///////////////
+	req.Header.Add("Content-Type", contentType)
+	req.Header.Set("RELAYERED_TOKEN", v.token)
+	req.Header.Add("Accept", "application/json")
 
-	/*
-		reqBody := []byte(j)
-
-		client := &http.Client{}
-		req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+v.iam)
-		req.Header.Add("Accept", "application/json")
-
-
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-		}
-		defer res.Body.Close()
-	*/
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -118,9 +117,7 @@ func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string
 
 // ImageListResponse is the set of instances available from relayered in an
 // images list call.
-type ImageListResponse struct {
-	Images []Image `json:"images"`
-}
+type ImageListResponse []Image
 
 // Image represents a given relayered image configuration.
 type Image struct {
@@ -135,8 +132,6 @@ type Image struct {
 func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	client := &http.Client{}
 
-	//	c := ctx.Config()
-
 	uri := "http://dev.relayered.net/images/list"
 
 	req, err := http.NewRequest("GET", uri, nil)
@@ -144,8 +139,9 @@ func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 		fmt.Println(err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+v.iam)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("RELAYERED_TOKEN", v.token)
+	req.Header.Add("Accept", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -158,7 +154,12 @@ func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 		fmt.Println(err)
 	}
 
-	ilr := &ImageListResponse{}
+	var ilr ImageListResponse
+	err = json.Unmarshal(body, &ilr)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	err = json.Unmarshal(body, &ilr)
 	if err != nil {
 		fmt.Println(err)
@@ -166,7 +167,7 @@ func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 
 	var images []lepton.CloudImage
 
-	for _, img := range ilr.Images {
+	for _, img := range ilr {
 		images = append(images, lepton.CloudImage{
 			ID:     img.ID,
 			Name:   img.Name,

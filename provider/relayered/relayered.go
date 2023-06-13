@@ -17,7 +17,6 @@ const ProviderName = "relayered"
 type relayered struct {
 	Storage *Objects
 	token   string
-	iam     string
 }
 
 // NewProvider relayered
@@ -27,17 +26,12 @@ func NewProvider() *relayered {
 
 // Initialize provider
 func (v *relayered) Initialize(config *types.ProviderConfig) error {
-	v.token = os.Getenv("TOKEN")
+	v.token = os.Getenv("RELAYERED_TOKEN")
 	if v.token == "" {
-		return fmt.Errorf("TOKEN is not set")
+		return fmt.Errorf("RELAYERED_TOKEN is not set")
 	}
 
 	return nil
-}
-
-// Token is the return type for a new IAM token.
-type Token struct {
-	AccessToken string `json:"access_token"`
 }
 
 // GetStorage returns storage interface for cloud provider

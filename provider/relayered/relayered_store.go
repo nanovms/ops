@@ -3,13 +3,6 @@
 package relayered
 
 import (
-	"bufio"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-
 	"github.com/nanovms/ops/types"
 )
 
@@ -21,43 +14,41 @@ type Objects struct {
 
 // CopyToBucket copies archive to bucket
 func (s *Objects) CopyToBucket(config *types.Config, archPath string) error {
-	zone := config.CloudConfig.Zone
+	/*
+		bucket := config.CloudConfig.BucketName
 
-	region := extractRegionFromZone(zone)
+		baseName := filepath.Base(archPath)
+		uri := "https://s3." + region + ".cloud-object-storage.appdomain.cloud" + "/" + bucket + "/" + baseName
 
-	bucket := config.CloudConfig.BucketName
+		f, err := os.Open(archPath)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	baseName := filepath.Base(archPath)
-	uri := "https://s3." + region + ".cloud-object-storage.appdomain.cloud" + "/" + bucket + "/" + baseName
+		reader := bufio.NewReader(f)
 
-	f, err := os.Open(archPath)
-	if err != nil {
-		fmt.Println(err)
-	}
+		client := &http.Client{}
+		r, err := http.NewRequest(http.MethodPut, uri, reader)
+		if err != nil {
+			fmt.Println(err)
+		}
+		r.Header.Set("Content-Type", "application/octet-stream")
 
-	reader := bufio.NewReader(f)
+		r.Header.Set("Authorization", "Bearer "+s.token)
 
-	client := &http.Client{}
-	r, err := http.NewRequest(http.MethodPut, uri, reader)
-	if err != nil {
-		fmt.Println(err)
-	}
-	r.Header.Set("Content-Type", "application/octet-stream")
+		res, err := client.Do(r)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer res.Body.Close()
 
-	r.Header.Set("Authorization", "Bearer "+s.token)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	res, err := client.Do(r)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(string(body))
+		fmt.Println(string(body))
+	*/
 
 	return nil
 }

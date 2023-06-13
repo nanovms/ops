@@ -5,86 +5,21 @@ package relayered
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
 
-func extractRegionFromZone(zone string) string {
-	s := strings.Split(zone, "-")
-	return s[0] + "-" + s[1]
-}
-
 // CreateInstance - Creates instance on relayered Cloud Platform
 func (v *relayered) CreateInstance(ctx *lepton.Context) error {
-	c := ctx.Config()
-	zone := c.CloudConfig.Zone
 
-	region := extractRegionFromZone(zone)
+	uri := "http://dev.relayered.net/instances/create"
 
-	imgs, err := v.GetImages(ctx)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	config := ctx.Config()
-
-	imgID := ""
-	for i := 0; i < len(imgs); i++ {
-		if imgs[i].Name == config.CloudConfig.ImageName {
-			imgID = imgs[i].ID
-		}
-	}
-	if imgID == "" {
-		return errors.New("can't find image")
-	}
-
-	uri := "https://" + region + ".iaas.cloud.relayered.com/v1/instances?version=2023-02-28&generation=2"
-
-	vpcID := v.getDefaultVPC(region)
-	subnetID := v.getDefaultSubnet(region)
-
-	t := time.Now().Unix()
-	st := strconv.FormatInt(t, 10)
-	instName := config.CloudConfig.ImageName + "-" + st
-
-	stuff := `{
-  "boot_volume_attachment": {
-    "volume": {
-      "name": "my-boot-volume",
-      "profile": {
-        "name": "general-purpose"
-      }
-    }
-  },
-  "image": {
-    "id": "` + imgID + `"
-  },
-  "name": "` + instName + `",
-  "primary_network_interface": {
-    "name": "my-network-interface",
-    "subnet": {
-      "id": "` + subnetID + `"
-    }
-  },
-  "profile": {
-    "name": "bx2-2x8"
-  },
-  "vpc": {
-    "id": "` + vpcID + `"
-  },
-  "zone": {
-    "name": "` + zone + `"
-  }
-}`
+	stuff := `{}`
 
 	reqBody := []byte(stuff)
 
@@ -95,7 +30,7 @@ func (v *relayered) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+v.iam)
+	req.Header.Set("RELAYERED_TOKEN", v.token)
 	req.Header.Add("Accept", "application/json")
 
 	res, err := client.Do(req)
@@ -110,6 +45,8 @@ func (v *relayered) CreateInstance(ctx *lepton.Context) error {
 		fmt.Println(string(body))
 	}
 
+	fmt.Println(string(body))
+
 	return nil
 }
 
@@ -120,34 +57,31 @@ func (v *relayered) GetInstanceByName(ctx *lepton.Context, name string) (*lepton
 
 // InstancesListResponse is the set of instances available from relayered in an
 // images list call.
-type InstancesListResponse struct {
-	Instances []Instance `json:"instance"`
-}
+type InstancesListResponse []Instance
 
 // Instance represents a virtual server instance.
 type Instance struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
+	Image     string `json:"image"`
+	Created   string `json:"created"`
 	Status    string `json:"status"`
 	CreatedAt string `json:"created_at"`
 }
 
 // GetInstances return all instances on relayered
 func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	c := ctx.Config()
-	zone := c.CloudConfig.Zone
 
-	region := extractRegionFromZone(zone)
-
-	uri := "https://" + region + ".iaas.cloud.relayered.com/v1/instances?version=2023-02-28&generation=2"
+	uri := "http://dev.relayered.net/instances/list"
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+v.iam)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("RELAYERED_TOKEN", v.token)
+	req.Header.Add("Accept", "application/json")
 
 	client := &http.Client{}
 
@@ -162,7 +96,9 @@ func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, e
 		fmt.Println(err)
 	}
 
-	ilr := &InstancesListResponse{}
+	fmt.Println(string(body))
+
+	var ilr InstancesListResponse
 	err = json.Unmarshal(body, &ilr)
 	if err != nil {
 		fmt.Println(err)
@@ -170,7 +106,7 @@ func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, e
 
 	var cloudInstances []lepton.CloudInstance
 
-	for _, instance := range ilr.Instances {
+	for _, instance := range ilr {
 		cloudInstances = append(cloudInstances, lepton.CloudInstance{
 			ID:        instance.ID,
 			Status:    instance.Status,
@@ -216,12 +152,8 @@ func (v *relayered) ListInstances(ctx *lepton.Context) error {
 
 // DeleteInstance deletes instance from relayered
 func (v *relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error {
-	c := ctx.Config()
-	zone := c.CloudConfig.Zone
 
-	region := extractRegionFromZone(zone)
-
-	uri := "https://" + region + ".iaas.cloud.relayered.com/v1/instances/$instance_id?version=2023-02-28&generation=2"
+	uri := "http://dev.relayered.net/instances/delete/" + instanceID
 
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", uri, nil)
@@ -230,7 +162,7 @@ func (v *relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", v.iam)
+	req.Header.Set("RELAYERED_TOKEN", v.token)
 	req.Header.Add("Accept", "application/json")
 
 	res, err := client.Do(req)
@@ -256,7 +188,6 @@ func (v *relayered) StartInstance(ctx *lepton.Context, instanceID string) error 
 
 // StopInstance halts instance from v
 func (v *relayered) StopInstance(ctx *lepton.Context, instanceID string) error {
-	// POST https://api.relayered.com/v4/relayered/instances/{relayeredId}/shutdown
 	return nil
 }
 
@@ -266,7 +197,6 @@ func (v *relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, 
 }
 
 // GetInstanceLogs gets instance related logs
-// https://cloud.relayered.com/docs/vpc?topic=vpc-vsi_is_connecting_console&interface=api
 func (v *relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil
 }
