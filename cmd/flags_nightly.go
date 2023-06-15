@@ -23,7 +23,9 @@ type NightlyCommandFlags struct {
 
 // MergeToConfig downloads nightly build and change configuration nanos tools paths
 func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
-	config.NightlyBuild = flags.Nightly
+	if flags.Nightly {
+		config.NightlyBuild = flags.Nightly
+	}
 
 	if flags.Arch != "" {
 		api.AltGOARCH = flags.Arch
