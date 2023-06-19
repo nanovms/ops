@@ -27,6 +27,7 @@ type Service interface {
 
 // SetupNetworkInterfaces changes network configuration to support requirements
 func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName string, ipaddress string, netmask string) error {
+
 	tapExists, err := network.CheckNetworkInterfaceExists(tapDeviceName)
 	if err != nil {
 		return errors.New("Not able to check tap exists")
