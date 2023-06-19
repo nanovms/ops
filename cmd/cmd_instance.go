@@ -54,7 +54,7 @@ func instanceCreateCommand() *cobra.Command {
 	cmdInstanceCreate.PersistentFlags().StringP("instance-name", "i", "", "instance name (overrides default instance name format)")
 	cmdInstanceCreate.PersistentFlags().StringP("instance-group", "", "", "instance group")
 
-	cmdInstanceCreate.PersistentFlags().StringP("bridge", "", "", "bridge [local only]")
+	cmdInstanceCreate.PersistentFlags().Bool("bridged", false, "bridge [local only]")
 	cmdInstanceCreate.PersistentFlags().StringP("tap", "", "", "tap interface [local only]")
 	cmdInstanceCreate.PersistentFlags().StringP("ip-address", "", "", "static ip address [local only]")
 
@@ -85,11 +85,15 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	instanceGroup, _ := cmd.Flags().GetString("instance-group")
 
     // local only
-	bridge, _ := cmd.Flags().GetString("bridge")
+	bridged, _ := cmd.Flags().GetBool("bridged")
 	tap, _ := cmd.Flags().GetString("tap")
 	ipAddress, _ := cmd.Flags().GetString("ip-address")
-    if bridge != "" && tap != "" && ipAddress != "" {
+    if bridged && tap != "" && ipAddress != "" {
         fmt.Println("setup network")
+        c.RunConfig.TapName = tap
+        c.RunConfig.Bridged = bridged
+        c.RunConfig.IPAddress = ipAddress
+        c.RunConfig.NetMask = "255.255.255.0"   // stubbed
     }
 
 	if instanceName == "" {

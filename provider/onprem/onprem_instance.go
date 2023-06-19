@@ -46,7 +46,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 
     // linux local only; mac uses diff bridge
     if runtime.GOOS == "linux" {
-        tapDeviceName := c.RunConfig.TapName
+       tapDeviceName := c.RunConfig.TapName
         bridged := c.RunConfig.Bridged
         ipaddress := c.RunConfig.IPAddress
         netmask := c.RunConfig.NetMask
