@@ -193,10 +193,40 @@ func (v *relayered) StopInstance(ctx *lepton.Context, instanceID string) error {
 
 // PrintInstanceLogs writes instance logs to console
 func (v *relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+	s, err := v.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(s)
+
 	return nil
 }
 
 // GetInstanceLogs gets instance related logs
 func (v *relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
-	return "", nil
+	uri := "http://dev.relayered.net/instances/logs/" + instancename
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("RELAYERED_TOKEN", v.token)
+	req.Header.Add("Accept", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return string(body), nil
 }
