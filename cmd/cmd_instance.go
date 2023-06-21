@@ -84,17 +84,17 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	instanceName, _ := cmd.Flags().GetString("instance-name")
 	instanceGroup, _ := cmd.Flags().GetString("instance-group")
 
-    // local only
+	// local only
 	bridged, _ := cmd.Flags().GetBool("bridged")
 	tap, _ := cmd.Flags().GetString("tap")
 	ipAddress, _ := cmd.Flags().GetString("ip-address")
-    if bridged && tap != "" && ipAddress != "" {
-        fmt.Println("setup network")
-        c.RunConfig.TapName = tap
-        c.RunConfig.Bridged = bridged
-        c.RunConfig.IPAddress = ipAddress
-        c.RunConfig.NetMask = "255.255.255.0"   // stubbed
-    }
+	if bridged && tap != "" && ipAddress != "" {
+		fmt.Println("setup network")
+		c.RunConfig.TapName = tap
+		c.RunConfig.Bridged = bridged
+		c.RunConfig.IPAddress = ipAddress
+		c.RunConfig.NetMask = "255.255.255.0" // stubbed
+	}
 
 	if instanceName == "" {
 		c.RunConfig.InstanceName = fmt.Sprintf("%v-%v",
