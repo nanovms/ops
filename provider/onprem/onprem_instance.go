@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -14,9 +15,10 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/network"
 	"github.com/nanovms/ops/qemu"
-	"github.com/olekukonko/tablewriter"
 
+	"github.com/olekukonko/tablewriter"
 	"golang.org/x/sys/unix"
 )
 
@@ -39,6 +41,28 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		err := AddMountsFromConfig(c)
 		if err != nil {
 			return "", err
+		}
+	}
+
+	// linux local only; mac uses diff bridge
+	if runtime.GOOS == "linux" && c.RunConfig.Bridged {
+		tapDeviceName := c.RunConfig.TapName
+		bridged := c.RunConfig.Bridged
+		ipaddress := c.RunConfig.IPAddress
+		netmask := c.RunConfig.NetMask
+
+		bridgeName := c.RunConfig.BridgeName
+		if bridged && bridgeName == "" {
+			bridgeName = "br0"
+		}
+
+		networkService := network.NewIprouteNetworkService()
+
+		if tapDeviceName != "" {
+			err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
