@@ -14,10 +14,12 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var baseURI = "http://dev.relayered.net"
+
 // CreateInstance - Creates instance on relayered Cloud Platform
 func (v *relayered) CreateInstance(ctx *lepton.Context) error {
 
-	uri := "http://dev.relayered.net/instances/create"
+	uri := baseURI + "/instances/create"
 
 	stuff := `{}`
 
@@ -72,7 +74,7 @@ type Instance struct {
 // GetInstances return all instances on relayered
 func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
 
-	uri := "http://dev.relayered.net/instances/list"
+	uri := baseURI + "/instances/list"
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -153,7 +155,7 @@ func (v *relayered) ListInstances(ctx *lepton.Context) error {
 // DeleteInstance deletes instance from relayered
 func (v *relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 
-	uri := "http://dev.relayered.net/instances/delete/" + instanceID
+	uri := baseURI + "/instances/delete/" + instanceID
 
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", uri, nil)
@@ -205,7 +207,7 @@ func (v *relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, 
 
 // GetInstanceLogs gets instance related logs
 func (v *relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
-	uri := "http://dev.relayered.net/instances/logs/" + instancename
+	uri := baseURI + "/instances/logs/" + instancename
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", uri, nil)

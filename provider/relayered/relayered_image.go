@@ -76,7 +76,7 @@ func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string
 	contentType := bodyWriter.FormDataContentType()
 	bodyWriter.Close()
 
-	uri := "http://dev.relayered.net/images/create"
+	uri := baseURI + "/images/create"
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", uri, bodyBuf)
@@ -121,7 +121,7 @@ type Image struct {
 func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	client := &http.Client{}
 
-	uri := "http://dev.relayered.net/images/list"
+	uri := baseURI + "/images/list"
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
