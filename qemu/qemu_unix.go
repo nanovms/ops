@@ -91,6 +91,9 @@ func logv(rconfig *types.RunConfig, msg string) {
 func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
 	logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
+
+	fmt.Println(qemuBaseCommand() + " " + strings.Join(args, " "))
+
 	q.cmd = exec.Command(qemuBaseCommand(), args...)
 
 	c := make(chan os.Signal, 1)

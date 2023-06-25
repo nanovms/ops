@@ -99,9 +99,8 @@ func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string
 		fmt.Println(err)
 	}
 
-	fmt.Println(res.Status)
-
 	fmt.Println(string(body))
+
 }
 
 // ImageListResponse is the set of instances available from relayered in an
