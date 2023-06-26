@@ -53,14 +53,15 @@ func qemuBaseCommand() string {
 }
 
 type qemu struct {
-	cmd     *exec.Cmd
-	drives  []drive
-	devices []device
-	ifaces  []netdev
-	display display
-	serial  serial
-	flags   []string
-	kernel  string
+	cmd        *exec.Cmd
+	drives     []drive
+	devices    []device
+	ifaces     []netdev
+	display    display
+	serial     serial
+	flags      []string
+	kernel     string
+	atExitHook string
 }
 
 func newQemu() Hypervisor {
@@ -90,8 +91,13 @@ func logv(rconfig *types.RunConfig, msg string) {
 
 func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 	args := q.Args(rconfig)
-	logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
-	q.cmd = exec.Command(qemuBaseCommand(), args...)
+	if q.atExitHook != "" {
+		qc := qemuBaseCommand() + " " + strings.Join(args, " ")
+		fullCmd := qc + "; " + q.atExitHook
+		q.cmd = exec.Command("/bin/sh", "-c", fullCmd)
+	} else {
+		q.cmd = exec.Command(qemuBaseCommand(), args...)
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
@@ -490,6 +496,10 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 	if rconfig.GdbPort > 0 {
 		gdbProtoStr := fmt.Sprintf("tcp::%d", rconfig.GdbPort)
 		q.addOption("-gdb", gdbProtoStr)
+	}
+
+	if rconfig.AtExit != "" {
+		q.atExitHook = rconfig.AtExit
 	}
 
 	if rconfig.Debug {
