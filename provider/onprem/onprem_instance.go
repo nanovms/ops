@@ -95,12 +95,19 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
+	// if atexit is set it's actually executing through a parent shell
+	// so get the child
+	if c.RunConfig.AtExit != "" {
+		pid = findPIDFromHook(pid)
+	}
+
 	instances := path.Join(opshome, "instances")
 
 	i := instance{
 		Instance: c.RunConfig.InstanceName,
 		Image:    c.RunConfig.ImageName,
 		Ports:    c.RunConfig.Ports,
+		Pid:      pid,
 	}
 
 	if qemu.OPSD != "" {
@@ -118,6 +125,15 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	}
 
 	return pid, err
+}
+
+func findPIDFromHook(ppid string) string {
+	pid, err := execCmd("pgrep -P " + ppid)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return strings.TrimSpace(pid)
 }
 
 // CreateInstance on premise
