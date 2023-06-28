@@ -516,7 +516,7 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 
 	blobURL := containerURL.NewBlockBlobURL(fname)
 
-	get, err := blobURL.Download(context.TODO(), 0, 0, azblob.BlobAccessConditions{}, false)
+	get, err := blobURL.Download(context.TODO(), 0, 0, azblob.BlobAccessConditions{}, false, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
 		return "", err
 	}

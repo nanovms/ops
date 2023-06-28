@@ -5,7 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible
-	github.com/Azure/azure-storage-blob-go v0.10.0
+	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/Azure/go-autorest/autorest/adal v0.9.18
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
@@ -53,7 +53,7 @@ require (
 	cloud.google.com/go/compute v1.13.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
-	github.com/Azure/azure-pipeline-go v0.2.2 // indirect
+	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.2 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-ieproxy v0.0.0-20190702010315-6dee0af9227d // indirect
+	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
