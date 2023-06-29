@@ -3,12 +3,14 @@
 package upcloud_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +18,7 @@ func TestGetAllVolumes(t *testing.T) {
 	p, s := NewProvider(t)
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Type: "disk", Access: "private"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Type: "disk", Access: "private"}).
 		Return(&upcloud.Storages{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -36,35 +38,35 @@ func TestAttachVolume(t *testing.T) {
 	volumeName := "files"
 
 	s.EXPECT().
-		GetServers().
+		GetServers(context.Background()).
 		Return(&upcloud.Servers{Servers: []upcloud.Server{{UUID: serverID, Title: serverName}}}, nil)
 
 	s.EXPECT().
-		GetServerDetails(&request.GetServerDetailsRequest{UUID: serverID}).
+		GetServerDetails(context.Background(), &request.GetServerDetailsRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		StopServer(&request.StopServerRequest{UUID: serverID}).
+		StopServer(context.Background(), &request.StopServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		WaitForServerState(&request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
+		WaitForServerState(context.Background(), &request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Type: "disk", Access: "private"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Type: "disk", Access: "private"}).
 		Return(&upcloud.Storages{Storages: []upcloud.Storage{{UUID: volumeID, Title: volumeName}}}, nil)
 
 	s.EXPECT().
-		GetStorageDetails(&request.GetStorageDetailsRequest{UUID: volumeID}).
+		GetStorageDetails(context.Background(), &request.GetStorageDetailsRequest{UUID: volumeID}).
 		Return(&upcloud.StorageDetails{Storage: upcloud.Storage{UUID: volumeID, Title: volumeName}}, nil)
 
 	s.EXPECT().
-		AttachStorage(&request.AttachStorageRequest{ServerUUID: serverID, StorageUUID: volumeID}).
+		AttachStorage(context.Background(), &request.AttachStorageRequest{ServerUUID: serverID, StorageUUID: volumeID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID}}, nil)
 
 	s.EXPECT().
-		StartServer(&request.StartServerRequest{UUID: serverID}).
+		StartServer(context.Background(), &request.StartServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -82,35 +84,35 @@ func TestDetachVolume(t *testing.T) {
 	volumeName := "files"
 
 	s.EXPECT().
-		GetServers().
+		GetServers(context.Background()).
 		Return(&upcloud.Servers{Servers: []upcloud.Server{{UUID: serverID, Title: serverName}}}, nil)
 
 	s.EXPECT().
-		GetServerDetails(&request.GetServerDetailsRequest{UUID: serverID}).
+		GetServerDetails(context.Background(), &request.GetServerDetailsRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{StorageDevices: []upcloud.ServerStorageDevice{{Title: volumeName, Address: "s0"}}, Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		StopServer(&request.StopServerRequest{UUID: serverID}).
+		StopServer(context.Background(), &request.StopServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		WaitForServerState(&request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
+		WaitForServerState(context.Background(), &request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Type: "disk", Access: "private"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Type: "disk", Access: "private"}).
 		Return(&upcloud.Storages{Storages: []upcloud.Storage{{UUID: volumeID, Title: volumeName}}}, nil)
 
 	s.EXPECT().
-		GetStorageDetails(&request.GetStorageDetailsRequest{UUID: volumeID}).
+		GetStorageDetails(context.Background(), &request.GetStorageDetailsRequest{UUID: volumeID}).
 		Return(&upcloud.StorageDetails{Storage: upcloud.Storage{UUID: volumeID, Title: volumeName}}, nil)
 
 	s.EXPECT().
-		DetachStorage(&request.DetachStorageRequest{ServerUUID: serverID, Address: "s0"}).
+		DetachStorage(context.Background(), &request.DetachStorageRequest{ServerUUID: serverID, Address: "s0"}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID}}, nil)
 
 	s.EXPECT().
-		StartServer(&request.StartServerRequest{UUID: serverID}).
+		StartServer(context.Background(), &request.StartServerRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())

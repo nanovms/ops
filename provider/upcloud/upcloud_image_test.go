@@ -3,13 +3,15 @@
 package upcloud_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,24 +24,24 @@ func TestCreateImage(t *testing.T) {
 	storageUUID := "1"
 
 	s.EXPECT().
-		CreateStorage(&request.CreateStorageRequest{Size: 10}).
+		CreateStorage(context.Background(), &request.CreateStorageRequest{Size: 1}).
 		Return(&upcloud.StorageDetails{Storage: upcloud.Storage{UUID: storageUUID}}, nil)
 
 	s.EXPECT().
-		CreateStorageImport(&request.CreateStorageImportRequest{StorageUUID: storageUUID, Source: "direct_upload", SourceLocation: file.Name()}).
+		CreateStorageImport(context.Background(), &request.CreateStorageImportRequest{StorageUUID: storageUUID, Source: "direct_upload", SourceLocation: file.Name()}).
 		Return(&upcloud.StorageImportDetails{}, nil)
 
 	s.EXPECT().
-		WaitForStorageState(&request.WaitForStorageStateRequest{UUID: storageUUID, DesiredState: "online", Timeout: 10 * time.Minute}).
+		WaitForStorageState(context.Background(), &request.WaitForStorageStateRequest{UUID: storageUUID, DesiredState: "online", Timeout: 10 * time.Minute}).
 		Return(nil, nil).
 		Times(2)
 
 	s.EXPECT().
-		TemplatizeStorage(&request.TemplatizeStorageRequest{UUID: storageUUID}).
+		TemplatizeStorage(context.Background(), &request.TemplatizeStorageRequest{UUID: storageUUID}).
 		Return(nil, nil)
 
 	s.EXPECT().
-		DeleteStorage(&request.DeleteStorageRequest{UUID: storageUUID}).
+		DeleteStorage(context.Background(), &request.DeleteStorageRequest{UUID: storageUUID}).
 		Return(nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -52,7 +54,7 @@ func TestListImages(t *testing.T) {
 	p, s := NewProvider(t)
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&upcloud.Storages{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -65,7 +67,7 @@ func TestGetImages(t *testing.T) {
 	p, s := NewProvider(t)
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&upcloud.Storages{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -87,11 +89,11 @@ func TestDeleteImage(t *testing.T) {
 	storages.Storages = []upcloud.Storage{{UUID: storageUUID, Title: storageTitle}}
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&storages, nil)
 
 	s.EXPECT().
-		DeleteStorage(&request.DeleteStorageRequest{UUID: storageUUID}).
+		DeleteStorage(context.Background(), &request.DeleteStorageRequest{UUID: storageUUID}).
 		Return(nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())

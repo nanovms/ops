@@ -3,6 +3,7 @@
 package upcloud_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -20,7 +21,7 @@ func TestProviderInitialize(t *testing.T) {
 		p, s := NewProvider(t)
 
 		s.EXPECT().
-			GetAccount().
+			GetAccount(context.Background()).
 			Return(nil, nil)
 
 		err := p.Initialize(&lepton.NewConfig().CloudConfig)
@@ -34,7 +35,7 @@ func TestProviderInitialize(t *testing.T) {
 		p, s := NewProvider(t)
 
 		s.EXPECT().
-			GetAccount().
+			GetAccount(context.Background()).
 			Return(nil, nil)
 
 		err := p.Initialize(&lepton.NewConfig().CloudConfig)
@@ -49,7 +50,7 @@ func TestProviderInitialize(t *testing.T) {
 		p, s := NewProvider(t)
 
 		s.EXPECT().
-			GetAccount().
+			GetAccount(context.Background()).
 			Return(nil, nil)
 
 		err := p.Initialize(&lepton.NewConfig().CloudConfig)
@@ -67,7 +68,7 @@ func TestProviderInitialize(t *testing.T) {
 		errInvalidCredentials := errors.New("invalid credentials")
 
 		s.EXPECT().
-			GetAccount().
+			GetAccount(context.Background()).
 			Return(nil, errInvalidCredentials)
 
 		err := p.Initialize(&lepton.NewConfig().CloudConfig)
@@ -83,7 +84,7 @@ func TestProviderInitialize(t *testing.T) {
 		p, s := NewProvider(t)
 
 		s.EXPECT().
-			GetAccount().
+			GetAccount(context.Background()).
 			Return(nil, nil)
 
 		err := p.Initialize(&lepton.NewConfig().CloudConfig)
