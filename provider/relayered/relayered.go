@@ -13,19 +13,19 @@ import (
 // ProviderName of the cloud platform provider
 const ProviderName = "relayered"
 
-// relayered Provider to interact with relayered infrastructure
-type relayered struct {
+// Relayered Provider to interact with relayered infrastructure
+type Relayered struct {
 	Storage *Objects
 	token   string
 }
 
 // NewProvider relayered
-func NewProvider() *relayered {
-	return &relayered{}
+func NewProvider() *Relayered {
+	return &Relayered{}
 }
 
 // Initialize provider
-func (v *relayered) Initialize(config *types.ProviderConfig) error {
+func (v *Relayered) Initialize(config *types.ProviderConfig) error {
 	v.token = os.Getenv("RELAYERED_TOKEN")
 	if v.token == "" {
 		return fmt.Errorf("RELAYERED_TOKEN is not set")
@@ -35,6 +35,6 @@ func (v *relayered) Initialize(config *types.ProviderConfig) error {
 }
 
 // GetStorage returns storage interface for cloud provider
-func (v *relayered) GetStorage() lepton.Storage {
+func (v *Relayered) GetStorage() lepton.Storage {
 	return v.Storage
 }

@@ -17,7 +17,7 @@ import (
 var baseURI = "http://dev.relayered.net"
 
 // CreateInstance - Creates instance on relayered Cloud Platform
-func (v *relayered) CreateInstance(ctx *lepton.Context) error {
+func (v *Relayered) CreateInstance(ctx *lepton.Context) error {
 
 	uri := baseURI + "/instances/create"
 
@@ -53,7 +53,7 @@ func (v *relayered) CreateInstance(ctx *lepton.Context) error {
 }
 
 // GetInstanceByName returns instance with given name
-func (v *relayered) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
+func (v *Relayered) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	return nil, nil
 }
 
@@ -72,7 +72,7 @@ type Instance struct {
 }
 
 // GetInstances return all instances on relayered
-func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
+func (v *Relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
 
 	uri := baseURI + "/instances/list"
 
@@ -123,7 +123,7 @@ func (v *relayered) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, e
 }
 
 // ListInstances lists instances on v
-func (v *relayered) ListInstances(ctx *lepton.Context) error {
+func (v *Relayered) ListInstances(ctx *lepton.Context) error {
 	instances, err := v.GetInstances(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -153,7 +153,7 @@ func (v *relayered) ListInstances(ctx *lepton.Context) error {
 }
 
 // DeleteInstance deletes instance from relayered
-func (v *relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error {
+func (v *Relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 
 	uri := baseURI + "/instances/delete/" + instanceID
 
@@ -184,17 +184,17 @@ func (v *relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error
 }
 
 // StartInstance starts an instance in relayered
-func (v *relayered) StartInstance(ctx *lepton.Context, instanceID string) error {
+func (v *Relayered) StartInstance(ctx *lepton.Context, instanceID string) error {
 	return nil
 }
 
 // StopInstance halts instance from v
-func (v *relayered) StopInstance(ctx *lepton.Context, instanceID string) error {
+func (v *Relayered) StopInstance(ctx *lepton.Context, instanceID string) error {
 	return nil
 }
 
 // PrintInstanceLogs writes instance logs to console
-func (v *relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+func (v *Relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
 	s, err := v.GetInstanceLogs(ctx, instancename)
 	if err != nil {
 		fmt.Println(err)
@@ -206,7 +206,7 @@ func (v *relayered) PrintInstanceLogs(ctx *lepton.Context, instancename string, 
 }
 
 // GetInstanceLogs gets instance related logs
-func (v *relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
+func (v *Relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	uri := baseURI + "/instances/logs/" + instancename
 
 	client := &http.Client{}

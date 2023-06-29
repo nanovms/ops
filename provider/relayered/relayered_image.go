@@ -19,7 +19,7 @@ import (
 )
 
 // BuildImage to be upload on relayered
-func (v *relayered) BuildImage(ctx *lepton.Context) (string, error) {
+func (v *Relayered) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
 	err := lepton.BuildImage(*c)
 	if err != nil {
@@ -30,7 +30,7 @@ func (v *relayered) BuildImage(ctx *lepton.Context) (string, error) {
 }
 
 // BuildImageWithPackage to upload on relayered.
-func (v *relayered) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
+func (v *Relayered) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
@@ -39,11 +39,11 @@ func (v *relayered) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (
 	return v.CustomizeImage(ctx)
 }
 
-func (v *relayered) destroyImage(snapshotid string) {
+func (v *Relayered) destroyImage(snapshotid string) {
 }
 
 // CreateImage - Creates image on relayered using nanos images
-func (v *relayered) CreateImage(ctx *lepton.Context, imagePath string) error {
+func (v *Relayered) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	imgName := ctx.Config().CloudConfig.ImageName
 
@@ -51,7 +51,7 @@ func (v *relayered) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
-func (v *relayered) createImage(ctx *lepton.Context, icow string, imgName string) {
+func (v *Relayered) createImage(ctx *lepton.Context, icow string, imgName string) {
 	filename := lepton.GetOpsHome() + "/" + "images/" + imgName
 
 	bodyBuf := &bytes.Buffer{}
@@ -117,7 +117,7 @@ type Image struct {
 
 // GetImages return all images on relayered
 // needs tags added
-func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *Relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 	client := &http.Client{}
 
 	uri := baseURI + "/images/list"
@@ -169,7 +169,7 @@ func (v *relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 }
 
 // ListImages lists images on relayered
-func (v *relayered) ListImages(ctx *lepton.Context) error {
+func (v *Relayered) ListImages(ctx *lepton.Context) error {
 	images, err := v.GetImages(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -201,23 +201,23 @@ func (v *relayered) ListImages(ctx *lepton.Context) error {
 }
 
 // DeleteImage deletes image from v
-func (v *relayered) DeleteImage(ctx *lepton.Context, snapshotID string) error {
+func (v *Relayered) DeleteImage(ctx *lepton.Context, snapshotID string) error {
 	return nil
 }
 
 // SyncImage syncs image from provider to another provider
-func (v *relayered) SyncImage(config *types.Config, target lepton.Provider, image string) error {
+func (v *Relayered) SyncImage(config *types.Config, target lepton.Provider, image string) error {
 	log.Warn("not yet implemented")
 	return nil
 }
 
 // ResizeImage is not supported on relayered.
-func (v *relayered) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
+func (v *Relayered) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
 	return fmt.Errorf("operation not supported")
 }
 
 // CustomizeImage returns image path with adaptations needed by cloud provider
-func (v *relayered) CustomizeImage(ctx *lepton.Context) (string, error) {
+func (v *Relayered) CustomizeImage(ctx *lepton.Context) (string, error) {
 	imagePath := ctx.Config().RunConfig.ImageName
 	return imagePath, nil
 }
