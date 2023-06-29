@@ -7,16 +7,16 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-    "runtime"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/network"
 	"github.com/nanovms/ops/qemu"
-    "github.com/nanovms/ops/network"
 
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/sys/unix"
@@ -44,27 +44,27 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		}
 	}
 
-    // linux local only; mac uses diff bridge
-    if runtime.GOOS == "linux" {
-       tapDeviceName := c.RunConfig.TapName
-        bridged := c.RunConfig.Bridged
-        ipaddress := c.RunConfig.IPAddress
-        netmask := c.RunConfig.NetMask
+	// linux local only; mac uses diff bridge
+	if runtime.GOOS == "linux" && c.RunConfig.Bridged {
+		tapDeviceName := c.RunConfig.TapName
+		bridged := c.RunConfig.Bridged
+		ipaddress := c.RunConfig.IPAddress
+		netmask := c.RunConfig.NetMask
 
-        bridgeName := c.RunConfig.BridgeName
-        if bridged && bridgeName == "" {
-            bridgeName = "br0"
-        }
+		bridgeName := c.RunConfig.BridgeName
+		if bridged && bridgeName == "" {
+			bridgeName = "br0"
+		}
 
-        networkService := network.NewIprouteNetworkService()
+		networkService := network.NewIprouteNetworkService()
 
-        if tapDeviceName != "" {
-            err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask)
-            if err != nil {
-                return "", err
-            }
-        }
-    }
+		if tapDeviceName != "" {
+			err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
 
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
@@ -95,12 +95,19 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		return "", err
 	}
 
+	// if atexit is set it's actually executing through a parent shell
+	// so get the child
+	if c.RunConfig.AtExit != "" {
+		pid = findPIDFromHook(pid)
+	}
+
 	instances := path.Join(opshome, "instances")
 
 	i := instance{
 		Instance: c.RunConfig.InstanceName,
 		Image:    c.RunConfig.ImageName,
 		Ports:    c.RunConfig.Ports,
+		Pid:      pid,
 	}
 
 	if qemu.OPSD != "" {
@@ -118,6 +125,15 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	}
 
 	return pid, err
+}
+
+func findPIDFromHook(ppid string) string {
+	pid, err := execCmd("pgrep -P " + ppid)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return strings.TrimSpace(pid)
 }
 
 // CreateInstance on premise

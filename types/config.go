@@ -207,6 +207,9 @@ type RunConfig struct {
 	// Accel defines whether hardware acceleration should be enabled.
 	Accel bool `json:",omitempty"`
 
+	// AtExit allows hooks to be ran after instance stops.
+	AtExit string `json:",omitempty"`
+
 	// Bridged parameter is set to true if bridged networking mode is
 	// in use. This also enables KVM acceleration.
 	Bridged bool `json:",omitempty"`
@@ -259,7 +262,7 @@ type RunConfig struct {
 	Vga bool `json:",omitempty"`
 
 	// host directories shared with guest via VirtFS
-	VirtfsShares []string `json:",omitempty"`
+	VirtfsShares []string `json:"-"`
 
 	// Mounts
 	Mounts []string `json:",omitempty"`

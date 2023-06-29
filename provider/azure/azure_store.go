@@ -179,7 +179,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 	}
 
 	_, err = blobURL.Create(ctx, length, 0, azblob.BlobHTTPHeaders{},
-		azblob.Metadata{}, azblob.BlobAccessConditions{})
+		azblob.Metadata{}, azblob.BlobAccessConditions{}, azblob.PremiumPageBlobAccessTierNone, nil, azblob.ClientProvidedKeyOptions{}, azblob.ImmutabilityPolicyOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func (az *Storage) CopyToBucket(config *types.Config, imgPath string) error {
 			log.Fatal(err)
 		}
 
-		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil)
+		_, err = blobURL.UploadPages(ctx, int64(i*max), bytes.NewReader(page[:n]), azblob.PageBlobAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
 		if err != nil {
 			log.Fatal(err)
 		}
