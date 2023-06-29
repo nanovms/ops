@@ -88,6 +88,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 	bridged, _ := cmd.Flags().GetBool("bridged")
 	tap, _ := cmd.Flags().GetString("tap")
 	ipAddress, _ := cmd.Flags().GetString("ip-address")
+
 	if bridged && tap != "" && ipAddress != "" {
 		c.RunConfig.TapName = tap
 		c.RunConfig.Bridged = bridged
