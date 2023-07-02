@@ -21,7 +21,9 @@ func RunLocalInstance(c *types.Config) (err error) {
 	}
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
-		ErrNoHypervisor := "No hypervisor found on $PATH"
+		ErrNoHypervisor := fmt.Sprintf("No hypervisor found on $PATH. Please install it: %s",
+			new(qemu.PackageManager).InstallQEMUCommand())
+
 		InfoInstallOps := "Please install OPS using curl https://ops.city/get.sh -sSfL | sh"
 		return fmt.Errorf("%s\n%s", ErrNoHypervisor, InfoInstallOps)
 	}

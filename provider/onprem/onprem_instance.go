@@ -68,7 +68,9 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 
 	hypervisor := qemu.HypervisorInstance()
 	if hypervisor == nil {
-		fmt.Println("No hypervisor found on $PATH")
+		fmt.Printf("No hypervisor found on $PATH. Please install it: %s",
+			new(qemu.PackageManager).InstallQEMUCommand())
+
 		fmt.Println("Please install OPS using curl https://ops.city/get.sh -sSfL | sh")
 		os.Exit(1)
 	}
