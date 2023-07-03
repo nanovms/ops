@@ -15,7 +15,7 @@ import (
 )
 
 const tfsMagic = "NVMTFS"
-const tfsVersion = 4
+const tfsVersion = 5
 
 const logExtensionSize = 1024 * sectorSize
 
@@ -38,25 +38,28 @@ const (
 )
 
 const (
-	typeBuffer = 0
-	typeTuple  = 1
+	typeBuffer  = 0
+	typeTuple   = 1
+	typeVector  = 2
+	typeInteger = 3
+	typeString  = 4
 )
 
 const symlinkHopsMax = 8
 
 type tfs struct {
-	imgFile    *os.File
-	imgOffset  uint64
-	size       uint64
-	allocated  uint64
-	uuid       [16]byte
-	label      string
-	currentExt *tlogExt
-	symDict    map[string]int
-	tupleCount int
-	staging    []byte
-	decoder    tfsDecoder
-	root       *map[string]interface{}
+	imgFile     *os.File
+	imgOffset   uint64
+	size        uint64
+	allocated   uint64
+	uuid        [16]byte
+	label       string
+	currentExt  *tlogExt
+	symDict     map[string]int
+	nonSymCount int
+	staging     []byte
+	decoder     tfsDecoder
+	root        *map[string]interface{}
 }
 
 func (t *tfs) logInit() error {
@@ -246,32 +249,35 @@ func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
 	return err
 }
 
-func (t *tfs) encodeMetadata(name string, value interface{}) {
-	t.encodeSymbol(name)
+func (t *tfs) encodeValue(value interface{}) error {
 	str, isStr := value.(string)
 	if isStr {
-		t.encodeString(str)
-		return
+		t.encodeString(str, typeString)
+		return nil
 	}
 	strSlice, isStrSlice := value.([]string)
 	if isStrSlice {
-		tuple := make(map[string]interface{})
+		vector := make([]interface{}, len(strSlice))
 		for i, str := range strSlice {
-			tuple[strconv.Itoa(i)] = str
+			vector[i] = str
 		}
-		t.encodeTuple(tuple)
-		return
+		return t.encodeVector(vector)
 	}
 	slice, isSlice := value.([]interface{})
 	if isSlice {
-		tuple := make(map[string]interface{})
-		for i, val := range slice {
-			tuple[strconv.Itoa(i)] = val
-		}
-		t.encodeTuple(tuple)
-		return
+		return t.encodeVector(slice)
 	}
-	t.encodeTuple(value.(map[string]interface{}))
+	tuple, isTuple := value.(map[string]interface{})
+	if isTuple {
+		return t.encodeTuple(tuple)
+	}
+	return fmt.Errorf("unknown type of value %p", value)
+}
+
+func (t *tfs) encodeMetadata(name string, value interface{}) error {
+	t.encodeSymbol(name)
+	err := t.encodeValue(value)
+	return err
 }
 
 func (t *tfs) encodeSymbol(name string) {
@@ -279,26 +285,42 @@ func (t *tfs) encodeSymbol(name string) {
 	if index != 0 {
 		t.pushHeader(entryReference, typeBuffer, index)
 	} else {
-		t.encodeString(name)
-		t.symDict[name] = 1 + len(t.symDict) + t.tupleCount
+		t.encodeString(name, typeBuffer)
+		t.symDict[name] = 1 + len(t.symDict) + t.nonSymCount
 	}
 }
 
 func (t *tfs) encodeTupleHeader(tupleEntries int) {
 	t.pushHeader(entryImmediate, typeTuple, tupleEntries)
-	t.tupleCount++
+	t.nonSymCount++
 }
 
-func (t *tfs) encodeTuple(tuple map[string]interface{}) {
+func (t *tfs) encodeTuple(tuple map[string]interface{}) error {
 	t.encodeTupleHeader(len(tuple))
 	for k, v := range tuple {
-		t.encodeMetadata(k, v)
+		err := t.encodeMetadata(k, v)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (t *tfs) encodeString(s string) {
-	t.pushHeader(entryImmediate, typeBuffer, len(s))
+func (t *tfs) encodeString(s string, dataType byte) {
+	t.pushHeader(entryImmediate, dataType, len(s))
 	t.staging = append(t.staging, s...)
+}
+
+func (t *tfs) encodeVector(vector []interface{}) error {
+	t.pushHeader(entryImmediate, typeVector, len(vector))
+	t.nonSymCount++
+	for _, value := range vector {
+		err := t.encodeValue(value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (t *tfs) decodeValue(buffer []byte, offset *uint64) (interface{}, error) {
@@ -312,9 +334,41 @@ func (t *tfs) decodeValue(buffer []byte, offset *uint64) (interface{}, error) {
 		return t.decodeTuple(buffer, offset, entry, length)
 	case typeBuffer:
 		return t.decodeBuf(buffer, offset, entry, length)
+	case typeVector:
+		return t.decodeVector(buffer, offset, entry, length)
+	case typeInteger:
+		return t.decodeInteger(buffer, offset, entry, length)
+	case typeString:
+		return t.decodeBuf(buffer, offset, entry, length)
 	default:
 		return nil, fmt.Errorf("unknown data type %d (offset %d)", dataType, *offset)
 	}
+}
+
+func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uint) (*[]interface{}, error) {
+	var vector *[]interface{}
+	if entry == entryImmediate {
+		newVector := make([]interface{}, length)
+		vector = &newVector
+		t.decoder.dict[len(t.decoder.dict)+1] = vector
+	} else {
+		ref, err := getVarint(buffer, offset)
+		if err != nil {
+			return nil, err
+		}
+		vector, err = t.getDictVector(ref)
+		if err != nil {
+			return vector, err
+		}
+	}
+	for i := 0; i < int(length); i++ {
+		value, err := t.decodeValue(buffer, offset)
+		if err != nil {
+			return vector, err
+		}
+		(*vector)[i] = value
+	}
+	return vector, nil
 }
 
 func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint) (*map[string]interface{}, error) {
@@ -384,6 +438,27 @@ func (t *tfs) decodeBuf(buffer []byte, offset *uint64, entry byte, length uint) 
 	return t.getDictString(length)
 }
 
+func (t *tfs) decodeInteger(buffer []byte, offset *uint64, entry byte, length uint) (string, error) {
+	val, err := getVarint(buffer, offset)
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatInt(int64(val), 10), nil
+}
+
+func (t *tfs) getDictVector(ref uint) (*[]interface{}, error) {
+	value := t.decoder.dict[int(ref)]
+	if value == nil {
+		return nil, fmt.Errorf("indirect vector %d not found", ref)
+	}
+	var isVector bool
+	vector, isVector := value.(*[]interface{})
+	if !isVector {
+		return nil, fmt.Errorf("invalid indirect vector %d", ref)
+	}
+	return vector, nil
+}
+
 func (t *tfs) getDictTuple(ref uint) (*map[string]interface{}, error) {
 	value := t.decoder.dict[int(ref)]
 	if value == nil {
@@ -412,8 +487,7 @@ func (t *tfs) getDictString(ref uint) (string, error) {
 func (t *tfs) writeLink(name string, target string) error {
 	tuple := make(map[string]interface{})
 	tuple["linktarget"] = target
-	t.encodeMetadata(name, tuple)
-	return nil
+	return t.encodeMetadata(name, tuple)
 }
 
 func (t *tfs) writeFile(name string, hostPath string) error {
@@ -462,20 +536,19 @@ func (t *tfs) writeFile(name string, hostPath string) error {
 		extents["0"] = extent
 	}
 	tuple["extents"] = extents
-	t.encodeMetadata(name, tuple)
-	return nil
+	return t.encodeMetadata(name, tuple)
 }
 
 func (t *tfs) pushHeader(entry byte, dataType byte, length int) {
 	len64 := uint64(length)
 	bitCount := uint(64 - bits.LeadingZeros64(len64))
 	var words uint
-	if bitCount > 5 {
-		words = ((bitCount - 5) + (7 - 1)) / 7
+	if bitCount > 3 {
+		words = ((bitCount - 3) + (7 - 1)) / 7
 	}
-	var first = (entry << 7) | (dataType << 6) | byte(len64>>(words*7))
+	var first = (entry << 7) | (dataType << 4) | byte(len64>>(words*7))
 	if words != 0 {
-		first |= 1 << 5
+		first |= 1 << 3
 	}
 	t.staging = append(t.staging, first)
 	i := words
@@ -892,9 +965,9 @@ func getHeader(buffer []byte, offset *uint64, entry *byte, dataType *byte) (uint
 	b := buffer[*offset]
 	*offset++
 	*entry = b >> 7
-	*dataType = (b >> 6) & 0x1
-	length := uint(b & 0x1f)
-	if (b & (1 << 5)) != 0 {
+	*dataType = (b >> 4) & 0x7
+	length := uint(b & 0x7)
+	if (b & (1 << 3)) != 0 {
 		for {
 			if int(*offset) >= len(buffer) {
 				return 0, fmt.Errorf("getHeader(): buffer length %d exhausted", len(buffer))
@@ -989,7 +1062,10 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 				return nil, err
 			}
 		} else {
-			tfs.encodeMetadata(k, v)
+			err = tfs.encodeMetadata(k, v)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return tfs, tfs.flush()
