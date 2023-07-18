@@ -3,14 +3,16 @@
 package upcloud
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -48,7 +50,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
 	ctx.Logger().Info("creating server")
 
-	serverDetails, err := p.upcloud.CreateServer(createInstanceReq)
+	serverDetails, err := p.upcloud.CreateServer(context.Background(), createInstanceReq)
 	if err != nil {
 		return err
 	}
@@ -78,7 +80,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		Tags: []string{opsTag.Name, imageTag.Name},
 	}
 
-	_, err = p.upcloud.TagServer(assignOpsTagsRequest)
+	_, err = p.upcloud.TagServer(context.Background(), assignOpsTagsRequest)
 	if err != nil {
 		ctx.Logger().Warn("failed assigning ops tags: %s", err)
 		return nil
@@ -134,7 +136,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 		ctx.Logger().Warn("failed creating tags: %s", err)
 
 		var servers *upcloud.Servers
-		servers, err = p.upcloud.GetServers()
+		servers, err = p.upcloud.GetServers(context.Background())
 		if err != nil {
 			return
 		}
@@ -203,7 +205,7 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) (err
 	}
 
 	ctx.Logger().Debug(`deleting server with uuid "%s"`, instance.ID)
-	err = p.upcloud.DeleteServer(deleteServerReq)
+	err = p.upcloud.DeleteServer(context.Background(), deleteServerReq)
 
 	return
 }
@@ -226,7 +228,7 @@ func (p *Provider) stopServer(uuid string) (err error) {
 		UUID: uuid,
 	}
 
-	_, err = p.upcloud.StopServer(stopServerReq)
+	_, err = p.upcloud.StopServer(context.Background(), stopServerReq)
 
 	return
 }
@@ -250,7 +252,7 @@ func (p *Provider) startServer(uuid string) (err error) {
 		UUID: uuid,
 	}
 
-	_, err = p.upcloud.StartServer(startServerReq)
+	_, err = p.upcloud.StartServer(context.Background(), startServerReq)
 
 	return
 }
@@ -269,7 +271,7 @@ func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance
 }
 
 func (p *Provider) getServerByName(ctx *lepton.Context, name string) (server *upcloud.Server, err error) {
-	servers, err := p.upcloud.GetServers()
+	servers, err := p.upcloud.GetServers(context.Background())
 	if err != nil {
 		return
 	}
@@ -293,7 +295,7 @@ func (p *Provider) GetInstanceByID(ctx *lepton.Context, id string) (instance *le
 
 	serverDetailsReq := &request.GetServerDetailsRequest{UUID: id}
 
-	serverDetails, err = p.upcloud.GetServerDetails(serverDetailsReq)
+	serverDetails, err = p.upcloud.GetServerDetails(context.Background(), serverDetailsReq)
 	if err != nil {
 		return
 	}
@@ -349,7 +351,7 @@ func (p *Provider) waitForServerState(uuid, state string) (err error) {
 		Timeout:      1 * time.Minute,
 	}
 
-	_, err = p.upcloud.WaitForServerState(waitReq)
+	_, err = p.upcloud.WaitForServerState(context.Background(), waitReq)
 
 	return
 }

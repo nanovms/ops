@@ -3,11 +3,12 @@
 package upcloud_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/nanovms/ops/lepton"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,11 +25,11 @@ func TestCreateInstance(t *testing.T) {
 	storages.Storages = []upcloud.Storage{{UUID: storageUUID, Title: imageName}}
 
 	s.EXPECT().
-		GetStorages(&request.GetStoragesRequest{Access: "private", Type: "template"}).
+		GetStorages(context.Background(), &request.GetStoragesRequest{Access: "private", Type: "template"}).
 		Return(&storages, nil)
 
 	s.EXPECT().
-		CreateServer(&request.CreateServerRequest{
+		CreateServer(context.Background(), &request.CreateServerRequest{
 			Hostname: instanceName,
 			Title:    instanceName,
 			StorageDevices: request.CreateServerStorageDeviceSlice{
@@ -42,7 +43,7 @@ func TestCreateInstance(t *testing.T) {
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID}}, nil)
 
 	s.EXPECT().
-		GetTags().
+		GetTags(context.Background()).
 		Return(&upcloud.Tags{}, nil).
 		Times(2)
 
@@ -53,7 +54,7 @@ func TestCreateInstance(t *testing.T) {
 
 	createTagReq := &request.CreateTagRequest{Tag: imageTag}
 	s.EXPECT().
-		CreateTag(createTagReq).
+		CreateTag(context.Background(), createTagReq).
 		Return(&imageTag, nil)
 
 	opsTag := upcloud.Tag{
@@ -63,11 +64,11 @@ func TestCreateInstance(t *testing.T) {
 
 	createTagReq = &request.CreateTagRequest{Tag: opsTag}
 	s.EXPECT().
-		CreateTag(createTagReq).
+		CreateTag(context.Background(), createTagReq).
 		Return(&opsTag, nil)
 
 	s.EXPECT().
-		TagServer(&request.TagServerRequest{UUID: serverID, Tags: []string{"OPS", "image-test"}}).
+		TagServer(context.Background(), &request.TagServerRequest{UUID: serverID, Tags: []string{"OPS", "image-test"}}).
 		Return(&upcloud.ServerDetails{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -86,11 +87,11 @@ func TestListInstances(t *testing.T) {
 		Description: "Created by ops",
 	}
 	s.EXPECT().
-		GetTags().
+		GetTags(context.Background()).
 		Return(&upcloud.Tags{Tags: []upcloud.Tag{tag}}, nil)
 
 	s.EXPECT().
-		GetServers().
+		GetServers(context.Background()).
 		Return(&upcloud.Servers{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -107,11 +108,11 @@ func TestGetInstances(t *testing.T) {
 		Description: "Created by ops",
 	}
 	s.EXPECT().
-		GetTags().
+		GetTags(context.Background()).
 		Return(&upcloud.Tags{Tags: []upcloud.Tag{tag}}, nil)
 
 	s.EXPECT().
-		GetServers().
+		GetServers(context.Background()).
 		Return(&upcloud.Servers{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
@@ -129,23 +130,23 @@ func TestDeleteInstance(t *testing.T) {
 	serverName := "test"
 
 	s.EXPECT().
-		GetServers().
+		GetServers(context.Background()).
 		Return(&upcloud.Servers{Servers: []upcloud.Server{{UUID: serverID, Title: serverName}}}, nil)
 
 	s.EXPECT().
-		GetServerDetails(&request.GetServerDetailsRequest{UUID: serverID}).
+		GetServerDetails(context.Background(), &request.GetServerDetailsRequest{UUID: serverID}).
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	s.EXPECT().
-		StopServer(&request.StopServerRequest{UUID: serverID}).
+		StopServer(context.Background(), &request.StopServerRequest{UUID: serverID}).
 		Return(nil, nil)
 
 	s.EXPECT().
-		WaitForServerState(&request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
+		WaitForServerState(context.Background(), &request.WaitForServerStateRequest{UUID: serverID, DesiredState: "stopped", Timeout: 1 * time.Minute}).
 		Return(nil, nil)
 
 	s.EXPECT().
-		DeleteServer(&request.DeleteServerRequest{UUID: serverID}).
+		DeleteServer(context.Background(), &request.DeleteServerRequest{UUID: serverID}).
 		Return(nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())

@@ -3,14 +3,15 @@
 package upcloud
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/nanovms/ops/lepton"
 )
 
@@ -41,7 +42,7 @@ func (p *Provider) GetAllVolumes(ctx *lepton.Context) (volumes *[]lepton.NanosVo
 		Access: "private",
 	}
 
-	templates, err := p.upcloud.GetStorages(listTemplatesReq)
+	templates, err := p.upcloud.GetStorages(context.Background(), listTemplatesReq)
 	if err != nil {
 		return
 	}
@@ -79,7 +80,7 @@ func (p *Provider) asyncGetVolume(uuid string, volumesCh chan *upcloud.StorageDe
 		UUID: uuid,
 	}
 
-	details, err := p.upcloud.GetStorageDetails(volumeReq)
+	details, err := p.upcloud.GetStorageDetails(context.Background(), volumeReq)
 	if err != nil {
 		errCh <- err
 		return
@@ -131,7 +132,7 @@ func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string, attachI
 		StorageUUID: volume.ID,
 	}
 
-	_, err = p.upcloud.AttachStorage(attachReq)
+	_, err = p.upcloud.AttachStorage(context.Background(), attachReq)
 
 	ctx.Logger().Log("starting instance")
 	err = p.startServer(instance.ID)
@@ -148,7 +149,7 @@ func (p *Provider) DetachVolume(ctx *lepton.Context, image, name string) (err er
 
 	serverDetailsReq := &request.GetServerDetailsRequest{UUID: server.UUID}
 
-	serverDetails, err := p.upcloud.GetServerDetails(serverDetailsReq)
+	serverDetails, err := p.upcloud.GetServerDetails(context.Background(), serverDetailsReq)
 	if err != nil {
 		return
 	}
@@ -175,7 +176,7 @@ func (p *Provider) DetachVolume(ctx *lepton.Context, image, name string) (err er
 				Address:    s.Address,
 			}
 
-			_, err = p.upcloud.DetachStorage(detachReq)
+			_, err = p.upcloud.DetachStorage(context.Background(), detachReq)
 
 			ctx.Logger().Log("starting server")
 			err = p.startServer(server.UUID)
