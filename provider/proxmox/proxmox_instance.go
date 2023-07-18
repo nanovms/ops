@@ -190,6 +190,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	data.Set("memory", p.memory)
 	data.Set("onboot", p.onboot)
 	data.Set("protection", p.protection)
+	data.Set("serial0", "socket")
 
 	// Configuring network interfaces
 
