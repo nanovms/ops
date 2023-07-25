@@ -10,6 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.9.18
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/UpCloudLtd/upcloud-go-api/v6 v6.5.0
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/bramvdbogaerde/go-scp v1.0.0
 	github.com/digitalocean/godo v1.57.0
@@ -62,8 +63,6 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/UpCloudLtd/upcloud-go-api/v6 v6.5.0 // indirect
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/containerd/containerd v1.6.12 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
