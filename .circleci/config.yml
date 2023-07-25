@@ -40,7 +40,7 @@ jobs:
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu && brew install wget && brew install protoc-gen-go-grpc
+      - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu && brew install wget && brew install protoc-gen-go-grpc && brew install python-tk@3.9
       - run: go install github.com/jstemmer/go-junit-report@latest
       - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Darwin-x86_64 && sudo mv buf-Darwin-x86_64 /usr/local/bin/buf && sudo chmod +x /usr/local/bin/buf
       # - run: brew install bufbuild/buf/buf
