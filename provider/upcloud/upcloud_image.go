@@ -3,14 +3,16 @@
 package upcloud
 
 import (
+	"context"
 	"errors"
 	"math"
 	"os"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
+
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -50,7 +52,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Title: ctx.Config().CloudConfig.ImageName,
 	}
 
-	templateDetails, err := p.upcloud.TemplatizeStorage(templatizeReq)
+	templateDetails, err := p.upcloud.TemplatizeStorage(context.Background(), templatizeReq)
 	if err != nil {
 		return err
 	}
@@ -108,7 +110,7 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 		Access: "private",
 	}
 
-	templates, err := p.upcloud.GetStorages(listTemplatesReq)
+	templates, err := p.upcloud.GetStorages(context.Background(), listTemplatesReq)
 	if err != nil {
 		return
 	}

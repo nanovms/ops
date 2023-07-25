@@ -5,14 +5,15 @@
 package upcloud
 
 import (
+	"context"
 	"errors"
 	"os"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/client"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/service"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/client"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/service"
 	"github.com/nanovms/ops/types"
 )
 
@@ -64,18 +65,15 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 	}
 
 	if p.upcloud == nil {
-		c := client.New(user, password)
-
-		c.SetTimeout(time.Second * 30)
-
+		c := client.New(user, password, client.WithTimeout(time.Second*600))
 		p.upcloud = service.New(c)
 	}
 
-	_, err := p.upcloud.GetAccount()
+	_, err := p.upcloud.GetAccount(context.Background())
 
 	if err != nil {
-		if serviceError, ok := err.(*upcloud.Error); ok {
-			return errors.New(serviceError.ErrorMessage)
+		if serviceError, ok := err.(*upcloud.Problem); ok {
+			return errors.New(serviceError.Title)
 		}
 		return errors.New("Invalid credentials")
 	}
@@ -84,7 +82,7 @@ func (p *Provider) Initialize(c *types.ProviderConfig) error {
 }
 
 func (p *Provider) findOrCreateTag(tag upcloud.Tag) (upcloudTag *upcloud.Tag, err error) {
-	tagsResponse, err := p.upcloud.GetTags()
+	tagsResponse, err := p.upcloud.GetTags(context.Background())
 	if err != nil {
 		return
 	}
@@ -98,7 +96,7 @@ func (p *Provider) findOrCreateTag(tag upcloud.Tag) (upcloudTag *upcloud.Tag, er
 
 	createTagReq := &request.CreateTagRequest{Tag: tag}
 
-	upcloudTag, err = p.upcloud.CreateTag(createTagReq)
+	upcloudTag, err = p.upcloud.CreateTag(context.Background(), createTagReq)
 	if err != nil {
 		return
 	}

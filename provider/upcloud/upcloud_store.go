@@ -3,13 +3,15 @@
 package upcloud
 
 import (
+	"context"
 	"math"
 	"os"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud"
-	"github.com/UpCloudLtd/upcloud-go-api/upcloud/request"
 	"github.com/nanovms/ops/lepton"
+
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
+	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
 )
 
 func (p *Provider) createStorage(ctx *lepton.Context, storageName, filePath string) (storageDetails *upcloud.StorageDetails, err error) {
@@ -21,22 +23,21 @@ func (p *Provider) createStorage(ctx *lepton.Context, storageName, filePath stri
 	size := fi.Size()
 	sizeGB := float64(size) * math.Pow(10, -9)
 
-	if sizeGB < 10 {
-		sizeGB = 10
-	} else if sizeGB > 2048 {
-		sizeGB = 2048
+	rsz := int(math.Round(sizeGB*100) / 100)
+	if rsz < 1 {
+		rsz = 1
 	}
 
 	ctx.Logger().Info("creating empty storage")
 	createReq := &request.CreateStorageRequest{
-		Size:  int(sizeGB),
+		Size:  rsz,
 		Zone:  p.zone,
 		Title: storageName,
 	}
 
-	storageDetails, err = p.upcloud.CreateStorage(createReq)
+	storageDetails, err = p.upcloud.CreateStorage(context.Background(), createReq)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	ctx.Logger().Debug("%+v", storageDetails)
@@ -48,16 +49,16 @@ func (p *Provider) createStorage(ctx *lepton.Context, storageName, filePath stri
 		SourceLocation: filePath,
 	}
 
-	importDetails, err := p.upcloud.CreateStorageImport(importReq)
+	importDetails, err := p.upcloud.CreateStorageImport(context.Background(), importReq)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	ctx.Logger().Debug("%+v", importDetails)
 
 	err = p.waitForStorageState(storageDetails.UUID, "online")
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	ctx.Logger().Info("import completed")
@@ -72,7 +73,7 @@ func (p *Provider) waitForStorageState(uuid, state string) (err error) {
 		Timeout:      10 * time.Minute,
 	}
 
-	_, err = p.upcloud.WaitForStorageState(waitStateReq)
+	_, err = p.upcloud.WaitForStorageState(context.Background(), waitStateReq)
 
 	return
 }
@@ -82,5 +83,5 @@ func (p *Provider) deleteStorage(uuid string) error {
 		UUID: uuid,
 	}
 
-	return p.upcloud.DeleteStorage(deleteStorageReq)
+	return p.upcloud.DeleteStorage(context.Background(), deleteStorageReq)
 }
