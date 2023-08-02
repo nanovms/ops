@@ -12,7 +12,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
-	"github.com/vultr/govultr/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 // CreateInstance - Creates instance on Digital Ocean Platform
@@ -30,13 +30,43 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 	zone := stripZone(c.CloudConfig.Zone)
 
-	instance, err := v.Client.Instance.Create(context.TODO(), &govultr.InstanceCreateReq{
+	ig := &govultr.InstanceCreateReq{
 		Region:     zone,
 		Plan:       flavor,
 		SnapshotID: c.CloudConfig.ImageName,
 		Tags:       []string{"created-by-ops"},
-	})
+	}
+
+	cloudConfig := ctx.Config().CloudConfig
+	if cloudConfig.StaticIP != "" {
+		/*
+			 this,
+			 https://github.com/vultr/govultr/blob/master/instance_test.go#L1156
+			 is actually wrong:
+			 1)  it takes a UUID of the ip, which we need
+			 to slurp in from here:
+
+			  curl "https://api.vultr.com/v2/reserved-ips" \\n  -X GET \\n
+			  -H "Authorization: Bearer token" | jq
+
+			2) then after you plug it here you must attach in separate call
+
+			  curl
+			  "https://api.vultr.com/v2/reserved-ips/some-uuid/attach"
+			  \\n  -X POST \\n  -H "Authorization: Bearer token-goes-here" \\n  -H "Content-Type:
+			  application/json" \\n  --data '{\n    "instance_id" :
+			  "some-uuid"\n  }'
+
+			 3) finally you have to reboot the instance
+			 https://www.vultr.com/api/#operation/reboot-instance
+		*/
+		fmt.Printf("setting %s\n", cloudConfig.StaticIP)
+		ig.ReservedIPv4 = cloudConfig.StaticIP
+	}
+
+	instance, res, err := v.Client.Instance.Create(context.TODO(), ig)
 	if err != nil {
+		fmt.Println(res)
 		return err
 	}
 
@@ -47,7 +77,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 // GetInstanceByName returns instance with given name
 func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	instance, err := v.Client.Instance.Get(context.TODO(), name)
+	instance, _, err := v.Client.Instance.Get(context.TODO(), name)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +94,7 @@ func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Clo
 
 // GetInstances return all instances on Vultr
 func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+	instances, _, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 		Tag:     "created-by-ops",
@@ -92,7 +122,7 @@ func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error
 // ListInstances lists instances on v
 func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
-	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+	instances, _, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 		Tag:     "created-by-ops",
