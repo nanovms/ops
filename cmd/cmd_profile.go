@@ -23,14 +23,15 @@ type Profile struct {
 	OpsVersion   string
 	NanosVersion string
 	QemuVersion  string
+	OS           string
 	Arch         string
 	Hypervisor   bool
 }
 
 func (p *Profile) save() {
 
-	str := fmt.Sprintf("ops version:%s\nnanos version:%s\nqemu version:%s\narch:%s",
-		p.OpsVersion, p.NanosVersion, p.QemuVersion, p.Arch)
+	str := fmt.Sprintf("ops version:%s\nnanos version:%s\nqemu version:%s\narch:%s\nos:%s\n",
+		p.OpsVersion, p.NanosVersion, p.QemuVersion, p.Arch, p.OS)
 
 	local := path.Join(api.GetOpsHome(), "profile")
 
@@ -52,7 +53,8 @@ func (p *Profile) setProfile() {
 
 	p.QemuVersion = qv
 
-	p.Arch = runtime.GOOS
+	p.OS = runtime.GOOS
+	p.Arch = runtime.GOARCH
 
 	p.Hypervisor = p.virtualized()
 
@@ -82,6 +84,7 @@ func (p *Profile) display() {
 	fmt.Printf("Ops version: %s\n", p.OpsVersion)
 	fmt.Printf("Nanos version: %s\n", p.NanosVersion)
 	fmt.Printf("Qemu version: %s\n", p.QemuVersion)
+	fmt.Printf("OS: %s\n", p.OS)
 	fmt.Printf("Arch: %s\n", p.Arch)
 	fmt.Printf("Virtualized: %t\n", p.Hypervisor)
 }
