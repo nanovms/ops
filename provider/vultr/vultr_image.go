@@ -14,7 +14,7 @@ import (
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
-	"github.com/vultr/govultr/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 // BuildImage to be upload on v
@@ -42,7 +42,7 @@ func (v *Vultr) createImage(key string, bucket string, region string) {
 
 	objURL := v.Storage.getSignedURL(key, bucket, region)
 
-	snap, err := v.Client.Snapshot.CreateFromURL(context.TODO(), &govultr.SnapshotURLReq{
+	snap, _, err := v.Client.Snapshot.CreateFromURL(context.TODO(), &govultr.SnapshotURLReq{
 		URL: objURL,
 	})
 	if err != nil {
@@ -78,7 +78,7 @@ func (v *Vultr) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 // GetImages return all images on Vultr
 func (v *Vultr) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
-	snaps, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
+	snaps, _, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 	})
@@ -106,7 +106,7 @@ func (v *Vultr) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 // ListImages lists images on Vultr
 func (v *Vultr) ListImages(ctx *lepton.Context) error {
 
-	snaps, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
+	snaps, _, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 	})

@@ -12,7 +12,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
-	"github.com/vultr/govultr/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 // CreateInstance - Creates instance on Digital Ocean Platform
@@ -30,13 +30,37 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 	zone := stripZone(c.CloudConfig.Zone)
 
-	instance, err := v.Client.Instance.Create(context.TODO(), &govultr.InstanceCreateReq{
+	ig := &govultr.InstanceCreateReq{
 		Region:     zone,
 		Plan:       flavor,
 		SnapshotID: c.CloudConfig.ImageName,
 		Tags:       []string{"created-by-ops"},
-	})
+	}
+
+	cloudConfig := ctx.Config().CloudConfig
+	if cloudConfig.StaticIP != "" {
+		ips, _, _, err := v.Client.ReservedIP.List(context.TODO(), nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		ipUUID := ""
+		for i := 0; i < len(ips); i++ {
+			if ips[i].Subnet == cloudConfig.StaticIP {
+				ipUUID = ips[i].ID
+			}
+		}
+
+		if ipUUID != "" {
+			ig.ReservedIPv4 = ipUUID
+		} else {
+			return fmt.Errorf("can't find the specified reserved ip")
+		}
+	}
+
+	instance, res, err := v.Client.Instance.Create(context.TODO(), ig)
 	if err != nil {
+		fmt.Println(res)
 		return err
 	}
 
@@ -47,7 +71,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 // GetInstanceByName returns instance with given name
 func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	instance, err := v.Client.Instance.Get(context.TODO(), name)
+	instance, _, err := v.Client.Instance.Get(context.TODO(), name)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +88,7 @@ func (v *Vultr) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Clo
 
 // GetInstances return all instances on Vultr
 func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+	instances, _, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 		Tag:     "created-by-ops",
@@ -92,7 +116,7 @@ func (v *Vultr) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error
 // ListInstances lists instances on v
 func (v *Vultr) ListInstances(ctx *lepton.Context) error {
 
-	instances, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
+	instances, _, _, err := v.Client.Instance.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
 		Tag:     "created-by-ops",
