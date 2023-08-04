@@ -68,7 +68,7 @@ jobs:
       - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-openapiv2-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
       - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-grpc-gateway-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
       - run: make generate
-      - run: go build
+
       - run: echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
       - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
       - run: sudo apt-get update && sudo apt-get install google-cloud-sdk
@@ -77,11 +77,26 @@ jobs:
       - run: gcloud config set project ${GOOGLE_PROJECT_ID}
       - run: gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
 
+      - run: go build
       - run: md5sum ops | awk '{print $1}' > ops-linux-nightly.md5
       - run: gsutil cp ops gs://cli/linux/release/nightly/ops
       - run: gsutil cp ops-linux-nightly.md5 gs://cli/linux/release/nightly/ops-linux-nightly.md5
       - run: gsutil acl ch -u AllUsers:R gs://cli/linux/release/nightly/ops
       - run: gsutil acl ch -u AllUsers:R gs://cli/linux/release/nightly/ops-linux-nightly.md5
+
+      - run: GOOS=darwin go build
+      - run: md5sum ops | awk '{print $1}' > ops-darwin-nightly.md5
+      - run: gsutil cp ops gs://cli/darwin/release/nightly/ops
+      - run: gsutil cp ops-darwin-nightly.md5 gs://cli/darwin/release/nightly/ops-darwin-nightly.md5
+      - run: gsutil acl ch -u AllUsers:R gs://cli/darwin/release/nightly/ops
+      - run: gsutil acl ch -u AllUsers:R gs://cli/darwin/release/nightly/ops-darwin-nightly.md5
+
+      - run: GOOS=darwin GOARCH=arm64 go build
+      - run: md5sum ops | awk '{print $1}' > ops-darwin-arm64-nightly.md5
+      - run: gsutil cp ops gs://cli/darwin/arm64/release/nightly/ops
+      - run: gsutil cp ops-darwin-arm64-nightly.md5 gs://cli/darwin/arm64/release/nightly/ops-darwin-arm64-nightly.md5
+      - run: gsutil acl ch -u AllUsers:R gs://cli/darwin/arm64/release/nightly/ops
+      - run: gsutil acl ch -u AllUsers:R gs://cli/darwin/arm64/release/nightly/ops-darwin-arm64-nightly.md5
 
 workflows:
   version: 2
