@@ -39,29 +39,23 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 
 	cloudConfig := ctx.Config().CloudConfig
 	if cloudConfig.StaticIP != "" {
-		/*
-			 this,
-			 https://github.com/vultr/govultr/blob/master/instance_test.go#L1156
-			 is actually wrong:
-			 1)  it takes a UUID of the ip, which we need
-			 to slurp in from here:
+		ips, _, _, err := v.Client.ReservedIP.List(context.TODO(), nil)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-			  curl "https://api.vultr.com/v2/reserved-ips" \\n  -X GET \\n
-			  -H "Authorization: Bearer token" | jq
+		ipUUID := ""
+		for i := 0; i < len(ips); i++ {
+			if ips[i].Subnet == cloudConfig.StaticIP {
+				ipUUID = ips[i].ID
+			}
+		}
 
-			2) then after you plug it here you must attach in separate call
-
-			  curl
-			  "https://api.vultr.com/v2/reserved-ips/some-uuid/attach"
-			  \\n  -X POST \\n  -H "Authorization: Bearer token-goes-here" \\n  -H "Content-Type:
-			  application/json" \\n  --data '{\n    "instance_id" :
-			  "some-uuid"\n  }'
-
-			 3) finally you have to reboot the instance
-			 https://www.vultr.com/api/#operation/reboot-instance
-		*/
-		fmt.Printf("setting %s\n", cloudConfig.StaticIP)
-		ig.ReservedIPv4 = cloudConfig.StaticIP
+		if ipUUID != "" {
+			ig.ReservedIPv4 = ipUUID
+		} else {
+			return fmt.Errorf("can't find the specified reserved ip")
+		}
 	}
 
 	instance, res, err := v.Client.Instance.Create(context.TODO(), ig)
