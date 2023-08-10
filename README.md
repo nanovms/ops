@@ -285,3 +285,4 @@ to support the latest release from a given application/project, however,
 if you really want/need support for something older there are paid
 support plans available - contact the folks at https://nanovms.com.
 
+If you need email support you will need to sign up for a support plan.
