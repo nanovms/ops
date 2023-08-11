@@ -175,6 +175,9 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest, ppath string) {
 		} else {
 			err = m.AddFile(e.Name(), rootPath+"/"+e.Name())
 		}
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
