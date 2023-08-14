@@ -173,6 +173,11 @@ type ProviderConfig struct {
 	// SecurityGroup
 	SecurityGroup string `json:",omitempty"`
 
+	// SkipImportVerify skips verifying that a vm importer role exists
+	// on AWS for volume imports. The role might exist but the end-user
+	// might not have permissions to verify that.
+	SkipImportVerify bool `json:",omitempty"`
+
 	// Spot enables spot provisioning
 	Spot bool `json:",omitempty"`
 
