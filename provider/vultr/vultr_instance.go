@@ -64,7 +64,51 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	log.Info("instance:", instance)
+	if c.CloudConfig.DomainName != "" {
+		ip := ""
+
+		for i := 0; i < 15; i++ {
+			server, _, err := v.Client.Instance.Get(context.TODO(), instance.ID)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			if server.MainIP != "0.0.0.0" {
+				ip = server.MainIP
+				break
+			}
+
+			time.Sleep(time.Millisecond * 500)
+		}
+
+		dn := c.CloudConfig.DomainName
+
+		options := &govultr.ListOptions{}
+		records, _, _, err := v.Client.DomainRecord.List(context.TODO(), dn, options)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		arec := ""
+		for i := 0; i < len(records); i++ {
+			if records[i].Type == "A" {
+				arec = records[i].ID
+			}
+		}
+
+		p := 0
+		r := &govultr.DomainRecordReq{
+			Name:     dn,
+			Type:     "A",
+			Data:     ip,
+			TTL:      300,
+			Priority: &p,
+		}
+		err = v.Client.DomainRecord.Update(context.TODO(), dn, arec, r)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 
 	return nil
 }
