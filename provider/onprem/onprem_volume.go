@@ -2,6 +2,7 @@ package onprem
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"strconv"
@@ -65,17 +66,110 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 // on `ops image create --mount`, it simply creates a mount path
 // with the given volume label
 // label can refer to volume UUID or volume label
+//
+//	You must start the instance with QMP otherwise this won't work.
+//	{
+//	  "RunConfig": {
+//	    "QMP": true
+//	  }
+//	}
 func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
-	log.Warn("not implemented")
-	fmt.Println("use <ops run> or <ops pkg load> with --mounts flag instead")
-	fmt.Println("alternatively, use <ops image create -t onprem> with --mounts flag")
-	fmt.Println("and run it with <ops instance create -t onprem>")
+	vol := ""
+
+	buildDir := ctx.Config().VolumesDir
+	vols, err := GetVolumes(buildDir, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for i := 0; i < len(vols); i++ {
+		if vols[i].Name == name {
+			vol = vols[i].Path
+		}
+	}
+
+	last := getMgmtPort(image)
+
+	commands := []string{
+		`{ "execute": "qmp_capabilities" }`,
+		`{ "execute": "blockdev-add", "arguments": {"driver": "raw", "node-name":"` + name + `", "file": {"driver": "file", "filename": "` + vol + `"} } }`,
+		`{ "execute": "device_add", "arguments": {"driver": "scsi-hd", "bus": "scsi0.0", "drive": "` + name + `", "id": "` + name + `"}}`,
+	}
+
+	c, err := net.Dial("tcp", "localhost:"+last)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer c.Close()
+
+	for i := 0; i < len(commands); i++ {
+		_, err := c.Write([]byte(commands[i] + "\n"))
+		if err != nil {
+			fmt.Println(err)
+		}
+		received := make([]byte, 1024)
+		_, err = c.Read(received)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
 	return nil
+}
+
+// set to last 4 of instanceid
+func getMgmtPort(image string) string {
+	ts := strings.Split(image, "-")[1]
+	return ts[len(ts)-4:]
 }
 
 // DetachVolume detaches volume
 func (op *OnPrem) DetachVolume(ctx *lepton.Context, image, name string) error {
-	log.Warn("not implemented")
+	vol := ""
+
+	buildDir := ctx.Config().VolumesDir
+	vols, err := GetVolumes(buildDir, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for i := 0; i < len(vols); i++ {
+		if vols[i].Name == name {
+			vol = vols[i].Path
+		}
+	}
+
+	if vol != "" {
+		fmt.Printf("removing %s\n", vol)
+	}
+
+	last := getMgmtPort(image)
+
+	commands := []string{
+		`{ "execute": "qmp_capabilities" }`,
+		`{ "execute": "device_del", "arguments": {"id": "` + name + `"}}`,
+		`{ "execute": "blockdev-del", "arguments": {"node-name":"` + name + `" } }`,
+	}
+
+	c, err := net.Dial("tcp", "localhost:"+last)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer c.Close()
+
+	for i := 0; i < len(commands); i++ {
+		_, err := c.Write([]byte(commands[i] + "\n"))
+		if err != nil {
+			fmt.Println(err)
+		}
+		received := make([]byte, 1024)
+		_, err = c.Read(received)
+		if err != nil {
+			println("Read data failed:", err.Error())
+			os.Exit(1)
+		}
+	}
+
 	return nil
 }
 
