@@ -117,10 +117,12 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID
 	return nil
 }
 
-// set to last 4 of instanceid
+// set to 4 + last 4 of instanceid
+// we don't want 0 and needs to be less than 65k
+// could still have collisions regardless; punting
 func getMgmtPort(image string) string {
 	ts := strings.Split(image, "-")[1]
-	return ts[len(ts)-4:]
+	return "4" + ts[len(ts)-4:]
 }
 
 // DetachVolume detaches volume

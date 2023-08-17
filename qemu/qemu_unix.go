@@ -567,7 +567,7 @@ func (q *qemu) Args(rconfig *types.RunConfig) []string {
 		// instance
 		ts := strings.Split(rconfig.InstanceName, "-")
 		rts := strings.Split(ts[1], ".")[0]
-		last := rts[len(rts)-4:]
+		last := "4" + rts[len(rts)-4:] // no 0 and <65k, hack
 
 		args = append(args, "-qmp tcp:localhost:"+last+",server,wait=off")
 	}
