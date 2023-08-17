@@ -40,7 +40,7 @@ func (p *Provider) createStorage(ctx *lepton.Context, storageName, filePath stri
 		return nil, err
 	}
 
-	ctx.Logger().Debug("%+v", storageDetails)
+	ctx.Logger().Debugf("%+v", storageDetails)
 
 	ctx.Logger().Log("importing file system to storage, can take up to 5 minutes")
 	importReq := &request.CreateStorageImportRequest{
@@ -54,7 +54,7 @@ func (p *Provider) createStorage(ctx *lepton.Context, storageName, filePath stri
 		return nil, err
 	}
 
-	ctx.Logger().Debug("%+v", importDetails)
+	ctx.Logger().Debugf("%+v", importDetails)
 
 	err = p.waitForStorageState(storageDetails.UUID, "online")
 	if err != nil {

@@ -28,7 +28,7 @@ func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, provider string
 		return
 	}
 
-	ctx.Logger().Debug("%+v", storageDetails)
+	ctx.Logger().Debugf("%+v", storageDetails)
 
 	return vol, nil
 }
@@ -47,7 +47,7 @@ func (p *Provider) GetAllVolumes(ctx *lepton.Context) (volumes *[]lepton.NanosVo
 		return
 	}
 
-	ctx.Logger().Debug("%+v", templates)
+	ctx.Logger().Debugf("%+v", templates)
 
 	volumesCh := make(chan *upcloud.StorageDetails)
 	errCh := make(chan error)

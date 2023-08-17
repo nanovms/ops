@@ -57,7 +57,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 
-	ctx.Logger().Debug("%+v", templateDetails)
+	ctx.Logger().Debugf("%+v", templateDetails)
 
 	err = p.waitForStorageState(storageDetails.UUID, "online")
 	if err != nil {
@@ -115,7 +115,7 @@ func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, e
 		return
 	}
 
-	ctx.Logger().Debug("%+v", templates)
+	ctx.Logger().Debugf("%+v", templates)
 
 	for _, s := range templates.Storages {
 		images = append(images, *p.parseStorageToCloudImage(&s))
