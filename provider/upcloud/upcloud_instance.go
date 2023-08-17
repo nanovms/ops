@@ -55,12 +55,12 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	ctx.Logger().Debug("%+v", serverDetails)
+	ctx.Logger().Debugf("%+v", serverDetails)
 
 	ctx.Logger().Info("getting ops tags")
 	opsTag, err := p.findOrCreateTag(opsTag)
 	if err != nil {
-		ctx.Logger().Warn("failed creating ops tag: %s", err)
+		ctx.Logger().Warnf("failed creating ops tag: %s", err)
 		return nil
 	}
 
@@ -69,7 +69,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		Description: "Creted with image " + image.Name,
 	})
 	if err != nil {
-		ctx.Logger().Warn("failed creating image tag: %s", err)
+		ctx.Logger().Warnf("failed creating image tag: %s", err)
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
 	_, err = p.upcloud.TagServer(context.Background(), assignOpsTagsRequest)
 	if err != nil {
-		ctx.Logger().Warn("failed assigning ops tags: %s", err)
+		ctx.Logger().Warnf("failed assigning ops tags: %s", err)
 		return nil
 	}
 
@@ -133,7 +133,7 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 
 	opsTag, err := p.findOrCreateTag(opsTag)
 	if err != nil {
-		ctx.Logger().Warn("failed creating tags: %s", err)
+		ctx.Logger().Warnf("failed creating tags: %s", err)
 
 		var servers *upcloud.Servers
 		servers, err = p.upcloud.GetServers(context.Background())
@@ -191,7 +191,7 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) (err
 	if instance.Status != "stopped" {
 		err = p.stopServer(instance.ID)
 		if err != nil {
-			ctx.Logger().Warn("failed stopping server: %s", err)
+			ctx.Logger().Warnf("failed stopping server: %s", err)
 		}
 
 		err = p.waitForServerState(instance.ID, "stopped")
@@ -204,7 +204,7 @@ func (p *Provider) DeleteInstance(ctx *lepton.Context, instancename string) (err
 		UUID: instance.ID,
 	}
 
-	ctx.Logger().Debug(`deleting server with uuid "%s"`, instance.ID)
+	ctx.Logger().Debugf(`deleting server with uuid "%s"`, instance.ID)
 	err = p.upcloud.DeleteServer(context.Background(), deleteServerReq)
 
 	return
@@ -217,7 +217,7 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) (err e
 		return
 	}
 
-	ctx.Logger().Debug(`stopping server with uuid "%s"`, instance.ID)
+	ctx.Logger().Debugf(`stopping server with uuid "%s"`, instance.ID)
 	err = p.stopServer(instance.ID)
 
 	return
@@ -240,7 +240,7 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) (err 
 		return
 	}
 
-	ctx.Logger().Debug(`starting server with uuid "%s"`, instance.ID)
+	ctx.Logger().Debugf(`starting server with uuid "%s"`, instance.ID)
 
 	err = p.startServer(instance.ID)
 
@@ -259,7 +259,7 @@ func (p *Provider) startServer(uuid string) (err error) {
 
 // GetInstanceByName returns upcloud instance with given name
 func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance *lepton.CloudInstance, err error) {
-	ctx.Logger().Debug(`getting instance by name "%s"`, name)
+	ctx.Logger().Debugf(`getting instance by name "%s"`, name)
 	server, err := p.getServerByName(ctx, name)
 	if err != nil {
 		return

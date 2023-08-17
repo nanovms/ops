@@ -3,7 +3,9 @@ package cmd_test
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
@@ -49,11 +51,43 @@ func buildImage(imageName string) string {
 	return imageName
 }
 
+func buildWaitImage(imageName string) string {
+	imageName += testutils.String(5)
+	basicWaitProgram := testutils.BuildWaitProgram()
+	defer os.Remove(basicWaitProgram)
+
+	createImageCmd := cmd.ImageCommands()
+
+	createImageCmd.SetArgs([]string{"create", basicWaitProgram, "-i", imageName})
+
+	createImageCmd.Execute()
+
+	return imageName
+}
+
 func buildInstance(imageName string) string {
-	instanceName := imageName + testutils.String(5)
+	tm := strconv.FormatInt(time.Now().Unix(), 10)
+	instanceName := imageName + "-" + tm
+
 	createInstanceCmd := cmd.InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName})
+
+	err := createInstanceCmd.Execute()
+	if err != nil {
+		log.Error(err)
+	}
+
+	return instanceName
+}
+
+func buildInstanceWithConfig(imageName string, config string) string {
+	tm := strconv.FormatInt(time.Now().Unix(), 10)
+	instanceName := imageName + "-" + tm
+
+	createInstanceCmd := cmd.InstanceCommands()
+
+	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName, "-c", config})
 
 	err := createInstanceCmd.Execute()
 	if err != nil {

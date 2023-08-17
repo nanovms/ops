@@ -559,6 +559,19 @@ func (q *qemu) Args(rconfig *types.RunConfig) []string {
 	args = append(args, q.display.String())
 	args = append(args, q.serial.String())
 
+	// for now let's make this optional
+	if rconfig.QMP {
+
+		// really horribly hack but we don't really know the pid until
+		// after we launch so use the last 4 of id assigned to
+		// instance
+		ts := strings.Split(rconfig.InstanceName, "-")
+		rts := strings.Split(ts[1], ".")[0]
+		last := "4" + rts[len(rts)-4:] // no 0 and <65k, hack
+
+		args = append(args, "-qmp tcp:localhost:"+last+",server,wait=off")
+	}
+
 	// The returned args must tokenized by whitespace
 	return strings.Fields(strings.Join(args, " "))
 }

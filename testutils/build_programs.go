@@ -18,11 +18,34 @@ func main(){
 	fmt.Println("hello world")
 }
 `
+
+	waitProgram = `package main
+
+import(
+	"fmt"
+	"time"
 )
 
-// BuildBasicProgram generates binary from a hello world golang program in the current directory
+func main(){
+	time.Sleep(20 * time.Second)
+	fmt.Println("hello world")
+}
+`
+)
+
+// BuildBasicProgram generates binary from a hello world golang program
+// in the current directory.
 func BuildBasicProgram() (binaryPath string) {
-	program := []byte(basicProgram)
+	return buildProgram(basicProgram)
+}
+
+// BuildWaitProgram generates a program that sleeps for 20 seconds.
+func BuildWaitProgram() (binaryPath string) {
+	return buildProgram(waitProgram)
+}
+
+func buildProgram(prog string) (binaryPath string) {
+	program := []byte(prog)
 	randomString := String(5)
 	binaryPath = "./basic" + randomString
 	sourcePath := fmt.Sprintf("basic%s.go", randomString)

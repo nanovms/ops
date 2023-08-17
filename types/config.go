@@ -287,6 +287,9 @@ type RunConfig struct {
 	// Ports specifies a list of port to expose.
 	Ports []string `json:",omitempty"`
 
+	// QMP optionally turns on a QMP interface for the onprem target.
+	QMP bool `json:",omitempty"`
+
 	// ShowDebug
 	ShowDebug bool `json:",omitempty"`
 
