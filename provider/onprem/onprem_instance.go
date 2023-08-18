@@ -508,15 +508,14 @@ func (p *OnPrem) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 			fmt.Printf("%s", string(line))
 		}
 		return nil
-	} else {
-
-		l, err := p.GetInstanceLogs(ctx, instancename)
-		if err != nil {
-			return err
-		}
-		fmt.Printf(l)
-		return nil
 	}
+
+	l, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(l)
+	return nil
 }
 
 // GetInstanceLogs for onprem instance logs
