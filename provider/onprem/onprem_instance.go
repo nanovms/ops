@@ -1,9 +1,11 @@
 package onprem
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -485,6 +487,29 @@ func (p *OnPrem) DeleteInstance(ctx *lepton.Context, instancename string) error 
 
 // PrintInstanceLogs writes instance logs to console
 func (p *OnPrem) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+	if watch {
+		file, err := os.Open("/tmp/" + instancename + ".log")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					time.Sleep(500 * time.Millisecond)
+					continue
+				}
+
+				break
+			}
+			fmt.Printf("%s", string(line))
+		}
+		return nil
+	}
+
 	l, err := p.GetInstanceLogs(ctx, instancename)
 	if err != nil {
 		return err
