@@ -293,7 +293,8 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
-	expackage := filepath.Join(packageDirectoryPath(), args[0])
+	expackage := filepath.Join(packageDirectoryPath(), strings.ReplaceAll(args[0], ":", "_"))
+
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage = downloadPackage(args[0], api.NewConfig())
 	}
