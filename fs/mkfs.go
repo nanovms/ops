@@ -130,14 +130,15 @@ var uefiFileBootaa64 = []byte{
 
 // MkfsCommand wraps mkfs calls
 type MkfsCommand struct {
-	bootPath   string
-	uefiPath   string
-	label      string
-	manifest   *Manifest
-	partitions bool
-	size       int64
-	outPath    string
-	rootTfs    *tfs
+	bootPath    string
+	uefiPath    string
+	label       string
+	manifest    *Manifest
+	partitions  bool
+	size        int64
+	outPath     string
+	rootTfs     *tfs
+	oldEncoding bool
 }
 
 // NewMkfsCommand returns an instance of MkfsCommand
@@ -210,6 +211,11 @@ func (m *MkfsCommand) SetLabel(label string) {
 	m.label = label
 }
 
+// SetOldEncoding forces use of TFS version 4
+func (m *MkfsCommand) SetOldEncoding() {
+	m.oldEncoding = true
+}
+
 // Execute runs mkfs command
 func (m *MkfsCommand) Execute() error {
 	if m.outPath == "" {
@@ -269,7 +275,7 @@ func (m *MkfsCommand) Execute() error {
 	if manifest != nil {
 		manifest.finalize()
 		if manifest.boot != nil {
-			_, err = tfsWrite(outFile, outOffset, bootFSSize, "", manifest.boot)
+			_, err = tfsWrite(outFile, outOffset, bootFSSize, "", manifest.boot, m.oldEncoding)
 			if err != nil {
 				return fmt.Errorf("cannot write boot filesystem: %v", err)
 			}
@@ -279,7 +285,7 @@ func (m *MkfsCommand) Execute() error {
 	} else {
 		root = mkFS()
 	}
-	m.rootTfs, err = tfsWrite(outFile, outOffset, 0, m.label, root)
+	m.rootTfs, err = tfsWrite(outFile, outOffset, 0, m.label, root, m.oldEncoding)
 	if err != nil {
 		return fmt.Errorf("cannot write root filesystem: %v", err)
 	}

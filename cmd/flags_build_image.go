@@ -19,6 +19,7 @@ type BuildImageCommandFlags struct {
 	DisableArgsCopy bool
 	CmdEnvs         []string
 	ImageName       string
+	TFSv4           bool
 	Mounts          []string
 	TargetRoot      string
 	IPAddress       string
@@ -53,6 +54,10 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 
 	if flags.ImageName != "" {
 		c.RunConfig.ImageName = flags.ImageName
+	}
+
+	if flags.TFSv4 {
+		c.TFSv4 = true
 	}
 
 	setNanosBaseImage(c)
@@ -146,6 +151,11 @@ func NewBuildImageCommandFlags(cmdFlags *pflag.FlagSet) (flags *BuildImageComman
 		exitWithError(err.Error())
 	}
 
+	flags.TFSv4, err = cmdFlags.GetBool("tfsv4")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.TargetRoot, err = cmdFlags.GetString("target-root")
 	if err != nil {
 		exitWithError(err.Error())
@@ -209,6 +219,7 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArrayP("envs", "e", nil, "env arguments")
 	cmdFlags.StringP("target-root", "r", "", "target root")
 	cmdFlags.StringP("imagename", "i", "", "image name")
+	cmdFlags.BoolP("tfsv4", "4", false, "use TFSv4")
 	cmdFlags.StringArray("mounts", nil, "mount <volume_id:mount_path>")
 	cmdFlags.StringArrayP("args", "a", nil, "command line arguments")
 	cmdFlags.BoolP("disable-args-copy", "", false, "disable copying of files passed as arguments")
