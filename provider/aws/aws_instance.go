@@ -4,6 +4,7 @@ package aws
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -428,6 +429,10 @@ func (p *AWS) ListInstances(ctx *lepton.Context) error {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return err
+	}
+
+	if ctx.Config().RunConfig.JSON {
+		return json.NewEncoder(os.Stdout).Encode(instances)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)

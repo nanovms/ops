@@ -46,5 +46,13 @@ func (c CloudInstance) MarshalJSON() ([]byte, error) {
 		a.PublicIps = make([]string, 0)
 	}
 
+	if a.PrivateIps == nil {
+		a.PrivateIps = make([]string, 0)
+	}
+
+	if a.Ports == nil {
+		a.Ports = make([]string, 0)
+	}
+
 	return json.Marshal(a)
 }
