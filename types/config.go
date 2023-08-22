@@ -106,6 +106,9 @@ type Config struct {
 	// TargetRoot
 	TargetRoot string `json:",omitempty"`
 
+	// TFSv4 forces use of the deprecated TFS version 4 encoding
+	TFSv4 bool `json:",omitempty"`
+
 	// Version
 	Version string `json:",omitempty"`
 

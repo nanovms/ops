@@ -99,6 +99,10 @@ func CreateLocalVolume(config *types.Config, name, data, provider string) (Nanos
 		mkfsCommand.SetFileSystemSize(config.BaseVolumeSz)
 	}
 
+	if config.TFSv4 {
+		mkfsCommand.SetOldEncoding()
+	}
+
 	err := mkfsCommand.Execute()
 	if err != nil {
 		return vol, errors.Wrap(err, 1)

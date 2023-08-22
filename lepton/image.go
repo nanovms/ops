@@ -501,6 +501,10 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 
 	mkfsCommand.SetFileSystemPath(c.RunConfig.ImageName)
 
+	if c.TFSv4 {
+		mkfsCommand.SetOldEncoding()
+	}
+
 	err = mkfsCommand.Execute()
 	if err != nil {
 		return err

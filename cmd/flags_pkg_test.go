@@ -108,6 +108,7 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 		RunConfig: types.RunConfig{
 			Memory: "2G",
 		},
+		TFSv4: true,
 	}
 
 	err = pkgFlags.MergeToConfig(c)
@@ -137,6 +138,7 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 			Memory:    "2G",
 			ImageName: lepton.GetOpsHome() + "/images/ops",
 		},
+		TFSv4: true,
 	}
 
 	assert.Equal(t, expectedConfig, c)

@@ -16,6 +16,7 @@ import (
 
 const tfsMagic = "NVMTFS"
 const tfsVersion = 5
+const oldTfsVersion = 4
 
 const logExtensionSize = 1024 * sectorSize
 
@@ -62,16 +63,16 @@ type tfs struct {
 	root        *map[string]interface{}
 }
 
-func (t *tfs) logInit() error {
+func (t *tfs) logInit(oldEncoding bool) error {
 	if (t.size != 0) && (t.allocated+sectorSize > t.size) {
 		return fmt.Errorf("available space (%d bytes) too small, required %d", t.size-t.allocated, sectorSize)
 	}
-	t.currentExt = t.newLogExt(true)
+	t.currentExt = t.newLogExt(true, oldEncoding)
 	t.allocated += sectorSize
 	return t.logExtend()
 }
 
-func (t *tfs) newLogExt(initial bool) *tlogExt {
+func (t *tfs) newLogExt(initial bool, oldEncoding bool) *tlogExt {
 	var extSize uint
 	if initial {
 		extSize = sectorSize
@@ -79,11 +80,16 @@ func (t *tfs) newLogExt(initial bool) *tlogExt {
 		extSize = logExtensionSize
 	}
 	logExt := &tlogExt{
-		offset: t.allocated,
-		buffer: make([]byte, 0, extSize),
+		offset:      t.allocated,
+		oldEncoding: oldEncoding,
+		buffer:      make([]byte, 0, extSize),
 	}
 	logExt.buffer = append(logExt.buffer, tfsMagic...)
-	logExt.buffer = appendVarint(logExt.buffer, tfsVersion)
+	version := uint(tfsVersion)
+	if oldEncoding {
+		version = oldTfsVersion
+	}
+	logExt.buffer = appendVarint(logExt.buffer, version)
 	logExt.buffer = appendVarint(logExt.buffer, extSize/sectorSize)
 	if initial {
 		logExt.buffer = append(logExt.buffer, t.uuid[:]...)
@@ -97,7 +103,7 @@ func (t *tfs) logExtend() error {
 	if (t.size != 0) && (t.allocated+logExtensionSize > t.size) {
 		return fmt.Errorf("available space (%d bytes) too small, required %d", t.size-t.allocated, logExtensionSize)
 	}
-	logExt := t.newLogExt(false)
+	logExt := t.newLogExt(false, t.currentExt.oldEncoding)
 	t.currentExt.linkTo(logExt.offset)
 	t.allocated += logExtensionSize
 	err := t.currentExt.flush(t.imgFile, t.imgOffset)
@@ -121,7 +127,12 @@ func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if version != tfsVersion {
+	var oldEncoding bool
+	if version == 4 {
+		oldEncoding = true
+	} else if version == tfsVersion {
+		oldEncoding = false
+	} else {
 		return 0, fmt.Errorf("TFS version mismatch: expected %d, found %d", tfsVersion, version)
 	}
 	_size, err := getVarint(buffer, &offset)
@@ -170,7 +181,7 @@ func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
 			}
 			if length == tupleTotalLen {
 				var decoded uint64
-				_, err := t.decodeValue(buffer[offset:offset+uint64(length)], &decoded)
+				_, err := t.decodeValue(buffer[offset:offset+uint64(length)], &decoded, oldEncoding)
 				if err != nil {
 					return 0, err
 				}
@@ -194,7 +205,7 @@ func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
 			t.decoder.tupleRemain -= length
 			if t.decoder.tupleRemain == 0 {
 				var decoded uint64
-				_, err := t.decodeValue(t.staging, &decoded)
+				_, err := t.decodeValue(t.staging, &decoded, oldEncoding)
 				if err != nil {
 					return 0, err
 				}
@@ -252,20 +263,38 @@ func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
 func (t *tfs) encodeValue(value interface{}) error {
 	str, isStr := value.(string)
 	if isStr {
-		t.encodeString(str, typeString)
+		strType := byte(typeString)
+		if t.currentExt.oldEncoding {
+			strType = typeBuffer
+		}
+		t.encodeString(str, strType)
 		return nil
 	}
 	strSlice, isStrSlice := value.([]string)
 	if isStrSlice {
-		vector := make([]interface{}, len(strSlice))
-		for i, str := range strSlice {
-			vector[i] = str
+		if !t.currentExt.oldEncoding {
+			vector := make([]interface{}, len(strSlice))
+			for i, str := range strSlice {
+				vector[i] = str
+			}
+			return t.encodeVector(vector)
 		}
-		return t.encodeVector(vector)
+		tuple := make(map[string]interface{})
+		for i, str := range strSlice {
+			tuple[strconv.Itoa(i)] = str
+		}
+		return t.encodeTuple(tuple)
 	}
 	slice, isSlice := value.([]interface{})
 	if isSlice {
-		return t.encodeVector(slice)
+		if !t.currentExt.oldEncoding {
+			return t.encodeVector(slice)
+		}
+		tuple := make(map[string]interface{})
+		for i, val := range slice {
+			tuple[strconv.Itoa(i)] = val
+		}
+		return t.encodeTuple(tuple)
 	}
 	tuple, isTuple := value.(map[string]interface{})
 	if isTuple {
@@ -323,19 +352,19 @@ func (t *tfs) encodeVector(vector []interface{}) error {
 	return nil
 }
 
-func (t *tfs) decodeValue(buffer []byte, offset *uint64) (interface{}, error) {
+func (t *tfs) decodeValue(buffer []byte, offset *uint64, oldEncoding bool) (interface{}, error) {
 	var entry, dataType byte
-	length, err := getHeader(buffer, offset, &entry, &dataType)
+	length, err := getHeader(buffer, offset, &entry, &dataType, oldEncoding)
 	if err != nil {
 		return nil, err
 	}
 	switch dataType {
 	case typeTuple:
-		return t.decodeTuple(buffer, offset, entry, length)
+		return t.decodeTuple(buffer, offset, entry, length, oldEncoding)
 	case typeBuffer:
 		return t.decodeBuf(buffer, offset, entry, length)
 	case typeVector:
-		return t.decodeVector(buffer, offset, entry, length)
+		return t.decodeVector(buffer, offset, entry, length, oldEncoding)
 	case typeInteger:
 		return t.decodeInteger(buffer, offset, entry, length)
 	case typeString:
@@ -345,7 +374,7 @@ func (t *tfs) decodeValue(buffer []byte, offset *uint64) (interface{}, error) {
 	}
 }
 
-func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uint) (*[]interface{}, error) {
+func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*[]interface{}, error) {
 	var vector *[]interface{}
 	if entry == entryImmediate {
 		newVector := make([]interface{}, length)
@@ -362,7 +391,7 @@ func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uin
 		}
 	}
 	for i := 0; i < int(length); i++ {
-		value, err := t.decodeValue(buffer, offset)
+		value, err := t.decodeValue(buffer, offset, oldEncoding)
 		if err != nil {
 			return vector, err
 		}
@@ -371,7 +400,7 @@ func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uin
 	return vector, nil
 }
 
-func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint) (*map[string]interface{}, error) {
+func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*map[string]interface{}, error) {
 	var tuple *map[string]interface{}
 	if entry == entryImmediate {
 		newTuple := make(map[string]interface{})
@@ -389,7 +418,7 @@ func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint
 	}
 	for i := 0; i < int(length); i++ {
 		var nameEntry, nameType byte
-		n, err := getHeader(buffer, offset, &nameEntry, &nameType)
+		n, err := getHeader(buffer, offset, &nameEntry, &nameType, oldEncoding)
 		if err != nil {
 			return tuple, err
 		}
@@ -400,7 +429,7 @@ func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint
 		if err != nil {
 			return tuple, err
 		}
-		value, err := t.decodeValue(buffer, offset)
+		value, err := t.decodeValue(buffer, offset, oldEncoding)
 		if err != nil {
 			return tuple, err
 		}
@@ -543,12 +572,17 @@ func (t *tfs) pushHeader(entry byte, dataType byte, length int) {
 	len64 := uint64(length)
 	bitCount := uint(64 - bits.LeadingZeros64(len64))
 	var words uint
-	if bitCount > 3 {
-		words = ((bitCount - 3) + (7 - 1)) / 7
+	immBits := uint(3)
+	if t.currentExt.oldEncoding {
+		immBits = 5
 	}
-	var first = (entry << 7) | (dataType << 4) | byte(len64>>(words*7))
+	if bitCount > immBits {
+		words = ((bitCount - immBits) + (7 - 1)) / 7
+	}
+	var first = (entry << 7) | (dataType << (immBits + 1)) |
+		byte(len64>>(words*7))
 	if words != 0 {
-		first |= 1 << 3
+		first |= 1 << immBits
 	}
 	t.staging = append(t.staging, first)
 	i := words
@@ -921,8 +955,9 @@ func (r *tfsFileReader) selectExtent(index int) {
 }
 
 type tlogExt struct {
-	offset uint64
-	buffer []byte
+	offset      uint64
+	oldEncoding bool
+	buffer      []byte
 }
 
 func (e *tlogExt) linkTo(extOffset uint64) {
@@ -958,16 +993,20 @@ func appendVarint(buffer []byte, x uint) []byte {
 	return buffer
 }
 
-func getHeader(buffer []byte, offset *uint64, entry *byte, dataType *byte) (uint, error) {
+func getHeader(buffer []byte, offset *uint64, entry *byte, dataType *byte, oldEncoding bool) (uint, error) {
 	if int(*offset) >= len(buffer) {
 		return 0, fmt.Errorf("getHeader(): buffer length %d exhausted", len(buffer))
 	}
 	b := buffer[*offset]
 	*offset++
 	*entry = b >> 7
-	*dataType = (b >> 4) & 0x7
-	length := uint(b & 0x7)
-	if (b & (1 << 3)) != 0 {
+	immBits := uint(3)
+	if oldEncoding {
+		immBits = 5
+	}
+	*dataType = (b >> (immBits + 1)) & ((1 << (6 - immBits)) - 1)
+	length := uint(b & ((1 << immBits) - 1))
+	if (b & (1 << immBits)) != 0 {
 		for {
 			if int(*offset) >= len(buffer) {
 				return 0, fmt.Errorf("getHeader(): buffer length %d exhausted", len(buffer))
@@ -1042,7 +1081,7 @@ func newTfs(imgFile *os.File, imgOffset uint64, fsSize uint64) *tfs {
 }
 
 // tfsWrite writes filesystem metadata and contents to image file
-func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, root map[string]interface{}) (*tfs, error) {
+func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, root map[string]interface{}, oldEncoding bool) (*tfs, error) {
 	tfs := newTfs(imgFile, imgOffset, fsSize)
 	tfs.label = label
 	rand.Seed(time.Now().UnixNano())
@@ -1050,7 +1089,7 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 	if err != nil {
 		return nil, fmt.Errorf("error generating random uuid: %v", err)
 	}
-	err = tfs.logInit()
+	err = tfs.logInit(oldEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create filesystem log: %v", err)
 	}
