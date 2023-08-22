@@ -974,6 +974,9 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 	tfs.label = label
 	rand.Seed(time.Now().UnixNano())
 	_, err := rand.Read(tfs.uuid[:])
+	if err != nil {
+		return nil, fmt.Errorf("error generating random uuid: %v", err)
+	}
 	err = tfs.logInit()
 	if err != nil {
 		return nil, fmt.Errorf("cannot create filesystem log: %v", err)
