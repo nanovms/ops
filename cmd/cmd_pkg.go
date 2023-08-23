@@ -157,6 +157,15 @@ func PackageCommands() *cobra.Command {
 	return cmdPkg
 }
 
+func getPkgArch() string {
+	rt := runtime.GOARCH
+    if rt == "amd64" {
+        return "x86_64"
+    }
+
+    return rt
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
 	var packages []api.Package
 	var err error
@@ -205,7 +214,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	rt := runtime.GOARCH
+	rt := getPkgArch()
 
 	var rows [][]string
 	for _, pkg := range packages {
@@ -265,7 +274,7 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 
 	table := pkgTable(pkgs.Packages)
 
-	rt := runtime.GOARCH
+	rt := getPkgArch()
 
 	var rows [][]string
 	for _, pkg := range pkgs.Packages {
