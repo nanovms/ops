@@ -420,6 +420,22 @@ func (p *GCloud) ResetInstance(ctx *lepton.Context, instancename string) error {
 
 // PrintInstanceLogs writes instance logs to console
 func (p *GCloud) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+	if watch {
+		line := int64(0)
+		for {
+
+			l, last, err := p.getLogs(ctx, instancename, line)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			line = last
+
+			fmt.Printf(l)
+			time.Sleep(1 * time.Second)
+		}
+	}
+
 	l, err := p.GetInstanceLogs(ctx, instancename)
 	if err != nil {
 		return err
@@ -430,21 +446,23 @@ func (p *GCloud) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 
 // GetInstanceLogs gets instance related logs
 func (p *GCloud) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
+	s, _, err := p.getLogs(ctx, instancename, int64(0))
+	return s, err
+}
+
+func (p *GCloud) getLogs(ctx *lepton.Context, instancename string, start int64) (string, int64, error) {
 	context := context.TODO()
 
 	cloudConfig := ctx.Config().CloudConfig
-	lastPos := int64(0)
+	lastPos := start
 
 	resp, err := p.Service.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
 	if err != nil {
-		return "", err
+		return "", resp.Next, err
 	}
 	if resp.Contents != "" {
-		return resp.Contents, nil
+		return resp.Contents, resp.Next, nil
 	}
 
-	lastPos = resp.Next
-	time.Sleep(time.Second)
-
-	return "", nil
+	return "", resp.Next, nil
 }
