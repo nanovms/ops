@@ -159,11 +159,11 @@ func PackageCommands() *cobra.Command {
 
 func getPkgArch() string {
 	rt := runtime.GOARCH
-    if rt == "amd64" {
-        return "x86_64"
-    }
+	if rt == "amd64" {
+		return "x86_64"
+	}
 
-    return rt
+	return rt
 }
 
 func cmdListPackages(cmd *cobra.Command, args []string) {
