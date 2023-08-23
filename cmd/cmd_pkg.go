@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"runtime"
 
 	"fmt"
 	"net/http"
@@ -204,12 +205,18 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	rt := runtime.GOARCH
+
 	var rows [][]string
 	for _, pkg := range packages {
 		var row []string
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
 		// row.
+		if pkg.Arch != rt {
+			continue
+		}
+
 		if filter &&
 			!(r.MatchString(pkg.Language) ||
 				r.MatchString(pkg.Runtime) ||
@@ -258,8 +265,14 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 
 	table := pkgTable(pkgs.Packages)
 
+	rt := runtime.GOARCH
+
 	var rows [][]string
 	for _, pkg := range pkgs.Packages {
+		if pkg.Arch != rt {
+			continue
+		}
+
 		var row []string
 
 		row = append(row, pkg.Namespace)
