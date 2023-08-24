@@ -44,6 +44,7 @@ type Package struct {
 	SHA256      string `json:"sha256"`
 	Name        string `json:"name"`
 	Namespace   string `json:"namespace"`
+	Arch        string `json:"arch"`
 }
 
 // PackageIdentifier is used to identify a namespaced package
