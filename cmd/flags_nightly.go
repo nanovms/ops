@@ -61,6 +61,12 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 		exitWithError(err.Error())
 	}
 
+	if flags.Arch != "" {
+		if flags.Arch != "arm64" && flags.Arch != "amd64" {
+			exitWithError("unknown architecture")
+		}
+	}
+
 	return
 }
 
