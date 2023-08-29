@@ -133,8 +133,6 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	amiName := key + s
 
 	// register ami
-	enaSupport := GetEnaSupportForFlavor(c.CloudConfig.Flavor)
-
 	rinput := &ec2.RegisterImageInput{
 		Name:         aws.String(amiName),
 		Architecture: aws.String(getArchitecture(c.CloudConfig.Flavor)),
@@ -151,7 +149,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Description:        aws.String(fmt.Sprintf("nanos image %s", key)),
 		RootDeviceName:     aws.String("/dev/sda1"),
 		VirtualizationType: aws.String("hvm"),
-		EnaSupport:         aws.Bool(enaSupport),
+		EnaSupport:         aws.Bool(true),
 	}
 
 	ctx.Logger().Info("Registering image")
@@ -403,53 +401,6 @@ func buildSnapshotBlockInput(snapshotID string, blockIndex int64, block []byte) 
 }
 
 var (
-	// NitroInstanceTypes are the AWS virtualized types built on the Nitro system.
-	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
-	NitroInstanceTypes = map[string]bool{
-		"a1":   true,
-		"c5":   true,
-		"c5a":  true,
-		"c5ad": true,
-		"c5d":  true,
-		"c5n":  true,
-		"c6a":  true,
-		"c6g":  true,
-		"c6gd": true,
-		"c6gn": true,
-		"c6i":  true,
-		"d3":   true,
-		"d3en": true,
-		"g4dn": true,
-		"g5":   true,
-		"i3en": true,
-		"inf1": true,
-		"m5":   true,
-		"m5a":  true,
-		"m5ad": true,
-		"m5d":  true,
-		"m5dn": true,
-		"m5n":  true,
-		"m5zn": true,
-		"m6a":  true,
-		"m6g":  true,
-		"m6gd": true,
-		"p3dn": true,
-		"p4":   true,
-		"r5":   true,
-		"r5a":  true,
-		"r5ad": true,
-		"r5b":  true,
-		"r5d":  true,
-		"r5dn": true,
-		"r5n":  true,
-		"r6g":  true,
-		"r6gd": true,
-		"t3":   true,
-		"t3a":  true,
-		"t4g":  true,
-		"z1d":  true,
-	}
-
 	// Architectures define architecture from instance family
 	Architectures = map[string]string{
 		"a1":      "arm64",
@@ -537,20 +488,6 @@ var (
 	// GravitonProcessors are designed by AWS to deliver the best price performance for your cloud workloads running in Amazon EC2
 	GravitonProcessors = map[string]bool{"a1": true, "c6g": true, "c6gd": true, "c6gn": true, "c7g": true, "g5g": true, "im4gn": true, "is4gen": true, "m6g": true, "m6gd": true, "r6g": true, "r6gd": true, "t4g": true, "x2gd": true}
 )
-
-// GetEnaSupportForFlavor checks whether an image should be registered with EnaSupport based on instances type which will load the image
-func GetEnaSupportForFlavor(flavor string) bool {
-	if flavor == "" {
-		return false
-	}
-
-	flavorParts := strings.Split(flavor, ".")
-
-	instanceFamily := strings.ToLower(flavorParts[0])
-
-	_, exists := NitroInstanceTypes[instanceFamily]
-	return exists
-}
 
 func getArchitecture(flavor string) string {
 	if flavor == "" {
