@@ -222,7 +222,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		// If we are told to filter and get no matches then filter out the
 		// current row. If we are not told to filter then just add the
 		// row.
-		if pkg.Arch != rt {
+		if pkg.Arch != "" && pkg.Arch != rt {
 			continue
 		}
 
@@ -315,10 +315,20 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
+
+	jsonOutput, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
 	expackage := filepath.Join(packageDirectoryPath(), strings.ReplaceAll(args[0], ":", "_"))
 
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0], api.NewConfig())
+		expackage, err = downloadPackage(args[0], api.NewConfig())
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 
 	description := path.Join(expackage, "README.md")
@@ -332,6 +342,23 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
+	if jsonOutput {
+		lines := ""
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			lines += scanner.Text() + "\n"
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		json.NewEncoder(os.Stdout).Encode(lines)
+		return
+	}
 
 	fmt.Println("Information for " + args[0] + " package:")
 	scanner := bufio.NewScanner(file)
@@ -360,7 +387,10 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 	expackage := filepath.Join(directoryPath, strings.ReplaceAll(args[0], ":", "_"))
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage = downloadPackage(args[0], api.NewConfig())
+		expackage, err = downloadPackage(args[0], api.NewConfig())
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	filepath.Walk(expackage, func(hostpath string, info os.FileInfo, err error) error {

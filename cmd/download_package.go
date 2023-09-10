@@ -11,7 +11,7 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-func downloadLocalPackage(pkg string, config *types.Config) string {
+func downloadLocalPackage(pkg string, config *types.Config) (string, error) {
 	packagesDirPath := localPackageDirectoryPath()
 	return downloadAndExtractPackage(packagesDirPath, pkg, config)
 }
@@ -24,7 +24,7 @@ func packageDirectoryPath() string {
 	return path.Join(api.GetOpsHome(), "packages")
 }
 
-func downloadPackage(pkg string, config *types.Config) string {
+func downloadPackage(pkg string, config *types.Config) (string, error) {
 	return downloadAndExtractPackage(packageDirectoryPath(), pkg, config)
 }
 
@@ -147,10 +147,10 @@ func MovePackageFiles(origin string, target string) string {
 	return target
 }
 
-func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) string {
+func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) (string, error) {
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	expackage := path.Join(packagesDirPath, strings.ReplaceAll(pkg, ":", "_"))
@@ -163,8 +163,8 @@ func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config
 
 	err = os.Remove(opsPackage)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	return expackage
+	return expackage, nil
 }
