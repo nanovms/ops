@@ -265,6 +265,8 @@ func GetLocalPackageList() ([]Package, error) {
 
 				data, err := os.ReadFile(manifestLoc)
 				if err != nil {
+					fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
+					os.Exit(1)
 					return nil, err
 				}
 
