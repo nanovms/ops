@@ -114,6 +114,15 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		exitForCmd(cmd, err.Error())
 	}
 
+	if c.Kernel == "" {
+		version, err := getCurrentVersion()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		c.Kernel = getKernelVersion(version)
+	}
+
 	c.RunConfig.Kernel = c.Kernel
 
 	err = p.CreateInstance(ctx)
