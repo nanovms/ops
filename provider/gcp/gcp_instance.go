@@ -147,7 +147,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	if len(ctx.Config().RunConfig.Ports) != 0 {
 
 		if ctx.Config().CloudConfig.EnableIPv6 {
-			rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, ctx.Config().CloudConfig.Subnet, true)
+			rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, ctx.Config().CloudConfig.VPC, true)
 
 			_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -159,7 +159,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 
 		}
 
-		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, ctx.Config().CloudConfig.Subnet, false)
+		rule := p.buildFirewallRule("tcp", ctx.Config().RunConfig.Ports, instanceName, ctx.Config().CloudConfig.VPC, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -173,7 +173,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	if len(ctx.Config().RunConfig.UDPPorts) != 0 {
 
 		if ctx.Config().CloudConfig.EnableIPv6 {
-			rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, ctx.Config().CloudConfig.Subnet, true)
+			rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, ctx.Config().CloudConfig.VPC, true)
 
 			_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
@@ -186,7 +186,7 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 
 		}
 
-		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, ctx.Config().CloudConfig.Subnet, false)
+		rule := p.buildFirewallRule("udp", ctx.Config().RunConfig.UDPPorts, instanceName, ctx.Config().CloudConfig.VPC, false)
 
 		_, err = p.Service.Firewalls.Insert(c.CloudConfig.ProjectID, rule).Context(context.TODO()).Do()
 
