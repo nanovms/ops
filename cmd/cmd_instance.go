@@ -119,6 +119,7 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		version = setKernelVersion(version)
 
 		c.Kernel = getKernelVersion(version)
 	}
