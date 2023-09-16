@@ -412,28 +412,28 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 			q.addOption("-vga", "none")
 		}
 
-		if rconfig.CPUs > 0 {
-			q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
-		}
-
 		q.addOption("-device", "isa-debug-exit")
-		q.addOption("-m", rconfig.Memory)
 
 	} else {
 		q.addOption("-machine", "virt")
 
 		q.addOption("-machine", "gic-version=2")
-		q.addOption("-machine", "highmem=off")
+
+		// https://github.com/kubernetes/minikube/pull/14291
+		//		q.addOption("-machine", "highmem=off")
 
 		q.addOption("-kernel", rconfig.Kernel)
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
 
 		q.addFlag("-semihosting")
-
-		q.addOption("-m", "1G")
-
 	}
+
+	if rconfig.CPUs > 0 {
+		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
+	}
+
+	q.addOption("-m", rconfig.Memory)
 
 	q.addOption("-device", "virtio-rng-pci")
 
