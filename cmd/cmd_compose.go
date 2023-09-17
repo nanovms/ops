@@ -88,6 +88,16 @@ func composeUpCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	if c.Kernel == "" {
+		version, err := getCurrentVersion()
+		if err != nil {
+			fmt.Println(err)
+		}
+		version = setKernelVersion(version)
+
+		c.Kernel = getKernelVersion(version)
+	}
+
 	com := Compose{
 		config: c,
 	}

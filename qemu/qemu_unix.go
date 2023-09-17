@@ -98,6 +98,7 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		q.cmd = exec.Command("/bin/sh", "-c", fullCmd)
 	} else {
 		logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
+
 		q.cmd = exec.Command(qemuBaseCommand(), args...)
 	}
 

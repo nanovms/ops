@@ -81,11 +81,10 @@ func (com Compose) UP() {
 	// FIXME
 	version := api.LocalReleaseVersion
 	com.config.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
-	com.config.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, dnsIP, com.config)
+		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, dnsIP, com.config)
 		ip, err := com.waitForIP(pid)
 		if err != nil {
 			fmt.Println(err)
@@ -142,13 +141,33 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 	}
 }
 
-func (com Compose) spawnProgram(pkgName string, pname string, dnsIP string, c *types.Config) string {
+func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP string, c *types.Config) string {
 	pkgFlags := PkgCommandFlags{
-		Package: pkgName,
+		Package:      pkgName,
+		LocalPackage: local,
 	}
 
+	e := pkgFlags.Package
 	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
+	if local {
+		e = strings.ReplaceAll(pkgFlags.Package, ":", "_")
+		ppath = strings.ReplaceAll(ppath, ":", "_")
+	}
+
 	unWarpConfig(ppath, c)
+
+	// ideally all of this should happen in one place
+	if c.Kernel == "" {
+		version, err := getCurrentVersion()
+		if err != nil {
+			fmt.Println(err)
+		}
+		version = setKernelVersion(version)
+
+		c.Kernel = getKernelVersion(version)
+
+		c.RunConfig.Kernel = c.Kernel
+	}
 
 	executableName := c.Program
 
@@ -157,11 +176,21 @@ func (com Compose) spawnProgram(pkgName string, pname string, dnsIP string, c *t
 
 	c.NameServers = []string{dnsIP}
 
-	api.ValidateELF(filepath.Join(api.GetOpsHome(), "packages", executableName))
+	l := filepath.Join(api.GetOpsHome(), "packages")
+	if local {
+		l = filepath.Join(api.GetOpsHome(), "local_packages")
+	}
+
+	api.ValidateELF(filepath.Join(l, executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	// really shouldn't be hitting this..
+	if ctx.Config().RunConfig.Kernel == "" {
+		ctx.Config().RunConfig.Kernel = c.Kernel
 	}
 
 	var keypath string
@@ -204,8 +233,20 @@ func (com Compose) spawnDNS(non string) string {
 
 	version := api.LocalReleaseVersion
 	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
-	c.Kernel = path.Join(api.GetOpsHome(), version, "kernel.img")
 	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", "dns")
+
+	// ideally all of this should happen in one place
+	if c.Kernel == "" {
+		version, err := getCurrentVersion()
+		if err != nil {
+			fmt.Println(err)
+		}
+		version = setKernelVersion(version)
+
+		c.Kernel = getKernelVersion(version)
+
+		c.RunConfig.Kernel = c.Kernel
+	}
 
 	pkgFlags := PkgCommandFlags{
 		Package: "eyberg/ops-dns:0.0.1",
@@ -265,8 +306,9 @@ func (com Compose) spawnDNS(non string) string {
 
 // Package is a part of the compose yaml file.
 type Package struct {
-	Pkg  string
-	Name string
+	Pkg   string
+	Name  string
+	Local bool
 }
 
 // ComposeFile represents a configuration for ops compose.
