@@ -50,13 +50,19 @@ type Compose struct {
 
 // UP reads in a compose.yaml and starts all services listed with svc
 // discovery.
-func (com Compose) UP() {
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err)
+func (com Compose) UP(composeFile string) {
+
+	if composeFile == "" {
+
+		dir, err := os.Getwd()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		composeFile = dir + "/compose.yaml"
 	}
 
-	body, err := os.ReadFile(dir + "/compose.yaml")
+	body, err := os.ReadFile(composeFile)
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("are you running compose in the same directory as a compose.yaml?")
@@ -147,10 +153,8 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 		LocalPackage: local,
 	}
 
-	e := pkgFlags.Package
 	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
 	if local {
-		e = strings.ReplaceAll(pkgFlags.Package, ":", "_")
 		ppath = strings.ReplaceAll(ppath, ":", "_")
 	}
 
