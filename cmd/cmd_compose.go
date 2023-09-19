@@ -43,6 +43,7 @@ func composeUpCommand() *cobra.Command {
 		Run:   composeUpCommandHandler,
 	}
 
+	cmdUpCompose.PersistentFlags().StringP("compose-file", "f", "", "compose file (default: cwd)")
 	return cmdUpCompose
 }
 
@@ -81,6 +82,8 @@ func composeUpCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 	globalFlags := NewGlobalCommandFlags(flags)
 
+	composeFile, _ := cmd.Flags().GetString("compose-file")
+
 	c := api.NewConfig()
 	mergeContainer := NewMergeConfigContainer(globalFlags)
 	err := mergeContainer.Merge(c)
@@ -88,9 +91,19 @@ func composeUpCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	if c.Kernel == "" {
+		version, err := getCurrentVersion()
+		if err != nil {
+			fmt.Println(err)
+		}
+		version = setKernelVersion(version)
+
+		c.Kernel = getKernelVersion(version)
+	}
+
 	com := Compose{
 		config: c,
 	}
-	com.UP()
+	com.UP(composeFile)
 
 }

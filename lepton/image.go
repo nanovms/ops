@@ -166,7 +166,7 @@ func addFilesFromPackage(packagepath string, m *fs.Manifest, ppath string) {
 
 	entries, err := os.ReadDir(rootPath)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("no sysroot in package")
 	}
 
 	for _, e := range entries {
