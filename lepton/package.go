@@ -140,8 +140,15 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivePath)
 		}
 
-		if runtime.GOARCH == "arm64" {
-			fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
+		if AltGOARCH != "" {
+			if runtime.GOARCH != "arm64" {
+				fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
+			}
+
+		} else {
+			if runtime.GOARCH == "arm64" {
+				fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
+			}
 		}
 
 		if err = DownloadFileWithProgress(packagepath, fileURL, 600); err != nil {

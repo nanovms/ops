@@ -30,8 +30,16 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 		Version:   version,
 	}
 
-	if runtime.GOARCH == "arm64" {
-		ar.Arch = "arm64"
+	if AltGOARCH != "" {
+		if runtime.GOARCH == "arm64" {
+			ar.Arch = "" // amd64
+		} else {
+			ar.Arch = "arm64"
+		}
+	} else {
+		if runtime.GOARCH == "amd64" {
+			ar.Arch = "arm64"
+		}
 	}
 
 	// this would never error out
@@ -40,6 +48,7 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	req, err := BaseHTTPRequest("POST", metadataURL.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
