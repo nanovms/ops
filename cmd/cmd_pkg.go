@@ -137,7 +137,7 @@ func PackageCommands() *cobra.Command {
 
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdPkgSearch)
-	cmdPkg.AddCommand(GetCommand())
+	cmdPkg.AddCommand(getCommand())
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
@@ -634,7 +634,7 @@ func LoadCommand() *cobra.Command {
 	return cmdLoadPackage
 }
 
-func GetCommand() *cobra.Command {
+func getCommand() *cobra.Command {
 	var cmdGetPackage = &cobra.Command{
 		Use:   "get [packagename]",
 		Short: "download a package from ['ops pkg list'] to the local cache",
