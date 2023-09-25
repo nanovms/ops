@@ -141,7 +141,7 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 		}
 
 		if AltGOARCH != "" {
-            if AltGOARCH == "arm64" {
+			if AltGOARCH == "arm64" {
 				fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
 			}
 
