@@ -31,13 +31,11 @@ func GetPackageMetadata(namespace, pkgName, version string) (*Package, error) {
 	}
 
 	if AltGOARCH != "" {
-		if runtime.GOARCH == "arm64" {
-			ar.Arch = "" // amd64
-		} else {
-			ar.Arch = "arm64"
+		if AltGOARCH != "amd64" {
+			ar.Arch = AltGOARCH
 		}
 	} else {
-		if runtime.GOARCH == "amd64" {
+		if runtime.GOARCH == "arm64" {
 			ar.Arch = "arm64"
 		}
 	}
