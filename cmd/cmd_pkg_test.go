@@ -21,7 +21,7 @@ func TestListPkgCommand(t *testing.T) {
 func TestGetPkgCommand(t *testing.T) {
 	getPkgCmd := cmd.PackageCommands()
 
-	getPkgCmd.SetArgs([]string{"get", "eyberg/bind:9.13.4"})
+	getPkgCmd.SetArgs([]string{"get", "eyberg/bind:9.13.4", "--arch", "amd64"})
 
 	err := getPkgCmd.Execute()
 
