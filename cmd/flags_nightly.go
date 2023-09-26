@@ -82,7 +82,7 @@ func getKernelVersion(version string) string {
 
 func setKernelVersion(version string) string {
 	if api.AltGOARCH != "" {
-		if runtime.GOARCH == "amd64" {
+		if api.AltGOARCH == "arm64" {
 			return version + "-arm"
 		}
 		return version

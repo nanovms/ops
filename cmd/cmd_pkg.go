@@ -43,13 +43,6 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdSearchPackages,
 	}
 
-	var cmdGetPackage = &cobra.Command{
-		Use:   "get [packagename]",
-		Short: "download a package from ['ops pkg list'] to the local cache",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdGetPackage,
-	}
-
 	var cmdPackageDescribe = &cobra.Command{
 		Use:   "describe [packagename]",
 		Short: "display information of a package from ['ops pkg list']",
@@ -144,7 +137,7 @@ func PackageCommands() *cobra.Command {
 
 	cmdPkg.AddCommand(cmdPkgList)
 	cmdPkg.AddCommand(cmdPkgSearch)
-	cmdPkg.AddCommand(cmdGetPackage)
+	cmdPkg.AddCommand(getCommand())
 	cmdPkg.AddCommand(cmdPackageContents)
 	cmdPkg.AddCommand(cmdPackageDescribe)
 	cmdPkg.AddCommand(cmdAddPackage)
@@ -300,13 +293,28 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 	table.Render()
 }
 
-func cmdGetPackage(cmd *cobra.Command, args []string) {
+func getCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
-	downloadPackage(args[0], api.NewConfig())
+
+	downloadPackage(args[0], c)
 }
 
 func cmdPackageDescribe(cmd *cobra.Command, args []string) {
@@ -625,6 +633,22 @@ func LoadCommand() *cobra.Command {
 	persistentFlags.BoolP("local", "l", false, "load local package")
 
 	return cmdLoadPackage
+}
+
+func getCommand() *cobra.Command {
+	var cmdGetPackage = &cobra.Command{
+		Use:   "get [packagename]",
+		Short: "download a package from ['ops pkg list'] to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   getCommandHandler,
+	}
+
+	persistentFlags := cmdGetPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+
+	return cmdGetPackage
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
