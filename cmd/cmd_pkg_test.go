@@ -49,12 +49,13 @@ func TestPkgDescribeCommand(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+
 	getPkgCmd := cmd.PackageCommands()
 
 	program := buildNodejsProgram()
 	defer os.Remove(program)
 
-	getPkgCmd.SetArgs([]string{"load", "eyberg/node:v14.2.0", "-a", program})
+	getPkgCmd.SetArgs([]string{"load", "eyberg/node:v14.2.0", "--arch", "amd64", "-a", program})
 
 	err := getPkgCmd.Execute()
 

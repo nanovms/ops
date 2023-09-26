@@ -302,7 +302,7 @@ func getCommandHandler(cmd *cobra.Command, args []string) {
 
 	c := api.NewConfig()
 
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags) // , pkgFlags)
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
@@ -313,6 +313,7 @@ func getCommandHandler(cmd *cobra.Command, args []string) {
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
+
 	downloadPackage(args[0], c)
 }
 
