@@ -584,22 +584,31 @@ func CheckNanosVersionExists(version string) (bool, error) {
 	return true, nil
 }
 
+func useARM(arch string) bool {
+	if arch == "arm" && (AltGOARCH == "" || AltGOARCH != "amd64") {
+		return true
+	}
+
+	if arch != "arm" && (AltGOARCH == "arm64") {
+		return true
+	}
+
+	return false
+}
+
 // DownloadReleaseImages downloads nanos for particular release version
 // arch defaults to x86-64 if empty
 func DownloadReleaseImages(version string, arch string) error {
 	url := getReleaseURL(version)
-	if arch == "arm" || AltGOARCH == "arm64" {
+	localFolder := getReleaseLocalFolder(version)
+
+	if useARM(arch) {
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)
+		localFolder = localFolder + "-arm"
 	}
 
 	// mkfs, dump aren't needed anymore
 	url = strings.Replace(url, "-darwin-", "-linux-", -1)
-
-	localFolder := getReleaseLocalFolder(version)
-
-	if arch == "arm" || AltGOARCH == "arm64" {
-		localFolder = localFolder + "-arm"
-	}
 
 	localtar := path.Join("/tmp", releaseFileName(version))
 	defer os.Remove(localtar)
