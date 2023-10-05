@@ -4,6 +4,8 @@
 package qemu
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -90,7 +92,11 @@ func logv(rconfig *types.RunConfig, msg string) {
 }
 
 func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
-	args := q.Args(rconfig)
+	args, err := q.Args(rconfig)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
 	if q.atExitHook != "" {
 		qc := qemuBaseCommand() + " " + strings.Join(args, " ")
 		fullCmd := qc + "; " + q.atExitHook
@@ -119,6 +125,9 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 func (q *qemu) Start(rconfig *types.RunConfig) error {
 	if q.cmd == nil {
 		q.Command(rconfig)
+		if q.cmd == nil {
+			return errors.New("Failed to create Qemu command line")
+		}
 		q.cmd.Stdout = os.Stdout
 		q.cmd.Stderr = os.Stderr
 	}
@@ -152,6 +161,48 @@ func (q *qemu) addDrive(id, image, ifaceType string) {
 
 func (q *qemu) addDisplay(dispType string) {
 	q.display = display{disptype: dispType}
+}
+
+func (q *qemu) addVfioPci(pciClass string, count int) error {
+	pciDevs, err := exec.Command("lspci", "-nDk").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Failed to list PCI devices: %v", err)
+	}
+	scanner := bufio.NewScanner(bytes.NewReader(pciDevs))
+	detected := 0
+	var detectedAddress string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "\t") {
+			var found bool
+			devAddress, remainder, found := strings.Cut(line, " ")
+			if !found {
+				return fmt.Errorf("Failed to find PCI device address in line '%s'", line)
+			}
+			if strings.HasPrefix(remainder, pciClass) {
+				detectedAddress = devAddress
+			}
+		} else if detectedAddress != "" && strings.Contains(line, "driver") && strings.Contains(line, "vfio-pci") {
+			q.devices = append(q.devices, device{
+				driver:  "vfio-pci",
+				devtype: "host",
+				devid:   detectedAddress,
+			})
+			detected++
+			if detected == count {
+				break
+			}
+			detectedAddress = ""
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		return fmt.Errorf("Failed to scan PCI device list: %v", err)
+	}
+	if detected < count {
+		return fmt.Errorf(`Failed to find %d PCI device(s) with class %s (found %d)
+Ensure the vfio-pci Linux kernel driver is loaded and bound to at least %d device(s)`, count, pciClass, detected, count)
+	}
+	return nil
 }
 
 func (q *qemu) addSerial(serialType string) {
@@ -377,7 +428,26 @@ func (q *qemu) addAccel() (bool, error) {
 	return false, nil
 }
 
-func (q *qemu) setConfig(rconfig *types.RunConfig) {
+func (q *qemu) setConfig(rconfig *types.RunConfig) error {
+	if rconfig.GPUs > 0 {
+		gpuType := rconfig.GPUType
+		if gpuType == "" {
+			gpuType = "pci-passthrough"
+		}
+		if gpuType == "pci-passthrough" {
+			if runtime.GOOS != "linux" {
+				return fmt.Errorf("GPU passthrough is only supported on Linux")
+			}
+			// Enable passthrough on PCI devices with class 03 (display) and
+			// subclass 02 (3D controller).
+			if err := q.addVfioPci("0302", rconfig.GPUs); err != nil {
+				return fmt.Errorf("Error setting up PCI GPU passthrough: %v", err)
+			}
+		} else {
+			return fmt.Errorf("Invalid GPU type '%s'", gpuType)
+		}
+	}
+
 	// add virtio drive
 	q.addDrive("hd0", rconfig.ImageName, "none")
 
@@ -517,6 +587,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) {
 		fmt.Printf("Waiting for gdb connection. Connect to qemu through \"(gdb) target remote localhost:%s\"\n", gdbPort)
 		fmt.Println("See further instructions in https://nanovms.gitbook.io/ops/debugging")
 	}
+
+	return nil
 }
 
 func (q *qemu) isInstalled() bool {
@@ -538,8 +610,11 @@ func (q *qemu) isInstalled() bool {
 	return fi.Mode().Perm()&0111 != 0
 }
 
-func (q *qemu) Args(rconfig *types.RunConfig) []string {
-	q.setConfig(rconfig)
+func (q *qemu) Args(rconfig *types.RunConfig) ([]string, error) {
+	err := q.setConfig(rconfig)
+	if err != nil {
+		return nil, err
+	}
 	args := []string{}
 
 	// pci bus needs to be declared before devices using them
@@ -576,7 +651,7 @@ func (q *qemu) Args(rconfig *types.RunConfig) []string {
 	}
 
 	// The returned args must tokenized by whitespace
-	return strings.Fields(strings.Join(args, " "))
+	return strings.Fields(strings.Join(args, " ")), nil
 }
 
 func (q *qemu) PID() (string, error) {
