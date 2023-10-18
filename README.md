@@ -36,7 +36,7 @@ build from source.
 
 Operating System | Download
 ---|---
-macOS | <a href='https://storage.googleapis.com/cli/darwin/ops.pkg'><img alt='Get it on macOS' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/assets/BadgeMacOS.png'/></a>
+macOS | <a href='https://storage.googleapis.com/cli/darwin/ops.pkg'><img alt='Get it on macOS' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/master/assets/BadgeMacOS.png'/></a>
 
 
 ## Debian / Redhat:
