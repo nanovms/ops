@@ -32,6 +32,13 @@ If you don't like this option you can also download pre-made packages
 for various systems [here](https://ops.city/downloads) and you can also
 build from source.
 
+## Desktop applications
+
+Operating System | Download
+---|---
+macOS | <a href='https://storage.googleapis.com/cli/darwin/ops.pkg'><img alt='Get it on macOS' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/assets/BadgeMacOS.png'/></a>
+
+
 ## Debian / Redhat:
 
 Add a deb src:
