@@ -184,7 +184,7 @@ func (q *qemu) addVfioPci(pciClass string, count int) error {
 			}
 		} else if detectedAddress != "" && strings.Contains(line, "driver") && strings.Contains(line, "vfio-pci") {
 			q.devices = append(q.devices, device{
-				driver:  "vfio-pci",
+				driver:  "vfio-pci,rombar=0",
 				devtype: "host",
 				devid:   detectedAddress,
 			})
@@ -438,9 +438,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 			if runtime.GOOS != "linux" {
 				return fmt.Errorf("GPU passthrough is only supported on Linux")
 			}
-			// Enable passthrough on PCI devices with class 03 (display) and
-			// subclass 02 (3D controller).
-			if err := q.addVfioPci("0302", rconfig.GPUs); err != nil {
+			// Enable passthrough on PCI devices with class 03 (display).
+			if err := q.addVfioPci("03", rconfig.GPUs); err != nil {
 				return fmt.Errorf("Error setting up PCI GPU passthrough: %v", err)
 			}
 		} else {
