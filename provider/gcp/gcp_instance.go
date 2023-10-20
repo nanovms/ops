@@ -55,17 +55,30 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 	instanceName := c.RunConfig.InstanceName
 	canIPForward := c.RunConfig.CanIPForward
 
+	cimg := &compute.AttachedDiskInitializeParams{
+		SourceImage: imageName,
+	}
+
+	if c.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(c.BaseVolumeSz)
+		if err != nil {
+			return fmt.Errorf("cannot get volume size: %v", err)
+		}
+		c.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb := int64(size)
+
+		cimg.DiskSizeGb = sizeInGb
+	}
+
 	rb := &compute.Instance{
 		Name:        instanceName,
 		MachineType: machineType,
 		Disks: []*compute.AttachedDisk{
 			{
-				AutoDelete: true,
-				Boot:       true,
-				Type:       "PERSISTENT",
-				InitializeParams: &compute.AttachedDiskInitializeParams{
-					SourceImage: imageName,
-				},
+				AutoDelete:       true,
+				Boot:             true,
+				Type:             "PERSISTENT",
+				InitializeParams: cimg,
 			},
 		},
 		CanIpForward:      canIPForward,
