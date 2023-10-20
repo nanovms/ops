@@ -64,7 +64,6 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		if err != nil {
 			return fmt.Errorf("cannot get volume size: %v", err)
 		}
-		c.BaseVolumeSz = "" // create minimum-sized local volume
 		sizeInGb := int64(size)
 
 		cimg.DiskSizeGb = sizeInGb
