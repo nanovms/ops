@@ -38,7 +38,17 @@ Operating System | Download
 ---|---
 macOS | <a href='https://storage.googleapis.com/cli/darwin/ops.pkg'><img alt='Get it on macOS' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/master/assets/BadgeMacOS.png'/></a>
 
+## MacOS via Homebrew
+Add the repo & install:
+```sh
+brew tap nanovms/homebrew-ops
+```
 
+```sh
+brew install nanovms/ops/ops
+```
+See the [formula file](https://github.com/nanovms/homebrew-ops/blob/master/Formula/ops.rb) for details.
+ 
 ## Debian / Redhat:
 
 Add a deb src:
