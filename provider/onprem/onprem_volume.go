@@ -73,7 +73,9 @@ func (op *OnPrem) DeleteVolume(ctx *lepton.Context, name string) error {
 //	    "QMP": true
 //	  }
 //	}
-func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID int) error {
+//
+// this currently requires instance name to be unique
+func (op *OnPrem) AttachVolume(ctx *lepton.Context, instanceName string, volumeName string, attachID int) error {
 	vol := ""
 
 	buildDir := ctx.Config().VolumesDir
@@ -83,17 +85,22 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID
 	}
 
 	for i := 0; i < len(vols); i++ {
-		if vols[i].Name == name {
+		if vols[i].Name == volumeName {
 			vol = vols[i].Path
 		}
 	}
 
-	last := getMgmtPort(image)
+	instance, err := op.GetMetaInstanceByName(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
+	last := instance.Mgmt
 
 	commands := []string{
 		`{ "execute": "qmp_capabilities" }`,
-		`{ "execute": "blockdev-add", "arguments": {"driver": "raw", "node-name":"` + name + `", "file": {"driver": "file", "filename": "` + vol + `"} } }`,
-		`{ "execute": "device_add", "arguments": {"driver": "scsi-hd", "bus": "scsi0.0", "drive": "` + name + `", "id": "` + name + `"}}`,
+		`{ "execute": "blockdev-add", "arguments": {"driver": "raw", "node-name":"` + volumeName + `", "file": {"driver": "file", "filename": "` + vol + `"} } }`,
+		`{ "execute": "device_add", "arguments": {"driver": "scsi-hd", "bus": "scsi0.0", "drive": "` + volumeName + `", "id": "` + volumeName + `"}}`,
 	}
 
 	c, err := net.Dial("tcp", "localhost:"+last)
@@ -117,16 +124,8 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, image, name string, attachID
 	return nil
 }
 
-// set to 4 + last 4 of instanceid
-// we don't want 0 and needs to be less than 65k
-// could still have collisions regardless; punting
-func getMgmtPort(image string) string {
-	ts := strings.Split(image, "-")[1]
-	return "4" + ts[len(ts)-4:]
-}
-
 // DetachVolume detaches volume
-func (op *OnPrem) DetachVolume(ctx *lepton.Context, image, name string) error {
+func (op *OnPrem) DetachVolume(ctx *lepton.Context, instanceName string, volumeName string) error {
 	vol := ""
 
 	buildDir := ctx.Config().VolumesDir
@@ -136,7 +135,7 @@ func (op *OnPrem) DetachVolume(ctx *lepton.Context, image, name string) error {
 	}
 
 	for i := 0; i < len(vols); i++ {
-		if vols[i].Name == name {
+		if vols[i].Name == volumeName {
 			vol = vols[i].Path
 		}
 	}
@@ -145,12 +144,17 @@ func (op *OnPrem) DetachVolume(ctx *lepton.Context, image, name string) error {
 		fmt.Printf("removing %s\n", vol)
 	}
 
-	last := getMgmtPort(image)
+	instance, err := op.GetMetaInstanceByName(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
+	last := instance.Mgmt
 
 	commands := []string{
 		`{ "execute": "qmp_capabilities" }`,
-		`{ "execute": "device_del", "arguments": {"id": "` + name + `"}}`,
-		`{ "execute": "blockdev-del", "arguments": {"node-name":"` + name + `" } }`,
+		`{ "execute": "device_del", "arguments": {"id": "` + volumeName + `"}}`,
+		`{ "execute": "blockdev-del", "arguments": {"node-name":"` + volumeName + `" } }`,
 	}
 
 	c, err := net.Dial("tcp", "localhost:"+last)
