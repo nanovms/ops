@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path"
@@ -27,6 +28,13 @@ import (
 // CreateInstancePID creates an instance and returns the pid.
 func (p *OnPrem) CreateInstancePID(ctx *lepton.Context) (string, error) {
 	return p.createInstance(ctx)
+}
+
+// genMgmtPort should generate mgmt before launching instance and
+// persist in instance metadata
+func genMgmtPort() string {
+	dd := rand.Int31n(10000) + 40000
+	return strconv.Itoa(int(dd))
 }
 
 func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
@@ -87,6 +95,8 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	c.RunConfig.ImageName = imgpath
 	c.RunConfig.Background = true
 
+	c.RunConfig.Mgmt = genMgmtPort()
+
 	err := hypervisor.Start(&c.RunConfig)
 	if err != nil {
 		return "", err
@@ -110,6 +120,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		Image:    c.RunConfig.ImageName,
 		Ports:    c.RunConfig.Ports,
 		Pid:      pid,
+		Mgmt:     c.RunConfig.Mgmt,
 	}
 
 	if qemu.OPSD != "" {
@@ -143,6 +154,22 @@ func findPIDFromHook(ppid string) string {
 func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	_, err := p.createInstance(ctx)
 	return err
+}
+
+// GetMetaInstanceByName returns onprem metadata about a given named instance.
+func (p *OnPrem) GetMetaInstanceByName(ctx *lepton.Context, name string) (*instance, error) {
+	instances, err := p.GetMetaInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range instances {
+		if i.Instance == name {
+			return &i, nil
+		}
+	}
+
+	return nil, lepton.ErrInstanceNotFound(name)
 }
 
 // GetInstanceByName returns instance with given name
@@ -312,6 +339,57 @@ func execCmd(cmdStr string) (output string, err error) {
 	return
 }
 
+// GetMetaInstances returns instance data for onprem metadata found in
+// ~/.ops/instances .
+func (p *OnPrem) GetMetaInstances(ctx *lepton.Context) (instances []instance, err error) {
+	opshome := lepton.GetOpsHome()
+	instancesPath := path.Join(opshome, "instances")
+
+	files, err := os.ReadDir(instancesPath)
+	if err != nil {
+		return
+	}
+
+	for _, f := range files {
+		fullpath := path.Join(instancesPath, f.Name())
+
+		// this is a cleanup helper
+		pid, err := strconv.ParseInt(f.Name(), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+
+		process, err := os.FindProcess(int(pid))
+		if err != nil {
+			return nil, err
+		}
+
+		if err = process.Signal(syscall.Signal(0)); err != nil {
+			errMsg := strings.ToLower(err.Error())
+			if strings.Contains(errMsg, "already finished") ||
+				strings.Contains(errMsg, "already released") ||
+				strings.Contains(errMsg, "not initialized") {
+				os.Remove(fullpath)
+				continue
+			}
+		}
+
+		body, err := os.ReadFile(fullpath)
+		if err != nil {
+			return nil, err
+		}
+
+		var i instance
+		if err := json.Unmarshal(body, &i); err != nil {
+			return nil, err
+		}
+
+		instances = append(instances, i)
+	}
+
+	return instances, err
+}
+
 // GetInstances return all instances on prem
 func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInstance, err error) {
 	opshome := lepton.GetOpsHome()
@@ -322,6 +400,7 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 		return
 	}
 
+	// this logic is duped in GetMetaInstances - need to de-dupe.
 	for _, f := range files {
 		fullpath := path.Join(instancesPath, f.Name())
 
@@ -364,6 +443,8 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 			pips = append(pips, "127.0.0.1")
 		}
 
+		// relying on file ctime; prob should actually store the date in
+		// the metadata file.
 		file, err := os.Open(fullpath)
 		if err != nil {
 			return nil, err

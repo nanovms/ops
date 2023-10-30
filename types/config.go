@@ -266,6 +266,9 @@ type RunConfig struct {
 	// signify a value in megabytes or gigabytes respectively.
 	Memory string `json:",omitempty"`
 
+	// Mgmt is an optional mgmt port for onprem QMP access.
+	Mgmt string `json:",mgmt"`
+
 	// Vga whether to emulate a VGA output device
 	Vga bool `json:",omitempty"`
 

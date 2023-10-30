@@ -176,7 +176,7 @@ func volumeAttachCommandHandler(cmd *cobra.Command, args []string) {
 
 func volumeDetachCommand() *cobra.Command {
 	cmdVolumeDetach := &cobra.Command{
-		Use:   "detach <image_name> <volume_name>",
+		Use:   "detach <instance_name> <volume_name>",
 		Short: "detach volume",
 		Run:   volumeDetachCommandHandler,
 		Args:  cobra.MinimumNArgs(2),
@@ -185,7 +185,7 @@ func volumeDetachCommand() *cobra.Command {
 }
 
 func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
-	image := args[0]
+	instance := args[0]
 	name := args[1]
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
@@ -198,7 +198,7 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	err = p.DetachVolume(ctx, image, name)
+	err = p.DetachVolume(ctx, instance, name)
 	if err != nil {
 		log.Fatal(err)
 	}
