@@ -36,9 +36,9 @@ require (
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/vmware/govmomi v0.22.2
 	github.com/vultr/govultr/v2 v2.17.2
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
+	golang.org/x/crypto v0.14.0
 	golang.org/x/oauth2 v0.3.0
-	golang.org/x/sys v0.3.0
+	golang.org/x/sys v0.13.0
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
 	google.golang.org/grpc v1.51.0
@@ -107,10 +107,12 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/vultr/govultr/v3 v3.2.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
-	golang.org/x/term v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
+	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

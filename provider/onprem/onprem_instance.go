@@ -156,6 +156,7 @@ func (p *OnPrem) CreateInstance(ctx *lepton.Context) error {
 	return err
 }
 
+// GetMetaInstancesByName returns a list of onprem instances metadata.
 func (p *OnPrem) GetMetaInstanceByName(ctx *lepton.Context, name string) (*instance, error) {
 	instances, err := p.GetMetaInstances(ctx)
 	if err != nil {
