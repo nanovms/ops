@@ -135,25 +135,18 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 
 			var cnic *compute.NetworkInterface
 
-			if ctx.Config().CloudConfig.EnableIPv6 {
-				cnic = &compute.NetworkInterface{
-					Name:       "eth0",
-					Network:    network.SelfLink,
-					Subnetwork: subnet.SelfLink,
-					StackType:  "IPV4_IPV6",
-					Ipv6AccessConfigs: []*compute.AccessConfig{
-						{
-							Type:        "DIRECT_IPV6",
-							NetworkTier: "PREMIUM",
-						},
-					},
-				}
+			cnic = &compute.NetworkInterface{
+				Network:    network.SelfLink,
+				Subnetwork: subnet.SelfLink,
+			}
 
-			} else {
-				cnic = &compute.NetworkInterface{
-					Name:       "eth0",
-					Network:    network.SelfLink,
-					Subnetwork: subnet.SelfLink,
+			if ctx.Config().CloudConfig.EnableIPv6 {
+				cnic.StackType = "IPV4_IPV6"
+				cnic.Ipv6AccessConfigs = []*compute.AccessConfig{
+					{
+						Type:        "DIRECT_IPV6",
+						NetworkTier: "PREMIUM",
+					},
 				}
 			}
 
@@ -161,13 +154,11 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 
 		} else {
 			nic = append(nic, &compute.NetworkInterface{
-				Name:    "eth0",
 				Network: network.SelfLink,
 			})
 		}
 	} else {
-		eth0Nic := &compute.NetworkInterface{
-			Name: "eth0",
+		cnic := &compute.NetworkInterface{
 			AccessConfigs: []*compute.AccessConfig{
 				{
 					NetworkTier: "PREMIUM",
@@ -177,9 +168,9 @@ func (p *GCloud) getNIC(ctx *lepton.Context, computeService *compute.Service) (n
 			},
 		}
 		if ctx.Config().CloudConfig.StaticIP != "" {
-			eth0Nic.AccessConfigs[0].NatIP = ctx.Config().CloudConfig.StaticIP
+			cnic.AccessConfigs[0].NatIP = ctx.Config().CloudConfig.StaticIP
 		}
-		nic = append(nic, eth0Nic)
+		nic = append(nic, cnic)
 	}
 
 	if ctx.Config().RunConfig.IPAddress != "" {
