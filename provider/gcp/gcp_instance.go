@@ -435,15 +435,13 @@ func (p *GCloud) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 	if watch {
 		line := int64(0)
 		for {
-
 			l, last, err := p.getLogs(ctx, instancename, line)
 			if err != nil {
 				fmt.Println(err)
+			} else {
+				line = last
+				fmt.Printf(l)
 			}
-
-			line = last
-
-			fmt.Printf(l)
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -464,17 +462,10 @@ func (p *GCloud) GetInstanceLogs(ctx *lepton.Context, instancename string) (stri
 
 func (p *GCloud) getLogs(ctx *lepton.Context, instancename string, start int64) (string, int64, error) {
 	context := context.TODO()
-
 	cloudConfig := ctx.Config().CloudConfig
-	lastPos := start
-
-	resp, err := p.Service.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(lastPos).Context(context).Do()
+	resp, err := p.Service.Instances.GetSerialPortOutput(cloudConfig.ProjectID, cloudConfig.Zone, instancename).Start(start).Context(context).Do()
 	if err != nil {
-		return "", resp.Next, err
+		return "", start, err
 	}
-	if resp.Contents != "" {
-		return resp.Contents, resp.Next, nil
-	}
-
-	return "", resp.Next, nil
+	return resp.Contents, resp.Next, nil
 }
