@@ -3,6 +3,7 @@
 package hyperv
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -30,6 +31,29 @@ func GetVirtualMachineByName(vmName string) (string, error) {
 	cmdOut, err := ps.Output(script, vmName)
 
 	return cmdOut, err
+}
+
+func getM2IP() map[string]string {
+	var script = `Get-NetNeighbor -LinkLayerAddress 00-15-5d-* | Select IPAddress, LinkLayerAddress`
+
+	var m = make(map[string]string)
+
+	var ps PowerShellCmd
+	cmdOut, err := ps.Output(script)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	lines := strings.Split(cmdOut, "\r\n")
+	for i := 2; i < len(lines); i++ {
+		cols := strings.Split(lines[i], " ")
+		if len(cols) > 1 {
+
+			m[cols[0]] = cols[1]
+		}
+	}
+
+	return m
 }
 
 // GetVirtualMachineNetworkAdapterAddress returns a virtual machine ip address
