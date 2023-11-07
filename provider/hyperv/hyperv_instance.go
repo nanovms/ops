@@ -4,6 +4,7 @@ package hyperv
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -90,6 +91,14 @@ func (p *Provider) ListInstances(ctx *lepton.Context) error {
 		return err
 	}
 
+	if ctx.Config().RunConfig.JSON {
+		if len(instances) == 0 {
+			fmt.Println("[]")
+			return nil
+		}
+		return json.NewEncoder(os.Stdout).Encode(instances)
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Status", "Created", "Private Ips", "Port"})
 	table.SetHeaderColor(
@@ -134,25 +143,41 @@ func (p *Provider) GetInstances(ctx *lepton.Context) (instances []lepton.CloudIn
 
 	if len(resp) > 2 {
 
+		ips := getM2IP()
+
 		for i := 2; i < len(resp); i++ {
 			line := resp[i]
 
-			// remove duplicated spaces if they exist
 			space := regexp.MustCompile(`\s+`)
 			lineTrimmed := space.ReplaceAllString(line, " ")
 
 			cols := strings.Split(lineTrimmed, " ")
 
-			date, err := time.Parse("02/01/2006 15:04:05", cols[2]+" "+cols[3])
+			date, err := time.Parse("01/2/2006 15:04:05", cols[2]+" "+cols[3])
 			if err != nil {
 				log.Error(err)
 				continue
 			}
 
+			ip := ""
+
+			m, err := Mac(cols[0])
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			for k, v := range ips {
+				rv := strings.ReplaceAll(v, "-", "")
+				if rv == m {
+					ip = k
+				}
+			}
+
 			instances = append(instances, lepton.CloudInstance{
-				Name:    cols[0],
-				Status:  cols[1],
-				Created: lepton.Time2Human(date),
+				Name:       cols[0],
+				Status:     cols[1],
+				PrivateIps: []string{ip},
+				Created:    lepton.Time2Human(date),
 			})
 		}
 

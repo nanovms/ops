@@ -3,6 +3,7 @@
 package hyperv
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -105,6 +106,14 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 	images, err := p.GetImages(ctx)
 	if err != nil {
 		return err
+	}
+
+	if ctx.Config().RunConfig.JSON {
+		if len(images) == 0 {
+			fmt.Println("[]")
+			return nil
+		}
+		return json.NewEncoder(os.Stdout).Encode(images)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
