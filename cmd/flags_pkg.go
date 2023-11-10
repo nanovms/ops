@@ -58,7 +58,7 @@ func (flags *PkgCommandFlags) buildAlternatePath() string {
 	return pkgPath
 }
 
-func VersionOrdinal(version string) string {
+func versionOrdinal(version string) string {
 	// ISO/IEC 14651:2011
 	const maxByte = 1<<8 - 1
 	vo := make([]byte, 0, len(version)+8)
@@ -79,7 +79,7 @@ func VersionOrdinal(version string) string {
 			continue
 		}
 		if vo[j]+1 > maxByte {
-			panic("VersionOrdinal: invalid version")
+			panic("versionOrdinal: invalid version")
 		}
 		vo = append(vo, b)
 		vo[j]++
@@ -110,6 +110,10 @@ func getLatest(pkg string) string {
 		r = api.RealGOARCH
 	}
 
+	if r == "amd64" {
+		r = "x86_64"
+	}
+
 	pkgs := plist.Packages
 	for i := 0; i < len(pkgs); i++ {
 		if pkgs[i].Namespace == npkg[0] && pkgs[i].Arch == r {
@@ -120,7 +124,7 @@ func getLatest(pkg string) string {
 	chosen := filter[0]
 	v = filter[0].Version
 	for i := 1; i < len(filter); i++ {
-		a, b := VersionOrdinal(filter[i].Version), VersionOrdinal(chosen.Version)
+		a, b := versionOrdinal(filter[i].Version), versionOrdinal(chosen.Version)
 		if a > b {
 			v = filter[i].Version
 			chosen = filter[i]
