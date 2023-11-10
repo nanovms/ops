@@ -148,6 +148,7 @@ func MovePackageFiles(origin string, target string) string {
 }
 
 func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) (string, error) {
+
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
 		return "", err
