@@ -58,6 +58,79 @@ func (flags *PkgCommandFlags) buildAlternatePath() string {
 	return pkgPath
 }
 
+func VersionOrdinal(version string) string {
+	// ISO/IEC 14651:2011
+	const maxByte = 1<<8 - 1
+	vo := make([]byte, 0, len(version)+8)
+	j := -1
+	for i := 0; i < len(version); i++ {
+		b := version[i]
+		if '0' > b || b > '9' {
+			vo = append(vo, b)
+			j = -1
+			continue
+		}
+		if j == -1 {
+			vo = append(vo, 0x00)
+			j = len(vo) - 1
+		}
+		if vo[j] == 1 && vo[j+1] == '0' {
+			vo[j+1] = b
+			continue
+		}
+		if vo[j]+1 > maxByte {
+			panic("VersionOrdinal: invalid version")
+		}
+		vo = append(vo, b)
+		vo[j]++
+	}
+	return string(vo)
+}
+
+// currently searches via namespace/pkg
+// should be revisited once api gets better querying in place
+// this should also cache the result somehow which it isn't doing yet.
+func getLatest(pkg string) string {
+	v := ""
+
+	npkg := strings.Split(pkg, "/")
+	nn := strings.ReplaceAll(npkg[1], ":latest", "")
+
+	plist, err := api.SearchPackages(nn)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	filter := []lepton.Package{}
+
+	r := ""
+	if api.AltGOARCH != "" {
+		r = api.AltGOARCH
+	} else {
+		r = api.RealGOARCH
+	}
+
+	pkgs := plist.Packages
+	for i := 0; i < len(pkgs); i++ {
+		if pkgs[i].Namespace == npkg[0] && pkgs[i].Arch == r {
+			filter = append(filter, pkgs[i])
+		}
+	}
+
+	chosen := filter[0]
+	v = filter[0].Version
+	for i := 1; i < len(filter); i++ {
+		a, b := VersionOrdinal(filter[i].Version), VersionOrdinal(chosen.Version)
+		if a > b {
+			v = filter[i].Version
+			chosen = filter[i]
+		}
+	}
+
+	op := strings.Split(pkg, ":")
+	return op[0] + ":" + v
+}
+
 // MergeToConfig merge package configuration to ops configuration
 func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if flags.Package == "" {
@@ -68,6 +141,10 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	if _, err := os.Stat(packagePath); os.IsNotExist(err) {
 		if flags.LocalPackage {
 			return fmt.Errorf("no local package with the name %s found", flags.Package)
+		}
+
+		if strings.Contains(flags.Package, ":latest") {
+			flags.Package = getLatest(flags.Package)
 		}
 
 		downloadPackage(flags.Package, c)
