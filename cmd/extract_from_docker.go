@@ -33,7 +33,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 			log.Fatal(err)
 		}
 		// just in case the version is blank
-		packageName = strings.TrimRight(name+"-"+version, "-")
+		packageName = strings.TrimRight(name+"_"+version, "_")
 	}
 
 	script := fmt.Sprintf(`{
