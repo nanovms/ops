@@ -114,7 +114,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 
 	sysroot := tempDirectory + "/sysroot"
 
-	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/program")
+	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/"+targetExecutable)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,8 +158,8 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		version = "latest"
 	}
 	c := &types.Config{
-		Program: packageName + "/program",
-		Args:    []string{"/program"},
+		Program: packageName + "/" + targetExecutable,
+		Args:    []string{"/" + targetExecutable},
 		Version: version,
 	}
 
