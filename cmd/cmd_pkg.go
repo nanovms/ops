@@ -457,7 +457,7 @@ func cmdFromPackage(cmd *cobra.Command, args []string) {
 	}
 
 	version, _ := flags.GetString("version")
-	if newpkg == "" {
+	if version == "" {
 		fmt.Println("missing new version")
 		os.Exit(1)
 	}
@@ -485,7 +485,7 @@ func cmdFromRun(cmd *cobra.Command, args []string) {
 	}
 
 	version, _ := flags.GetString("version")
-	if newpkg == "" {
+	if version == "" {
 		fmt.Println("missing new version")
 		os.Exit(1)
 	}
