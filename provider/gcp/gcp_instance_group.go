@@ -53,7 +53,7 @@ func (p *GCloud) createInstanceTemplate(ctx *lepton.Context, instanceGroup strin
 					},
 				},
 			},
-			Labels: buildGcpTags(ctx.Config().CloudConfig.Tags),
+			Labels: buildGcpLabels(ctx.Config().CloudConfig.Tags, "instance"),
 			Tags: &compute.Tags{
 				Items: []string{instanceName},
 			},

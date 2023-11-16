@@ -103,7 +103,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	rb := &compute.Image{
 		Name:         c.CloudConfig.ImageName,
-		Labels:       buildGcpTags(ctx.Config().CloudConfig.Tags),
+		Labels:       buildGcpLabels(ctx.Config().CloudConfig.Tags, "image"),
 		Architecture: "X86_64",
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,

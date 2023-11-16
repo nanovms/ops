@@ -35,14 +35,21 @@ type GCloudOperation struct {
 	operationType string
 }
 
-func buildGcpTags(tags []types.Tag) map[string]string {
-	labels := map[string]string{}
+func buildGcpLabels(tags []types.Tag, imageORinstance string) map[string]string {
+	labels := map[string]string{"createdby": "ops"}
 	for _, tag := range tags {
+		switch imageORinstance {
+		case "instance":
+			if !tag.IsInstanceLabel() {
+				continue
+			}
+		case "image":
+			if !tag.IsImageLabel() {
+				continue
+			}
+		}
 		labels[tag.Key] = tag.Value
 	}
-
-	labels["createdby"] = "ops"
-
 	return labels
 }
 

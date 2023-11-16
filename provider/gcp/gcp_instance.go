@@ -90,10 +90,31 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 				},
 			},
 		},
-		Labels: buildGcpTags(ctx.Config().CloudConfig.Tags),
+		Labels: buildGcpLabels(ctx.Config().CloudConfig.Tags, "instance"),
 		Tags: &compute.Tags{
 			Items: []string{instanceName},
 		},
+	}
+
+	// Handle tags based on configured property
+	for ti := range c.CloudConfig.Tags {
+		if !c.CloudConfig.Tags[ti].HasAttribute() {
+			continue
+		}
+		// add metadata tags
+		if c.CloudConfig.Tags[ti].IsInstanceMetadata() {
+			rb.Metadata.Items = append(
+				rb.Metadata.Items,
+				&compute.MetadataItems{
+					Key:   c.CloudConfig.Tags[ti].Key,
+					Value: &c.CloudConfig.Tags[ti].Value,
+				},
+			)
+		}
+		// add network tags (value only)
+		if c.CloudConfig.Tags[ti].IsInstanceNetwork() {
+			rb.Tags.Items = append(rb.Tags.Items, c.CloudConfig.Tags[ti].Value)
+		}
 	}
 
 	if c.CloudConfig.Spot {
