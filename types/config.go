@@ -208,6 +208,61 @@ type Tag struct {
 
 	// Value
 	Value string `json:"value"`
+
+	// Attribute extended
+	Attribute *TagAttribute `json:"attribute,omitempty"`
+}
+
+// TagAttribute ...
+type TagAttribute struct {
+	// Image Label Tag
+	ImageLabel *bool `json:"image_label,omitempty"`
+
+	// Instance Label Tag
+	InstanceLabel *bool `json:"instance_label,omitempty"`
+
+	// Instance Network Tag - will use the Value
+	InstanceNetwork *bool `json:"instance_network,omitempty"`
+
+	// Instance Metadata Tag
+	InstanceMetadata *bool `json:"instance_metadata,omitempty"`
+}
+
+// HasAttribute checks if extended attributes are being used
+func (t Tag) HasAttribute() bool {
+	return !(t.Attribute == nil || reflect.ValueOf(*t.Attribute).IsZero())
+}
+
+// IsImageLabel ...
+func (t Tag) IsImageLabel() bool {
+	if !t.HasAttribute() {
+		return true // backward compatibility
+	}
+	return t.Attribute.ImageLabel != nil && *t.Attribute.ImageLabel
+}
+
+// IsInstanceLabel ...
+func (t Tag) IsInstanceLabel() bool {
+	if !t.HasAttribute() {
+		return true // backward compatibility
+	}
+	return t.Attribute.InstanceLabel != nil && *t.Attribute.InstanceLabel
+}
+
+// IsInstanceNetwork ...
+func (t Tag) IsInstanceNetwork() bool {
+	if !t.HasAttribute() {
+		return false
+	}
+	return t.Attribute.InstanceNetwork != nil && *t.Attribute.InstanceNetwork
+}
+
+// IsInstanceMetadata ...
+func (t Tag) IsInstanceMetadata() bool {
+	if !t.HasAttribute() {
+		return false
+	}
+	return t.Attribute.InstanceMetadata != nil && *t.Attribute.InstanceMetadata
 }
 
 // RunConfig provides runtime details
