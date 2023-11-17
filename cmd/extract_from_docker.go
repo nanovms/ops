@@ -116,7 +116,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 
 	nameMatches := regexp.MustCompile(`(.*\/)?(.*)$`).FindStringSubmatch(targetExecutable)
 	targetExecutableName := nameMatches[2]
-	
+
 	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/"+targetExecutableName)
 	if err != nil {
 		log.Fatal(err)
