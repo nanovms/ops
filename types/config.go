@@ -333,6 +333,9 @@ type RunConfig struct {
 	// Mounts
 	Mounts []string `json:",omitempty"`
 
+	// AttachVolumeOnInstanceCreate tries to attach the volumes configured in Mounts upon instance creation
+	AttachVolumeOnInstanceCreate bool `json:",omitempty"`
+
 	// NetMask
 	NetMask string `json:",omitempty"`
 
