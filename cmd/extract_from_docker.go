@@ -33,7 +33,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 			log.Fatal(err)
 		}
 		// just in case the version is blank
-		packageName = strings.TrimRight(name+"-"+version, "-")
+		packageName = strings.TrimRight(name+"_"+version, "_")
 	}
 
 	script := fmt.Sprintf(`{
@@ -114,7 +114,10 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 
 	sysroot := tempDirectory + "/sysroot"
 
-	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/program")
+	nameMatches := regexp.MustCompile(`(.*\/)?(.*)$`).FindStringSubmatch(targetExecutable)
+	targetExecutableName := nameMatches[2]
+	
+	copyFromContainer(cli, containerInfo.ID, targetExecutablePath, tempDirectory+"/"+targetExecutableName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,8 +161,8 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		version = "latest"
 	}
 	c := &types.Config{
-		Program: packageName + "/program",
-		Args:    []string{"/program"},
+		Program: packageName + "/" + targetExecutableName,
+		Args:    []string{"/" + targetExecutableName},
 		Version: version,
 	}
 

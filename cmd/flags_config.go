@@ -50,7 +50,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 func unWarpConfig(file string, c *types.Config) (err error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatalf("error reading config: %v\nIf you are trying to use interoplation in your\nconfig's JSON set 'ops_render_config=true' in your ENV", err)
+		log.Fatalf("error reading config: %v\nIf you are trying to use interpolation in your\nconfig's JSON set 'ops_render_config=true' in your ENV", err)
 	}
 	if os.Getenv("ops_render_config") == "true" {
 		loadedEnvJSON := os.ExpandEnv(string(data))
