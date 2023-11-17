@@ -97,10 +97,15 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, instanceName string, volumeN
 
 	last := instance.Mgmt
 
+	deviceAddCmd := `{ "execute": "device_add", "arguments": {"driver": "scsi-hd", "bus": "scsi0.0", "drive": "` + volumeName + `", "id": "` + volumeName + `"`
+	if attachID >= 0 {
+		deviceAddCmd += fmt.Sprintf(`, "device_id": "persistent-disk-%d"`, attachID)
+	}
+	deviceAddCmd += `}}`
 	commands := []string{
 		`{ "execute": "qmp_capabilities" }`,
 		`{ "execute": "blockdev-add", "arguments": {"driver": "raw", "node-name":"` + volumeName + `", "file": {"driver": "file", "filename": "` + vol + `"} } }`,
-		`{ "execute": "device_add", "arguments": {"driver": "scsi-hd", "bus": "scsi0.0", "drive": "` + volumeName + `", "id": "` + volumeName + `"}}`,
+		deviceAddCmd,
 	}
 
 	c, err := net.Dial("tcp", "localhost:"+last)
