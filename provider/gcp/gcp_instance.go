@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,6 +115,54 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		// add network tags (value only)
 		if c.CloudConfig.Tags[ti].IsInstanceNetwork() {
 			rb.Tags.Items = append(rb.Tags.Items, c.CloudConfig.Tags[ti].Value)
+		}
+	}
+
+	// Attach disk(s) upon instance creation if RunConfig.AttachVolumeOnInstanceCreate is set
+	if c.RunConfig.AttachVolumeOnInstanceCreate {
+		for mntSrc, mntDst := range c.Mounts {
+			// set for default case ("vol_name","/files")
+			diskDeviceName := mntSrc
+			diskSource := mntSrc
+			diskMode := "READ_WRITE"
+
+			// in case we have mount mode - "/files:ro"
+			dstNmode := strings.Split(mntDst, ":")
+			mntDst = strings.Trim(dstNmode[0], "/") // strip it, /files/ -> files
+
+			// check for ro
+			for i := 1; i < len(dstNmode); i++ {
+				switch dstNmode[i] {
+				case "ro":
+					diskMode = "READ_ONLY"
+				}
+			}
+
+			// Virtual ID mount - handle - i.e ("%1","/files:ro")
+			if strings.HasPrefix(mntSrc, "%") {
+				attachID, err := strconv.Atoi(strings.TrimPrefix(mntSrc, "%"))
+				if err != nil {
+					return err
+				}
+				if attachID <= 0 {
+					return fmt.Errorf("attachment point (%d) is invalid, value has to be > 0", attachID)
+				}
+				diskDeviceName = fmt.Sprintf("persistent-disk-%d", attachID)
+				diskSource = mntDst // already cleaned, i.e /files:ro -> files, TODO: validate and fail upon multiple "/" (files/data/...)
+			}
+
+			// add disk
+			rb.Disks = append(
+				rb.Disks,
+				&compute.AttachedDisk{
+					AutoDelete: false,
+					Boot:       false,
+					Type:       "PERSISTENT",
+					Mode:       diskMode,
+					DeviceName: diskDeviceName,
+					Source:     fmt.Sprintf("zones/%s/disks/%s", c.CloudConfig.Zone, diskSource),
+				},
+			)
 		}
 	}
 
