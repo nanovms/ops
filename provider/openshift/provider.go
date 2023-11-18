@@ -3,6 +3,7 @@
 package openshift
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -154,4 +155,14 @@ func (oc *OpenShift) AttachVolume(ctx *lepton.Context, instanceName, volumeName 
 // DetachVolume detaches a volume from a nano instance
 func (oc *OpenShift) DetachVolume(ctx *lepton.Context, instanceName, volumeName string) error {
 	return nil
+}
+
+// CreateVolumeImage ...
+func (oc *OpenShift) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) error {
+	return errors.New("Unsupported")
+}
+
+// CreateVolumeFromImage ...
+func (oc *OpenShift) CreateVolumeFromImage(ctx *lepton.Context, imageName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

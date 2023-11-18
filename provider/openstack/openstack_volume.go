@@ -250,3 +250,13 @@ func (o *OpenStack) DetachVolume(ctx *lepton.Context, image, name string) error 
 
 	return fmt.Errorf("volume %v is not attached to instance %v", name, image)
 }
+
+// CreateVolumeImage ...
+func (o *OpenStack) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) error {
+	return errors.New("Unsupported")
+}
+
+// CreateVolumeFromImage ...
+func (o *OpenStack) CreateVolumeFromImage(ctx *lepton.Context, imageName, volumeName, provider string) error {
+	return errors.New("Unsupported")
+}

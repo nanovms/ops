@@ -4,6 +4,7 @@ package vsphere
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -290,4 +291,14 @@ func (v *Vsphere) getVirtualMachine(instanceName string) (*object.VirtualMachine
 	}
 
 	return object.NewVirtualMachine(v.client, vms[0].Reference()), nil
+}
+
+// CreateVolumeImage ...
+func (v *Vsphere) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) error {
+	return errors.New("Unsupported")
+}
+
+// CreateVolumeFromImage ...
+func (v *Vsphere) CreateVolumeFromImage(ctx *lepton.Context, imageName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

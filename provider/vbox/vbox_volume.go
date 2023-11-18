@@ -49,3 +49,13 @@ func (p *Provider) DetachVolume(ctx *lepton.Context, image, name string) (err er
 
 	return
 }
+
+// CreateVolumeImage ...
+func (p *Provider) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) error {
+	return errors.New("Unsupported")
+}
+
+// CreateVolumeFromImage ...
+func (p *Provider) CreateVolumeFromImage(ctx *lepton.Context, imageName, volumeName, provider string) error {
+	return errors.New("Unsupported")
+}

@@ -14,6 +14,107 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
+// CreateVolumeImage in GCP
+func (g *GCloud) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) error {
+	config := ctx.Config()
+
+	arch := imageName + ".tar.gz"
+
+	var sizeInGb int64
+	// var vol lepton.NanosVolume
+	if config.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
+		if err != nil {
+			return fmt.Errorf("cannot get volume size: %v", err)
+		}
+		config.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb = int64(size)
+	}
+
+	lv, err := lepton.CreateLocalVolume(config, imageName, data, provider)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(lv.Path)
+
+	link := filepath.Join(filepath.Dir(lv.Path), "disk.raw")
+	if _, err := os.Lstat(link); err == nil {
+		if err := os.Remove(link); err != nil {
+			return fmt.Errorf("failed to unlink: %+v", err)
+		}
+	}
+	defer os.Remove(link)
+
+	err = os.Link(lv.Path, link)
+	if err != nil {
+		return err
+	}
+	archPath := filepath.Join(filepath.Dir(lv.Path), arch)
+
+	err = lepton.CreateArchive(archPath, []string{link})
+	if err != nil {
+		return err
+	}
+	defer os.Remove(archPath)
+
+	err = g.Storage.CopyToBucket(config, archPath)
+	if err != nil {
+		return err
+	}
+	defer g.Storage.DeleteFromBucket(config, filepath.Base(archPath))
+
+	img := &compute.Image{
+		Name: imageName,
+		RawDisk: &compute.ImageRawDisk{
+			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
+		},
+		DiskSizeGb: sizeInGb,
+	}
+	op, err := g.Service.Images.Insert(config.CloudConfig.ProjectID, img).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
+func (g *GCloud) CreateVolumeFromImage(ctx *lepton.Context, imageName, volumeName, provider string) error {
+	config := ctx.Config()
+
+	var sizeInGb int64
+	if config.BaseVolumeSz != "" {
+		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
+		if err != nil {
+			return err
+		}
+		config.BaseVolumeSz = "" // create minimum-sized local volume
+		sizeInGb = int64(size)
+	}
+
+	disk := &compute.Disk{
+		Name:        volumeName,
+		SizeGb:      sizeInGb,
+		SourceImage: "global/images/" + imageName,
+		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
+	}
+
+	op, err := g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
 func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
@@ -85,10 +186,15 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) 
 		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
 	}
 
-	_, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
+	op, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
 	if err != nil {
 		return lv, err
 	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
+	if err != nil {
+		return lv, err
+	}
+
 	return lv, nil
 }
 
@@ -138,14 +244,22 @@ func (g *GCloud) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, erro
 
 // DeleteVolume deletes specific disk and image in GCP
 func (g *GCloud) DeleteVolume(ctx *lepton.Context, name string) error {
-	config := ctx.Config()
-
-	_, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(context.TODO()).Do()
+	config := ctx.Config().CloudConfig
+	// delete disk
+	op, err := g.Service.Disks.Delete(config.ProjectID, config.Zone, name).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
-
-	_, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(context.TODO()).Do()
+	err = g.pollOperation(context.TODO(), config.ProjectID, g.Service, *op)
+	if err != nil {
+		return err
+	}
+	// delete image
+	op, err = g.Service.Images.Delete(config.ProjectID, name).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(context.TODO(), config.ProjectID, g.Service, *op)
 	if err != nil {
 		return err
 	}

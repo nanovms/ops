@@ -17,7 +17,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
 		Short:     "manage nanos volumes",
-		ValidArgs: []string{"create, list, delete, attach"},
+		ValidArgs: []string{"create-image, create-from, create, list, delete, attach"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -28,12 +28,90 @@ func VolumeCommands() *cobra.Command {
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
 
+	cmdVolume.AddCommand(volumeCreateImageCommand())
+	cmdVolume.AddCommand(volumeCreateFromImageCommand())
+
 	cmdVolume.AddCommand(volumeCreateCommand())
 	cmdVolume.AddCommand(volumeListCommand())
 	cmdVolume.AddCommand(volumeDeleteCommand())
 	cmdVolume.AddCommand(volumeAttachCommand())
 	cmdVolume.AddCommand(volumeDetachCommand())
 	return cmdVolume
+}
+
+func volumeCreateFromImageCommand() *cobra.Command {
+	var size string
+
+	cmdVolumeImageCreate := &cobra.Command{
+		Use:   "create-from <image_name> <volume_name>",
+		Short: "create volume from existing image (GCP only)",
+		Run:   volumeCreateFromImageCommandHandler,
+		Args:  cobra.MinimumNArgs(2),
+	}
+	cmdVolumeImageCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume image size when restored onto a persistent disk")
+	return cmdVolumeImageCreate
+}
+
+func volumeCreateFromImageCommandHandler(cmd *cobra.Command, args []string) {
+	imageName := args[0]
+	volumeName := args[1]
+	size, _ := cmd.Flags().GetString("size")
+
+	c, err := getVolumeCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if size != "" {
+		c.BaseVolumeSz = size
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = p.CreateVolumeFromImage(ctx, imageName, volumeName, c.CloudConfig.Platform)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+func volumeCreateImageCommand() *cobra.Command {
+	var data, size string
+
+	cmdVolumeImageCreate := &cobra.Command{
+		Use:   "create-image <image_name>",
+		Short: "create volume image only (GCP only)",
+		Run:   volumeCreateImageCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	cmdVolumeImageCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume image data source")
+	cmdVolumeImageCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume image size when restored onto a persistent disk")
+	return cmdVolumeImageCreate
+}
+
+func volumeCreateImageCommandHandler(cmd *cobra.Command, args []string) {
+	imageName := args[0]
+	data, _ := cmd.Flags().GetString("data")
+	size, _ := cmd.Flags().GetString("size")
+
+	c, err := getVolumeCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if size != "" {
+		c.BaseVolumeSz = size
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = p.CreateVolumeImage(ctx, imageName, data, c.CloudConfig.Platform)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 }
 
 func volumeCreateCommand() *cobra.Command {
