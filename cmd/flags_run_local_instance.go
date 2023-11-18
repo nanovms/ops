@@ -84,7 +84,7 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 		c.RunConfig.Memory = flags.Memory
 	}
 
-	if flags.Smp > 0 {
+	if flags.Smp > 1 {
 		c.RunConfig.CPUs = flags.Smp
 	}
 

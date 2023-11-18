@@ -90,7 +90,6 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 			Debugflags: []string{},
 			RunConfig: types.RunConfig{
 				Accel: true,
-				CPUs:  1,
 				Ports: []string{"80", "90", "81", "82-85"},
 			},
 		}
