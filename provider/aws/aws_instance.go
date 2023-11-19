@@ -85,6 +85,7 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	return cinstances
 }
 
+// RebootInstance reboots the instance.
 func (p *AWS) RebootInstance(ctx *lepton.Context, instanceName string) error {
 	return fmt.Errorf("operation not supported")
 }

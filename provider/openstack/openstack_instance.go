@@ -278,6 +278,7 @@ func (o *OpenStack) DeleteInstance(ctx *lepton.Context, instancename string) err
 	return nil
 }
 
+// RebootInstance reboots the instance.
 func (o *OpenStack) RebootInstance(ctx *lepton.Context, instancename string) error {
 	return fmt.Errorf("operation not supported")
 }

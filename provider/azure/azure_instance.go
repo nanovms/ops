@@ -30,8 +30,9 @@ func (a *Azure) GetVM(ctx context.Context, vmName string) (vm compute.VirtualMac
 	return
 }
 
+// RebootInstance reboots the instance.
 // prob use the below?
-func (p *Azure) RebootInstance(ctx *lepton.Context, instanceName string) error {
+func (a *Azure) RebootInstance(ctx *lepton.Context, instanceName string) error {
 	return fmt.Errorf("operation not supported")
 }
 

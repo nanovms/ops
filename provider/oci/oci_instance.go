@@ -249,6 +249,7 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error 
 	return nil
 }
 
+// RebootInstance reboots the instance.
 func (p *Provider) RebootInstance(ctx *lepton.Context, instanceName string) error {
 	return fmt.Errorf("operation not supported")
 }

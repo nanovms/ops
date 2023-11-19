@@ -438,6 +438,7 @@ func (p *GCloud) DeleteInstance(ctx *lepton.Context, instancename string) error 
 	return nil
 }
 
+// RebootInstance reboots the instance.
 func (p *GCloud) RebootInstance(ctx *lepton.Context, instancename string) error {
 	return fmt.Errorf("operation not supported")
 }

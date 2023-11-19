@@ -497,6 +497,7 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 	return nil
 }
 
+// RebootInstance reboots the instance.
 func (v *Vsphere) RebootInstance(ctx *lepton.Context, instanceName string) error {
 	return fmt.Errorf("operation not supported")
 }

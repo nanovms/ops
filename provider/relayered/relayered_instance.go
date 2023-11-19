@@ -183,6 +183,7 @@ func (v *Relayered) DeleteInstance(ctx *lepton.Context, instanceID string) error
 	return nil
 }
 
+// RebootInstance reboots the instance.
 func (v *Relayered) RebootInstance(ctx *lepton.Context, instanceName string) error {
 	return fmt.Errorf("operation not supported")
 }
