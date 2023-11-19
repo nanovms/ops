@@ -278,6 +278,10 @@ func (o *OpenStack) DeleteInstance(ctx *lepton.Context, instancename string) err
 	return nil
 }
 
+func (o *OpenStack) RebootInstance(ctx *lepton.Context, instancename string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in OpenStack.
 func (o *OpenStack) StartInstance(ctx *lepton.Context, instancename string) error {
 	client, err := o.getComputeClient()

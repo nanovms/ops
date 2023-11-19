@@ -249,6 +249,10 @@ func (v *IBM) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	return nil
 }
 
+func (v *IBM) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in IBM
 func (v *IBM) StartInstance(ctx *lepton.Context, instanceID string) error {
 	return nil

@@ -497,6 +497,10 @@ func (v *Vsphere) DeleteInstance(ctx *lepton.Context, instancename string) error
 	return nil
 }
 
+func (v *Vsphere) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in VSphere.
 // It is the equivalent of:
 // govc vm.power -on=true <instance_name>

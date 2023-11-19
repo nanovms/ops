@@ -5,6 +5,7 @@ package upcloud
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -231,6 +232,10 @@ func (p *Provider) stopServer(uuid string) (err error) {
 	_, err = p.upcloud.StopServer(context.Background(), stopServerReq)
 
 	return
+}
+
+func (p *Provider) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
 }
 
 // StartInstance initiates server in upcloud

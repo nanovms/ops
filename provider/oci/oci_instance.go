@@ -5,6 +5,7 @@ package oci
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -246,6 +247,10 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error 
 	}
 
 	return nil
+}
+
+func (p *Provider) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
 }
 
 // StartInstance starts an instance

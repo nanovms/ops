@@ -85,6 +85,10 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 	return cinstances
 }
 
+func (p *AWS) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance stops instance from AWS by ami name
 func (p *AWS) StartInstance(ctx *lepton.Context, instanceName string) error {
 

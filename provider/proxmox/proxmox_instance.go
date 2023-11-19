@@ -502,6 +502,10 @@ func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 
 }
 
+func (p *ProxMox) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in Proxmox
 func (p *ProxMox) StartInstance(ctx *lepton.Context, instanceID string) error {
 

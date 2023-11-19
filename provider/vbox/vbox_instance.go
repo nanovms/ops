@@ -247,6 +247,10 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) (err e
 	return
 }
 
+func (p *Provider) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts a vm in VirtualBox
 func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) (err error) {
 	vm, err := vbox.GetMachine(instancename)

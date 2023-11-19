@@ -104,6 +104,11 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error
 	return nil
 }
 
+// RebootInstance ...
+func (p *Provider) RebootInstance(ctx *lepton.Context, instancename string) error {
+	return nil
+}
+
 // GetInstanceLogs ...
 func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil

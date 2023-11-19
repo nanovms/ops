@@ -30,6 +30,11 @@ func (a *Azure) GetVM(ctx context.Context, vmName string) (vm compute.VirtualMac
 	return
 }
 
+// prob use the below?
+func (p *Azure) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // RestartVM restarts the selected VM
 func (a *Azure) RestartVM(ctx context.Context, vmName string) (osr autorest.Response, err error) {
 	vmClient := a.getVMClient()

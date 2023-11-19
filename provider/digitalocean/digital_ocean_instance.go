@@ -190,6 +190,11 @@ func (do *DigitalOcean) DeleteInstance(ctx *lepton.Context, instancename string)
 	return nil
 }
 
+// prob use the below?
+func (do *DigitalOcean) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in DO
 func (do *DigitalOcean) StartInstance(ctx *lepton.Context, instancename string) error {
 	instance, err := do.GetInstanceByName(ctx, instancename)

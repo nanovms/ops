@@ -210,6 +210,10 @@ func (v *Vultr) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	return nil
 }
 
+func (v *Vultr) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in v
 func (v *Vultr) StartInstance(ctx *lepton.Context, instanceID string) error {
 
