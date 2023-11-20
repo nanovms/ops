@@ -28,6 +28,10 @@ func amendConfig(c *types.Config) {
 
 		c.Kernel = strings.Replace(c.Kernel, "/kernel.img", "-arm/kernel.img", -1)
 	}
+	if c.CloudConfig.ConfidentialVM {
+		/* Confidential VM feature can only be enabled with UEFI-compatible images */
+		c.Uefi = true
+	}
 }
 
 // BuildImage to be upload on GCP
@@ -122,6 +126,10 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		rb.Architecture = "ARM64"
+	} else {
+		rb.GuestOsFeatures = append(rb.GuestOsFeatures, &compute.GuestOsFeature{
+			Type: "SEV_CAPABLE",
+		})
 	}
 
 	op, err := p.Service.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()

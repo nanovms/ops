@@ -166,6 +166,15 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
+	if c.CloudConfig.ConfidentialVM {
+		rb.ConfidentialInstanceConfig = &compute.ConfidentialInstanceConfig{
+			EnableConfidentialCompute: true,
+		}
+		rb.Scheduling = &compute.Scheduling{
+			// Confidential Instance Config is only supported when OnHostMaintenance is set to TERMINATE
+			OnHostMaintenance: "TERMINATE",
+		}
+	}
 	if c.CloudConfig.Spot {
 		rb.Scheduling = &compute.Scheduling{
 			ProvisioningModel: "SPOT",
