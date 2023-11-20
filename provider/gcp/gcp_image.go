@@ -105,20 +105,23 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Name:         c.CloudConfig.ImageName,
 		Labels:       buildGcpLabels(ctx.Config().CloudConfig.Tags, "image"),
 		Architecture: "X86_64",
+		GuestOsFeatures: []*compute.GuestOsFeature{
+			{
+				Type: "GVNIC",
+			},
+		},
 		RawDisk: &compute.ImageRawDisk{
 			Source: sourceURL,
 		},
 	}
 
+	if c.Uefi {
+		rb.GuestOsFeatures = append(rb.GuestOsFeatures, &compute.GuestOsFeature{
+			Type: "UEFI_COMPATIBLE",
+		})
+	}
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		rb.Architecture = "ARM64"
-
-		gof := &compute.GuestOsFeature{
-			Type: "GVNIC",
-		}
-		l := []*compute.GuestOsFeature{}
-		l = append(l, gof)
-		rb.GuestOsFeatures = l
 	}
 
 	op, err := p.Service.Images.Insert(c.CloudConfig.ProjectID, rb).Context(context).Do()
