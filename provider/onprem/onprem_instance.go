@@ -559,7 +559,7 @@ func executeQMP(commands []string, last string) {
 			fmt.Println(err)
 		}
 		received := make([]byte, 1024)
-		_, err := c.Read(received)
+		_, err = c.Read(received)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
