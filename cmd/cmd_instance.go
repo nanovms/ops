@@ -20,7 +20,7 @@ func InstanceCommands() *cobra.Command {
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
-		ValidArgs: []string{"create", "list", "delete", "stop", "start", "logs"},
+		ValidArgs: []string{"create", "list", "delete", "stop", "start", "reboot", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -32,6 +32,7 @@ func InstanceCommands() *cobra.Command {
 	cmdInstance.AddCommand(instanceDeleteCommand())
 	cmdInstance.AddCommand(instanceStopCommand())
 	cmdInstance.AddCommand(instanceStartCommand())
+	cmdInstance.AddCommand(instanceRebootCommand())
 	cmdInstance.AddCommand(instanceLogsCommand())
 
 	return cmdInstance
@@ -200,6 +201,16 @@ func instanceStartCommand() *cobra.Command {
 	return cmdInstanceStart
 }
 
+func instanceRebootCommand() *cobra.Command {
+	var cmdInstanceReboot = &cobra.Command{
+		Use:   "reboot <instance_name>",
+		Short: "reboot instance on provider",
+		Run:   instanceRebootCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdInstanceReboot
+}
+
 func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	c, err := getInstanceCommandDefaultConfig(cmd)
 	if err != nil {
@@ -212,6 +223,23 @@ func instanceStartCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	err = p.StartInstance(ctx, args[0])
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+func instanceRebootCommandHandler(cmd *cobra.Command, args []string) {
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.RebootInstance(ctx, args[0])
 	if err != nil {
 		exitWithError(err.Error())
 	}

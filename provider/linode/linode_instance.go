@@ -454,6 +454,11 @@ func (v *Linode) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	return nil
 }
 
+// RebootInstance reboots the instance.
+func (v *Linode) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts an instance in linode
 func (v *Linode) StartInstance(ctx *lepton.Context, instanceID string) error {
 	client := &http.Client{}

@@ -116,6 +116,11 @@ func (oc *OpenShift) StopInstance(ctx *lepton.Context, instancename string) erro
 	return nil
 }
 
+// RebootInstance reboots a nanos instance.
+func (oc *OpenShift) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance starts a nanos instance
 func (oc *OpenShift) StartInstance(ctx *lepton.Context, instancename string) error {
 	return nil

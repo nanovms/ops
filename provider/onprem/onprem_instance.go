@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -526,13 +527,81 @@ func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 }
 
 // StartInstance from on premise
+// right now this assumes it was paused; not a boot; there's another
+// call we can use here to get the status first
 func (p *OnPrem) StartInstance(ctx *lepton.Context, instancename string) error {
-	return fmt.Errorf("operation not supported")
+	instance, err := p.GetMetaInstanceByName(ctx, instancename)
+	if err != nil {
+		return err
+	}
+
+	last := instance.Mgmt
+
+	commands := []string{
+		`{ "execute": "qmp_capabilities" }`,
+		`{ "execute": "cont" }`,
+	}
+
+	executeQMP(commands, last)
+	return nil
+}
+
+func executeQMP(commands []string, last string) {
+	c, err := net.Dial("tcp", "localhost:"+last)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer c.Close()
+
+	for i := 0; i < len(commands); i++ {
+		_, err := c.Write([]byte(commands[i] + "\n"))
+		if err != nil {
+			fmt.Println(err)
+		}
+		received := make([]byte, 1024)
+		_, err = c.Read(received)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+}
+
+// RebootInstance from on premise
+func (p *OnPrem) RebootInstance(ctx *lepton.Context, instancename string) error {
+	instance, err := p.GetMetaInstanceByName(ctx, instancename)
+	if err != nil {
+		return err
+	}
+
+	last := instance.Mgmt
+
+	commands := []string{
+		`{ "execute": "qmp_capabilities" }`,
+		`{ "execute": "system_reset" }`,
+	}
+
+	executeQMP(commands, last)
+
+	return nil
 }
 
 // StopInstance from on premise
 func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
-	return fmt.Errorf("operation not supported")
+	instance, err := p.GetMetaInstanceByName(ctx, instancename)
+	if err != nil {
+		return err
+	}
+
+	last := instance.Mgmt
+
+	commands := []string{
+		`{ "execute": "qmp_capabilities" }`,
+		`{ "execute": "stop" }`,
+	}
+
+	executeQMP(commands, last)
+	return nil
 }
 
 // DeleteInstance from on premise

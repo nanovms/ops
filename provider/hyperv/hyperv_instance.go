@@ -196,6 +196,11 @@ func (p *Provider) StopInstance(ctx *lepton.Context, instancename string) error 
 	return StopVirtualMachine(instancename)
 }
 
+// RebootInstance reboots the instance.
+func (p *Provider) RebootInstance(ctx *lepton.Context, instanceName string) error {
+	return fmt.Errorf("operation not supported")
+}
+
 // StartInstance initiates virtual machine in hyper-v
 func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error {
 	return StartVirtualMachine(instancename)
