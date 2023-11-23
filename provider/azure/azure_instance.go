@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -70,6 +70,8 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	vmName := ctx.Config().RunConfig.InstanceName
 	ctx.Logger().Logf("spinning up:\t%s", vmName)
 
+	//			if ctx.Config().CloudConfig.EnableIPv6 {
+
 	// create virtual network
 	var vnet *network.VirtualNetwork
 	configVPC := ctx.Config().CloudConfig.VPC
@@ -81,7 +83,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		}
 	} else {
 		ctx.Logger().Infof("creating virtual network with id %s", vmName)
-		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName)
+		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName, c)
 		if err != nil {
 			ctx.Logger().Error(err)
 			return errors.New("error creating virtual network")
@@ -117,7 +119,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		}
 	} else {
 		ctx.Logger().Infof("creating subnet with id %s", vmName)
-		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
+		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name, c)
 		if err != nil {
 			ctx.Logger().Error(err)
 			return errors.New("error creating subnet")
@@ -152,7 +154,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	var flavor compute.VirtualMachineSizeTypes
 	flavor = compute.VirtualMachineSizeTypes(ctx.Config().CloudConfig.Flavor)
 	if flavor == "" {
-		flavor = compute.VirtualMachineSizeTypesStandardB1s
+		flavor = compute.StandardB1s
 	}
 
 	tags := getAzureDefaultTags()

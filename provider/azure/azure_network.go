@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -321,11 +321,21 @@ func (a *Azure) GetVPC(vnetName string) (vnet *network.VirtualNetwork, err error
 }
 
 // CreateVirtualNetwork creates a virtual network
-func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string) (vnet *network.VirtualNetwork, err error) {
+func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string, c *types.Config) (vnet *network.VirtualNetwork, err error) {
 	vnetClient, err := a.getVnetClient()
 	if err != nil {
 		return nil, err
 	}
+
+	/// fd00:db8:deca::/48
+	// "ace:cab:dec:/48"
+
+	prefixes := []string{"10.0.0.0/8"}
+
+	if c.CloudConfig.EnableIPv6 {
+		prefixes = append(prefixes, "fd00:db8:deca::/48")
+	}
+
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -334,7 +344,7 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 			Location: to.StringPtr(location),
 			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 				AddressSpace: &network.AddressSpace{
-					AddressPrefixes: &[]string{"10.0.0.0/8"},
+					AddressPrefixes: &prefixes,
 				},
 			},
 			Tags: getAzureDefaultTags(),
@@ -447,7 +457,7 @@ func (a *Azure) CreateVirtualNetworkSubnet(ctx context.Context, vnetName, subnet
 
 // CreateSubnetWithNetworkSecurityGroup create a subnet referencing a
 // network security group
-func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string) (subnet *network.Subnet, err error) {
+func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string, c *types.Config) (subnet *network.Subnet, err error) {
 	nsg, err := a.GetNetworkSecurityGroup(ctx, nsgName)
 	if err != nil {
 		return subnet, fmt.Errorf("cannot get nsg: %v", err)
@@ -458,6 +468,13 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		return nil, err
 	}
 
+	prefixes := []string{addressPrefix}
+
+	if c.CloudConfig.EnableIPv6 {
+		prefixes = append(prefixes, "fd00:db8:deca::/48")
+	}
+
+	// https://pkg.go.dev/github.com/Azure/azure-sdk-for-go@v68.0.0+incompatible/services/network/mgmt/2022-07-01/network#SubnetPropertiesFormat
 	future, err := subnetsClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -465,7 +482,7 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		subnetName,
 		network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				AddressPrefix:        to.StringPtr(addressPrefix),
+				AddressPrefixes:      &prefixes,
 				NetworkSecurityGroup: nsg,
 			},
 		})
