@@ -138,7 +138,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	// pass vnet, subnet, ip, nicname
 	enableIPForwarding := c.RunConfig.CanIPForward
 	ctx.Logger().Infof("creating network interface controller with id %s", vmName)
-	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName, enableIPForwarding)
+	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName, enableIPForwarding, c)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("error creating network interface controller")

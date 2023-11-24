@@ -43,7 +43,7 @@ func (a *Azure) getNicClient() *network.InterfacesClient {
 
 // CreateNIC creates a new network interface. The Network Security Group
 // is not a required parameter
-func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string, enableIPForwarding bool) (nic network.Interface, err error) {
+func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string, enableIPForwarding bool, c *types.Config) (nic network.Interface, err error) {
 	subnet, err := a.GetVirtualNetworkSubnet(ctx, vnetName, subnetName)
 	if err != nil {
 		log.Fatalf("failed to get subnet: %v", err)
@@ -54,20 +54,34 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		log.Fatalf("failed to get ip address: %v", err)
 	}
 
+	ipconfigs := []network.InterfaceIPConfiguration{
+		{
+			Name: to.StringPtr("ipConfig1"),
+			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+				Subnet:                    subnet,
+				PrivateIPAllocationMethod: network.Dynamic,
+				PublicIPAddress:           &ip,
+			},
+		},
+	}
+
+	if c.CloudConfig.EnableIPv6 {
+		ipconfigs = append(ipconfigs, network.InterfaceIPConfiguration{
+			Name: to.StringPtr("ipConfig2"),
+			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+				Subnet:                    subnet,
+				PrivateIPAllocationMethod: network.Dynamic,
+				//				PublicIPAddress:           &ip,
+				PrivateIPAddressVersion: network.IPv6,
+			},
+		})
+	}
+
 	nicParams := network.Interface{
 		Name:     to.StringPtr(nicName),
 		Location: to.StringPtr(location),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-			IPConfigurations: &[]network.InterfaceIPConfiguration{
-				{
-					Name: to.StringPtr("ipConfig1"),
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						Subnet:                    subnet,
-						PrivateIPAllocationMethod: network.Dynamic,
-						PublicIPAddress:           &ip,
-					},
-				},
-			},
+			IPConfigurations:   &ipconfigs,
 			EnableIPForwarding: &enableIPForwarding,
 		},
 		Tags: getAzureDefaultTags(),
@@ -471,7 +485,7 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 	prefixes := []string{addressPrefix}
 
 	if c.CloudConfig.EnableIPv6 {
-		prefixes = append(prefixes, "fd00:db8:deca::/48")
+		prefixes = append(prefixes, "fd00:db8:deca:deed::/64")
 	}
 
 	// https://pkg.go.dev/github.com/Azure/azure-sdk-for-go@v68.0.0+incompatible/services/network/mgmt/2022-07-01/network#SubnetPropertiesFormat
