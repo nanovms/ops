@@ -71,8 +71,7 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 				Subnet:                    subnet,
 				PrivateIPAllocationMethod: network.Dynamic,
-				//				PublicIPAddress:           &ip,
-				PrivateIPAddressVersion: network.IPv6,
+				PrivateIPAddressVersion:   network.IPv6,
 			},
 		})
 	}
@@ -341,9 +340,6 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 		return nil, err
 	}
 
-	/// fd00:db8:deca::/48
-	// "ace:cab:dec:/48"
-
 	prefixes := []string{"10.0.0.0/8"}
 
 	if c.CloudConfig.EnableIPv6 {
@@ -488,7 +484,6 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		prefixes = append(prefixes, "fd00:db8:deca:deed::/64")
 	}
 
-	// https://pkg.go.dev/github.com/Azure/azure-sdk-for-go@v68.0.0+incompatible/services/network/mgmt/2022-07-01/network#SubnetPropertiesFormat
 	future, err := subnetsClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
