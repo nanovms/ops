@@ -165,11 +165,6 @@ func (a *Azure) DeleteIP(ctx *lepton.Context, ipConfiguration *network.Interface
 		}
 	}
 
-	err := a.DeleteSubnetwork(ctx, *ipConfiguration.Subnet.ID)
-	if err != nil {
-		return fmt.Errorf("failed deleting subnetwork %s: %s", *ipConfiguration.Subnet.ID, err.Error())
-	}
-
 	return nil
 }
 

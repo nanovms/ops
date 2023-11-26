@@ -428,12 +428,16 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 				ctx.Logger().Warn(err.Error())
 			}
 
+			subnet := ""
 			for _, ipConfiguration := range *nic.IPConfigurations {
+				subnet = *ipConfiguration.Subnet.ID
 				err := a.DeleteIP(ctx, &ipConfiguration)
 				if err != nil {
 					ctx.Logger().Warn(err.Error())
 				}
 			}
+
+			a.DeleteSubnetwork(ctx, subnet)
 
 			if nic.NetworkSecurityGroup != nil {
 				err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
