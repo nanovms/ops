@@ -95,6 +95,9 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		Tags: &compute.Tags{
 			Items: []string{instanceName},
 		},
+		AdvancedMachineFeatures: &compute.AdvancedMachineFeatures{
+			ThreadsPerCore: c.RunConfig.ThreadsPerCore,
+		},
 	}
 
 	// Handle tags based on configured property

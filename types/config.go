@@ -380,6 +380,12 @@ type RunConfig struct {
 
 	// VolumeSizeInGb is an optional parameter only available for OpenStack.
 	VolumeSizeInGb int `json:",omitempty"`
+
+	// ThreadsPerCore: The number of threads per physical core. To disable
+	// simultaneous multithreading (SMT) set this to 1. If unset, the
+	// maximum number of threads supported per core by the underlying
+	// processor is assumed.
+	ThreadsPerCore int64 `json:",omitempty"`
 }
 
 // Nic describes a nic
