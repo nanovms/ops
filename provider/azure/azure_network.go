@@ -43,7 +43,7 @@ func (a *Azure) getNicClient() *network.InterfacesClient {
 
 // CreateNIC creates a new network interface. The Network Security Group
 // is not a required parameter
-func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string, enableIPForwarding bool, c *types.Config) (nic network.Interface, err error) {
+func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, ipv6Name, nicName string, enableIPForwarding bool, c *types.Config) (nic network.Interface, err error) {
 	subnet, err := a.GetVirtualNetworkSubnet(ctx, vnetName, subnetName)
 	if err != nil {
 		log.Fatalf("failed to get subnet: %v", err)
@@ -66,14 +66,22 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 	}
 
 	if c.CloudConfig.EnableIPv6 {
+
+		ipv6, err := a.GetPublicIP(ctx, ipv6Name)
+		if err != nil {
+			log.Fatalf("failed to get ip address: %v", err)
+		}
+
 		ipconfigs = append(ipconfigs, network.InterfaceIPConfiguration{
 			Name: to.StringPtr("ipConfig2"),
 			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 				Subnet:                    subnet,
 				PrivateIPAllocationMethod: network.Dynamic,
 				PrivateIPAddressVersion:   network.IPv6,
+				PublicIPAddress:           &ipv6,
 			},
 		})
+
 	}
 
 	nicParams := network.Interface{
@@ -137,24 +145,27 @@ func (a *Azure) DeleteNIC(ctx *lepton.Context, nic *network.Interface) error {
 func (a *Azure) DeleteIP(ctx *lepton.Context, ipConfiguration *network.InterfaceIPConfiguration) error {
 	logger := ctx.Logger()
 
-	ipID := getAzureResourceNameFromID(*ipConfiguration.PublicIPAddress.ID)
+	if ipConfiguration.PublicIPAddress != nil {
 
-	ipClient := a.getIPClient()
+		ipID := getAzureResourceNameFromID(*ipConfiguration.PublicIPAddress.ID)
 
-	logger.Infof("Deleting public IP %s...", ipID)
-	deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
-	if err != nil {
-		logger.Error(err)
-		return errors.New("failed deleting ip")
+		ipClient := a.getIPClient()
+
+		logger.Infof("Deleting public IP %s...", ipID)
+		deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
+		if err != nil {
+			logger.Error(err)
+			return errors.New("failed deleting ip")
+		}
+
+		err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
+		if err != nil {
+			logger.Error(err)
+			return errors.New("failed waiting for ip deletion")
+		}
 	}
 
-	err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
-	if err != nil {
-		logger.Error(err)
-		return errors.New("failed waiting for ip deletion")
-	}
-
-	err = a.DeleteSubnetwork(ctx, *ipConfiguration.Subnet.ID)
+	err := a.DeleteSubnetwork(ctx, *ipConfiguration.Subnet.ID)
 	if err != nil {
 		return fmt.Errorf("failed deleting subnetwork %s: %s", *ipConfiguration.Subnet.ID, err.Error())
 	}
@@ -270,8 +281,16 @@ func (a *Azure) getIPClient() *network.PublicIPAddressesClient {
 }
 
 // CreatePublicIP creates a new public IP
-func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string) (ip network.PublicIPAddress, err error) {
+func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string, ipv6 bool) (ip network.PublicIPAddress, err error) {
 	ipClient := a.getIPClient()
+
+	vz := network.IPv4
+	allocation := network.Static
+
+	if ipv6 {
+		vz = network.IPv6
+		ipName += "-v6"
+	}
 
 	future, err := ipClient.CreateOrUpdate(
 		ctx,
@@ -281,8 +300,11 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 			Name:     to.StringPtr(ipName),
 			Location: to.StringPtr(location),
 			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-				PublicIPAddressVersion:   network.IPv4,
-				PublicIPAllocationMethod: network.Static,
+				PublicIPAddressVersion:   vz,
+				PublicIPAllocationMethod: allocation,
+			},
+			Sku: &network.PublicIPAddressSku{ // dual needs both to be standard
+				Name: network.PublicIPAddressSkuNameStandard,
 			},
 			Tags: getAzureDefaultTags(),
 		},
