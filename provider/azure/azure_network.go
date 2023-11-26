@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -43,7 +43,7 @@ func (a *Azure) getNicClient() *network.InterfacesClient {
 
 // CreateNIC creates a new network interface. The Network Security Group
 // is not a required parameter
-func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, nicName string, enableIPForwarding bool) (nic network.Interface, err error) {
+func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnetName, nsgName, ipName, ipv6Name, nicName string, enableIPForwarding bool, c *types.Config) (nic network.Interface, err error) {
 	subnet, err := a.GetVirtualNetworkSubnet(ctx, vnetName, subnetName)
 	if err != nil {
 		log.Fatalf("failed to get subnet: %v", err)
@@ -54,20 +54,41 @@ func (a *Azure) CreateNIC(ctx context.Context, location string, vnetName, subnet
 		log.Fatalf("failed to get ip address: %v", err)
 	}
 
+	ipconfigs := []network.InterfaceIPConfiguration{
+		{
+			Name: to.StringPtr("ipConfig1"),
+			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+				Subnet:                    subnet,
+				PrivateIPAllocationMethod: network.Dynamic,
+				PublicIPAddress:           &ip,
+			},
+		},
+	}
+
+	if c.CloudConfig.EnableIPv6 {
+
+		ipv6, err := a.GetPublicIP(ctx, ipv6Name)
+		if err != nil {
+			log.Fatalf("failed to get ip address: %v", err)
+		}
+
+		ipconfigs = append(ipconfigs, network.InterfaceIPConfiguration{
+			Name: to.StringPtr("ipConfig2"),
+			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+				Subnet:                    subnet,
+				PrivateIPAllocationMethod: network.Dynamic,
+				PrivateIPAddressVersion:   network.IPv6,
+				PublicIPAddress:           &ipv6,
+			},
+		})
+
+	}
+
 	nicParams := network.Interface{
 		Name:     to.StringPtr(nicName),
 		Location: to.StringPtr(location),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-			IPConfigurations: &[]network.InterfaceIPConfiguration{
-				{
-					Name: to.StringPtr("ipConfig1"),
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						Subnet:                    subnet,
-						PrivateIPAllocationMethod: network.Dynamic,
-						PublicIPAddress:           &ip,
-					},
-				},
-			},
+			IPConfigurations:   &ipconfigs,
 			EnableIPForwarding: &enableIPForwarding,
 		},
 		Tags: getAzureDefaultTags(),
@@ -124,26 +145,24 @@ func (a *Azure) DeleteNIC(ctx *lepton.Context, nic *network.Interface) error {
 func (a *Azure) DeleteIP(ctx *lepton.Context, ipConfiguration *network.InterfaceIPConfiguration) error {
 	logger := ctx.Logger()
 
-	ipID := getAzureResourceNameFromID(*ipConfiguration.PublicIPAddress.ID)
+	if ipConfiguration.PublicIPAddress != nil {
 
-	ipClient := a.getIPClient()
+		ipID := getAzureResourceNameFromID(*ipConfiguration.PublicIPAddress.ID)
 
-	logger.Infof("Deleting public IP %s...", ipID)
-	deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
-	if err != nil {
-		logger.Error(err)
-		return errors.New("failed deleting ip")
-	}
+		ipClient := a.getIPClient()
 
-	err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
-	if err != nil {
-		logger.Error(err)
-		return errors.New("failed waiting for ip deletion")
-	}
+		logger.Infof("Deleting public IP %s...", ipID)
+		deleteIPTask, err := ipClient.Delete(context.TODO(), a.groupName, ipID)
+		if err != nil {
+			logger.Error(err)
+			return errors.New("failed deleting ip")
+		}
 
-	err = a.DeleteSubnetwork(ctx, *ipConfiguration.Subnet.ID)
-	if err != nil {
-		return fmt.Errorf("failed deleting subnetwork %s: %s", *ipConfiguration.Subnet.ID, err.Error())
+		err = deleteIPTask.WaitForCompletionRef(context.TODO(), ipClient.Client)
+		if err != nil {
+			logger.Error(err)
+			return errors.New("failed waiting for ip deletion")
+		}
 	}
 
 	return nil
@@ -257,8 +276,16 @@ func (a *Azure) getIPClient() *network.PublicIPAddressesClient {
 }
 
 // CreatePublicIP creates a new public IP
-func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string) (ip network.PublicIPAddress, err error) {
+func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName string, ipv6 bool) (ip network.PublicIPAddress, err error) {
 	ipClient := a.getIPClient()
+
+	vz := network.IPv4
+	allocation := network.Static
+
+	if ipv6 {
+		vz = network.IPv6
+		ipName += "-v6"
+	}
 
 	future, err := ipClient.CreateOrUpdate(
 		ctx,
@@ -268,8 +295,11 @@ func (a *Azure) CreatePublicIP(ctx context.Context, location string, ipName stri
 			Name:     to.StringPtr(ipName),
 			Location: to.StringPtr(location),
 			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-				PublicIPAddressVersion:   network.IPv4,
-				PublicIPAllocationMethod: network.Static,
+				PublicIPAddressVersion:   vz,
+				PublicIPAllocationMethod: allocation,
+			},
+			Sku: &network.PublicIPAddressSku{ // dual needs both to be standard
+				Name: network.PublicIPAddressSkuNameStandard,
 			},
 			Tags: getAzureDefaultTags(),
 		},
@@ -321,11 +351,18 @@ func (a *Azure) GetVPC(vnetName string) (vnet *network.VirtualNetwork, err error
 }
 
 // CreateVirtualNetwork creates a virtual network
-func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string) (vnet *network.VirtualNetwork, err error) {
+func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetName string, c *types.Config) (vnet *network.VirtualNetwork, err error) {
 	vnetClient, err := a.getVnetClient()
 	if err != nil {
 		return nil, err
 	}
+
+	prefixes := []string{"10.0.0.0/8"}
+
+	if c.CloudConfig.EnableIPv6 {
+		prefixes = append(prefixes, "fd00:db8:deca::/48")
+	}
+
 	future, err := vnetClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -334,7 +371,7 @@ func (a *Azure) CreateVirtualNetwork(ctx context.Context, location string, vnetN
 			Location: to.StringPtr(location),
 			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 				AddressSpace: &network.AddressSpace{
-					AddressPrefixes: &[]string{"10.0.0.0/8"},
+					AddressPrefixes: &prefixes,
 				},
 			},
 			Tags: getAzureDefaultTags(),
@@ -447,7 +484,7 @@ func (a *Azure) CreateVirtualNetworkSubnet(ctx context.Context, vnetName, subnet
 
 // CreateSubnetWithNetworkSecurityGroup create a subnet referencing a
 // network security group
-func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string) (subnet *network.Subnet, err error) {
+func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetName, subnetName, addressPrefix, nsgName string, c *types.Config) (subnet *network.Subnet, err error) {
 	nsg, err := a.GetNetworkSecurityGroup(ctx, nsgName)
 	if err != nil {
 		return subnet, fmt.Errorf("cannot get nsg: %v", err)
@@ -458,6 +495,12 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		return nil, err
 	}
 
+	prefixes := []string{addressPrefix}
+
+	if c.CloudConfig.EnableIPv6 {
+		prefixes = append(prefixes, "fd00:db8:deca:deed::/64")
+	}
+
 	future, err := subnetsClient.CreateOrUpdate(
 		ctx,
 		a.groupName,
@@ -465,7 +508,7 @@ func (a *Azure) CreateSubnetWithNetworkSecurityGroup(ctx context.Context, vnetNa
 		subnetName,
 		network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				AddressPrefix:        to.StringPtr(addressPrefix),
+				AddressPrefixes:      &prefixes,
 				NetworkSecurityGroup: nsg,
 			},
 		})

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -65,7 +65,7 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, provider string) (
 		Location: to.StringPtr(location),
 		Name:     to.StringPtr(name),
 		DiskProperties: &compute.DiskProperties{
-			HyperVGeneration: compute.HyperVGenerationV1,
+			HyperVGeneration: compute.V1,
 			DiskSizeGB:       to.Int32Ptr(int32(sizeInGb)),
 			CreationData: &compute.CreationData{
 				CreateOption:     "Import",

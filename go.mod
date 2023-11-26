@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	cloud.google.com/go/storage v1.27.0
-	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/Azure/go-autorest/autorest v0.11.24
-	github.com/Azure/go-autorest/autorest/adal v0.9.18
+	github.com/Azure/go-autorest/autorest/adal v0.9.23
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/UpCloudLtd/upcloud-go-api/v6 v6.5.0
@@ -31,7 +31,7 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/terra-farm/go-virtualbox v0.0.4
 	github.com/tj/go-spin v1.1.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
@@ -72,7 +72,7 @@ require (
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect

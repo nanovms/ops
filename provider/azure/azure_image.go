@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -126,7 +126,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 				OsDisk: &compute.ImageOSDisk{
 					OsType:  compute.OperatingSystemTypesLinux,
 					BlobURI: to.StringPtr(uri),
-					OsState: compute.OperatingSystemStateTypesGeneralized,
+					OsState: compute.Generalized,
 				},
 			},
 			HyperVGeneration: a.hyperVGen,

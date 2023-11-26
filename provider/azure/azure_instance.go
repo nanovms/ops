@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-12-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -70,6 +70,8 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	vmName := ctx.Config().RunConfig.InstanceName
 	ctx.Logger().Logf("spinning up:\t%s", vmName)
 
+	//			if ctx.Config().CloudConfig.EnableIPv6 {
+
 	// create virtual network
 	var vnet *network.VirtualNetwork
 	configVPC := ctx.Config().CloudConfig.VPC
@@ -81,7 +83,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		}
 	} else {
 		ctx.Logger().Infof("creating virtual network with id %s", vmName)
-		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName)
+		vnet, err = a.CreateVirtualNetwork(context.TODO(), location, vmName, c)
 		if err != nil {
 			ctx.Logger().Error(err)
 			return errors.New("error creating virtual network")
@@ -117,7 +119,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 		}
 	} else {
 		ctx.Logger().Infof("creating subnet with id %s", vmName)
-		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name)
+		subnet, err = a.CreateSubnetWithNetworkSecurityGroup(context.TODO(), *vnet.Name, vmName, "10.0.0.0/24", *nsg.Name, c)
 		if err != nil {
 			ctx.Logger().Error(err)
 			return errors.New("error creating subnet")
@@ -126,17 +128,29 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 
 	// create ip
 	ctx.Logger().Infof("creating public ip with id %s", vmName)
-	ip, err := a.CreatePublicIP(context.TODO(), location, vmName)
+	ip, err := a.CreatePublicIP(context.TODO(), location, vmName, false)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("error creating public ip")
+	}
+
+	var ipv6Name network.PublicIPAddress
+
+	if ctx.Config().CloudConfig.EnableIPv6 {
+
+		ctx.Logger().Infof("creating public ip with id %s", vmName)
+		ipv6Name, err = a.CreatePublicIP(context.TODO(), location, vmName, true)
+		if err != nil {
+			ctx.Logger().Error(err)
+			return errors.New("error creating public ip")
+		}
 	}
 
 	// create nic
 	// pass vnet, subnet, ip, nicname
 	enableIPForwarding := c.RunConfig.CanIPForward
 	ctx.Logger().Infof("creating network interface controller with id %s", vmName)
-	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, vmName, enableIPForwarding)
+	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, *ipv6Name.Name, vmName, enableIPForwarding, c)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("error creating network interface controller")
@@ -152,7 +166,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	var flavor compute.VirtualMachineSizeTypes
 	flavor = compute.VirtualMachineSizeTypes(ctx.Config().CloudConfig.Flavor)
 	if flavor == "" {
-		flavor = compute.VirtualMachineSizeTypesStandardB1s
+		flavor = compute.StandardB1s
 	}
 
 	tags := getAzureDefaultTags()
@@ -414,12 +428,16 @@ func (a *Azure) DeleteInstance(ctx *lepton.Context, instancename string) error {
 				ctx.Logger().Warn(err.Error())
 			}
 
+			subnet := ""
 			for _, ipConfiguration := range *nic.IPConfigurations {
+				subnet = *ipConfiguration.Subnet.ID
 				err := a.DeleteIP(ctx, &ipConfiguration)
 				if err != nil {
 					ctx.Logger().Warn(err.Error())
 				}
 			}
+
+			a.DeleteSubnetwork(ctx, subnet)
 
 			if nic.NetworkSecurityGroup != nil {
 				err = a.DeleteNetworkSecurityGroup(ctx, *nic.NetworkSecurityGroup.ID)
