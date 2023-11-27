@@ -553,8 +553,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		q.addSerial("stdio")
 	}
 
-	q.addFlag("-no-reboot")
-
 	if OPSD != "" || MACPKGD != "" {
 		q.addOption("-L", "/Applications/qemu.app/Contents/MacOS/")
 	}
