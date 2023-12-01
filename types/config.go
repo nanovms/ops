@@ -168,6 +168,10 @@ type ProviderConfig struct {
 	// you can use to pass role information to an EC2 instance when the instance starts.
 	InstanceProfile string `json:",omitempty"`
 
+	// KMS optionally encrypts AMIs if set. 'default' may be used for
+	// the default key or a KMS arn may be specified.
+	KMS string `json:",omitempty"`
+
 	// Platform defines the cloud provider to use with the ops CLI, currently
 	// supporting aws, azure, and gcp.
 	Platform string `cloud:"platform" json:",omitempty"`

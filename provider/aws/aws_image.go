@@ -110,7 +110,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	key := c.CloudConfig.ImageName
 
 	ctx.Logger().Info("Creating snapshot")
-	snapshotID, err := p.createSnapshot(imagePath)
+	snapshotID, err := p.createSnapshot(imagePath, c.CloudConfig.KMS)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 
 // createSnapshot process create Snapshot to EBS
 // Returns snapshotID and err
-func (p *AWS) createSnapshot(imagePath string) (string, error) {
+func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
 	// Open file first
 	f, err := os.Open(imagePath)
 	if err != nil {
@@ -250,10 +250,20 @@ func (p *AWS) createSnapshot(imagePath string) (string, error) {
 	maxBar := (snapshotSize/int64(SnapshotBlockDataLength))*2 + 2
 	bar := progressbar.Default(maxBar)
 
-	snapshotOutput, err := p.volumeService.StartSnapshot(&ebs.StartSnapshotInput{
+	esi := &ebs.StartSnapshotInput{
 		Tags:       []*ebs.Tag{},
 		VolumeSize: aws.Int64(sizeInGb),
-	})
+	}
+
+	if kms != "" {
+		esi.Encrypted = aws.Bool(true)
+
+		if kms != "default" {
+			esi.KmsKeyArn = aws.String(kms)
+		}
+	}
+
+	snapshotOutput, err := p.volumeService.StartSnapshot(esi)
 	if err != nil {
 		return "", err
 	}
