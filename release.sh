@@ -1,10 +1,10 @@
 #!/bin/sh
 
-export VERSION="0.1.38"
+export VERSION="0.1.40"
 plat="$(uname -s | awk '{print tolower($0)}')"
 
 # x86-linux
-GO111MODULE=on GOOS=linux go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
+GOARCH=amd64 GO111MODULE=on GOOS=linux go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/linux
 
 nfpm pkg --packager deb --target /tmp/
@@ -31,7 +31,7 @@ gsutil setacl public-read gs://cli/linux/release/"$VERSION"/"$hash"
 # x86-darwin
 # TODO:
 # flag here with "-X github.com/nanovms/ops/qemu.OPSD=true" for signed/packaged mac binaries
-GO111MODULE=on GOOS=darwin go build -ldflags "-w -X github.com/nanovms/ops/lepton.Version=$VERSION"
+GOARCH=amd64 GO111MODULE=on GOOS=darwin go build -ldflags "-w -X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/darwin
 
 hash="ops-darwin-$VERSION.md5"
