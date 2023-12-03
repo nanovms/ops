@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -393,7 +394,13 @@ func (p *OnPrem) GetMetaInstances(ctx *lepton.Context) (instances []instance, er
 
 // GetInstances return all instances on prem
 func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInstance, err error) {
-	opshome := lepton.GetOpsHome()
+	opshome := ""
+	if ctx.Config().Home != "" {
+		opshome = filepath.Join(ctx.Config().Home, ".ops")
+	} else {
+		opshome = lepton.GetOpsHome()
+	}
+
 	instancesPath := path.Join(opshome, "instances")
 
 	files, err := os.ReadDir(instancesPath)

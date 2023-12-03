@@ -52,6 +52,13 @@ type Config struct {
 	// Force
 	Force bool `json:",omitempty"`
 
+	// Home specifies the root folder for an ops home. By default it is
+	// an empty string and not used. Any non-empty string value will
+	// overrride anything that might be present in OPS_HOME env var.
+	// This allows the user to utilize multiple OPS_HOME values for
+	// different contexts in the same instantiation.
+	Home string `json:"home",omitempty`
+
 	// Kernel
 	Kernel string `json:",omitempty"`
 
