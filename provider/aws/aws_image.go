@@ -69,13 +69,17 @@ func (psb *PutSnapshotBlockResults) Len() int {
 	return len(psb.Data)
 }
 
+func amendConfig(c *types.Config) {
+	if getArchitecture(c.CloudConfig.Flavor) == "arm64" {
+		c.Uefi = true
+	}
+}
+
 // BuildImage to be upload on AWS
 func (p *AWS) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
 
-	if isGravitonProcessor(c.CloudConfig.Flavor) {
-		c.Uefi = true
-	}
+	amendConfig(c)
 
 	err := lepton.BuildImage(*c)
 	if err != nil {
@@ -88,6 +92,7 @@ func (p *AWS) BuildImage(ctx *lepton.Context) (string, error) {
 // BuildImageWithPackage to upload on AWS
 func (p *AWS) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
+	amendConfig(c)
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
 		return "", err
@@ -461,6 +466,8 @@ var (
 		"m6a":     "x86_64",
 		"m6g":     "arm64",
 		"m6gd":    "arm64",
+		"m7g":     "arm64",
+		"m7gd":    "arm64",
 		"m6i":     "x86_64",
 		"mac1":    "x86_64_mac",
 		"p2":      "x86_64",
@@ -478,6 +485,8 @@ var (
 		"r5n":     "x86_64",
 		"r6g":     "arm64",
 		"r6gd":    "arm64",
+		"r7g":     "arm64",
+		"r7gd":    "arm64",
 		"r6i":     "x86_64",
 		"t1":      "i386,",
 		"t2":      "x86_64",
@@ -494,9 +503,6 @@ var (
 		"x2iezn":  "x86_64",
 		"z1d":     "x86_64",
 	}
-
-	// GravitonProcessors are designed by AWS to deliver the best price performance for your cloud workloads running in Amazon EC2
-	GravitonProcessors = map[string]bool{"a1": true, "c6g": true, "c6gd": true, "c6gn": true, "c7g": true, "g5g": true, "im4gn": true, "is4gen": true, "m6g": true, "m6gd": true, "r6g": true, "r6gd": true, "t4g": true, "x2gd": true}
 )
 
 func getArchitecture(flavor string) string {
@@ -508,15 +514,6 @@ func getArchitecture(flavor string) string {
 		return arc
 	}
 	return "x86_64"
-}
-
-func isGravitonProcessor(flavor string) bool {
-	if flavor == "" {
-		return false
-	}
-
-	_, isExist := GravitonProcessors[strings.ToLower(strings.Split(flavor, ".")[0])]
-	return isExist
 }
 
 func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
