@@ -2,6 +2,7 @@ package onprem
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -86,6 +87,11 @@ func (p *OnPrem) ListImages(ctx *lepton.Context) error {
 	}
 
 	if ctx.Config().RunConfig.JSON {
+		if len(images) == 0 {
+			fmt.Println("[]")
+			return nil
+		}
+
 		return json.NewEncoder(os.Stdout).Encode(images)
 	}
 
