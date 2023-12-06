@@ -125,6 +125,10 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		Mgmt:     c.RunConfig.Mgmt,
 	}
 
+	if c.RunConfig.Bridged {
+		i.Bridged = true
+	}
+
 	if qemu.OPSD != "" {
 		i.Bridged = true
 	}
@@ -193,7 +197,7 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 // FindBridgedIPByPID finds a qemu process with the pid and returns the
 // ip.
 func FindBridgedIPByPID(pid string) string {
-	out, err := execCmd("ps -p " + pid) //fixme: cmd injection
+	out, err := execCmd("ps ww -p " + pid) //fixme: cmd injection
 	if err != nil {
 		if 1 == 2 {
 			fmt.Println(err)
@@ -254,7 +258,14 @@ func FindBridgedIP(instanceID string) string {
 		fmt.Println(err)
 	}
 
-	oo := strings.Split(out, "netdev=vmnet,mac=")
+	devspl := ""
+	if runtime.GOOS == "darwin" {
+	devspl ="netdev=vmnet,mac="
+	} else {
+	devspl = ",mac="
+	}
+
+	oo := strings.Split(out, devspl)
 	mac := ""
 	if len(oo) > 1 {
 		ooz := strings.Split(oo[1], " ")
