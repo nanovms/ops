@@ -260,9 +260,9 @@ func FindBridgedIP(instanceID string) string {
 
 	devspl := ""
 	if runtime.GOOS == "darwin" {
-	devspl ="netdev=vmnet,mac="
+		devspl = "netdev=vmnet,mac="
 	} else {
-	devspl = ",mac="
+		devspl = ",mac="
 	}
 
 	oo := strings.Split(out, devspl)
