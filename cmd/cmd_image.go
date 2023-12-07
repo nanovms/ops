@@ -22,7 +22,7 @@ func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree", "mirror"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree", "env", "mirror"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -37,6 +37,7 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageCopyCommand())
 	cmdImage.AddCommand(imageLsCommand())
 	cmdImage.AddCommand(imageTreeCommand())
+	cmdImage.AddCommand(imageEnvCommand())
 	cmdImage.AddCommand(imageMirrorCommand())
 
 	return cmdImage
@@ -643,6 +644,29 @@ func getDumpLine(indent int, fileInfo os.FileInfo, color string) string {
 	}
 	line += color + fileInfo.Name() + log.ConsoleColors.Reset()
 	return line
+}
+
+func imageEnvCommand() *cobra.Command {
+	var cmdEnv = &cobra.Command{
+		Use:   "env <image_name>",
+		Short: "list environment variables in image",
+		Run:   imageEnvCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdEnv
+}
+
+func imageEnvCommandHandler(cmd *cobra.Command, args []string) {
+	reader := getLocalImageReader(cmd.Flags(), args)
+	envVars := reader.ListEnv()
+	reader.Close()
+	if len(envVars) == 0 {
+		fmt.Println("(none)")
+	} else {
+		for name, value := range envVars {
+			fmt.Printf("%s: %s\n", name, value)
+		}
+	}
 }
 
 func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {

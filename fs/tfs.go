@@ -1165,3 +1165,7 @@ func (t *tfs) lookup(cwd *map[string]interface{}, path string) (*map[string]inte
 	}
 	return tuple, parent, nil
 }
+
+func (t *tfs) getTuple(name string) *map[string]interface{} {
+	return getTuple(t.root, name)
+}

@@ -62,6 +62,21 @@ func (r *Reader) CopyFile(src, dest string, dereference bool) error {
 	return err
 }
 
+// ListEnv returns the set of environment variables in the image
+func (r *Reader) ListEnv() map[string]string {
+	t := r.rootFS.getTuple("environment")
+	envVars := make(map[string]string)
+	if t != nil {
+		for name, value := range *t {
+			sValue, sOk := value.(string)
+			if sOk {
+				envVars[name] = sValue
+			}
+		}
+	}
+	return envVars
+}
+
 // Close closes the image file
 func (r *Reader) Close() error {
 	return r.imageFile.Close()
