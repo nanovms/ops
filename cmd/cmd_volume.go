@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 
-	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/types"
 
 	api "github.com/nanovms/ops/lepton"
@@ -33,6 +37,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.AddCommand(volumeDeleteCommand())
 	cmdVolume.AddCommand(volumeAttachCommand())
 	cmdVolume.AddCommand(volumeDetachCommand())
+	cmdVolume.AddCommand(volumeTreeCommand())
 	return cmdVolume
 }
 
@@ -204,6 +209,62 @@ func volumeDetachCommandHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func volumeTreeCommand() *cobra.Command {
+	var cmdTree = &cobra.Command{
+		Use:   "tree <volume_name:volume_uuid>",
+		Short: "display volume filesystem contents in tree format",
+		Run:   volumeTreeCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdTree
+}
+
+func volumeTreeCommandHandler(cmd *cobra.Command, args []string) {
+	reader := getLocalVolumeReader(cmd, args)
+	dumpFSEntry(reader, "/", 0)
+	reader.Close()
+}
+
+func getLocalVolumeReader(cmd *cobra.Command, args []string) *fs.Reader {
+	c, err := getVolumeCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if c.CloudConfig.Platform != onprem.ProviderName {
+		exitWithError("Volume subcommand not implemented yet for cloud images")
+	}
+	_, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	volumeNameID := args[0]
+	query := map[string]string{
+		"label": volumeNameID,
+		"id":    volumeNameID,
+	}
+	localVolumeDir := ctx.Config().VolumesDir
+	volumes, err := onprem.GetVolumes(localVolumeDir, query)
+
+	if len(volumes) > 1 {
+		exitWithError(fmt.Sprintf("Found %d volumes with the same label %s, please select by uuid", len(volumes), volumeNameID))
+	}
+	volumePath := path.Join(volumes[0].Path)
+	if _, err := os.Stat(volumePath); err != nil {
+		if err != nil {
+			if os.IsNotExist(err) {
+				exitWithError(fmt.Sprintf("Local volume %s not found", volumeNameID))
+			} else {
+				exitWithError(fmt.Sprintf("Cannot read volume %s: %v", volumeNameID, err))
+			}
+		}
+	}
+	reader, err := fs.NewReader(volumePath)
+	if err != nil {
+		exitWithError(fmt.Sprintf("Cannot load volume %s: %v", volumeNameID, err))
+	}
+	return reader
+}
+
 func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err error) {
 	flags := cmd.Flags()
 
@@ -212,7 +273,7 @@ func getVolumeCommandDefaultConfig(cmd *cobra.Command) (c *types.Config, err err
 	nightlyFlags := NewNightlyCommandFlags(flags)
 	providerFlags := NewProviderCommandFlags(flags)
 
-	c = lepton.NewConfig()
+	c = api.NewConfig()
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, providerFlags)
 	err = mergeContainer.Merge(c)
