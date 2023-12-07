@@ -42,15 +42,29 @@ func VolumeCommands() *cobra.Command {
 }
 
 func volumeCreateCommand() *cobra.Command {
-	var data, size string
+	var (
+		data           string
+		size           string
+		sourceImage    string
+		sourceVolume   string
+		sourceSnapshot string
+	)
 	cmdVolumeCreate := &cobra.Command{
 		Use:   "create <volume_name>",
 		Short: "create volume",
 		Run:   volumeCreateCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume data source")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume local data source, ignored when cloning from an existing source (image,volume,snapshot)")
 	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume initial size")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&sourceVolume, "volume", "", "", "name of an existing volume to clone from")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&sourceSnapshot, "snapshot", "", "", "name of an existing snapshot to clone from")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&sourceImage, "image", "", "", "name of an existing image to clone from")
+	cmdVolumeCreate.PersistentFlags().Lookup("image").NoOptDefVal = "\\"
+	cmdVolumeCreate.MarkFlagsMutuallyExclusive("image", "volume", "snapshot")
+	cmdVolumeCreate.MarkFlagsMutuallyExclusive("data", "volume")
+	cmdVolumeCreate.MarkFlagsMutuallyExclusive("data", "snapshot")
+
 	return cmdVolumeCreate
 }
 
@@ -58,6 +72,9 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	data, _ := cmd.Flags().GetString("data")
 	size, _ := cmd.Flags().GetString("size")
+	sourceImage, _ := cmd.Flags().GetString("image")
+	sourceVolume, _ := cmd.Flags().GetString("volume")
+	sourceSnapshot, _ := cmd.Flags().GetString("snapshot")
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
@@ -70,6 +87,37 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if sourceImage == cmd.Flag("image").NoOptDefVal {
+		res, err := p.CreateVolumeImage(ctx, name, data, c.CloudConfig.Platform)
+		if err != nil {
+			exitWithError(err.Error())
+		}
+		log.Printf("volume: created image %s with UUID %s and label %s\n", res.Name, res.ID, res.Label)
+		return
+	}
+
+	if sourceImage != "" {
+		if err = p.CreateVolumeFromSource(ctx, "image", sourceImage, name, c.CloudConfig.Platform); err != nil {
+			exitWithError(err.Error())
+		}
+		log.Printf("volume: created disk with label %s from image %s\n", name, sourceImage)
+		return
+	}
+	if sourceVolume != "" {
+		if err = p.CreateVolumeFromSource(ctx, "disk", sourceVolume, name, c.CloudConfig.Platform); err != nil {
+			exitWithError(err.Error())
+		}
+		log.Printf("volume: created disk with label %s from volume %s\n", name, sourceVolume)
+		return
+	}
+	if sourceSnapshot != "" {
+		if err = p.CreateVolumeFromSource(ctx, "snapshot", sourceSnapshot, name, c.CloudConfig.Platform); err != nil {
+			exitWithError(err.Error())
+		}
+		log.Printf("volume: created disk with label %s from snapshot %s\n", name, sourceSnapshot)
+		return
 	}
 
 	res, err := p.CreateVolume(ctx, name, data, c.CloudConfig.Platform)

@@ -2,7 +2,11 @@
 
 package digitalocean
 
-import "github.com/nanovms/ops/lepton"
+import (
+	"errors"
+
+	"github.com/nanovms/ops/lepton"
+)
 
 // CreateVolume is a stub to satisfy VolumeService interface
 func (do *DigitalOcean) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
@@ -28,4 +32,14 @@ func (do *DigitalOcean) AttachVolume(ctx *lepton.Context, image, name string, at
 // DetachVolume is a stub to satisfy VolumeService interface
 func (do *DigitalOcean) DetachVolume(ctx *lepton.Context, image, name string) error {
 	return nil
+}
+
+// CreateVolumeImage ...
+func (do *DigitalOcean) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (do *DigitalOcean) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

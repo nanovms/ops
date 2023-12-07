@@ -2,7 +2,11 @@
 
 package proxmox
 
-import "github.com/nanovms/ops/lepton"
+import (
+	"errors"
+
+	"github.com/nanovms/ops/lepton"
+)
 
 // CreateVolume is a stub to satisfy VolumeService interface
 func (p *ProxMox) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
@@ -28,4 +32,14 @@ func (p *ProxMox) AttachVolume(ctx *lepton.Context, image, name string, attachID
 // DetachVolume is a stub to satisfy VolumeService interface
 func (p *ProxMox) DetachVolume(ctx *lepton.Context, image, name string) error {
 	return nil
+}
+
+// CreateVolumeImage ...
+func (p *ProxMox) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (p *ProxMox) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

@@ -65,3 +65,13 @@ func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string, attachI
 func (p *Provider) DetachVolume(ctx *lepton.Context, image, name string) error {
 	return errors.New("Unsupported")
 }
+
+// CreateVolumeImage ...
+func (p *Provider) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (p *Provider) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
+}

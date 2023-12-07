@@ -143,3 +143,13 @@ func (p *Provider) AttachVolume(ctx *lepton.Context, instanceName, volumeName st
 func (p *Provider) DetachVolume(ctx *lepton.Context, instanceName, volumeName string) error {
 	return nil
 }
+
+// CreateVolumeImage ...
+func (p *Provider) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, nil
+}
+
+// CreateVolumeFromSource ...
+func (p *Provider) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return nil
+}

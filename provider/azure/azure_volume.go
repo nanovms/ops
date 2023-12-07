@@ -4,6 +4,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -237,4 +238,14 @@ func (a *Azure) getDisksClient() (*compute.DisksClient, error) {
 	vmClient.Authorizer = authr
 	vmClient.AddToUserAgent(userAgent)
 	return &vmClient, nil
+}
+
+// CreateVolumeImage ...
+func (a *Azure) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (a *Azure) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

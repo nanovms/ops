@@ -264,3 +264,13 @@ func (a *AWS) findVolumeByName(name string) (*ec2.Volume, error) {
 
 	return nil, fmt.Errorf("volume '%s' not found", name)
 }
+
+// CreateVolumeImage ...
+func (a *AWS) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (a *AWS) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
+}

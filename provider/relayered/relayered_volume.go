@@ -2,7 +2,11 @@
 
 package relayered
 
-import "github.com/nanovms/ops/lepton"
+import (
+	"errors"
+
+	"github.com/nanovms/ops/lepton"
+)
 
 // CreateVolume is a stub to satisfy VolumeService interface
 func (v *Relayered) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
@@ -28,4 +32,14 @@ func (v *Relayered) AttachVolume(ctx *lepton.Context, image, name string, attach
 // DetachVolume is a stub to satisfy VolumeService interface
 func (v *Relayered) DetachVolume(ctx *lepton.Context, image, name string) error {
 	return nil
+}
+
+// CreateVolumeImage ...
+func (v *Relayered) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (v *Relayered) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

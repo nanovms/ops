@@ -1,6 +1,7 @@
 package onprem
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -303,4 +304,14 @@ func AddMountsFromConfig(config *types.Config) error {
 	}
 
 	return nil
+}
+
+// CreateVolumeImage ...
+func (op *OnPrem) CreateVolumeImage(ctx *lepton.Context, imageName, data, provider string) (lepton.NanosVolume, error) {
+	return lepton.NanosVolume{}, errors.New("Unsupported")
+}
+
+// CreateVolumeFromSource ...
+func (op *OnPrem) CreateVolumeFromSource(ctx *lepton.Context, sourceType, sourceName, volumeName, provider string) error {
+	return errors.New("Unsupported")
 }

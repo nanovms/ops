@@ -68,6 +68,9 @@ type Storage interface {
 
 // VolumeService is an interface for volume related operations
 type VolumeService interface {
+	CreateVolumeImage(ctx *Context, imageName, data, provider string) (NanosVolume, error)
+	CreateVolumeFromSource(ctx *Context, sourceType, sourceName, name, provider string) error
+
 	CreateVolume(ctx *Context, volumeName, data, provider string) (NanosVolume, error)
 	GetAllVolumes(ctx *Context) (*[]NanosVolume, error)
 	DeleteVolume(ctx *Context, volumeName string) error
