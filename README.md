@@ -37,6 +37,7 @@ build from source.
 Operating System | Download
 ---|---
 macOS | <a href='https://storage.googleapis.com/cli/darwin/ops.pkg'><img alt='Get it on macOS' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/master/assets/BadgeMacOS.png'/></a>
+Windows | <a href='https://storage.googleapis.com/cli/windows/ops-desktop-setup-win-x64.exe'><img alt='Get it on Windows' width="134px" src='https://raw.githubusercontent.com/nanovms/ops/master/assets/badgewindows.png'/></a>
 
 ## MacOS via Homebrew
 Add the repo & install:
