@@ -330,6 +330,14 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 	m.AddEnvironmentVariable("PWD", "/")
 	m.AddEnvironmentVariable("OPS_VERSION", Version)
 	m.AddEnvironmentVariable("NANOS_VERSION", c.NanosVersion)
+
+	arch := RealGOARCH
+	if AltGOARCH != "" {
+		arch = AltGOARCH
+	}
+
+	m.AddEnvironmentVariable("NANOS_ARCH", arch)
+
 	m.AddEnvironmentVariable("IMAGE_NAME", c.CloudConfig.ImageName)
 	for k, v := range c.Env {
 		m.AddEnvironmentVariable(k, v)
