@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 
 	"github.com/nanovms/ops/fs"
+	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/types"
 
@@ -21,7 +21,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume := &cobra.Command{
 		Use:       "volume",
 		Short:     "manage nanos volumes",
-		ValidArgs: []string{"create, list, delete, attach"},
+		ValidArgs: []string{"create, list, delete, attach, tree, ls, cp"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -38,6 +38,8 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.AddCommand(volumeAttachCommand())
 	cmdVolume.AddCommand(volumeDetachCommand())
 	cmdVolume.AddCommand(volumeTreeCommand())
+	cmdVolume.AddCommand(volumeLsCommand())
+	cmdVolume.AddCommand(volumeCopyCommand())
 	return cmdVolume
 }
 
@@ -76,7 +78,7 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
-	log.Printf("volume: %s created with UUID %s and label %s\n", res.Name, res.ID, res.Label)
+	log.Infof("volume: %s created with UUID %s and label %s\n", res.Name, res.ID, res.Label)
 }
 
 // TODO might be nice to be able to filter by name/label
@@ -225,13 +227,50 @@ func volumeTreeCommandHandler(cmd *cobra.Command, args []string) {
 	reader.Close()
 }
 
+func volumeLsCommand() *cobra.Command {
+	var cmdLs = &cobra.Command{
+		Use:   "ls <volume_name:volume_uuid> [<path>]",
+		Short: "list files and directories in volume",
+		Run:   volumeLsCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	flags := cmdLs.PersistentFlags()
+	flags.BoolP("long-format", "l", false, "use a long listing format")
+	return cmdLs
+}
+
+func volumeLsCommandHandler(cmd *cobra.Command, args []string) {
+	reader := getLocalVolumeReader(cmd, args)
+	defer reader.Close()
+	imageLs(cmd, args, reader)
+}
+
+func volumeCopyCommand() *cobra.Command {
+	var cmdCopy = &cobra.Command{
+		Use:   "cp <volume_name:volume_uuid> <src>... <dest>",
+		Short: "copy files from volume to local filesystem",
+		Run:   volumeCopyCommandHandler,
+		Args:  cobra.MinimumNArgs(3),
+	}
+	flags := cmdCopy.PersistentFlags()
+	flags.BoolP("recursive", "r", false, "copy directories recursively")
+	flags.BoolP("dereference", "L", false, "always follow symbolic links in volume")
+	return cmdCopy
+}
+
+func volumeCopyCommandHandler(cmd *cobra.Command, args []string) {
+	reader := getLocalVolumeReader(cmd, args)
+	defer reader.Close()
+	imageCopy(cmd, args, reader)
+}
+
 func getLocalVolumeReader(cmd *cobra.Command, args []string) *fs.Reader {
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 	if c.CloudConfig.Platform != onprem.ProviderName {
-		exitWithError("Volume subcommand not implemented yet for cloud images")
+		exitWithError("Volume subcommand not implemented yet for cloud volumes")
 	}
 	_, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
 	if err != nil {

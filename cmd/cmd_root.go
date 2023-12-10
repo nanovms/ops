@@ -75,7 +75,7 @@ func checkInvalidFlags(cmd *cobra.Command, args []string) error {
 		length--
 	}
 
-	if length > 0 && requiresArg {
+	if length > 1 && requiresArg {
 		message := "invalid argument%s or flag%s provided, use --help for usage information."
 		plural := ""
 		if length == 1 {

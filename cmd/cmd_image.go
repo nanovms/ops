@@ -427,9 +427,13 @@ func imageCopyCommand() *cobra.Command {
 }
 
 func imageCopyCommandHandler(cmd *cobra.Command, args []string) {
-	flags := cmd.Flags()
-	reader := getLocalImageReader(flags, args)
+	reader := getLocalImageReader(cmd.Flags(), args)
 	defer reader.Close()
+	imageCopy(cmd, args, reader)
+}
+
+func imageCopy(cmd *cobra.Command, args []string, reader *fs.Reader) {
+	flags := cmd.Flags()
 	destPath := args[len(args)-1]
 	var destDir bool
 	fileInfo, err := os.Stat(destPath)
@@ -503,7 +507,7 @@ func imageCopyDir(reader *fs.Reader, src, dest string, dereference bool) error {
 
 func imageLsCommand() *cobra.Command {
 	var cmdLs = &cobra.Command{
-		Use:   "ls <image_name> <path>",
+		Use:   "ls <image_name> [<path>]",
 		Short: "list files and directories in image",
 		Run:   imageLsCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
@@ -514,9 +518,12 @@ func imageLsCommand() *cobra.Command {
 }
 
 func imageLsCommandHandler(cmd *cobra.Command, args []string) {
-	flags := cmd.Flags()
-	reader := getLocalImageReader(flags, args)
+	reader := getLocalImageReader(cmd.Flags(), args)
 	defer reader.Close()
+	imageLs(cmd, args, reader)
+}
+
+func imageLs(cmd *cobra.Command, args []string, reader *fs.Reader) {
 	var srcPath string
 	if len(args) < 2 {
 		srcPath = "/"
@@ -525,7 +532,7 @@ func imageLsCommandHandler(cmd *cobra.Command, args []string) {
 	} else {
 		srcPath = args[1]
 	}
-	longFormat, _ := flags.GetBool("long-format")
+	longFormat, _ := cmd.Flags().GetBool("long-format")
 	fileInfo, err := reader.Stat(srcPath)
 	if err != nil {
 		exitWithError(fmt.Sprintf("Cannot access '%s': %v", srcPath, err))
