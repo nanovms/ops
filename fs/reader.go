@@ -77,6 +77,16 @@ func (r *Reader) ListEnv() map[string]string {
 	return envVars
 }
 
+// GetUUID of image file system
+func (r *Reader) GetUUID() string {
+	return r.rootFS.getUUID()
+}
+
+// GetLabel of image file system
+func (r *Reader) GetLabel() string {
+	return r.rootFS.label
+}
+
 // Close closes the image file
 func (r *Reader) Close() error {
 	return r.imageFile.Close()
