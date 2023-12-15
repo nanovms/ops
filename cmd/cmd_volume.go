@@ -40,6 +40,7 @@ func VolumeCommands() *cobra.Command {
 	cmdVolume.AddCommand(volumeTreeCommand())
 	cmdVolume.AddCommand(volumeLsCommand())
 	cmdVolume.AddCommand(volumeCopyCommand())
+	cmdVolume.AddCommand(volumeInfoCommand())
 	return cmdVolume
 }
 
@@ -262,6 +263,54 @@ func volumeCopyCommandHandler(cmd *cobra.Command, args []string) {
 	reader := getLocalVolumeReader(cmd, args)
 	defer reader.Close()
 	imageCopy(cmd, args, reader)
+}
+
+func volumeInfoCommand() *cobra.Command {
+	var cmdInfo = &cobra.Command{
+		Use:   "info <volume_file_path>",
+		Short: "get label/uuid of file system",
+		Run:   volumeInfoCommandHandler,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	return cmdInfo
+}
+
+func volumeInfoCommandHandler(cmd *cobra.Command, args []string) {
+	filePath := args[0]
+	reader := getLocalReaderFromFile(cmd, filePath)
+	defer reader.Close()
+	label := reader.GetLabel()
+	uuid := reader.GetUUID()
+	json, _ := cmd.Flags().GetBool("json")
+	if json {
+		fmt.Printf("{\"label\":\"%s\",\"uuid\":\"%s\"}\n", label, uuid)
+	} else {
+		fmt.Printf("%s:%s\n", label, uuid)
+	}
+}
+
+func getLocalReaderFromFile(cmd *cobra.Command, filePath string) *fs.Reader {
+	c, err := getVolumeCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+	if c.CloudConfig.Platform != onprem.ProviderName {
+		exitWithError("Volume subcommand not implemented for cloud volumes")
+	}
+	if _, err := os.Stat(filePath); err != nil {
+		if err != nil {
+			if os.IsNotExist(err) {
+				exitWithError(fmt.Sprintf("Local file %s not found", filePath))
+			} else {
+				exitWithError(fmt.Sprintf("Cannot read file %s: %v", filePath, err))
+			}
+		}
+	}
+	reader, err := fs.NewReader(filePath)
+	if err != nil {
+		exitWithError(fmt.Sprintf("Cannot load information from %s: %v", filePath, err))
+	}
+	return reader
 }
 
 func getLocalVolumeReader(cmd *cobra.Command, args []string) *fs.Reader {

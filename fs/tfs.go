@@ -762,6 +762,21 @@ func (t *tfs) readDir(path string) ([]os.FileInfo, error) {
 	return entries, nil
 }
 
+func (t *tfs) getUUID() string {
+	uuid := t.uuid
+
+	/* UUID format: 00112233-4455-6677-8899-aabbccddeeff */
+	var uuidStr string
+	for i := 0; i < 4; i++ {
+		uuidStr += fmt.Sprintf("%02x", uuid[i])
+	}
+	uuidStr += fmt.Sprintf("-%02x%02x-%02x%02x-%02x%02x-", uuid[4], uuid[5], uuid[6], uuid[7], uuid[8], uuid[9])
+	for i := 10; i < 16; i++ {
+		uuidStr += fmt.Sprintf("%02x", uuid[i])
+	}
+	return uuidStr
+}
+
 type tfsDecoder struct {
 	tupleRemain uint
 	dict        map[int]interface{}

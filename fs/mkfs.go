@@ -313,18 +313,7 @@ func (m *MkfsCommand) Execute() error {
 
 // GetUUID returns the uuid of file system built
 func (m *MkfsCommand) GetUUID() string {
-	uuid := m.rootTfs.uuid
-
-	/* UUID format: 00112233-4455-6677-8899-aabbccddeeff */
-	var uuidStr string
-	for i := 0; i < 4; i++ {
-		uuidStr += fmt.Sprintf("%02x", uuid[i])
-	}
-	uuidStr += fmt.Sprintf("-%02x%02x-%02x%02x-%02x%02x-", uuid[4], uuid[5], uuid[6], uuid[7], uuid[8], uuid[9])
-	for i := 10; i < 16; i++ {
-		uuidStr += fmt.Sprintf("%02x", uuid[i])
-	}
-	return uuidStr
+	return m.rootTfs.getUUID()
 }
 
 func mkFS() map[string]interface{} {
