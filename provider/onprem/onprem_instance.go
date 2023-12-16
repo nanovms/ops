@@ -62,6 +62,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		bridged := c.RunConfig.Bridged
 		ipaddress := c.RunConfig.IPAddress
 		netmask := c.RunConfig.NetMask
+		bridgeipaddress := c.RunConfig.BridgeIPAddress
 
 		bridgeName := c.RunConfig.BridgeName
 		if bridged && bridgeName == "" {
@@ -71,7 +72,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		networkService := network.NewIprouteNetworkService()
 
 		if tapDeviceName != "" {
-			err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask)
+			err := network.SetupNetworkInterfaces(networkService, tapDeviceName, bridgeName, ipaddress, netmask, bridgeipaddress)
 			if err != nil {
 				return "", err
 			}

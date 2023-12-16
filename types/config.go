@@ -291,6 +291,10 @@ type RunConfig struct {
 	// in use. This also enables KVM acceleration.
 	Bridged bool `json:",omitempty"`
 
+	// BridgeIPAddress is an optional ip address for a bridge when used
+	// w/ops run.
+	BridgeIPAddress string `json:",omitempty"`
+
 	// BridgeName
 	BridgeName string `json:",omitempty"`
 
