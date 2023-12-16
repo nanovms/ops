@@ -19,23 +19,24 @@ import (
 
 // RunLocalInstanceCommandFlags consolidates all command flags required to run a local instance in one struct
 type RunLocalInstanceCommandFlags struct {
-	Accel          bool
-	Bridged        bool
-	BridgeName     string
-	Debug          bool
-	Force          bool
-	GDBPort        int
-	MissingFiles   bool
-	NoTrace        []string
-	Ports          []string
-	SkipBuild      bool
-	Memory         string
-	Smp            int
-	SyscallSummary bool
-	TapName        string
-	Trace          bool
-	Verbose        bool
-	Arch           string
+	Accel           bool
+	Bridged         bool
+	BridgeName      string
+	BridgeIPAddress string
+	Debug           bool
+	Force           bool
+	GDBPort         int
+	MissingFiles    bool
+	NoTrace         []string
+	Ports           []string
+	SkipBuild       bool
+	Memory          string
+	Smp             int
+	SyscallSummary  bool
+	TapName         string
+	Trace           bool
+	Verbose         bool
+	Arch            string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
@@ -98,6 +99,10 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.BridgeName != "" {
 		c.RunConfig.BridgeName = flags.BridgeName
+	}
+
+	if flags.BridgeIPAddress != "" {
+		c.RunConfig.BridgeIPAddress = flags.BridgeIPAddress
 	}
 
 	if len(flags.NoTrace) > 0 {
@@ -236,6 +241,11 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
+	flags.BridgeIPAddress, err = cmdFlags.GetString("bridgeipaddress")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.Trace, err = cmdFlags.GetBool("trace")
 	if err != nil {
 		exitWithError(err.Error())
@@ -260,6 +270,7 @@ func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.BoolP("verbose", "v", false, "verbose")
 	cmdFlags.BoolP("bridged", "b", false, "bridge networking")
 	cmdFlags.StringP("bridgename", "", "", "bridge name")
+	cmdFlags.StringP("bridgeipaddress", "", "", "bridge ip address")
 	cmdFlags.StringP("tapname", "t", "", "tap device name")
 	cmdFlags.BoolP("skipbuild", "s", false, "skip building image")
 	cmdFlags.Bool("accel", true, "use cpu virtualization extension")
