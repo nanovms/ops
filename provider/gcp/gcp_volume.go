@@ -63,8 +63,10 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) 
 	}
 	defer g.Storage.DeleteFromBucket(config, filepath.Base(archPath))
 
+	labels := buildGcpLabels(nil, "")
 	img := &compute.Image{
-		Name: name,
+		Name:   name,
+		Labels: labels,
 		RawDisk: &compute.ImageRawDisk{
 			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
 		},
@@ -80,12 +82,17 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) 
 
 	disk := &compute.Disk{
 		Name:        name,
+		Labels:      labels,
 		SizeGb:      sizeInGb,
 		SourceImage: "global/images/" + name,
 		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
 	}
 
-	_, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
+	op, err = g.Service.Disks.Insert(config.CloudConfig.ProjectID, config.CloudConfig.Zone, disk).Context(context.TODO()).Do()
+	if err != nil {
+		return lv, err
+	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return lv, err
 	}
@@ -140,12 +147,20 @@ func (g *GCloud) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, erro
 func (g *GCloud) DeleteVolume(ctx *lepton.Context, name string) error {
 	config := ctx.Config()
 
-	_, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(context.TODO()).Do()
+	op, err := g.Service.Disks.Delete(config.CloudConfig.ProjectID, config.CloudConfig.Zone, name).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return err
 	}
 
-	_, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(context.TODO()).Do()
+	op, err = g.Service.Images.Delete(config.CloudConfig.ProjectID, name).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	err = g.pollOperation(context.TODO(), config.CloudConfig.ProjectID, g.Service, *op)
 	if err != nil {
 		return err
 	}
