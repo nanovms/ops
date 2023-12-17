@@ -3,11 +3,15 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
+	"github.com/nanovms/ops/lepton"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +20,7 @@ import (
 func NetworkCommands() *cobra.Command {
 	var cmdNetwork = &cobra.Command{
 		Use:       "network",
-		Short:     "manage nanos images",
+		Short:     "manage nanos network",
 		ValidArgs: []string{"create", "list", "delete"},
 		Args:      cobra.OnlyValidArgs,
 	}
@@ -36,18 +40,35 @@ func networkCreateCommand() *cobra.Command {
 		Run:   networkCreateCommandHandler,
 	}
 
+	cmdNetworkCreate.PersistentFlags().StringP("bridgename", "", "", "bridge name")
+	cmdNetworkCreate.PersistentFlags().StringP("subnet", "", "", "subnet")
+
 	return cmdNetworkCreate
 }
 
 func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("stubbed")
+	bn, err := cmd.Flags().GetString("bridgename")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	subnet, err := cmd.Flags().GetString("subnet")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	bridge := "br0"
+	if bn != "" {
+		bridge = bn
+	}
 
 	// mv me elsewhere
-	// option
-	bridge := "br0"
 
 	// option; also break out class-c to provide range
 	network := "192.168.1.1/24"
+	if subnet != "" {
+		network = subnet
+	}
 
 	ecmd := exec.Command("sudo", "brctl", "show", bridge)
 	out, err := ecmd.CombinedOutput()
@@ -69,7 +90,12 @@ func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
 			fmt.Println(err)
 		}
 
-		ecmd = exec.Command("sudo", "dnsmasq", "--bind-interfaces", "--interface="+bridge, "--except-interface=lo", "--leasefile-ro", "--dhcp-range=192.168.1.2,192.168.1.251,12")
+		// stubbed to /24 for now
+		rz := strings.Split(network, "/")
+		rz = strings.Split(rz[0], ".")
+		tzr := rz[0] + "." + rz[1] + "." + rz[2]
+
+		ecmd = exec.Command("sudo", "dnsmasq", "--bind-interfaces", "--interface="+bridge, "--except-interface=lo", "--leasefile-ro", "--dhcp-range="+tzr+".2,"+tzr+".251,12")
 		out, err = ecmd.CombinedOutput()
 		if err != nil {
 			fmt.Println(err)
@@ -78,7 +104,29 @@ func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Println(string(out))
 	}
 
-	os.Exit(1)
+	opshome := lepton.GetOpsHome()
+	networks := path.Join(opshome, "networks")
+
+	n := Network{
+		Network: network,
+		Name:    bridge,
+	}
+
+	d1, err := json.Marshal(n)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = os.WriteFile(networks+"/"+n.Name, d1, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
+
+type Network struct {
+	Network string
+	Name    string
 }
 
 func networkListCommand() *cobra.Command {
@@ -91,8 +139,46 @@ func networkListCommand() *cobra.Command {
 }
 
 func networkListCommandHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("stubbed")
-	os.Exit(1)
+	// context me
+	opshome := lepton.GetOpsHome()
+	networksPath := path.Join(opshome, "networks")
+	files, err := os.ReadDir(networksPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	networks := []Network{}
+
+	for _, f := range files {
+		fpath := path.Join(networksPath, f.Name())
+
+		body, err := os.ReadFile(fpath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		var n Network
+		err = json.Unmarshal(body, &n)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		networks = append(networks, n)
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Network"})
+	table.SetRowLine(true)
+
+	for _, i := range networks {
+		var rows []string
+		rows = append(rows, i.Name)
+		rows = append(rows, i.Network)
+
+		table.Append(rows)
+	}
+
+	table.Render()
 }
 
 func networkDeleteCommand() *cobra.Command {
@@ -107,11 +193,15 @@ func networkDeleteCommand() *cobra.Command {
 }
 
 func networkDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("stubbed")
+	killBridge(args[0])
 
-	killBridge("br0")
+	opshome := lepton.GetOpsHome()
+	ipath := path.Join(opshome, "networks", args[0])
+	err := os.Remove(ipath)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	os.Exit(1)
 }
 
 // mv elsewhere and get rid of shelling
@@ -119,7 +209,10 @@ func networkDeleteCommandHandler(cmd *cobra.Command, args []string) {
 func killBridge(bridgeName string) {
 	log := false
 
-	fmt.Printf("killing bridge %s\n", bridgeName)
+	if log {
+		fmt.Printf("killing bridge %s\n", bridgeName)
+	}
+
 	ecmd := exec.Command("sudo", "ifconfig", bridgeName, "down")
 	out, err := ecmd.CombinedOutput()
 	if err != nil {
