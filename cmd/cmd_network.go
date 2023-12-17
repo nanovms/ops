@@ -124,6 +124,7 @@ func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
 
 }
 
+// Network contains individual user-created network details.
 type Network struct {
 	Network string
 	Name    string
