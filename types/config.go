@@ -57,7 +57,7 @@ type Config struct {
 	// overrride anything that might be present in OPS_HOME env var.
 	// This allows the user to utilize multiple OPS_HOME values for
 	// different contexts in the same instantiation.
-	Home string `json:"home",omitempty`
+	Home string `json:"home,omitempty"`
 
 	// Kernel
 	Kernel string `json:",omitempty"`
