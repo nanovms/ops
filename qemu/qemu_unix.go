@@ -551,6 +551,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		q.addSerial("file:/tmp/" + rconfig.InstanceName + ".log")
 	} else {
 		q.addSerial("stdio")
+		q.addOption("-monitor", "none")
 	}
 
 	if OPSD != "" || MACPKGD != "" {
