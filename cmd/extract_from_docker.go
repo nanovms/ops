@@ -23,7 +23,7 @@ import (
 )
 
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
-func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool) (string, string) {
+func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
 	var err error
 	var version string
 	var name string
@@ -160,9 +160,13 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 	if version == "" {
 		version = "latest"
 	}
+
+	rargs := []string{"/" + targetExecutableName}
+	rargs = append(rargs, args...)
+
 	c := &types.Config{
 		Program: packageName + "/" + targetExecutableName,
-		Args:    []string{"/" + targetExecutableName},
+		Args:    rargs,
 		Version: version,
 	}
 
