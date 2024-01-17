@@ -114,6 +114,7 @@ func PackageCommands() *cobra.Command {
 	cmdFromDockerPackage.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
 	cmdFromDockerPackage.PersistentFlags().Bool("verbose", false, "verbose mode")
 	cmdFromDockerPackage.PersistentFlags().StringP("file", "f", "", "target executable")
+	cmdFromDockerPackage.PersistentFlags().StringArrayP("args", "a", nil, "command line arguments")
 	cmdFromDockerPackage.PersistentFlags().BoolP("copy", "c", false, "copy whole file system")
 	cmdFromDockerPackage.MarkPersistentFlagRequired("file")
 	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
@@ -516,6 +517,8 @@ func cmdFromRun(cmd *cobra.Command, args []string) {
 func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
+	var err error
+
 	imageName := args[0]
 	quiet, _ := flags.GetBool("quiet")
 	verbose, _ := flags.GetBool("verbose")
@@ -523,7 +526,12 @@ func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
 	targetExecutable, _ := flags.GetString("file")
 	copyWholeFS, _ := flags.GetBool("copy")
 
-	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose, copyWholeFS)
+	cmdArgs, err := flags.GetStringArray("args")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose, copyWholeFS, cmdArgs)
 	fmt.Println(packageName)
 }
 
