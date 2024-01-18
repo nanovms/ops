@@ -45,7 +45,6 @@ func GetRootCommand() *cobra.Command {
 	// persist flags transversal to every command
 	PersistGlobalCommandFlags(rootCmd.PersistentFlags())
 
-	rootCmd.AddCommand(DaemonizeCommand())
 	rootCmd.AddCommand(BuildCommand())
 	rootCmd.AddCommand(EnvCommand())
 	rootCmd.AddCommand(ImageCommands())

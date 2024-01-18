@@ -1,4 +1,4 @@
-package daemon
+package main
 
 import (
 	"fmt"
@@ -143,6 +143,15 @@ func (*server) GetVolumes(_ context.Context, in *volumeservice.VolumeListRequest
 	}
 
 	return pb, nil
+}
+
+func main() {
+	fmt.Println("Note: If on a mac this expects ops to have suid bit set for networking.")
+	fmt.Println("if you used the installer you are set otherwise run the following command\n" +
+		"\tsudo chown -R root /usr/local/bin/qemu-system-x86_64\n" +
+		"\tsudo chmod u+s /usr/local/bin/qemu-system-x86_64")
+
+	Daemonize()
 }
 
 // Daemonize starts a grpc server along with a json frontend to interact

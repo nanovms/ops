@@ -1,3 +1,4 @@
+daemon/daemon
 *.swp
 *.pb.go
 *.pb.gw.go
