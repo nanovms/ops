@@ -32,7 +32,8 @@ func SearchPackages(q string) (*PackageList, error) {
 	return &pkgList, nil
 }
 
-// SearchPackages searches packages against pkghub
+// SearchPackagesWithArch searches packages against pkghub with the
+// specified arch.
 func SearchPackagesWithArch(q string, arch string) (*PackageList, error) {
 	// we can ignore this error as the url being parsed here is const so
 	// wouldn't error
