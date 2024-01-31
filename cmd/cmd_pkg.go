@@ -104,6 +104,8 @@ func PackageCommands() *cobra.Command {
 		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login", "from-pkg"},
 	}
 
+	cmdPkgSearch.PersistentFlags().StringP("arch", "", "", "set different architecture")
+
 	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
 	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
 
@@ -246,11 +248,35 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 func cmdSearchPackages(cmd *cobra.Command, args []string) {
 	q := args[0]
 
-	pkgs, err := api.SearchPackages(q)
+	arch, err := cmd.Flags().GetString("arch")
 	if err != nil {
-		log.Errorf("Error while searching packages: %s", err.Error())
-		return
+		exitWithError(err.Error())
 	}
+
+	if arch != "" {
+		if arch != "arm64" && arch != "amd64" {
+			exitWithError("unknown architecture")
+		}
+	}
+
+	var pkgs *api.PackageList
+
+	rt := getPkgArch()
+
+	if arch != "" {
+		pkgs, err = api.SearchPackagesWithArch(q, arch)
+		if err != nil {
+			log.Errorf("Error while searching packages: %s", err.Error())
+			return
+		}
+	} else {
+		pkgs, err = api.SearchPackagesWithArch(q, rt)
+		if err != nil {
+			log.Errorf("Error while searching packages: %s", err.Error())
+			return
+		}
+	}
+
 	if len(pkgs.Packages) == 0 {
 		fmt.Println("No packages found.")
 		return
@@ -268,13 +294,8 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 
 	table := pkgTable(pkgs.Packages)
 
-	rt := getPkgArch()
-
 	var rows [][]string
 	for _, pkg := range pkgs.Packages {
-		if pkg.Arch != rt {
-			continue
-		}
 
 		var row []string
 
