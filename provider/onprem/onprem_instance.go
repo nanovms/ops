@@ -48,6 +48,15 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		return "", fmt.Errorf("image \"%s\" not found", imageName)
 	}
 
+	// hack - should figure out how to conjoin these 2 together
+	if c.Mounts != nil {
+		fmt.Println("adding virt share")
+		err := AddVirtfsShares(c)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	if c.Mounts != nil {
 		c.VolumesDir = lepton.LocalVolumeDir
 		err := AddMountsFromConfig(c)

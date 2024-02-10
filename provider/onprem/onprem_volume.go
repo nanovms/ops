@@ -284,6 +284,7 @@ func AddMountsFromConfig(config *types.Config) error {
 	query := make(map[string]string)
 
 	for label := range config.Mounts {
+
 		if label[0] == '%' { // virtual ID
 			continue
 		}

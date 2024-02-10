@@ -14,6 +14,7 @@ import (
 func RunLocalInstance(c *types.Config) (err error) {
 	if c.Mounts != nil {
 		c.VolumesDir = lepton.LocalVolumeDir
+
 		err = onprem.AddMountsFromConfig(c)
 		if err != nil {
 			return

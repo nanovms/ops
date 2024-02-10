@@ -15,6 +15,15 @@ import (
 // BuildImage for onprem
 func (p *OnPrem) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+
+	if c.Mounts != nil {
+		fmt.Println("adding virt share")
+		err := AddVirtfsShares(c)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	err := lepton.BuildImage(*c)
 	return c.RunConfig.ImageName, err
 }
@@ -22,6 +31,14 @@ func (p *OnPrem) BuildImage(ctx *lepton.Context) (string, error) {
 // BuildImageWithPackage for onprem
 func (p *OnPrem) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
+
+	if c.Mounts != nil {
+		err := AddVirtfsShares(c)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
 		return "", err
