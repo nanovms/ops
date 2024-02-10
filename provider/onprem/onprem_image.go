@@ -17,7 +17,6 @@ func (p *OnPrem) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
 
 	if c.Mounts != nil {
-		fmt.Println("adding virt share")
 		err := AddVirtfsShares(c)
 		if err != nil {
 			return "", err
