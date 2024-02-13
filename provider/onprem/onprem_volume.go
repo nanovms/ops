@@ -243,11 +243,6 @@ func AddVirtfsShares(config *types.Config) error {
 	query := make(map[string]string)
 	virtfsShares := make(map[string]string)
 
-	ocp := make(map[string]string)
-	for k, v := range config.Mounts {
-		ocp[k] = v
-	}
-
 	for label, mountDir := range config.Mounts {
 		query["id"] = label
 		query["label"] = label

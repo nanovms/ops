@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -514,19 +513,9 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	if len(rconfig.VirtfsShares) > 0 {
 
-		// if using virtual fs shares sort first.
-		keys := make([]string, len(rconfig.VirtfsShares))
-		i := 0
-		for k := range rconfig.VirtfsShares {
-			keys[i] = k
-			i++
-		}
-
-		sort.Strings(keys)
-
-		for _, k := range keys {
+		for k, v := range rconfig.VirtfsShares {
 			mntDir := k
-			hostDir := rconfig.VirtfsShares[k]
+			hostDir := v
 
 			q.addOption("-virtfs", fmt.Sprintf("local,path=%s,mount_tag=%s,security_model=none,multidevs=remap,id=hd%s", hostDir, mntDir, mntDir))
 			disks++
