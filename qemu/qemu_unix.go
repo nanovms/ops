@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -510,9 +511,26 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	q.addOption("-device", "virtio-rng-pci")
 
 	disks := 1
-	for _, hostDir := range rconfig.VirtfsShares {
-		q.addOption("-virtfs", fmt.Sprintf("local,path=%s,mount_tag=%d,security_model=none,multidevs=remap,id=hd%d", hostDir, disks, disks))
-		disks++
+
+	if len(rconfig.VirtfsShares) > 0 {
+
+		// if using virtual fs shares sort first.
+		keys := make([]string, len(rconfig.VirtfsShares))
+		i := 0
+		for k := range rconfig.VirtfsShares {
+			keys[i] = k
+			i++
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			mntDir := k
+			hostDir := rconfig.VirtfsShares[k]
+
+			q.addOption("-virtfs", fmt.Sprintf("local,path=%s,mount_tag=%s,security_model=none,multidevs=remap,id=hd%s", hostDir, mntDir, mntDir))
+			disks++
+		}
 	}
 
 	// add mounted volumes

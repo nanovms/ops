@@ -346,7 +346,7 @@ type RunConfig struct {
 	Vga bool `json:",omitempty"`
 
 	// host directories shared with guest via VirtFS
-	VirtfsShares []string `json:"-"`
+	VirtfsShares map[string]string `json:"-"`
 
 	// Mounts
 	Mounts []string `json:",omitempty"`
