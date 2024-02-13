@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -245,6 +246,7 @@ func AddVirtfsShares(config *types.Config) error {
 	for label, mountDir := range config.Mounts {
 		query["id"] = label
 		query["label"] = label
+
 		vols, err := GetVolumes(lepton.LocalVolumeDir, query)
 		if err != nil {
 			return err
@@ -268,9 +270,34 @@ func AddVirtfsShares(config *types.Config) error {
 			}
 		}
 	}
-	for hostDir, mountDir := range virtfsShares {
-		config.RunConfig.VirtfsShares = append(config.RunConfig.VirtfsShares, hostDir)
-		config.Mounts[fmt.Sprintf("%%%d", len(config.RunConfig.VirtfsShares))] = mountDir
+	icnt := 0
+
+	keys := make([]string, len(virtfsShares))
+	i := 0
+	for k := range virtfsShares {
+		keys[i] = k
+		i++
+	}
+
+	// virtfs uses virtual ids which uses attachment ids meaning we need
+	// to ensure if vols are created indepedently from instance creation
+	// we sort the labels before assigning or using an int attachment_id
+	// could be cleaned up
+	sort.Strings(keys)
+
+	for _, k := range keys {
+
+		hostDir := k
+		mountDir := virtfsShares[k]
+
+		if config.RunConfig.VirtfsShares == nil {
+			config.RunConfig.VirtfsShares = make(map[string]string)
+		}
+
+		config.RunConfig.VirtfsShares[strconv.Itoa(icnt)] = hostDir
+
+		config.Mounts[fmt.Sprintf("%%%d", icnt)] = mountDir
+		icnt++
 	}
 	return nil
 }
