@@ -302,7 +302,7 @@ func AddVirtfsShares(config *types.Config) error {
 		config.RunConfig.VirtfsShares[strconv.Itoa(icnt)] = hostDir
 
 		config.Mounts[fmt.Sprintf("%%%d", icnt)] = mountDir
-		icnt += 1
+		icnt++
 	}
 	return nil
 }
