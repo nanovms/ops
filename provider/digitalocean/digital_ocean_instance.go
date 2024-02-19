@@ -51,8 +51,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		})
 	}
 
-	tags := make([]string, 0, len(config.CloudConfig.Tags)+2)
-	tags = append(tags, opsTag, imageName)
+	tags := []string{opsTag, imageName}
 	for _, t := range config.CloudConfig.Tags {
 		// NOTE: this would allow for tags without : in them
 		if t.Key == "" && t.Value != "" {
