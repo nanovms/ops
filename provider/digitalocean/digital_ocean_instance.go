@@ -51,6 +51,17 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		})
 	}
 
+	tags := make([]string, 0, len(config.CloudConfig.Tags)+2)
+	tags = append(tags, opsTag, imageName)
+	for _, t := range config.CloudConfig.Tags {
+		// NOTE: this would allow for tags without : in them
+		if t.Key == "" && t.Value != "" {
+			tags = append(tags, t.Value)
+		} else if t.Key != "" && t.Value != "" {
+			tags = append(tags, fmt.Sprintf("%s:%s", t.Key, t.Value))
+		}
+	}
+
 	createReq := &godo.DropletCreateRequest{
 		Name:   instanceName,
 		Size:   flavor,
@@ -58,7 +69,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		Image: godo.DropletCreateImage{
 			ID: imageID,
 		},
-		Tags:    []string{opsTag, imageName},
+		Tags:    tags,
 		SSHKeys: dropletKeys,
 	}
 
