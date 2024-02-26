@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/digitalocean/godo"
+	"github.com/google/uuid"
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
@@ -61,13 +62,16 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
-	vpc, err := do.GetVPC(ctx, config.CloudConfig.Zone, config.CloudConfig.VPC)
-	if err != nil {
-		return err
-	}
-	vpcUUID := ""
-	if vpc != nil {
-		vpcUUID = vpc.ID
+	// if users set VPC uuid instead of name it avoids lookup
+	vpcUUID := config.CloudConfig.VPC
+	if _, err := uuid.Parse(vpcUUID); err != nil {
+		vpc, err := do.GetVPC(ctx, config.CloudConfig.Zone, vpcUUID)
+		if err != nil {
+			return err
+		}
+		if vpc != nil {
+			vpcUUID = vpc.ID
+		}
 	}
 
 	createReq := &godo.DropletCreateRequest{
