@@ -61,7 +61,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
-	vpc, err := do.GetVPC(ctx, config.CloudConfig.VPC)
+	vpc, err := do.GetVPC(ctx, config.CloudConfig.Zone, config.CloudConfig.VPC)
 	if err != nil {
 		return err
 	}
