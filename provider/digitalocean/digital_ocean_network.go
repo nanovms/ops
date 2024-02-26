@@ -10,7 +10,7 @@ import (
 	"github.com/nanovms/ops/lepton"
 )
 
-// ListVpcs - List all VPCs
+// GetVPC returns a vpc by vpc name and zone
 func (do *DigitalOcean) GetVPC(ctx *lepton.Context, zone, vpcName string) (*godo.VPC, error) {
 
 	if vpcName == "" {
