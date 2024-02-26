@@ -65,7 +65,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	// if users set VPC uuid instead of name it avoids lookup
 	vpcUUID := config.CloudConfig.VPC
 	if _, err := uuid.Parse(vpcUUID); err != nil {
-		vpc, err := do.GetVPC(ctx, config.CloudConfig.Zone, vpcUUID)
+		vpc, err := do.GetVPC(ctx, vpcUUID)
 		if err != nil {
 			return err
 		}

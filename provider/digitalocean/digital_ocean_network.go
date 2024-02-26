@@ -11,13 +11,10 @@ import (
 )
 
 // GetVPC returns a vpc by vpc name and zone
-func (do *DigitalOcean) GetVPC(ctx *lepton.Context, zone, vpcName string) (*godo.VPC, error) {
+func (do *DigitalOcean) GetVPC(ctx *lepton.Context, vpcName string) (*godo.VPC, error) {
 
 	if vpcName == "" {
 		return nil, nil
-	} else if zone == "" && vpcName != "" {
-		ctx.Logger().Debugf("zone is required to get vpc")
-		return nil, fmt.Errorf("zone is required to get vpc")
 	}
 
 	page := 1
@@ -40,7 +37,7 @@ func (do *DigitalOcean) GetVPC(ctx *lepton.Context, zone, vpcName string) (*godo
 		}
 
 		for _, v := range vpcs {
-			if v.Name == vpcName && v.RegionSlug == zone {
+			if v.Name == vpcName {
 				vpc = v
 				break
 			}
