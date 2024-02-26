@@ -65,6 +65,7 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		Name:   instanceName,
 		Size:   flavor,
 		Region: config.CloudConfig.Zone,
+		VPCUUID: config.CloudConfig.VPC,
 		Image: godo.DropletCreateImage{
 			ID: imageID,
 		},
