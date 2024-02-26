@@ -41,10 +41,8 @@ func (do *DigitalOcean) GetVPC(ctx *lepton.Context, zone, vpcName string) (*godo
 
 		for _, v := range vpcs {
 			if v.Name == vpcName && v.RegionSlug == zone {
-				if vpc != nil {
-					ctx.Logger().Debugf("found another vpc %s that matches the criteria %s", v.ID, vpcName)
-				}
 				vpc = v
+				break
 			}
 		}
 		page++
