@@ -62,9 +62,9 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	createReq := &godo.DropletCreateRequest{
-		Name:   instanceName,
-		Size:   flavor,
-		Region: config.CloudConfig.Zone,
+		Name:    instanceName,
+		Size:    flavor,
+		Region:  config.CloudConfig.Zone,
 		VPCUUID: config.CloudConfig.VPC,
 		Image: godo.DropletCreateImage{
 			ID: imageID,
