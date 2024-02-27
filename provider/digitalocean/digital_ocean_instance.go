@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/digitalocean/godo"
+	"github.com/google/uuid"
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
 )
@@ -61,6 +62,20 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
+	// if users set VPC uuid instead of name it avoids lookup
+	vpcUUID := config.CloudConfig.VPC
+	if vpcUUID != "" {
+		if _, err := uuid.Parse(vpcUUID); err != nil {
+			vpc, err := do.GetVPC(ctx, vpcUUID)
+			if err != nil {
+				return err
+			}
+			if vpc != nil {
+				vpcUUID = vpc.ID
+			}
+		}
+	}
+
 	createReq := &godo.DropletCreateRequest{
 		Name:   instanceName,
 		Size:   flavor,
@@ -70,6 +85,9 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		},
 		Tags:    tags,
 		SSHKeys: dropletKeys,
+	}
+	if vpcUUID != "" {
+		createReq.VPCUUID = vpcUUID
 	}
 
 	_, _, err = do.Client.Droplets.Create(context.TODO(), createReq)
