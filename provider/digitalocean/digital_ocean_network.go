@@ -20,8 +20,6 @@ func (do *DigitalOcean) GetVPC(ctx *lepton.Context, vpcName string) (*godo.VPC, 
 	page := 1
 	var vpc *godo.VPC
 
-	// ctx.Logger().Debug("getting all vpcs")
-
 	for {
 		opts := &godo.ListOptions{
 			Page:    page,
