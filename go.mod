@@ -15,7 +15,7 @@ require (
 	github.com/bramvdbogaerde/go-scp v1.0.0
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.8.2+incompatible
-	github.com/docker/docker v20.10.7+incompatible
+	github.com/docker/docker v20.10.27+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-errors/errors v1.0.1
 	github.com/golang/mock v1.6.0
@@ -62,10 +62,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/Microsoft/hcsshim v0.9.10 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/containerd/containerd v1.6.26 // indirect
-	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -119,6 +116,7 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/v3 v3.5.0 // indirect
 	k8s.io/api v0.23.1 // indirect
 	k8s.io/apimachinery v0.23.1 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
