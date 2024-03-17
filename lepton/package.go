@@ -27,7 +27,7 @@ import (
 // PackageSysRootFolderName is the name of package root folder
 const PackageSysRootFolderName = "sysroot"
 
-var packageRegex = regexp.MustCompile(`(?P<packageName>[A-Za-z]+)[_-](?P<version>\S+)`)
+var packageRegex = regexp.MustCompile(`(?P<packageName>[A-Za-z-]+)[_-](?P<version>\S+)`)
 
 // PackageList contains a list of known packages.
 type PackageList struct {
