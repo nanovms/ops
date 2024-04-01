@@ -3,6 +3,8 @@
 package hyperv
 
 import (
+	"bytes"
+	"io"
 	"bufio"
 	"encoding/json"
 	"errors"
@@ -246,5 +248,29 @@ func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (st
 
 // PrintInstanceLogs prints vm logs content on console
 func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+	fpipe, err := os.OpenFile("\\.\pipe\newz-1702426736", os.O_RDONLY, 0600)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer fpipe.Close()
+
+	var buff bytes.Buffer
+
+	for {
+		_, err := io.Copy(&buff, fpipe)
+		if buff.Len() > 0 {
+	//		buff.WriteTo(f)
+	fmt.Println(buff)
+		}
+
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	return errors.New("Unsupported")
 }
