@@ -1,17 +1,17 @@
 #!/bin/sh
 
-export VERSION="0.1.40"
+export VERSION="0.1.41"
 plat="$(uname -s | awk '{print tolower($0)}')"
 
 # x86-linux
 GOARCH=amd64 GO111MODULE=on GOOS=linux go build -ldflags "-X github.com/nanovms/ops/lepton.Version=$VERSION"
 gsutil cp ops gs://cli/linux
 
-nfpm pkg --packager deb --target /tmp/
-nfpm pkg --packager rpm --target /tmp/
+# nfpm pkg --packager deb --target /tmp/
+# nfpm pkg --packager rpm --target /tmp/
 
-curl -F package=@/tmp/ops_"$VERSION"_amd64.deb https://$TOKEN@push.fury.io/nanovms/
-curl -F package=@/tmp/ops-"$VERSION".x86_64.rpm https://$TOKEN@push.fury.io/nanovms/
+# curl -F package=@/tmp/ops_"$VERSION"_amd64.deb https://$TOKEN@push.fury.io/nanovms/
+# curl -F package=@/tmp/ops-"$VERSION".x86_64.rpm https://$TOKEN@push.fury.io/nanovms/
 
 hash="ops-linux-$VERSION.md5"
 
