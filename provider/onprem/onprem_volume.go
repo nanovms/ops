@@ -259,14 +259,20 @@ func AddVirtfsShares(config *types.Config) error {
 			} else {
 				hostDir = path.Join(config.LocalFilesParentDirectory, label)
 			}
-			info, err := os.Stat(hostDir)
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				log.Info("Adding virtFS share", hostDir)
+			info, _ := os.Stat(hostDir)
+			// it's ok for stat to return empty here in the case of
+			// a virtual identifier where an image was built on a diff.
+			// machine than where it is mounting.
+			if info == nil {
+				log.Info("Adding virtFS share w/virtual ident", hostDir)
 				virtfsShares[hostDir] = mountDir
 				delete(config.Mounts, label) // This mount entry is replaced with an entry containing a virtual ID
+			} else {
+				if info.IsDir() {
+					log.Info("Adding virtFS share", hostDir)
+					virtfsShares[hostDir] = mountDir
+					delete(config.Mounts, label) // This mount entry is replaced with an entry containing a virtual ID
+				}
 			}
 		}
 	}
