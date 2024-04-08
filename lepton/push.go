@@ -26,6 +26,7 @@ func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLo
 		"version":     pkg.Version,
 		"namespace":   namespace,
 		"private":     privateStr,
+		"arch":        pkg.Arch,
 	}
 	return newfileUploadRequest(PkghubBaseURL+"/packages/create", params, "package", archiveLocation)
 

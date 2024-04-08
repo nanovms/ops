@@ -7,6 +7,9 @@ import (
 
 // Config for Build
 type Config struct {
+	// Arch defines the architecture to build the image for.
+	Arch string `json:",omitempty"`
+
 	// Args defines an array of commands to execute when the image is launched.
 	Args []string `json:",omitempty"`
 
