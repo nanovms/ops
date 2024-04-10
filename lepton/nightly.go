@@ -16,13 +16,13 @@ func nightlybase() string {
 
 		return "nanos-nightly-linux"
 
-	} else {
-		if RealGOARCH == "arm64" {
-			return "nanos-nightly-linux-virt"
-		}
-
-		return "nanos-nightly-linux"
 	}
+
+	if RealGOARCH == "arm64" {
+		return "nanos-nightly-linux-virt"
+	}
+
+	return "nanos-nightly-linux"
 }
 
 func nightlyFileName() string {
