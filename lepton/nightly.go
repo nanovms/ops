@@ -8,38 +8,29 @@ import (
 // NightlyReleaseURLm give URL for nightly build.
 var NightlyReleaseURLm = NightlyReleaseURL()
 
-func nightlyFileName() string {
+func nightlybase() string {
 	if AltGOARCH != "" {
 		if AltGOARCH == "arm64" {
-			return "nanos-nightly-linux-virt.tar.gz"
+			return "nanos-nightly-linux-virt"
 		}
 
-		return "nanos-nightly-linux.tar.gz"
+		return "nanos-nightly-linux"
 
 	} else {
 		if RealGOARCH == "arm64" {
-			return "nanos-nightly-linux-virt.tar.gz"
+			return "nanos-nightly-linux-virt"
 		}
 
-		return "nanos-nightly-linux.tar.gz"
+		return "nanos-nightly-linux"
 	}
 }
 
+func nightlyFileName() string {
+	return nightlybase() + ".tar.gz"
+}
+
 func nightlyTimestamp() string {
-	if AltGOARCH != "" {
-		if AltGOARCH == "arm64" {
-			return "nanos-nightly-linux-virt.timestamp"
-		}
-
-		return "nanos-nightly-linux.timestampz"
-
-	} else {
-		if RealGOARCH == "arm64" {
-			return "nanos-nightly-linux-virt.timestamp"
-		}
-
-		return "nanos-nightly-linux.timestamp"
-	}
+	return nightlybase() + ".timestamp"
 }
 
 // NightlyReleaseURL points to the latest nightly release url that is
