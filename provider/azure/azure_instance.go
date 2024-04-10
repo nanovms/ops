@@ -70,8 +70,6 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	vmName := ctx.Config().RunConfig.InstanceName
 	ctx.Logger().Logf("spinning up:\t%s", vmName)
 
-	//			if ctx.Config().CloudConfig.EnableIPv6 {
-
 	// create virtual network
 	var vnet *network.VirtualNetwork
 	configVPC := ctx.Config().CloudConfig.VPC
@@ -150,7 +148,13 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	// pass vnet, subnet, ip, nicname
 	enableIPForwarding := c.RunConfig.CanIPForward
 	ctx.Logger().Infof("creating network interface controller with id %s", vmName)
-	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, *ipv6Name.Name, vmName, enableIPForwarding, c)
+
+	v6name := ""
+	if ipv6Name.Name != nil {
+		v6name = *ipv6Name.Name
+	}
+
+	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, v6name, vmName, enableIPForwarding, c)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("error creating network interface controller")
