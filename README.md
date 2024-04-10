@@ -146,6 +146,9 @@ answer many questions you might have.
 - [Google Cloud](https://docs.ops.city/ops/google_cloud)
 
 - [Digital Ocean](https://docs.ops.city/ops/digital_ocean)
+- [IBM](https://docs.ops.city/ops/ibm)
+- [Linode](https://docs.ops.city/ops/linode)
+- [Oracle Cloud](https://docs.ops.city/ops/oci)
 - [Vultr](https://docs.ops.city/ops/vultr)
 - [UpCloud](https://docs.ops.city/ops/upcloud)
 
