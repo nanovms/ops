@@ -51,13 +51,13 @@ func NightlyLocalFolder() string {
 		}
 
 		return path.Join(GetOpsHome(), "nightly")
-	} else {
-		if RealGOARCH == "arm64" {
-			return path.Join(GetOpsHome(), "nightly-arm")
-		}
-
-		return path.Join(GetOpsHome(), "nightly")
 	}
+
+	if RealGOARCH == "arm64" {
+		return path.Join(GetOpsHome(), "nightly-arm")
+	}
+
+	return path.Join(GetOpsHome(), "nightly")
 }
 
 // NightlyLocalFolderm is directory path where nightly builds are stored
