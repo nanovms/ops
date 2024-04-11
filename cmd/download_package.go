@@ -12,20 +12,12 @@ import (
 )
 
 func downloadLocalPackage(pkg string, config *types.Config) (string, error) {
-	packagesDirPath := localPackageDirectoryPath()
+	packagesDirPath := api.LocalPackagesRoot
 	return downloadAndExtractPackage(packagesDirPath, pkg, config)
 }
 
-func localPackageDirectoryPath() string {
-	return path.Join(api.GetOpsHome(), "local_packages")
-}
-
-func packageDirectoryPath() string {
-	return path.Join(api.GetOpsHome(), "packages")
-}
-
 func downloadPackage(pkg string, config *types.Config) (string, error) {
-	return downloadAndExtractPackage(packageDirectoryPath(), pkg, config)
+	return downloadAndExtractPackage(api.PackagesRoot, pkg, config)
 }
 
 func copyFile(src, dst string) error {
@@ -86,15 +78,17 @@ func copyDirectory(src string, dst string) error {
 	return nil
 }
 
-func extractFilePackage(pkg string, name string, config *types.Config) string {
+func extractFilePackage(pkg string, name string, parch string, config *types.Config) string {
 	f, err := os.Stat(pkg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	ppath := path.Join(api.LocalPackagesRoot, parch, name)
+
 	if !f.IsDir() {
 		if strings.HasSuffix(pkg, ".tar.gz") {
-			return extractArchivedPackage(pkg, path.Join(localPackageDirectoryPath(), name), config)
+			return extractArchivedPackage(pkg, ppath, config)
 		}
 
 		log.Fatalf("Unsupported file format. Supported formats: .tar.gz")
@@ -106,7 +100,7 @@ func extractFilePackage(pkg string, name string, config *types.Config) string {
 	}
 
 	copyDirectory(pkg, tempDirectory)
-	return MovePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), name))
+	return MovePackageFiles(tempDirectory, ppath)
 }
 
 func extractArchivedPackage(pkg string, target string, config *types.Config) string {
@@ -148,7 +142,6 @@ func MovePackageFiles(origin string, target string) string {
 }
 
 func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) (string, error) {
-
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
 		return "", err
