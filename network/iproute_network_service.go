@@ -12,7 +12,7 @@ type IprouteNetworkService struct {
 }
 
 func execCmd(cmdStr string) (output string, err error) {
-	cmd := exec.Command("/bin/bash", "-c", cmdStr)
+	cmd := exec.Command("bash", "-c", cmdStr)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return

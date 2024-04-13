@@ -252,7 +252,7 @@ func killBridge(bridgeName string) {
 }
 
 func execCmd(cmdStr string) (output string, err error) {
-	ecmd := exec.Command("/bin/bash", "-c", cmdStr)
+	ecmd := exec.Command("bash", "-c", cmdStr)
 	out, err := ecmd.CombinedOutput()
 	if err != nil {
 		return

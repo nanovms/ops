@@ -570,7 +570,7 @@ func addToPackage(newconfig *types.Config, newpath string) {
 }
 
 func execCmd(str ...string) {
-	cmd := exec.Command("/bin/bash", "-c", strings.Join(str, " "))
+	cmd := exec.Command("bash", "-c", strings.Join(str, " "))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)

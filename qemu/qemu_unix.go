@@ -101,7 +101,7 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		qc := qemuBaseCommand() + " " + strings.Join(args, " ")
 		fullCmd := qc + "; " + q.atExitHook
 		logv(rconfig, fullCmd)
-		q.cmd = exec.Command("/bin/sh", "-c", fullCmd)
+		q.cmd = exec.Command("sh", "-c", fullCmd)
 	} else {
 		logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
 
