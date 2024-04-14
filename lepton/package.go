@@ -3,7 +3,6 @@ package lepton
 import (
 	"archive/tar"
 	"crypto/sha256"
-	"os/exec"
 	"regexp"
 
 	"compress/gzip"
@@ -21,6 +20,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/tools"
 	"github.com/nanovms/ops/types"
 )
 
@@ -493,7 +493,7 @@ func ClonePackage(old string, newPkg string, version string, parch string, oldco
 	o := path.Join(GetOpsHome(), "packages", parch, old)
 	n := path.Join(localPackageDirectoryPath(), parch, newPkg+"_"+version)
 
-	execCmd("mkdir -p", n, "&&", "cp -R", o+"/*", n+"/")
+	tools.ExecCmdList("mkdir -p", n, "&&", "cp -R", o+"/*", n+"/")
 
 	ppath := n + "/package.manifest"
 
@@ -534,8 +534,8 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	pkgSysrootDir := filepath.Join(pkgDir, PackageSysRootFolderName)
 
 	// fixme - convert to stdlib
-	execCmd("mkdir -p", pkgDir)
-	execCmd("mkdir -p", pkgSysrootDir)
+	tools.ExecCmdList("mkdir -p", pkgDir)
+	tools.ExecCmdList("mkdir -p", pkgSysrootDir)
 
 	// package - manifest
 	pkgCfg := newManifestConfig(mergedCfg)
@@ -555,7 +555,7 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	}
 
 	// package - program
-	execCmd("cp", mergedCfg.Program, pkgDir+"/.")
+	tools.ExecCmdList("cp", mergedCfg.Program, pkgDir+"/.")
 
 	// package - {dirs, mapdirs, files} - config won't be present in manifest
 	addToPackage(mergedCfg, pkgDir)
@@ -567,8 +567,8 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	}
 	// create dir layout + cp files
 	for k, v := range deps {
-		execCmd("mkdir -p", filepath.Join(pkgSysrootDir, filepath.Dir(v)))
-		execCmd("cp", v, filepath.Join(pkgSysrootDir, k))
+		tools.ExecCmdList("mkdir -p", filepath.Join(pkgSysrootDir, filepath.Dir(v)))
+		tools.ExecCmdList("cp", v, filepath.Join(pkgSysrootDir, k))
 	}
 
 }
@@ -586,26 +586,17 @@ func addToPackage(newconfig *types.Config, newpath string) {
 	}
 
 	pkgSysrootDir := filepath.Join(newpath, PackageSysRootFolderName)
-	execCmd("mkdir -p", pkgSysrootDir)
+	tools.ExecCmdList("mkdir -p", pkgSysrootDir)
 
 	for i := 0; i < len(newconfig.Dirs); i++ {
-		execCmd("cp -R", newconfig.Dirs[i], pkgSysrootDir+"/.")
+		tools.ExecCmdList("cp -R", newconfig.Dirs[i], pkgSysrootDir+"/.")
 	}
 	for i := 0; i < len(newconfig.Files); i++ {
-		execCmd("cp -R", newconfig.Files[i], pkgSysrootDir+"/.")
+		tools.ExecCmdList("cp -R", newconfig.Files[i], pkgSysrootDir+"/.")
 	}
 	for k, v := range newconfig.MapDirs {
 		newDir := filepath.Join(pkgSysrootDir, v)
-		execCmd("mkdir -p", newDir, "&&", "cp -R", k, newDir+"/.")
-	}
-}
-
-func execCmd(str ...string) {
-	cmd := exec.Command("/bin/bash", "-c", strings.Join(str, " "))
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println(string(out))
+		tools.ExecCmdList("mkdir -p", newDir, "&&", "cp -R", k, newDir+"/.")
 	}
 }
 
