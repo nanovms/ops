@@ -41,7 +41,7 @@ func TestPkgContentsCommand(t *testing.T) {
 func TestPkgDescribeCommand(t *testing.T) {
 	getPkgCmd := cmd.PackageCommands()
 
-	getPkgCmd.SetArgs([]string{"describe", "eyberg/bind:9.13.4"})
+	getPkgCmd.SetArgs([]string{"describe", "eyberg/bind:9.13.4", "--arch", "amd64"})
 
 	err := getPkgCmd.Execute()
 

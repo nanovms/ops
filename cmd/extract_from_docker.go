@@ -19,11 +19,12 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/moby/term"
+	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 )
 
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
-func ExtractFromDockerImage(imageName string, packageName string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
+func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
 	var err error
 	var version string
 	var name string
@@ -177,7 +178,7 @@ func ExtractFromDockerImage(imageName string, packageName string, targetExecutab
 		log.Panic(err)
 	}
 
-	packageDirectory := MovePackageFiles(tempDirectory, path.Join(localPackageDirectoryPath(), packageName))
+	packageDirectory := MovePackageFiles(tempDirectory, path.Join(api.LocalPackagesRoot, parch, packageName))
 
 	return packageName, packageDirectory
 }

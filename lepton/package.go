@@ -99,11 +99,25 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 		return "", fmt.Errorf("package %q does not exist", identifier)
 	}
 
+	fullpkgq := pkg.Namespace + "/" + pkg.Name + "_" + pkg.Version
 	archivename := pkg.Namespace + "/" + pkg.Name + "_" + pkg.Version + ".tar.gz"
 
-	archiveFolder := path.Join(PackagesCache, pkg.Namespace)
+	parchpath := "amd64"
+	if AltGOARCH != "" {
+		if AltGOARCH == "arm64" {
+			parchpath = "arm64"
+		}
+	} else {
+		if RealGOARCH == "arm64" {
+			parchpath = "arm64"
+		}
+	}
+
+	archiveFolder := path.Join(PackagesRoot, fullpkgq)
 	os.MkdirAll(archiveFolder, 0755)
-	packagepath := path.Join(PackagesCache, archivename)
+
+	packagepath := path.Join(PackagesRoot, fullpkgq+"/"+parchpath+".tar.gz")
+
 	_, err = os.Stat(packagepath)
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
@@ -250,62 +264,65 @@ func GetPackageList(config *types.Config) (*PackageList, error) {
 	return &packages, nil
 }
 
+// LocalPackagesRoot is the location of the local_packages root directory.
+var LocalPackagesRoot = GetOpsHome() + "/local_packages"
+
+// PackagesRoot is the location of the packages root directory.
+var PackagesRoot = GetOpsHome() + "/packages"
+
 // GetLocalPackageList provides list of local packages
 func GetLocalPackageList() ([]Package, error) {
 	packages := []Package{}
 
-	localPackagesDir := GetOpsHome() + "/local_packages"
+	arches := []string{"amd64", "arm64"}
 
-	localPackages, err := os.ReadDir(localPackagesDir)
-	if err != nil {
-		return nil, err
-	}
-	username := GetLocalUsername()
-	for _, pkg := range localPackages {
-		pkgName := pkg.Name()
+	for i := 0; i < len(arches); i++ {
 
-		// ignore packages compressed
-		if !strings.Contains(pkgName, "tar.gz") {
-			_, name, _ := GetNSPkgnameAndVersion(pkgName)
-			manifestLoc := fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName)
-			if _, err := os.Stat(manifestLoc); err == nil {
+		localPackagesDir := LocalPackagesRoot + "/" + arches[i]
 
-				data, err := os.ReadFile(manifestLoc)
-				if err != nil {
-					fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
-					os.Exit(1)
-					return nil, err
+		localPackages, err := os.ReadDir(localPackagesDir)
+		if err != nil {
+			return nil, err
+		}
+		username := GetLocalUsername()
+		for _, pkg := range localPackages {
+			pkgName := pkg.Name()
+
+			// ignore packages compressed
+			if !strings.Contains(pkgName, "tar.gz") {
+				_, name, _ := GetNSPkgnameAndVersion(pkgName)
+				manifestLoc := fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName)
+				if _, err := os.Stat(manifestLoc); err == nil {
+
+					data, err := os.ReadFile(manifestLoc)
+					if err != nil {
+						fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
+						os.Exit(1)
+						return nil, err
+					}
+
+					var pkg Package
+					err = json.Unmarshal(data, &pkg)
+					if err != nil {
+						fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
+						os.Exit(1)
+						return nil, err
+					}
+					pkg.Namespace = username
+					pkg.Name = name
+					packages = append(packages, pkg)
 				}
 
-				var pkg Package
-				err = json.Unmarshal(data, &pkg)
-				if err != nil {
-					fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
-					os.Exit(1)
-					return nil, err
-				}
-				pkg.Namespace = username
-				pkg.Name = name
-				packages = append(packages, pkg)
 			}
-
 		}
 	}
 
 	return packages, nil
 }
 
-func getPackageCache() string {
-	packagefolder := path.Join(GetOpsHome(), "packages")
-	if _, err := os.Stat(packagefolder); os.IsNotExist(err) {
-		os.MkdirAll(packagefolder, 0755)
-	}
-	return packagefolder
-}
-
 // GetPackageManifestFile give path for package manifest file
 func GetPackageManifestFile() string {
-	return path.Join(getPackageCache(), PackageManifestFileName)
+	return path.Join(PackagesRoot, PackageManifestFileName)
 }
 
 // PackageManifestChanged verifies if package manifest changed
@@ -352,9 +369,17 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 	// used for extracting releases (which currently don't have
 	// checksums)
 	if strings.Contains(archive, filepath.Join(homeDirName, "packages")) {
-		fname := filepath.Base(archive)
-		namespace := filepath.Base(filepath.Dir(archive))
-		fname = strings.ReplaceAll(fname, ".tar.gz", "")
+		d := filepath.Base(archive)
+		dest = strings.ReplaceAll(d, ".tar.gz", "")
+		dest = homeDirName + "/packages/" + dest
+
+		st := strings.Split(archive, homeDirName+"/packages/")
+		st = strings.Split(st[1], "/")
+		namespace := st[0]
+		fname := st[1]
+
+		dest = dest + "/" + namespace
+
 		fnameTokens := strings.Split(fname, "_")
 		pkgName := fnameTokens[0]
 		version := fnameTokens[len(fnameTokens)-1]
@@ -390,7 +415,12 @@ func ExtractPackage(archive, dest string, config *types.Config) {
 		if header == nil {
 			continue
 		}
+		if strings.HasPrefix(dest, ".ops") {
+			dest = strings.ReplaceAll(dest, ".ops", GetOpsHome())
+		}
+
 		target := filepath.Join(dest, header.Name)
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
@@ -458,10 +488,10 @@ func localPackageDirectoryPath() string {
 
 // ClonePackage will cloned a package from ~/.ops/packages to
 // ~/.ops/local_packages.
-func ClonePackage(old string, newPkg string, version string, oldconfig *types.Config, newconfig *types.Config) {
+func ClonePackage(old string, newPkg string, version string, parch string, oldconfig *types.Config, newconfig *types.Config) {
 	fmt.Println("cloning old pkg to new")
-	o := path.Join(GetOpsHome(), "packages", old)
-	n := path.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+	o := path.Join(GetOpsHome(), "packages", parch, old)
+	n := path.Join(localPackageDirectoryPath(), parch, newPkg+"_"+version)
 
 	execCmd("mkdir -p", n, "&&", "cp -R", o+"/*", n+"/")
 
@@ -498,11 +528,12 @@ func ClonePackage(old string, newPkg string, version string, oldconfig *types.Co
 
 // CreatePackageFromRun builds a new package as if you were doing an
 // 'ops run myprogram'
-func CreatePackageFromRun(newPkg string, version string, mergedCfg *types.Config) {
+func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg *types.Config) {
 	fmt.Println("creating new pkg")
-	pkgDir := filepath.Join(localPackageDirectoryPath(), newPkg+"_"+version)
+	pkgDir := filepath.Join(localPackageDirectoryPath(), parch, newPkg+"_"+version)
 	pkgSysrootDir := filepath.Join(pkgDir, PackageSysRootFolderName)
 
+	// fixme - convert to stdlib
 	execCmd("mkdir -p", pkgDir)
 	execCmd("mkdir -p", pkgSysrootDir)
 

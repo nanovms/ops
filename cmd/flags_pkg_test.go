@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/nanovms/ops/testutils"
@@ -38,7 +39,7 @@ func TestPkgFlagsPackagePath(t *testing.T) {
 
 	pkgFlags := cmd.NewPkgCommandFlags(flagSet)
 
-	assert.Equal(t, pkgFlags.PackagePath(), api.GetOpsHome()+"/local_packages/"+packageName)
+	assert.Equal(t, pkgFlags.PackagePath(), api.GetOpsHome()+"/local_packages/"+runtime.GOARCH+"/"+packageName)
 }
 
 func TestPkgFlagsMergeToConfig(t *testing.T) {
@@ -75,11 +76,12 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 
 	manifestPath := pkgFlags.PackagePath() + "/package.manifest"
 
-	err := os.Mkdir(pkgFlags.PackagePath(), 0666)
+	err := os.MkdirAll(pkgFlags.PackagePath(), 0755)
 	if err != nil {
 		fmt.Printf("Failed to create dir %s, error is: %s", pkgFlags.PackagePath(), err)
 		os.Exit(1)
 	}
+
 	err = os.Chmod(pkgFlags.PackagePath(), 0777)
 	if err != nil {
 		fmt.Printf("Failed to chmod dir %s, error is: %s", pkgFlags.PackagePath(), err)

@@ -22,15 +22,35 @@ type PkgCommandFlags struct {
 	LocalPackage   bool
 }
 
+// Parch returns the user's preferred architecture which can ovveride
+// the machine's architecture with the --arch flag.
+func (flags *PkgCommandFlags) Parch() string {
+	parch := "amd64"
+	if api.AltGOARCH != "" {
+		if api.AltGOARCH == "arm64" {
+			parch = "arm64"
+		}
+	} else {
+		if api.RealGOARCH == "arm64" {
+			parch = "arm64"
+		}
+	}
+
+	return parch
+}
+
 // PackagePath returns the package path in file system
 func (flags *PkgCommandFlags) PackagePath() string {
+	parch := flags.Parch()
+
 	if flags.LocalPackage {
-		return path.Join(api.GetOpsHome(), "local_packages", flags.Package)
+		return path.Join(api.GetOpsHome(), "local_packages", parch, flags.Package)
 	}
 	flags.SluggedPackage = strings.ReplaceAll(flags.Package, ":", "_")
 
 	// if the local_path doesn't exist then we try to check if there is a "v" version
-	pkgPath := path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
+	pkgPath := path.Join(api.GetOpsHome(), "packages", parch, flags.SluggedPackage)
+
 	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
 		pkgPath = flags.buildAlternatePath()
 	}
@@ -41,13 +61,15 @@ func (flags *PkgCommandFlags) PackagePath() string {
 // buildAlternatePath generates an alternate package path with an extra "v" prefixed
 // to the version. There are certain packages on pkghub which follow these conventions
 func (flags *PkgCommandFlags) buildAlternatePath() string {
+	parch := flags.Parch()
+
 	pkgParts := strings.Split(flags.Package, ":")
-	pkgPath := path.Join(api.GetOpsHome(), "packages", flags.SluggedPackage)
+	pkgPath := path.Join(api.GetOpsHome(), "packages", parch, flags.SluggedPackage)
 	if len(pkgParts) > 1 {
 		pkg := pkgParts[0]
 		version := "v" + pkgParts[1]
 		fuzzyPkgVersion := pkg + "_" + version
-		altPkgPath := path.Join(api.GetOpsHome(), "packages", fuzzyPkgVersion)
+		altPkgPath := path.Join(api.GetOpsHome(), "packages", parch, fuzzyPkgVersion)
 		if _, err := os.Stat(altPkgPath); os.IsNotExist(err) {
 			return pkgPath
 		}

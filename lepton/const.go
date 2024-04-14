@@ -49,11 +49,10 @@ func GenerateImageName(program string) string {
 	return fmt.Sprintf("%s/%s", images, program)
 }
 
-// PackagesCache where all packages are stored
-var PackagesCache = getPackageCache()
-
 // GetOpsHome get ops directory path
 // We store all ops related info, packages, images in this directory
+//
+// TODO: this needs to be memoized.
 func GetOpsHome() string {
 	home, err := HomeDir()
 	if err != nil {
@@ -83,6 +82,8 @@ func GetOpsHome() string {
 	networks := path.Join(opshome, "networks")
 	manifests := path.Join(opshome, "manifests")
 	volumes := path.Join(opshome, "volumes")
+
+	// memoize me
 	localPackages := path.Join(opshome, "local_packages")
 	packages := path.Join(opshome, "packages")
 

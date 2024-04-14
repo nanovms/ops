@@ -28,13 +28,6 @@ import (
 
 // PackageCommands gives package related commands
 func PackageCommands() *cobra.Command {
-	var search string
-
-	var cmdPkgList = &cobra.Command{
-		Use:   "list",
-		Short: "list packages",
-		Run:   cmdListPackages,
-	}
 
 	var cmdPkgSearch = &cobra.Command{
 		Use:   "search [packagename]",
@@ -43,58 +36,11 @@ func PackageCommands() *cobra.Command {
 		Run:   cmdSearchPackages,
 	}
 
-	var cmdPackageDescribe = &cobra.Command{
-		Use:   "describe [packagename]",
-		Short: "display information of a package from ['ops pkg list']",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdPackageDescribe,
-	}
-
-	var cmdPackageContents = &cobra.Command{
-		Use:   "contents [packagename]",
-		Short: "list contents of a package from ['ops pkg list']",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdPackageContents,
-	}
-
-	var cmdAddPackage = &cobra.Command{
-		Use:   "add [package]",
-		Short: "push a folder or a .tar.gz archived package to the local cache",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdAddPackage,
-	}
-
-	var cmdFromDockerPackage = &cobra.Command{
-		Use:   "from-docker [image]",
-		Short: "create a package from an executable of a docker image",
-		Args:  cobra.MinimumNArgs(1),
-		Run:   cmdFromDockerPackage,
-	}
-
-	var cmdFromPackage = &cobra.Command{
-		Use:   "from-pkg [old]",
-		Short: "create a new package from an existing package",
-		Run:   cmdFromPackage,
-	}
-
-	var cmdFromRun = &cobra.Command{
-		Use:   "from-run [binary]",
-		Short: "create a new package from an existing binary",
-		Run:   cmdFromRun,
-	}
-
 	var cmdPkgLogin = &cobra.Command{
 		Use:   "login [apikey]",
 		Short: "login to pkghub account using the apikey",
 		Args:  cobra.ExactArgs(1),
 		Run:   cmdPkgLogin,
-	}
-
-	var cmdPkgPush = &cobra.Command{
-		Use:   "push [local-package]",
-		Short: "push the local package to packagehub",
-		Args:  cobra.ExactArgs(1),
-		Run:   cmdPkgPush,
 	}
 
 	var cmdPkg = &cobra.Command{
@@ -106,50 +52,19 @@ func PackageCommands() *cobra.Command {
 
 	cmdPkgSearch.PersistentFlags().StringP("arch", "", "", "set different architecture")
 
-	cmdPkgList.PersistentFlags().StringVarP(&search, "search", "s", "", "search package list")
-	cmdPkgList.PersistentFlags().Bool("local", false, "display local packages")
-
-	cmdPackageContents.PersistentFlags().BoolP("local", "l", false, "local package")
-
-	cmdAddPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
-
-	cmdFromDockerPackage.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
-	cmdFromDockerPackage.PersistentFlags().Bool("verbose", false, "verbose mode")
-	cmdFromDockerPackage.PersistentFlags().StringP("file", "f", "", "target executable")
-	cmdFromDockerPackage.PersistentFlags().StringArrayP("args", "a", nil, "command line arguments")
-	cmdFromDockerPackage.PersistentFlags().BoolP("copy", "c", false, "copy whole file system")
-	cmdFromDockerPackage.MarkPersistentFlagRequired("file")
-	cmdFromDockerPackage.PersistentFlags().StringP("name", "n", "", "name of the package")
-
-	cmdPkgPush.PersistentFlags().BoolP("private", "p", false, "set the package as private")
-
-	cmdFromPackage.PersistentFlags().StringP("name", "n", "", "name of the new package")
-	cmdFromPackage.PersistentFlags().StringP("version", "v", "", "version of the package")
-
-	cmdFromRun.PersistentFlags().StringP("name", "n", "", "name of the new package")
-	cmdFromRun.PersistentFlags().StringP("version", "v", "", "version of the package")
-
-	cmdFromRunFlags := cmdFromRun.PersistentFlags()
-
-	PersistConfigCommandFlags(cmdFromRunFlags)
-	PersistBuildImageCommandFlags(cmdFromRunFlags)
-	PersistNanosVersionCommandFlags(cmdFromRunFlags)
-
-	persistentFlags := cmdFromPackage.PersistentFlags()
-	PersistConfigCommandFlags(persistentFlags)
-
-	cmdPkg.AddCommand(cmdPkgList)
-	cmdPkg.AddCommand(cmdPkgSearch)
+	cmdPkg.AddCommand(addCommand())
 	cmdPkg.AddCommand(getCommand())
-	cmdPkg.AddCommand(cmdPackageContents)
-	cmdPkg.AddCommand(cmdPackageDescribe)
-	cmdPkg.AddCommand(cmdAddPackage)
-	cmdPkg.AddCommand(cmdFromPackage)
-	cmdPkg.AddCommand(cmdFromRun)
-	cmdPkg.AddCommand(cmdFromDockerPackage)
-	cmdPkg.AddCommand(cmdPkgLogin)
-	cmdPkg.AddCommand(cmdPkgPush)
+	cmdPkg.AddCommand(contentsCommand())
+	cmdPkg.AddCommand(describeCommand())
+	cmdPkg.AddCommand(fromDockerCommand())
+	cmdPkg.AddCommand(fromRunCommand())
+	cmdPkg.AddCommand(fromPackageCommand())
+	cmdPkg.AddCommand(listCommand())
 	cmdPkg.AddCommand(LoadCommand())
+	cmdPkg.AddCommand(pushCommand())
+
+	cmdPkg.AddCommand(cmdPkgSearch)
+	cmdPkg.AddCommand(cmdPkgLogin)
 	return cmdPkg
 }
 
@@ -162,9 +77,43 @@ func getPkgArch() string {
 	return rt
 }
 
+// translate amd64 -> x86_64
+func getPreferredArch() string {
+
+	parch := "amd64"
+	if api.AltGOARCH != "" {
+		if api.AltGOARCH == "arm64" {
+			parch = "arm64"
+		}
+	} else {
+		if api.RealGOARCH == "arm64" {
+			parch = "arm64"
+		}
+	}
+
+	if parch == "amd64" {
+		return "x86_64"
+	}
+
+	return parch
+}
+
 func cmdListPackages(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	var packages []api.Package
-	var err error
 	local, _ := cmd.Flags().GetBool("local")
 
 	if local {
@@ -210,7 +159,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	rt := getPkgArch()
+	rt := getPreferredArch()
 
 	var rows [][]string
 	for _, pkg := range packages {
@@ -341,7 +290,21 @@ func getCommandHandler(cmd *cobra.Command, args []string) {
 	downloadPackage(args[0], c)
 }
 
-func cmdPackageDescribe(cmd *cobra.Command, args []string) {
+func describeCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
 	if len(tokens) < 2 {
@@ -353,7 +316,9 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 		fmt.Printf(err.Error())
 	}
 
-	expackage := filepath.Join(packageDirectoryPath(), strings.ReplaceAll(args[0], ":", "_"))
+	pkgFlags.Package = args[0]
+
+	expackage := pkgFlags.PackagePath()
 
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage, err = downloadPackage(args[0], api.NewConfig())
@@ -405,19 +370,28 @@ func cmdPackageDescribe(cmd *cobra.Command, args []string) {
 
 func cmdPackageContents(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
 
-	directoryPath := packageDirectoryPath()
+	pkgFlags.Package = args[0]
 
-	if local, _ := flags.GetBool("local"); local {
-		directoryPath = localPackageDirectoryPath()
-	}
-
-	expackage := filepath.Join(directoryPath, strings.ReplaceAll(args[0], ":", "_"))
+	expackage := pkgFlags.PackagePath()
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
 		expackage, err = downloadPackage(args[0], api.NewConfig())
 		if err != nil {
@@ -443,8 +417,21 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 	})
 }
 
-func cmdAddPackage(cmd *cobra.Command, args []string) {
+func addCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
+
+	c := api.NewConfig()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	name, _ := flags.GetString("name")
 
@@ -457,18 +444,58 @@ func cmdAddPackage(cmd *cobra.Command, args []string) {
 		name = token
 	}
 
-	extractFilePackage(args[0], name, api.NewConfig())
+	extractFilePackage(args[0], name, pkgFlags.Parch(), api.NewConfig())
 
 	fmt.Println(name)
 }
 
-func cmdFromPackage(cmd *cobra.Command, args []string) {
+func fromDockerCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
 	c := api.NewConfig()
-	configFlags := NewConfigCommandFlags(flags)
 
-	mergeContainer := NewMergeConfigContainer(configFlags)
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+	buildImageFlags := NewBuildImageCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags, nanosVersionFlags, buildImageFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	imageName := args[0]
+	quiet, _ := flags.GetBool("quiet")
+	verbose, _ := flags.GetBool("verbose")
+	packageName, _ := flags.GetString("name")
+	targetExecutable, _ := flags.GetString("file")
+	copyWholeFS, _ := flags.GetBool("copy")
+
+	cmdArgs, err := flags.GetStringArray("args")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	packageName, _ = ExtractFromDockerImage(imageName, packageName, pkgFlags.Parch(), targetExecutable, quiet, verbose, copyWholeFS, cmdArgs)
+	fmt.Println(packageName)
+}
+
+func fromPackageCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	c := api.NewConfig()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+	buildImageFlags := NewBuildImageCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags, nanosVersionFlags, buildImageFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
@@ -489,18 +516,31 @@ func cmdFromPackage(cmd *cobra.Command, args []string) {
 	oldpkg := args[0]
 	oldpkg = strings.ReplaceAll(oldpkg, ":", "_")
 
-	o := path.Join(api.GetOpsHome(), "packages", oldpkg)
+	o := path.Join(api.GetOpsHome(), "packages", pkgFlags.Parch(), oldpkg)
 	ppath := o + "/package.manifest"
 	oldConfig := &types.Config{}
 	unWarpConfig(ppath, oldConfig)
 
-	api.ClonePackage(oldpkg, newpkg, version, oldConfig, c)
+	api.ClonePackage(oldpkg, newpkg, version, pkgFlags.Parch(), oldConfig, c)
 }
 
-func cmdFromRun(cmd *cobra.Command, args []string) {
+func fromRunCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
 	c := api.NewConfig()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+	buildImageFlags := NewBuildImageCommandFlags(flags)
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags, nanosVersionFlags, buildImageFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
 	newpkg, _ := flags.GetString("name")
 	if newpkg == "" {
@@ -516,46 +556,90 @@ func cmdFromRun(cmd *cobra.Command, args []string) {
 
 	program := args[0]
 	c.Program = program
-	var err error
 	c.ProgramPath, err = filepath.Abs(c.Program)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 	checkProgramExists(c.Program)
 
-	configFlags := NewConfigCommandFlags(flags)
-	globalFlags := NewGlobalCommandFlags(flags)
-	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
-	buildImageFlags := NewBuildImageCommandFlags(flags)
-
-	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nanosVersionFlags, buildImageFlags)
-	err = mergeContainer.Merge(c)
-	if err != nil {
-		exitWithError(err.Error())
-	}
-
-	api.CreatePackageFromRun(newpkg, version, c)
+	api.CreatePackageFromRun(newpkg, version, pkgFlags.Parch(), c)
 }
 
-func cmdFromDockerPackage(cmd *cobra.Command, args []string) {
+func pushCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
-	var err error
+	c := api.NewConfig()
 
-	imageName := args[0]
-	quiet, _ := flags.GetBool("quiet")
-	verbose, _ := flags.GetBool("verbose")
-	packageName, _ := flags.GetString("name")
-	targetExecutable, _ := flags.GetString("file")
-	copyWholeFS, _ := flags.GetBool("copy")
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
 
-	cmdArgs, err := flags.GetStringArray("args")
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
-	packageName, _ = ExtractFromDockerImage(imageName, packageName, targetExecutable, quiet, verbose, copyWholeFS, cmdArgs)
-	fmt.Println(packageName)
+	pkgIdentifier := args[0]
+	creds, err := api.ReadCredsFromLocal()
+	if err != nil {
+		if err == api.ErrCredentialsNotExist {
+			// for a better error message
+			log.Fatal(errors.New("user is not logged in. use 'ops pkg login' first"))
+		} else {
+			log.Fatal(err)
+		}
+	}
+
+	private, _ := flags.GetBool("private")
+	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
+	pkgList, err := api.GetLocalPackageList()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, packageFolder := api.ExtractNS(pkgIdentifier)
+	localPackages := api.LocalPackagesRoot
+	var foundPkg api.Package
+
+	for _, pkg := range pkgList {
+		// trip the "v" if provided in the version
+		if pkg.Name == name && strings.TrimPrefix(pkg.Version, "v") == strings.TrimPrefix(version, "v") {
+			foundPkg = pkg
+			break
+		}
+	}
+	if foundPkg.Name == "" {
+		log.Fatalf("no local package with the name %s found", packageFolder)
+	}
+
+	// build the archive here
+	archiveName := filepath.Join(localPackages, pkgFlags.Parch(), packageFolder) + ".tar.gz"
+
+	err = api.CreateTarGz(filepath.Join(localPackages, pkgFlags.Parch(), packageFolder), archiveName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(archiveName)
+
+	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set(api.APIKeyHeader, creds.APIKey)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// if the package is uploaded successfully then pkghub redirects to home page
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(errors.New("there was as an error while uploading the archive"))
+	} else {
+		fmt.Println("Package was uploaded successfully.")
+	}
+
 }
 
 func cmdPkgLogin(cmd *cobra.Command, args []string) {
@@ -572,67 +656,6 @@ func cmdPkgLogin(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("Login Successful as user %s\n", resp.Username)
-}
-
-func cmdPkgPush(cmd *cobra.Command, args []string) {
-	flags := cmd.Flags()
-
-	pkgIdentifier := args[0]
-	creds, err := api.ReadCredsFromLocal()
-	if err != nil {
-		if err == api.ErrCredentialsNotExist {
-			// for a better error message
-			log.Fatal(errors.New("user is not logged in. use 'ops pkg login' first"))
-		} else {
-			log.Fatal(err)
-		}
-	}
-	private, _ := flags.GetBool("private")
-	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
-	pkgList, err := api.GetLocalPackageList()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, packageFolder := api.ExtractNS(pkgIdentifier)
-	localPackages := filepath.Join(api.GetOpsHome(), "local_packages")
-	var foundPkg api.Package
-
-	for _, pkg := range pkgList {
-		// trip the "v" if provided in the version
-		if pkg.Name == name && strings.TrimPrefix(pkg.Version, "v") == strings.TrimPrefix(version, "v") {
-			foundPkg = pkg
-			break
-		}
-	}
-	if foundPkg.Name == "" {
-		log.Fatalf("no local package with the name %s found", packageFolder)
-	}
-
-	// build the archive here
-	archiveName := filepath.Join(localPackages, packageFolder) + ".tar.gz"
-	err = api.CreateTarGz(filepath.Join(localPackages, packageFolder), archiveName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(archiveName)
-
-	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set(api.APIKeyHeader, creds.APIKey)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// if the package is uploaded successfully then pkghub redirects to home page
-	if resp.StatusCode != http.StatusOK {
-		log.Fatal(errors.New("there was as an error while uploading the archive"))
-	} else {
-		fmt.Println("Package was uploaded successfully.")
-	}
-
 }
 
 func randomToken(n int) (string, error) {
@@ -666,6 +689,25 @@ func LoadCommand() *cobra.Command {
 	return cmdLoadPackage
 }
 
+func addCommand() *cobra.Command {
+
+	var cmdAddPackage = &cobra.Command{
+		Use:   "add [package]",
+		Short: "push a folder or a .tar.gz archived package to the local cache",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   addCommandHandler,
+	}
+	persistentFlags := cmdAddPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+
+	persistentFlags.StringP("name", "", "", "name of the package")
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdAddPackage
+}
+
 func getCommand() *cobra.Command {
 	var cmdGetPackage = &cobra.Command{
 		Use:   "get [packagename]",
@@ -680,6 +722,145 @@ func getCommand() *cobra.Command {
 	PersistNightlyCommandFlags(persistentFlags)
 
 	return cmdGetPackage
+}
+
+func contentsCommand() *cobra.Command {
+	var cmdContentsPackage = &cobra.Command{
+		Use:   "contents [packagename]",
+		Short: "list contents of a package from ['ops pkg list']",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   cmdPackageContents,
+	}
+
+	persistentFlags := cmdContentsPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdContentsPackage
+}
+
+func describeCommand() *cobra.Command {
+	var cmdDescribePackage = &cobra.Command{
+		Use:   "describe [packagename]",
+		Short: "describe a package from ['ops pkg list']",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   describeCommandHandler,
+	}
+
+	persistentFlags := cmdDescribePackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdDescribePackage
+}
+
+func fromDockerCommand() *cobra.Command {
+
+	var cmdFromDocker = &cobra.Command{
+		Use:   "from-docker [image]",
+		Short: "create a package from an executable of a docker image",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   fromDockerCommandHandler,
+	}
+
+	persistentFlags := cmdFromDocker.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
+
+	persistentFlags.BoolP("quiet", "q", false, "quiet mode")
+	persistentFlags.Bool("verbose", false, "verbose mode")
+	persistentFlags.StringP("file", "", "", "target executable")
+	persistentFlags.BoolP("copy", "", false, "copy whole file system")
+	persistentFlags.StringP("name", "", "", "name of the package")
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdFromDocker
+}
+
+func fromPackageCommand() *cobra.Command {
+	var cmdFromPackage = &cobra.Command{
+		Use:   "from-pkg [old]",
+		Short: "create a new package from an existing package",
+		Run:   fromPackageCommandHandler,
+	}
+
+	persistentFlags := cmdFromPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
+
+	persistentFlags.StringP("name", "", "", "name of the new package")
+	persistentFlags.StringP("version", "", "", "version of the package")
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdFromPackage
+}
+
+func fromRunCommand() *cobra.Command {
+	var cmdFromRunPackage = &cobra.Command{
+		Use:   "from-run [binary]",
+		Short: "create a new package from an existing binary",
+		Run:   fromRunCommandHandler,
+	}
+
+	persistentFlags := cmdFromRunPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
+
+	persistentFlags.BoolP("local", "l", false, "load local package")
+	persistentFlags.StringP("name", "", "", "name of the new package")
+	persistentFlags.StringP("version", "", "", "version of the package")
+
+	return cmdFromRunPackage
+}
+
+func listCommand() *cobra.Command {
+	var cmdListPackage = &cobra.Command{
+		Use:   "list",
+		Short: "list packages",
+		Run:   cmdListPackages,
+	}
+
+	var search string
+
+	persistentFlags := cmdListPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	persistentFlags.BoolP("local", "l", false, "load local package")
+	persistentFlags.StringVarP(&search, "search", "s", "", "search package list")
+
+	return cmdListPackage
+}
+
+func pushCommand() *cobra.Command {
+	var cmdPushPackage = &cobra.Command{
+		Use:   "push [local-package]",
+		Short: "push the local package to packagehub",
+		Args:  cobra.ExactArgs(1),
+		Run:   pushCommandHandler,
+	}
+
+	persistentFlags := cmdPushPackage.PersistentFlags()
+
+	PersistConfigCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	persistentFlags.BoolP("local", "l", false, "load local package")
+	persistentFlags.BoolP("private", "p", false, "set the package as private")
+
+	return cmdPushPackage
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
@@ -709,6 +890,7 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 	} else {
 		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
 	}
+
 	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	if c.Mounts != nil {
