@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/tools"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -251,18 +252,8 @@ func killBridge(bridgeName string) {
 	}
 }
 
-func execCmd(cmdStr string) (output string, err error) {
-	ecmd := exec.Command("/bin/bash", "-c", cmdStr)
-	out, err := ecmd.CombinedOutput()
-	if err != nil {
-		return
-	}
-	output = string(out)
-	return
-}
-
 func getPidOfBridge(bridgeName string) string {
-	pid, err := execCmd("ps aux | grep dnsmasq | grep " + bridgeName + " | awk {'print $2'}")
+	pid, err := tools.ExecCmd("ps aux | grep dnsmasq | grep " + bridgeName + " | awk {'print $2'}")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -277,7 +268,7 @@ func getPidOfBridge(bridgeName string) string {
 }
 
 func emptyBridge(bridgeName string) bool {
-	o, err := execCmd("brctl show | grep " + bridgeName)
+	o, err := tools.ExecCmd("brctl show | grep " + bridgeName)
 	if err != nil {
 		fmt.Println(err)
 	}
