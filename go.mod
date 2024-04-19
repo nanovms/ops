@@ -15,7 +15,7 @@ require (
 	github.com/bramvdbogaerde/go-scp v1.0.0
 	github.com/digitalocean/godo v1.57.0
 	github.com/docker/distribution v2.8.2+incompatible
-	github.com/docker/docker v20.10.27+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-errors/errors v1.0.1
 	github.com/golang/mock v1.6.0
