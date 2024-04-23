@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
@@ -75,9 +75,9 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cli.ContainerRemove(ctx, containerInfo.ID, dockerTypes.ContainerRemoveOptions{})
+	defer cli.ContainerRemove(ctx, containerInfo.ID, dockerContainer.RemoveOptions{})
 
-	if err := cli.ContainerStart(ctx, containerInfo.ID, dockerTypes.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, containerInfo.ID, dockerContainer.StartOptions{}); err != nil {
 		log.Fatal(err)
 	}
 
@@ -90,7 +90,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	case <-statusCh:
 	}
 
-	outReader, err := cli.ContainerLogs(ctx, containerInfo.ID, dockerTypes.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+	outReader, err := cli.ContainerLogs(ctx, containerInfo.ID, dockerContainer.LogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -191,11 +191,11 @@ func sanitizeLine(line string) string {
 	return line
 }
 
-func createContainer(image string, command []string, pull bool, quiet bool) (context.Context, *dockerClient.Client, dockerContainer.ContainerCreateCreatedBody, error) {
+func createContainer(image string, command []string, pull bool, quiet bool) (context.Context, *dockerClient.Client, dockerContainer.CreateResponse, error) {
 	ctx := context.Background()
 	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, nil, dockerContainer.ContainerCreateCreatedBody{}, err
+		return nil, nil, dockerContainer.CreateResponse{}, err
 	}
 
 	// grab latest if not specified
@@ -223,7 +223,7 @@ out:
 	if pull {
 		reader, err := cli.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
 		if err != nil {
-			return nil, nil, dockerContainer.ContainerCreateCreatedBody{}, err
+			return nil, nil, dockerContainer.CreateResponse{}, err
 		}
 		defer reader.Close()
 
@@ -239,7 +239,7 @@ out:
 		Entrypoint: []string{},
 	}, nil, nil, nil, "")
 	if err != nil {
-		return nil, nil, dockerContainer.ContainerCreateCreatedBody{}, err
+		return nil, nil, dockerContainer.CreateResponse{}, err
 	}
 
 	return ctx, cli, containerInfo, nil
