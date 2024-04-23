@@ -8,7 +8,7 @@ import (
 
 // ExecCmd takes a command string and runs it.
 func ExecCmd(cmdStr string) (output string, err error) {
-	cmd := exec.Command("/bin/bash", "-c", cmdStr)
+	cmd := exec.Command("bash", "-c", cmdStr)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return
@@ -20,7 +20,7 @@ func ExecCmd(cmdStr string) (output string, err error) {
 
 // ExecCmdList takes a set of strings as a single command and runs it.
 func ExecCmdList(str ...string) {
-	cmd := exec.Command("/bin/bash", "-c", strings.Join(str, " "))
+	cmd := exec.Command("bash", "-c", strings.Join(str, " "))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
