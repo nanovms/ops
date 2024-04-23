@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/go:1.19.5
+      - image: cimg/go:1.22.2
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -59,7 +59,7 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   nightly-build:
     docker:
-      - image: cimg/go:1.19.5
+      - image: cimg/go:1.22.2
     steps:
       - checkout
       - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf
