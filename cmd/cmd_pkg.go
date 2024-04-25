@@ -593,8 +593,11 @@ func pushCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	private, _ := flags.GetBool("private")
+	arch, _ := flags.GetString("arch")
 	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
+
 	pkgList, err := api.GetLocalPackageList()
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -623,7 +626,7 @@ func pushCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
+	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private, arch)
 	if err != nil {
 		log.Fatal(err)
 	}
