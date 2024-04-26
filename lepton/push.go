@@ -21,7 +21,6 @@ func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLo
 	if arch == "amd64" || arch == "" {
 		arch = "x86_64"
 	}
-
 	params := map[string]string{
 		"name":        name,
 		"description": pkg.Description,

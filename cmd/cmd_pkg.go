@@ -595,9 +595,7 @@ func pushCommandHandler(cmd *cobra.Command, args []string) {
 	private, _ := flags.GetBool("private")
 	arch, _ := flags.GetString("arch")
 	ns, name, version := api.GetNSPkgnameAndVersion(pkgIdentifier)
-
 	pkgList, err := api.GetLocalPackageList()
-
 	if err != nil {
 		log.Fatal(err)
 	}
