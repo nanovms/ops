@@ -76,6 +76,7 @@ func CreateTarGz(src string, destination string) error {
 	if err != nil {
 		return err
 	}
+	defer fd.Close()
 	// tar > gzip > buf
 	zr := gzip.NewWriter(fd)
 	tw := tar.NewWriter(zr)
@@ -101,6 +102,7 @@ func CreateTarGz(src string, destination string) error {
 		if err != nil {
 			return err
 		}
+		defer data.Close()
 		if _, err := io.Copy(tw, data); err != nil {
 			return err
 		}
@@ -127,6 +129,7 @@ func CreateTarGz(src string, destination string) error {
 				if err != nil {
 					return err
 				}
+				defer data.Close()
 				if _, err := io.Copy(tw, data); err != nil {
 					return err
 				}
