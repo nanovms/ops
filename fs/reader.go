@@ -29,6 +29,10 @@ func (r *Reader) ReadLink(path string) (string, error) {
 	return r.rootFS.readLink(path)
 }
 
+func (r *Reader) ReadFile(path string) (io.Reader, error) {
+	return r.rootFS.fileReader(path)
+}
+
 // CopyFile copies a file from the image to the local filesystem
 func (r *Reader) CopyFile(src, dest string, dereference bool) error {
 	if !dereference {
