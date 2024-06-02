@@ -29,6 +29,7 @@ func (r *Reader) ReadLink(path string) (string, error) {
 	return r.rootFS.readLink(path)
 }
 
+// ReadFile returns the io.Reader of a file in the image.
 func (r *Reader) ReadFile(path string) (io.Reader, error) {
 	return r.rootFS.fileReader(path)
 }
