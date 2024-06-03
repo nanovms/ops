@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -22,7 +23,7 @@ func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cp", "ls", "tree", "env", "mirror"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cat", "cp", "ls", "tree", "env", "mirror"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -35,6 +36,7 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageResizeCommand())
 	cmdImage.AddCommand(imageSyncCommand())
 	cmdImage.AddCommand(imageCopyCommand())
+	cmdImage.AddCommand(imageCatCommand())
 	cmdImage.AddCommand(imageLsCommand())
 	cmdImage.AddCommand(imageTreeCommand())
 	cmdImage.AddCommand(imageEnvCommand())
@@ -410,6 +412,44 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 	err = src.SyncImage(conf, tar, image)
 	if err != nil {
 		exitWithError(err.Error())
+	}
+}
+
+func imageCatCommand() *cobra.Command {
+	var cmdCat = &cobra.Command{
+		Use:   "cat <image_name> <src>",
+		Short: "cat from image to local filesystem",
+		Run:   imageCatCommandHandler,
+		Args:  cobra.MinimumNArgs(2),
+	}
+	return cmdCat
+}
+
+func imageCatCommandHandler(cmd *cobra.Command, args []string) {
+	reader := getLocalImageReader(cmd.Flags(), args)
+	defer reader.Close()
+	imageCat(cmd, args, reader)
+}
+
+func imageCat(cmd *cobra.Command, args []string, reader *fs.Reader) {
+	for _, srcPath := range args[1:] {
+		_, err := reader.Stat(srcPath)
+		if err != nil {
+			log.Errorf("Invalid source '%s': %v", srcPath, err)
+			continue
+		}
+
+		ir, err := reader.ReadFile(srcPath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		b, err := io.ReadAll(ir)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println(string(b))
 	}
 }
 
