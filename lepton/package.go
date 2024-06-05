@@ -282,7 +282,8 @@ func GetLocalPackageList() ([]Package, error) {
 
 		localPackages, err := os.ReadDir(localPackagesDir)
 		if err != nil {
-			return nil, err
+			log.Infof("could not find local packages directory for arch: %s\n", arches[i])
+			continue
 		}
 		username := GetLocalUsername()
 		for _, pkg := range localPackages {

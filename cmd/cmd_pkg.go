@@ -623,7 +623,7 @@ func pushCommandHandler(cmd *cobra.Command, args []string) {
 	}
 	defer os.RemoveAll(archiveName)
 
-	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private)
+	req, err := api.BuildRequestForArchiveUpload(ns, name, foundPkg, archiveName, private, pkgFlags.Parch())
 	if err != nil {
 		log.Fatal(err)
 	}

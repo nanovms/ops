@@ -13,10 +13,13 @@ import (
 )
 
 // BuildRequestForArchiveUpload builds the request to upload a package with the provided metadata
-func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLocation string, private bool) (*http.Request, error) {
+func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLocation string, private bool, arch string) (*http.Request, error) {
 	privateStr := "off"
 	if private {
 		privateStr = "on"
+	}
+	if arch == "amd64" || arch == "" {
+		arch = "x86_64"
 	}
 	params := map[string]string{
 		"name":        name,
@@ -24,6 +27,7 @@ func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLo
 		"language":    pkg.Language,
 		"runtime":     pkg.Runtime,
 		"version":     pkg.Version,
+		"arch":        arch,
 		"namespace":   namespace,
 		"private":     privateStr,
 	}
