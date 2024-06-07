@@ -44,7 +44,7 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 	c.Debugflags = []string{}
 
 	if flags.Trace {
-		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+		c.Debugflags = []string{"trace", "debugsyscalls", "fault"}
 	}
 
 	if flags.Debug {

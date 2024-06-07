@@ -46,7 +46,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 
 		expected := &types.Config{
 			BuildDir:   "",
-			Debugflags: []string{"trace", "debugsyscalls", "futex_trace", "fault", "syscall_summary"},
+			Debugflags: []string{"trace", "debugsyscalls", "fault", "syscall_summary"},
 			Force:      true,
 			NoTrace:    []string{"a"},
 			RunConfig: types.RunConfig{
