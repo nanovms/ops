@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -75,6 +76,10 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.SyscallSummary {
 		c.Debugflags = append(c.Debugflags, "syscall_summary")
+	}
+
+	if (flags.Trace || flags.SyscallSummary) && !slices.Contains(c.Klibs, "strace") {
+		c.Klibs = append(c.Klibs, "strace") // debugsyscalls, notrace, tracelist, syscall_summary
 	}
 
 	if flags.MissingFiles {
