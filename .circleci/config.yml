@@ -51,7 +51,7 @@ jobs:
       - run: make deps
       - run: make generate PATH=$PATH:~/go/bin
       - run: mkdir -p $TEST_RESULTS
-      - run: go run ops.go update
+      - run: go run ops.go update --arm
       - run:
           name: macbuild
           command: |
