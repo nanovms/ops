@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/nanovms/ops/lepton"
@@ -35,7 +36,17 @@ func stubRelease(versionPath string) error {
 	if err != nil {
 		return err
 	}
-	return f.Close()
+	f.Close()
+
+	if !strings.Contains(versionPath, "-arm") {
+		f, err := os.OpenFile(versionPath+"/boot.img", os.O_RDONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		f.Close()
+	}
+
+	return nil
 }
 
 func TestVersionFlagsMergeToConfig(t *testing.T) {

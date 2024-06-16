@@ -28,13 +28,13 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 
 	if nanosVersion != "" {
 		var exists bool
-		exists, err = lepton.CheckNanosVersionExists(nanosVersion)
+		arch := archPath()
+		exists, err = lepton.CheckNanosVersionExists(nanosVersion, arch)
 		if err != nil {
 			return err
 		}
 
 		if !exists {
-			arch := archPath()
 			err = lepton.DownloadReleaseImages(nanosVersion, arch)
 			if err != nil {
 				return
