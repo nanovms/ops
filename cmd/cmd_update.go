@@ -67,5 +67,4 @@ func updateCommandHandler(cmd *cobra.Command, args []string) {
 		api.UpdateLocalRelease(remote)
 		fmt.Printf("Update nanos to %s version.\n", remote)
 	}
-	os.Exit(0)
 }

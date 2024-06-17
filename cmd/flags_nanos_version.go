@@ -14,6 +14,12 @@ type NanosVersionCommandFlags struct {
 	NanosVersion string
 }
 
+// FIXME - no need for sep pkgs; now having to export this because of
+// this issue.
+func ArchPath() string {
+	return archPath()
+}
+
 func archPath() string {
 	if runtime.GOARCH == "arm64" || lepton.AltGOARCH == "arm64" {
 		return "arm"
