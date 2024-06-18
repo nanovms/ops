@@ -66,9 +66,6 @@ func TestAttachVolumeCommand(t *testing.T) {
 
 	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
 
-	// FIXME: tests prob. should not be spawning
-	time.Sleep(1 * time.Second)
-
 	err := attachVolumeCmd.Execute()
 
 	assert.Nil(t, err)

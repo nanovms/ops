@@ -569,14 +569,13 @@ func (p *OnPrem) StartInstance(ctx *lepton.Context, instancename string) error {
 		`{ "execute": "cont" }`,
 	}
 
-	executeQMP(commands, last)
-	return nil
+	return executeQMP(commands, last)
 }
 
-func executeQMP(commands []string, last string) {
-	c, err := net.Dial("tcp", "localhost:"+last)
+func executeQMP(commands []string, last string) error {
+	c, err := net.Dial("tcp", "127.0.0.1:"+last)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	defer c.Close()
 
@@ -592,6 +591,8 @@ func executeQMP(commands []string, last string) {
 			os.Exit(1)
 		}
 	}
+
+	return nil
 }
 
 // RebootInstance from on premise
@@ -608,9 +609,7 @@ func (p *OnPrem) RebootInstance(ctx *lepton.Context, instancename string) error 
 		`{ "execute": "system_reset" }`,
 	}
 
-	executeQMP(commands, last)
-
-	return nil
+	return executeQMP(commands, last)
 }
 
 // StopInstance from on premise
@@ -627,8 +626,7 @@ func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
 		`{ "execute": "stop" }`,
 	}
 
-	executeQMP(commands, last)
-	return nil
+	return executeQMP(commands, last)
 }
 
 // DeleteInstance from on premise
