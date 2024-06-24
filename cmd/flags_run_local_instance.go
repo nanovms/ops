@@ -4,7 +4,10 @@ import (
 	"debug/elf"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -44,7 +47,7 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 	c.Debugflags = []string{}
 
 	if flags.Trace {
-		c.Debugflags = []string{"trace", "debugsyscalls", "futex_trace", "fault"}
+		c.Debugflags = []string{"trace", "debugsyscalls", "fault", "futex_trace"} // "futex_trace" is just for temporay compatibility
 	}
 
 	if flags.Debug {
@@ -75,6 +78,12 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	if flags.SyscallSummary {
 		c.Debugflags = append(c.Debugflags, "syscall_summary")
+	}
+
+	if (flags.Trace || flags.SyscallSummary) && !slices.Contains(c.Klibs, "strace") {
+		if _, err := os.Stat(filepath.Join(c.KlibDir, "strace")); err == nil {
+			c.Klibs = append(c.Klibs, "strace") // debugsyscalls, notrace, tracelist, syscall_summary
+		}
 	}
 
 	if flags.MissingFiles {
