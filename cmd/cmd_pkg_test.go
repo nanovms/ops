@@ -4,9 +4,34 @@ import (
 	"os"
 	"testing"
 
+	// FIXME: why are there 2 pkgs here?
 	"github.com/nanovms/ops/cmd"
 	"github.com/stretchr/testify/assert"
 )
+
+// FIXME
+// memoize
+func stubAMDUpdate() error {
+	upPkgCmd := cmd.UpdateCommand()
+	return upPkgCmd.Execute()
+}
+
+func stubARMUpdate() error {
+	upPkgCmd := cmd.UpdateCommand()
+	upPkgCmd.SetArgs([]string{"--arm"})
+	return upPkgCmd.Execute()
+}
+
+func stubUpdate() error {
+	upPkgCmd := cmd.UpdateCommand()
+
+	a := cmd.ArchPath()
+	if a != "" {
+		upPkgCmd.SetArgs([]string{"--arm"})
+	}
+
+	return upPkgCmd.Execute()
+}
 
 func TestListPkgCommand(t *testing.T) {
 	listPkgCmd := cmd.PackageCommands()
@@ -49,6 +74,8 @@ func TestPkgDescribeCommand(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+
+	stubAMDUpdate()
 
 	getPkgCmd := cmd.PackageCommands()
 

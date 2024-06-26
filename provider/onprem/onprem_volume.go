@@ -150,6 +150,7 @@ func (op *OnPrem) DetachVolume(ctx *lepton.Context, instanceName string, volumeN
 	c, err := net.Dial("tcp", "localhost:"+last)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	defer c.Close()
 

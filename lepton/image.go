@@ -581,7 +581,11 @@ func DownloadCommonFiles() error {
 }
 
 // CheckNanosVersionExists verifies whether version exists in filesystem
-func CheckNanosVersionExists(version string) (bool, error) {
+func CheckNanosVersionExists(version string, arch string) (bool, error) {
+	if arch != "" {
+		version = version + "-" + arch
+	}
+
 	_, err := os.Stat(path.Join(GetOpsHome(), version))
 	if err != nil && os.IsNotExist(err) {
 		return false, nil

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/nanovms/ops/lepton"
@@ -23,9 +25,45 @@ func TestCreateVersionFlags(t *testing.T) {
 	assert.Equal(t, versionFlags.NanosVersion, "0.1.37")
 }
 
+// stubs a 'release'
+func stubRelease(versionPath string) error {
+	err := os.MkdirAll(versionPath, 0750)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(versionPath+"/kernel.img", os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	f.Close()
+
+	if !strings.Contains(versionPath, "-arm") {
+		f, err := os.OpenFile(versionPath+"/boot.img", os.O_RDONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		f.Close()
+	}
+
+	return nil
+}
+
 func TestVersionFlagsMergeToConfig(t *testing.T) {
 
 	versionPath := path.Join(lepton.GetOpsHome(), "0.1.37")
+
+	a := archPath()
+
+	if a != "" {
+		versionPath = versionPath + "-" + a
+	}
+
+	err := stubRelease(versionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	currentOpsPath := path.Join(lepton.GetOpsHome(), lepton.LocalReleaseVersion)
 
 	t.Run("if nano-version flag is enabled should set boot and kernel paths", func(t *testing.T) {
@@ -37,9 +75,14 @@ func TestVersionFlagsMergeToConfig(t *testing.T) {
 
 		versionFlags := NewNanosVersionCommandFlags(flagSet)
 
+		boot := path.Join(versionPath, "boot.img")
+		if a != "" {
+			boot = ""
+		}
+
 		c := &types.Config{}
 		expected := &types.Config{
-			Boot:   path.Join(versionPath, "boot.img"),
+			Boot:   boot,
 			Kernel: path.Join(versionPath, "kernel.img"),
 		}
 
@@ -59,12 +102,20 @@ func TestVersionFlagsMergeToConfig(t *testing.T) {
 
 		versionFlags := NewNanosVersionCommandFlags(flagSet)
 
+		cBoot := currentOpsPath + "/boot.img"
+		vBoot := versionPath + "/boot.img"
+
+		if a != "" {
+			cBoot = ""
+			vBoot = ""
+		}
+
 		c := &types.Config{
 			Kernel: currentOpsPath + "/kernel.img",
-			Boot:   currentOpsPath + "/boot.img",
+			Boot:   cBoot,
 		}
 		expected := &types.Config{
-			Boot:   versionPath + "/boot.img",
+			Boot:   vBoot,
 			Kernel: versionPath + "/kernel.img",
 		}
 

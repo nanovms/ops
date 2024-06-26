@@ -34,7 +34,8 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   build-mac:
     macos:
-        xcode: "15.3.0"
+        xcode: "15.4.0"
+    resource_class: macos.m1.medium.gen1
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -42,16 +43,15 @@ jobs:
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - run: brew update && brew install go && brew tap nanovms/homebrew-qemu && brew install nanovms/homebrew-qemu/qemu && brew install wget && brew install protoc-gen-go-grpc
       - run: go install github.com/jstemmer/go-junit-report@latest
-      - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Darwin-x86_64 && sudo mv buf-Darwin-x86_64 /usr/local/bin/buf && sudo chmod +x /usr/local/bin/buf
-      # - run: brew install bufbuild/buf/buf
+      - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Darwin-arm64 && sudo mv buf-Darwin-arm64 /usr/local/bin/buf && sudo chmod +x /usr/local/bin/buf
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-openapiv2-v2.15.0-darwin-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-grpc-gateway-v2.15.0-darwin-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-openapiv2-v2.15.0-darwin-arm64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-grpc-gateway-v2.15.0-darwin-arm64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
       - run: make deps
       - run: make generate PATH=$PATH:~/go/bin
       - run: mkdir -p $TEST_RESULTS
-      - run: go run ops.go update
+      - run: go run ops.go update --arm
       - run:
           name: macbuild
           command: |

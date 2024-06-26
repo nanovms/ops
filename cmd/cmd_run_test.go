@@ -10,6 +10,9 @@ import (
 )
 
 func TestRunCommand(t *testing.T) {
+
+	stubUpdate()
+
 	programPath := testutils.BuildBasicProgram()
 	defer os.Remove(programPath)
 
