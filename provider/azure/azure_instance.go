@@ -133,14 +133,18 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	var ipv6Name network.PublicIPAddress
+	v6name := ""
 
 	if ctx.Config().CloudConfig.EnableIPv6 {
-
 		ctx.Logger().Infof("creating public ip with id %s", vmName)
 		ipv6Name, err = a.CreatePublicIP(context.TODO(), location, vmName, true)
 		if err != nil {
 			ctx.Logger().Error(err)
 			return errors.New("error creating public ip")
+		}
+
+		if ipv6Name.Name != nil {
+			v6name = *ipv6Name.Name
 		}
 	}
 
@@ -148,11 +152,6 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	// pass vnet, subnet, ip, nicname
 	enableIPForwarding := c.RunConfig.CanIPForward
 	ctx.Logger().Infof("creating network interface controller with id %s", vmName)
-
-	v6name := ""
-	if ipv6Name.Name != nil {
-		v6name = *ipv6Name.Name
-	}
 
 	nic, err := a.CreateNIC(context.TODO(), location, *vnet.Name, *subnet.Name, *nsg.Name, *ip.Name, v6name, vmName, enableIPForwarding, c)
 	if err != nil {
