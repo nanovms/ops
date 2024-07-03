@@ -1,10 +1,9 @@
-package cmd_test
+package cmd
 
 import (
 	"os"
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +12,7 @@ func TestRunCommand(t *testing.T) {
 	programPath := testutils.BuildBasicProgram()
 	defer os.Remove(programPath)
 
-	runCmd := cmd.RunCommand()
+	runCmd := RunCommand()
 
 	runCmd.SetArgs([]string{programPath})
 

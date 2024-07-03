@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,13 +13,13 @@ func TestCreateGlobalFlags(t *testing.T) {
 
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistGlobalCommandFlags(flagSet)
+	PersistGlobalCommandFlags(flagSet)
 
 	flagSet.Set("show-debug", "true")
 	flagSet.Set("show-errors", "true")
 	flagSet.Set("show-warnings", "true")
 
-	globalFlags := cmd.NewGlobalCommandFlags(flagSet)
+	globalFlags := NewGlobalCommandFlags(flagSet)
 
 	assert.Equal(t, globalFlags.ShowDebug, true)
 	assert.Equal(t, globalFlags.ShowErrors, true)
@@ -30,13 +29,13 @@ func TestCreateGlobalFlags(t *testing.T) {
 func TestGlobalFlagsMergeToConfig(t *testing.T) {
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistGlobalCommandFlags(flagSet)
+	PersistGlobalCommandFlags(flagSet)
 
 	flagSet.Set("show-debug", "true")
 	flagSet.Set("show-errors", "false")
 	flagSet.Set("show-warnings", "true")
 
-	globalFlags := cmd.NewGlobalCommandFlags(flagSet)
+	globalFlags := NewGlobalCommandFlags(flagSet)
 
 	c := &types.Config{}
 

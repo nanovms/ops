@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,7 @@ func TestCreateBuildImageFlags(t *testing.T) {
 		flagSet.Set("gateway", "192.168.1.254")
 		flagSet.Set("netmask", "255.255.0.0")
 
-		buildImageFlags := cmd.NewBuildImageCommandFlags(flagSet)
+		buildImageFlags := NewBuildImageCommandFlags(flagSet)
 
 		assert.Equal(t, buildImageFlags.CmdEnvs, []string{"test=1234"})
 		assert.Equal(t, buildImageFlags.TargetRoot, "unix")
@@ -48,7 +47,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 
 		flagSet := pflag.NewFlagSet("test", 0)
 
-		cmd.PersistBuildImageCommandFlags(flagSet)
+		PersistBuildImageCommandFlags(flagSet)
 
 		flagSet.Set("args", "a b c d")
 		flagSet.Set("envs", "test=1234")
@@ -56,7 +55,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		flagSet.Set("imagename", "test-image")
 		flagSet.Set("mounts", volumeName+":/files")
 
-		buildImageFlags := cmd.NewBuildImageCommandFlags(flagSet)
+		buildImageFlags := NewBuildImageCommandFlags(flagSet)
 
 		opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 		imagesPath := lepton.GetOpsHome() + "/images"
@@ -100,7 +99,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 	t.Run("should clear ip/gateway/netmask if they are not valid ip addresses", func(t *testing.T) {
 		flagSet := newBuildImageFlagSet()
 
-		runLocalInstanceFlags := cmd.NewBuildImageCommandFlags(flagSet)
+		runLocalInstanceFlags := NewBuildImageCommandFlags(flagSet)
 		runLocalInstanceFlags.IPAddress = "tomato"
 		runLocalInstanceFlags.Gateway = "potato"
 		runLocalInstanceFlags.Netmask = "cheese"
@@ -133,6 +132,6 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 func newBuildImageFlagSet() (flagSet *pflag.FlagSet) {
 	flagSet = pflag.NewFlagSet("test", 0)
 
-	cmd.PersistBuildImageCommandFlags(flagSet)
+	PersistBuildImageCommandFlags(flagSet)
 	return
 }

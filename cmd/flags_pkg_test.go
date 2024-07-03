@@ -1,4 +1,4 @@
-package cmd_test
+package cmd
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
@@ -22,9 +21,9 @@ func TestBuildPkgFlags(t *testing.T) {
 	flagset.Set("local", "true")
 	flagset.Set("package", "mysql")
 
-	pkgFlags := cmd.NewPkgCommandFlags(flagset)
+	pkgFlags := NewPkgCommandFlags(flagset)
 
-	assert.Equal(t, pkgFlags, &cmd.PkgCommandFlags{
+	assert.Equal(t, pkgFlags, &PkgCommandFlags{
 		LocalPackage: true,
 		Package:      "mysql",
 	})
@@ -37,7 +36,7 @@ func TestPkgFlagsPackagePath(t *testing.T) {
 	flagSet.Set("local", "true")
 	flagSet.Set("package", packageName)
 
-	pkgFlags := cmd.NewPkgCommandFlags(flagSet)
+	pkgFlags := NewPkgCommandFlags(flagSet)
 
 	assert.Equal(t, pkgFlags.PackagePath(), api.GetOpsHome()+"/local_packages/"+runtime.GOARCH+"/"+packageName)
 }
@@ -72,7 +71,7 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 	flagSet.Set("local", "true")
 	flagSet.Set("package", packageName)
 
-	pkgFlags := cmd.NewPkgCommandFlags(flagSet)
+	pkgFlags := NewPkgCommandFlags(flagSet)
 
 	manifestPath := pkgFlags.PackagePath() + "/package.manifest"
 
@@ -149,6 +148,6 @@ func TestPkgFlagsMergeToConfig(t *testing.T) {
 func newPkgFlagSet() (flagSet *pflag.FlagSet) {
 	flagSet = pflag.NewFlagSet("test", 0)
 
-	cmd.PersistPkgCommandFlags(flagSet)
+	PersistPkgCommandFlags(flagSet)
 	return
 }

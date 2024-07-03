@@ -1,15 +1,14 @@
-package cmd_test
+package cmd
 
 import (
 	"os"
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestListPkgCommand(t *testing.T) {
-	listPkgCmd := cmd.PackageCommands()
+	listPkgCmd := PackageCommands()
 
 	listPkgCmd.SetArgs([]string{"list"})
 
@@ -19,7 +18,7 @@ func TestListPkgCommand(t *testing.T) {
 }
 
 func TestGetPkgCommand(t *testing.T) {
-	getPkgCmd := cmd.PackageCommands()
+	getPkgCmd := PackageCommands()
 
 	getPkgCmd.SetArgs([]string{"get", "eyberg/bind:9.13.4", "--arch", "amd64"})
 
@@ -29,7 +28,7 @@ func TestGetPkgCommand(t *testing.T) {
 }
 
 func TestPkgContentsCommand(t *testing.T) {
-	getPkgCmd := cmd.PackageCommands()
+	getPkgCmd := PackageCommands()
 
 	getPkgCmd.SetArgs([]string{"contents", "eyberg/bind:9.13.4"})
 
@@ -39,7 +38,7 @@ func TestPkgContentsCommand(t *testing.T) {
 }
 
 func TestPkgDescribeCommand(t *testing.T) {
-	getPkgCmd := cmd.PackageCommands()
+	getPkgCmd := PackageCommands()
 
 	getPkgCmd.SetArgs([]string{"describe", "eyberg/bind:9.13.4", "--arch", "amd64"})
 
@@ -50,7 +49,7 @@ func TestPkgDescribeCommand(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 
-	getPkgCmd := cmd.PackageCommands()
+	getPkgCmd := PackageCommands()
 
 	program := buildNodejsProgram()
 	defer os.Remove(program)
@@ -65,7 +64,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestPkgSearch(t *testing.T) {
-	searchPkgCmd := cmd.PackageCommands()
+	searchPkgCmd := PackageCommands()
 
 	searchPkgCmd.SetArgs([]string{"search", "mysql"})
 	err := searchPkgCmd.Execute()
