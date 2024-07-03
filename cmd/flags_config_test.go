@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"errors"
 	"os"
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
@@ -19,7 +18,7 @@ func TestConfigFlags(t *testing.T) {
 
 	flagSet.Set("config", "test.json")
 
-	buildImageFlags := cmd.NewConfigCommandFlags(flagSet)
+	buildImageFlags := NewConfigCommandFlags(flagSet)
 
 	assert.Equal(t, buildImageFlags.Config, "test.json")
 }
@@ -48,7 +47,7 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 
 		flagSet := newConfigFlagSet()
 		flagSet.Set("config", configFileName)
-		configFlags := cmd.NewConfigCommandFlags(flagSet)
+		configFlags := NewConfigCommandFlags(flagSet)
 
 		actual := &types.Config{}
 
@@ -90,7 +89,7 @@ func TestConfigFlagsMergeToConfig(t *testing.T) {
 
 		flagSet := newConfigFlagSet()
 		flagSet.Set("config", configFileName)
-		configFlags := cmd.NewConfigCommandFlags(flagSet)
+		configFlags := NewConfigCommandFlags(flagSet)
 
 		actual := &types.Config{}
 
@@ -106,47 +105,47 @@ func TestConvertJsonToConfig(t *testing.T) {
 		json := []byte(`{"A":1}`)
 		config := &types.Config{}
 
-		err := cmd.ConvertJSONToConfig(json, config)
+		err := ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
+		assert.Equal(t, err, ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
 	})
 
 	t.Run("should return error if nested property does not exist in config struct", func(t *testing.T) {
 		json := []byte(`{"RunConfig":{"A":1}}`)
 		config := &types.Config{}
 
-		err := cmd.ConvertJSONToConfig(json, config)
+		err := ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
+		assert.Equal(t, err, ErrInvalidFileConfig(errors.New("json: unknown field \"A\"")))
 	})
 
 	t.Run("should return error if some properties do not exist in config struct", func(t *testing.T) {
 		json := []byte(`{"RunConfig":{"Accel":false,"Test2":"b","Test3":"c"}}`)
 		config := &types.Config{}
 
-		err := cmd.ConvertJSONToConfig(json, config)
+		err := ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"Test2\"")))
+		assert.Equal(t, err, ErrInvalidFileConfig(errors.New("json: unknown field \"Test2\"")))
 	})
 
 	t.Run("should return error if properties in first level do not exist in config struct", func(t *testing.T) {
 		json := []byte(`{"RunConfig":{"Accel":false},"test":"b"}`)
 		config := &types.Config{}
 
-		err := cmd.ConvertJSONToConfig(json, config)
+		err := ConvertJSONToConfig(json, config)
 
 		assert.Error(t, err)
-		assert.Equal(t, err, cmd.ErrInvalidFileConfig(errors.New("json: unknown field \"test\"")))
+		assert.Equal(t, err, ErrInvalidFileConfig(errors.New("json: unknown field \"test\"")))
 	})
 
 	t.Run("should convert config successfully if all properties are known", func(t *testing.T) {
 		json := []byte(`{"RunConfig":{"Accel":false}}`)
 		config := &types.Config{}
 
-		err := cmd.ConvertJSONToConfig(json, config)
+		err := ConvertJSONToConfig(json, config)
 
 		assert.Nil(t, err)
 	})
@@ -155,6 +154,6 @@ func TestConvertJsonToConfig(t *testing.T) {
 func newConfigFlagSet() (flagSet *pflag.FlagSet) {
 	flagSet = pflag.NewFlagSet("test", 0)
 
-	cmd.PersistConfigCommandFlags(flagSet)
+	PersistConfigCommandFlags(flagSet)
 	return
 }

@@ -1,14 +1,13 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestVersionCommand(t *testing.T) {
-	versionCmd := cmd.VersionCommand()
+	versionCmd := VersionCommand()
 
 	err := versionCmd.Execute()
 

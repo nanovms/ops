@@ -1,10 +1,9 @@
-package cmd_test
+package cmd
 
 import (
 	"os"
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +12,7 @@ func TestCreateImage(t *testing.T) {
 	basicProgram := testutils.BuildBasicProgram()
 	defer os.Remove(basicProgram)
 
-	createImageCmd := cmd.ImageCommands()
+	createImageCmd := ImageCommands()
 
 	createImageCmd.SetArgs([]string{"create", basicProgram})
 
@@ -27,7 +26,7 @@ func TestCreateImage(t *testing.T) {
 }
 
 func TestListImages(t *testing.T) {
-	listImagesCmd := cmd.ImageCommands()
+	listImagesCmd := ImageCommands()
 
 	listImagesCmd.SetArgs([]string{"list"})
 
@@ -39,7 +38,7 @@ func TestListImages(t *testing.T) {
 func TestDeleteImage(t *testing.T) {
 	imagePath := buildImage("test-img")
 
-	deleteImageCmd := cmd.ImageCommands()
+	deleteImageCmd := ImageCommands()
 
 	deleteImageCmd.SetArgs([]string{"delete", imagePath, "--assume-yes"})
 

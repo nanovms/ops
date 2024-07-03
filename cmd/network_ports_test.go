@@ -1,10 +1,8 @@
-package cmd_test
+package cmd
 
 import (
 	"reflect"
 	"testing"
-
-	"github.com/nanovms/ops/cmd"
 )
 
 func TestValidateNetworkPorts(t *testing.T) {
@@ -27,7 +25,7 @@ func TestValidateNetworkPorts(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			err := cmd.ValidateNetworkPorts(tt.ports)
+			err := ValidateNetworkPorts(tt.ports)
 			if err != nil && tt.valid {
 				t.Errorf("Expected %s to be valid, got next error %s", tt.ports, err.Error())
 			} else if err == nil && !tt.valid {
@@ -47,7 +45,7 @@ func TestPrepareNetworkPorts(t *testing.T) {
 
 	t.Run("separate ports separated by commas", func(t *testing.T) {
 
-		got, _ := cmd.PrepareNetworkPorts([]string{"80,8080", "9000-10000"})
+		got, _ := PrepareNetworkPorts([]string{"80,8080", "9000-10000"})
 		want := []string{"80", "8080", "9000-10000"}
 
 		if !reflect.DeepEqual(got, want) {

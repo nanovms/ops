@@ -1,4 +1,4 @@
-package cmd_test
+package cmd
 
 import (
 	"os"
@@ -7,7 +7,6 @@ import (
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +16,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 	buildImageFlagSet := newBuildImageFlagSet()
 	buildImageFlagSet.Set("imagename", "build-image")
 	buildImageFlagSet.Set("args", "test")
-	buildImageFlags := cmd.NewBuildImageCommandFlags(buildImageFlagSet)
+	buildImageFlags := NewBuildImageCommandFlags(buildImageFlagSet)
 
 	configFileName := "test-" + testutils.String(5) + ".json"
 
@@ -31,12 +30,12 @@ func TestMergeMultipleFlags(t *testing.T) {
 	defer os.Remove(configFileName)
 	configFlagSet := newConfigFlagSet()
 	configFlagSet.Set("config", configFileName)
-	configFlags := cmd.NewConfigCommandFlags(configFlagSet)
+	configFlags := NewConfigCommandFlags(configFlagSet)
 
 	imagesPath := lepton.GetOpsHome() + "/images"
 
 	t.Run("if config flags are placed before the build image flags imagename overrides the value", func(t *testing.T) {
-		container := cmd.NewMergeConfigContainer(configFlags, buildImageFlags)
+		container := NewMergeConfigContainer(configFlags, buildImageFlags)
 
 		config := &types.Config{}
 
@@ -47,7 +46,7 @@ func TestMergeMultipleFlags(t *testing.T) {
 	})
 
 	t.Run("if build image flags are placed before the config image flags imagename overrides the value", func(t *testing.T) {
-		container := cmd.NewMergeConfigContainer(buildImageFlags, configFlags)
+		container := NewMergeConfigContainer(buildImageFlags, configFlags)
 
 		config := &types.Config{}
 
