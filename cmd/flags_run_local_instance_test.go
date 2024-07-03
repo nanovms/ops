@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -70,11 +69,11 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 	t.Run("should join existing ports with flags ports de-duplicated", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
-		cmd.PersistRunLocalInstanceCommandFlags(flagSet)
+		PersistRunLocalInstanceCommandFlags(flagSet)
 
 		flagSet.Set("port", "80,81,82-85")
 
-		runLocalInstanceFlags := cmd.NewRunLocalInstanceCommandFlags(flagSet)
+		runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flagSet)
 
 		c := &types.Config{
 			RunConfig: types.RunConfig{
@@ -99,10 +98,10 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 
 }
 
-func newRunLocalInstanceFlagSet(debug string) *cmd.RunLocalInstanceCommandFlags {
+func newRunLocalInstanceFlagSet(debug string) *RunLocalInstanceCommandFlags {
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistRunLocalInstanceCommandFlags(flagSet)
+	PersistRunLocalInstanceCommandFlags(flagSet)
 
 	flagSet.Set("port", "80,81,82-85")
 	flagSet.Set("force", "true")
@@ -122,5 +121,5 @@ func newRunLocalInstanceFlagSet(debug string) *cmd.RunLocalInstanceCommandFlags 
 	flagSet.Set("mounts", "files:/mnt/f")
 	flagSet.Set("syscall-summary", "true")
 
-	return cmd.NewRunLocalInstanceCommandFlags(flagSet)
+	return NewRunLocalInstanceCommandFlags(flagSet)
 }

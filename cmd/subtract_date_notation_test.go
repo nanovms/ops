@@ -1,10 +1,8 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 	"time"
-
-	"github.com/nanovms/ops/cmd"
 )
 
 var (
@@ -19,12 +17,12 @@ func TestSubtractDateNotation(t *testing.T) {
 		str := "01/10/2020"
 		date, _ := time.Parse(layout, str)
 
-		_, err := cmd.SubtractTimeNotation(date, "kjfgd")
+		_, err := SubtractTimeNotation(date, "kjfgd")
 		if err == nil {
 			t.Errorf(ErrInvalidTimeNotation("kjfgd"))
 		}
 
-		_, err = cmd.SubtractTimeNotation(date, "123")
+		_, err = SubtractTimeNotation(date, "123")
 		if err == nil {
 			t.Errorf(ErrInvalidTimeNotation("123"))
 		}
@@ -35,7 +33,7 @@ func TestSubtractDateNotation(t *testing.T) {
 		str := "2020-10-10"
 		date, _ := time.Parse(layout, str)
 
-		got, _ := cmd.SubtractTimeNotation(date, "5d")
+		got, _ := SubtractTimeNotation(date, "5d")
 		want := "2020-10-05"
 
 		if want != got.Format(layout) {
@@ -48,7 +46,7 @@ func TestSubtractDateNotation(t *testing.T) {
 		str := "2020-10-10"
 		date, _ := time.Parse(layout, str)
 
-		got, _ := cmd.SubtractTimeNotation(date, "5w")
+		got, _ := SubtractTimeNotation(date, "5w")
 		want := "2020-09-05"
 
 		if want != got.Format(layout) {
@@ -61,7 +59,7 @@ func TestSubtractDateNotation(t *testing.T) {
 		str := "2020-10-10"
 		date, _ := time.Parse(layout, str)
 
-		got, _ := cmd.SubtractTimeNotation(date, "2m")
+		got, _ := SubtractTimeNotation(date, "2m")
 		want := "2020-08-10"
 
 		if want != got.Format(layout) {
@@ -74,7 +72,7 @@ func TestSubtractDateNotation(t *testing.T) {
 		str := "2020-10-10"
 		date, _ := time.Parse(layout, str)
 
-		got, _ := cmd.SubtractTimeNotation(date, "3y")
+		got, _ := SubtractTimeNotation(date, "3y")
 		want := "2017-10-10"
 
 		if want != got.Format(layout) {

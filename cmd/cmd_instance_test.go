@@ -1,9 +1,8 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +14,7 @@ func TestCreateInstance(t *testing.T) {
 
 	instanceName := imageName + testutils.String(5)
 
-	createInstanceCmd := cmd.InstanceCommands()
+	createInstanceCmd := InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName})
 
@@ -27,7 +26,7 @@ func TestCreateInstance(t *testing.T) {
 }
 
 func TestListInstances(t *testing.T) {
-	listInstancesCmd := cmd.InstanceCommands()
+	listInstancesCmd := InstanceCommands()
 
 	listInstancesCmd.SetArgs([]string{"list"})
 
@@ -41,7 +40,7 @@ func TestDeleteInstance(t *testing.T) {
 	defer removeImage(imageName)
 	instanceName := buildInstance(imageName)
 
-	deleteInstanceCmd := cmd.InstanceCommands()
+	deleteInstanceCmd := InstanceCommands()
 
 	deleteInstanceCmd.SetArgs([]string{"delete", instanceName})
 

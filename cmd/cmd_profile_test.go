@@ -1,14 +1,13 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestProfileCommand(t *testing.T) {
-	profileCommand := cmd.ProfileCommand()
+	profileCommand := ProfileCommand()
 
 	err := profileCommand.Execute()
 

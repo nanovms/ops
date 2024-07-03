@@ -15,6 +15,8 @@ ops.exe
 vendor/
 .idea
 
+cmd/nodejs*
+
 config*.json
 load*
 coverage.out

@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,14 +13,14 @@ func TestCreateCreateInstanceFlags(t *testing.T) {
 
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistCreateInstanceFlags(flagSet)
+	PersistCreateInstanceFlags(flagSet)
 
 	flagSet.Set("domainname", "test.nanovms.com")
 	flagSet.Set("flavor", "t2")
 	flagSet.Set("port", "80,9000-9040")
 	flagSet.Set("udp", "50-80,8000")
 
-	createInstanceFlags := cmd.NewCreateInstanceCommandFlags(flagSet)
+	createInstanceFlags := NewCreateInstanceCommandFlags(flagSet)
 
 	assert.Equal(t, createInstanceFlags.DomainName, "test.nanovms.com")
 	assert.Equal(t, createInstanceFlags.Flavor, "t2")
@@ -33,14 +32,14 @@ func TestCreateCreateInstanceFlags(t *testing.T) {
 func TestCreateInstanceFlagsMergeToConfig(t *testing.T) {
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistCreateInstanceFlags(flagSet)
+	PersistCreateInstanceFlags(flagSet)
 
 	flagSet.Set("domainname", "test.nanovms.com")
 	flagSet.Set("flavor", "t2")
 	flagSet.Set("port", "80,9000-9040")
 	flagSet.Set("udp", "50-80,8000")
 
-	createInstanceFlags := cmd.NewCreateInstanceCommandFlags(flagSet)
+	createInstanceFlags := NewCreateInstanceCommandFlags(flagSet)
 
 	expected := &types.Config{
 		CloudConfig: types.ProviderConfig{

@@ -1,11 +1,10 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,13 +13,13 @@ func TestCreateProviderFlags(t *testing.T) {
 
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistProviderCommandFlags(flagSet)
+	PersistProviderCommandFlags(flagSet)
 
 	flagSet.Set("target-cloud", "gcp")
 	flagSet.Set("zone", "us-west")
 	flagSet.Set("projectid", "prod-xpto")
 
-	providerFlags := cmd.NewProviderCommandFlags(flagSet)
+	providerFlags := NewProviderCommandFlags(flagSet)
 
 	assert.Equal(t, providerFlags.TargetCloud, "gcp")
 	assert.Equal(t, providerFlags.Zone, "us-west")
@@ -32,11 +31,11 @@ func TestMergeProviderFlags(t *testing.T) {
 	t.Run("target cloud azure should set klib cloud_init", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
-		cmd.PersistProviderCommandFlags(flagSet)
+		PersistProviderCommandFlags(flagSet)
 
 		flagSet.Set("target-cloud", "azure")
 
-		providerFlags := cmd.NewProviderCommandFlags(flagSet)
+		providerFlags := NewProviderCommandFlags(flagSet)
 
 		actual := &types.Config{}
 		expected := &types.Config{
@@ -54,13 +53,13 @@ func TestMergeProviderFlags(t *testing.T) {
 	t.Run("should update config with flags values", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
-		cmd.PersistProviderCommandFlags(flagSet)
+		PersistProviderCommandFlags(flagSet)
 
 		flagSet.Set("target-cloud", "gcp")
 		flagSet.Set("zone", "us-west")
 		flagSet.Set("projectid", "prod-xpto")
 
-		providerFlags := cmd.NewProviderCommandFlags(flagSet)
+		providerFlags := NewProviderCommandFlags(flagSet)
 
 		actual := &types.Config{}
 		expected := &types.Config{

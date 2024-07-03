@@ -1,4 +1,4 @@
-package cmd_test
+package cmd
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +41,7 @@ func buildImage(imageName string) string {
 	basicProgram := testutils.BuildBasicProgram()
 	defer os.Remove(basicProgram)
 
-	createImageCmd := cmd.ImageCommands()
+	createImageCmd := ImageCommands()
 
 	createImageCmd.SetArgs([]string{"create", basicProgram, "-i", imageName})
 
@@ -56,7 +55,7 @@ func buildWaitImage(imageName string) string {
 	basicWaitProgram := testutils.BuildWaitProgram()
 	defer os.Remove(basicWaitProgram)
 
-	createImageCmd := cmd.ImageCommands()
+	createImageCmd := ImageCommands()
 
 	createImageCmd.SetArgs([]string{"create", basicWaitProgram, "-i", imageName})
 
@@ -69,7 +68,7 @@ func buildInstance(imageName string) string {
 	tm := strconv.FormatInt(time.Now().Unix(), 10)
 	instanceName := imageName + "-" + tm
 
-	createInstanceCmd := cmd.InstanceCommands()
+	createInstanceCmd := InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName})
 
@@ -85,7 +84,7 @@ func buildInstanceWithConfig(imageName string, config string) string {
 	tm := strconv.FormatInt(time.Now().Unix(), 10)
 	instanceName := imageName + "-" + tm
 
-	createInstanceCmd := cmd.InstanceCommands()
+	createInstanceCmd := InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"create", imageName, "--instance-name", instanceName, "-c", config})
 
@@ -98,7 +97,7 @@ func buildInstanceWithConfig(imageName string, config string) string {
 }
 
 func removeInstance(instanceName string) {
-	createInstanceCmd := cmd.InstanceCommands()
+	createInstanceCmd := InstanceCommands()
 
 	createInstanceCmd.SetArgs([]string{"delete", instanceName})
 
@@ -131,7 +130,7 @@ func removeImage(imageName string) {
 
 func buildVolume(volumeName string) string {
 	volumeName += testutils.String(5)
-	createVolumeCmd := cmd.VolumeCommands()
+	createVolumeCmd := VolumeCommands()
 
 	createVolumeCmd.SetArgs([]string{"create", volumeName})
 
@@ -141,7 +140,7 @@ func buildVolume(volumeName string) string {
 }
 
 func removeVolume(volumeName string) {
-	createVolumeCmd := cmd.VolumeCommands()
+	createVolumeCmd := VolumeCommands()
 
 	createVolumeCmd.SetArgs([]string{"delete", volumeName})
 
@@ -149,7 +148,7 @@ func removeVolume(volumeName string) {
 }
 
 func attachVolume(instanceName, volumeName string) {
-	attachVolumeCmd := cmd.VolumeCommands()
+	attachVolumeCmd := VolumeCommands()
 
 	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
 

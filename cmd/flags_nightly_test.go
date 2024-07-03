@@ -1,4 +1,4 @@
-package cmd_test
+package cmd
 
 import (
 	"path"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -16,11 +15,11 @@ func TestCreateNightlyFlags(t *testing.T) {
 
 	flagSet := pflag.NewFlagSet("test", 0)
 
-	cmd.PersistNightlyCommandFlags(flagSet)
+	PersistNightlyCommandFlags(flagSet)
 
 	flagSet.Set("nightly", "true")
 
-	nightlyFlags := cmd.NewNightlyCommandFlags(flagSet)
+	nightlyFlags := NewNightlyCommandFlags(flagSet)
 
 	assert.Equal(t, nightlyFlags.Nightly, true)
 }
@@ -32,11 +31,11 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 	t.Run("if nighly flag is enabled should set boot and kernel nightly paths ", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
-		cmd.PersistNightlyCommandFlags(flagSet)
+		PersistNightlyCommandFlags(flagSet)
 
 		flagSet.Set("nightly", "true")
 
-		nightlyFlags := cmd.NewNightlyCommandFlags(flagSet)
+		nightlyFlags := NewNightlyCommandFlags(flagSet)
 
 		c := &types.Config{}
 		expected := &types.Config{

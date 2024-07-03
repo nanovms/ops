@@ -1,4 +1,4 @@
-package cmd_test
+package cmd
 
 import (
 	"os"
@@ -8,12 +8,11 @@ import (
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
-	"github.com/nanovms/ops/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateVolumeCommand(t *testing.T) {
-	createVolumeCmd := cmd.VolumeCommands()
+	createVolumeCmd := VolumeCommands()
 
 	createVolumeCmd.SetArgs([]string{"create", "test"})
 
@@ -23,7 +22,7 @@ func TestCreateVolumeCommand(t *testing.T) {
 }
 
 func TestListVolumesCommand(t *testing.T) {
-	listVolumesCmd := cmd.VolumeCommands()
+	listVolumesCmd := VolumeCommands()
 
 	listVolumesCmd.SetArgs([]string{"list"})
 
@@ -33,7 +32,7 @@ func TestListVolumesCommand(t *testing.T) {
 }
 
 func TestDeleteVolumeCommand(t *testing.T) {
-	deleteVolumeCmd := cmd.VolumeCommands()
+	deleteVolumeCmd := VolumeCommands()
 
 	deleteVolumeCmd.SetArgs([]string{"delete", "test"})
 
@@ -62,7 +61,7 @@ func TestAttachVolumeCommand(t *testing.T) {
 	volumeName := buildVolume("vol-test")
 	defer removeVolume(volumeName)
 
-	attachVolumeCmd := cmd.VolumeCommands()
+	attachVolumeCmd := VolumeCommands()
 
 	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
 
@@ -94,7 +93,7 @@ func TestDetachVolumeCommand(t *testing.T) {
 	volumeName := buildVolume("vol-test")
 	defer removeVolume(volumeName)
 
-	attachVolumeCmd := cmd.VolumeCommands()
+	attachVolumeCmd := VolumeCommands()
 
 	attachVolumeCmd.SetArgs([]string{"attach", instanceName, volumeName, "does not matter"})
 
@@ -105,9 +104,7 @@ func TestDetachVolumeCommand(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	//
-
-	detachVolumeCmd := cmd.VolumeCommands()
+	detachVolumeCmd := VolumeCommands()
 
 	detachVolumeCmd.SetArgs([]string{"detach", instanceName, volumeName})
 
