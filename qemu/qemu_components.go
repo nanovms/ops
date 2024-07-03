@@ -3,6 +3,8 @@ package qemu
 import (
 	"fmt"
 	"strings"
+
+	"github.com/nanovms/ops/lepton"
 )
 
 type drive struct {
@@ -39,6 +41,19 @@ type device struct {
 	addr    string
 }
 
+func archCheck() bool {
+	usex86 := true
+	if (isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "amd64" {
+		usex86 = true
+	}
+
+	if (!isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "arm64" {
+		usex86 = false
+	}
+
+	return usex86
+}
+
 func (dv device) String() string {
 	var sb strings.Builder
 
@@ -49,7 +64,9 @@ func (dv device) String() string {
 	// simple pci net hack -- FIXME
 	if dv.driver == "virtio-net" {
 
-		if isx86() {
+		usex86 := archCheck()
+
+		if usex86 {
 			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=%s,%s=%s", dv.driver, dv.addr, dv.devtype, dv.devid))
 		} else {
 			sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
