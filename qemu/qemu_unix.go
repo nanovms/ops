@@ -455,15 +455,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		pciBus = "pcie.0"
 	}
 
-	usex86 := true
-	// pcie root ports need to come before virtio/scsi devices
-	if (isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "amd64" {
-		usex86 = true
-	}
-
-	if (!isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "arm64" {
-		usex86 = false
-	}
+	usex86 := archCheck()
 
 	if usex86 {
 		q.addOption("-machine", "q35")
