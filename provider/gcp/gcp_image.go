@@ -25,8 +25,6 @@ const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 func amendConfig(c *types.Config) {
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		c.Uefi = true
-
-		c.Kernel = strings.Replace(c.Kernel, "/kernel.img", "-arm/kernel.img", -1)
 	}
 	if c.CloudConfig.ConfidentialVM {
 		/* Confidential VM feature can only be enabled with UEFI-compatible images */
@@ -124,6 +122,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 			Type: "UEFI_COMPATIBLE",
 		})
 	}
+
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		rb.Architecture = "ARM64"
 	} else {
