@@ -122,6 +122,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 			Type: "UEFI_COMPATIBLE",
 		})
 	}
+
 	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
 		rb.Architecture = "ARM64"
 	} else {

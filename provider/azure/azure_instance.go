@@ -11,12 +11,15 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
+	//	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
@@ -160,99 +163,109 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	sshKeyData := fakepubkey
-	nctx := context.TODO()
 
 	ctx.Logger().Log("creating the vm - this can take a few minutes")
 
-	vmClient := a.getVMClient()
+	//	vmClient := a.getVMClient()
 
-	var flavor compute.VirtualMachineSizeTypes
-	flavor = compute.VirtualMachineSizeTypes(ctx.Config().CloudConfig.Flavor)
+	var flavor armcompute.VirtualMachineSizeTypes
+	flavor = armcompute.VirtualMachineSizeTypes(ctx.Config().CloudConfig.Flavor)
 	if flavor == "" {
-		flavor = compute.StandardB1s
+		flavor = armcompute.VirtualMachineSizeTypesStandardB1S
 	}
+
+	computeClientFactory, err := armcompute.NewClientFactory(a.subID, a.cred, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	virtualMachinesClient := computeClientFactory.NewVirtualMachinesClient()
 
 	tags := getAzureDefaultTags()
 	tags["image"] = &ctx.Config().CloudConfig.ImageName
 
 	for _, tag := range ctx.Config().CloudConfig.Tags {
-		tags[tag.Key] = to.StringPtr(tag.Value)
+		tags[tag.Key] = to.Ptr(tag.Value)
 	}
 
-	var zone *[]string = nil
+	var zone []*string = nil
 	if az != "" {
-		zone = to.StringSlicePtr([]string{az})
+		zone = append(zone, to.Ptr(az))
 	}
 
-	future, err := vmClient.CreateOrUpdate(
-		nctx,
-		a.groupName,
-		vmName,
-		compute.VirtualMachine{
-			Zones:    zone,
-			Location: to.StringPtr(location),
-			Tags:     tags,
-			VirtualMachineProperties: &compute.VirtualMachineProperties{
-				HardwareProfile: &compute.HardwareProfile{
-					VMSize: flavor,
+	parameters := armcompute.VirtualMachine{
+		Location: to.Ptr(location),
+		Zones:    zone,
+		Tags:     tags,
+		Identity: &armcompute.VirtualMachineIdentity{
+			Type: to.Ptr(armcompute.ResourceIdentityTypeNone),
+		},
+		Properties: &armcompute.VirtualMachineProperties{
+			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
+				BootDiagnostics: &armcompute.BootDiagnostics{
+					Enabled:    to.Ptr(true),
+					StorageURI: to.Ptr("https://" + bucket + ".blob.core.windows.net/"),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
-						ID: to.StringPtr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/images/" + ctx.Config().CloudConfig.ImageName),
-					},
-					OsDisk: &compute.OSDisk{
-						CreateOption: compute.DiskCreateOptionTypesFromImage,
-						DeleteOption: compute.DiskDeleteOptionTypesDelete,
-					},
+			},
+			StorageProfile: &armcompute.StorageProfile{
+				ImageReference: &armcompute.ImageReference{
+					ID: to.Ptr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/galleries/sample_gallery/images/" + ctx.Config().CloudConfig.ImageName),
 				},
-				DiagnosticsProfile: &compute.DiagnosticsProfile{
-					BootDiagnostics: &compute.BootDiagnostics{
-						Enabled:    to.BoolPtr(true),
-						StorageURI: to.StringPtr("https://" + bucket + ".blob.core.windows.net/"),
+				OSDisk: &armcompute.OSDisk{
+					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
+					DeleteOption: to.Ptr(armcompute.DiskDeleteOptionTypesDelete),
+					Caching:      to.Ptr(armcompute.CachingTypesReadWrite),
+					ManagedDisk: &armcompute.ManagedDiskParameters{
+						StorageAccountType: to.Ptr(armcompute.StorageAccountTypesStandardLRS),
 					},
+					DiskSizeGB: to.Ptr[int32](1),
 				},
-				OsProfile: &compute.OSProfile{
-					ComputerName:  to.StringPtr(vmName),
-					AdminUsername: to.StringPtr(username),
-					AdminPassword: to.StringPtr(password),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
-								{
-									Path: to.StringPtr(
-										fmt.Sprintf("/home/%s/.ssh/authorized_keys",
-											username)),
-									KeyData: to.StringPtr(sshKeyData),
-								},
-							},
-						},
-					},
-				},
-				NetworkProfile: &compute.NetworkProfile{
-					NetworkInterfaces: &[]compute.NetworkInterfaceReference{
-						{
-							ID: nic.ID,
-							NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-								Primary: to.BoolPtr(true),
+			},
+			HardwareProfile: &armcompute.HardwareProfile{
+				VMSize: &flavor,
+			},
+			OSProfile: &armcompute.OSProfile{
+				ComputerName:  to.Ptr(vmName),
+				AdminUsername: to.Ptr(username),
+				AdminPassword: to.Ptr(password),
+				LinuxConfiguration: &armcompute.LinuxConfiguration{
+					SSH: &armcompute.SSHConfiguration{
+						PublicKeys: []*armcompute.SSHPublicKey{
+							{
+								Path: to.Ptr(
+									fmt.Sprintf("/home/%s/.ssh/authorized_keys",
+										username)),
+								KeyData: to.Ptr(sshKeyData),
 							},
 						},
 					},
 				},
 			},
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					{
+						ID: nic.ID,
+						Properties: &armcompute.NetworkInterfaceReferenceProperties{
+							Primary: to.Ptr(true),
+						},
+					},
+				},
+			},
 		},
-	)
-	if err != nil {
-		log.Fatalf("cannot create vm: %v\n", err.Error())
 	}
 
-	err = future.WaitForCompletionRef(nctx, vmClient.Client)
+	ctx2 := context.Background()
+
+	pollerResponse, err := virtualMachinesClient.BeginCreateOrUpdate(ctx2, a.groupName, vmName, parameters, nil)
 	if err != nil {
-		log.Fatalf("cannot get the vm create or update future response: %v\n", err.Error())
+		fmt.Println(err)
+		return nil
 	}
 
-	_, err = future.Result(*vmClient)
+	_, err = pollerResponse.PollUntilDone(ctx2, nil)
 	if err != nil {
-		log.Error(err)
+		fmt.Println(err)
+		return nil
 	}
 
 	if ctx.Config().CloudConfig.DomainName != "" {
@@ -528,7 +541,7 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 	}
 
 	// this is unique per vm || per boot?
-	vmid := to.String(vm.VMID)
+	vmid := *vm.VMID
 
 	// this has a unique expected format apparently
 	// the first part of the name in the uri is capped at 10 chars but

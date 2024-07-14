@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -49,9 +52,11 @@ type Azure struct {
 	locationDefault string
 	groupName       string
 	storageAccount  string
-	hyperVGen       compute.HyperVGenerationTypes
+	hyperVGen       armcompute.HyperVGeneration
 
-	authorizer *autorest.Authorizer
+	authorizer    *autorest.Authorizer
+	cred          *azidentity.DefaultAzureCredential
+	clientFactory *armcompute.ClientFactory
 }
 
 // NewProvider Azure
@@ -232,6 +237,16 @@ func (a *Azure) Initialize(config *types.ProviderConfig) error {
 	}
 
 	a.authorizer = &authorizer
+
+	a.cred, err = azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	a.clientFactory, err = armcompute.NewClientFactory(a.subID, a.cred, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return nil
 }
