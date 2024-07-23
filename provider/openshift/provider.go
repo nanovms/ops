@@ -3,6 +3,7 @@
 package openshift
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -159,4 +160,9 @@ func (oc *OpenShift) AttachVolume(ctx *lepton.Context, instanceName, volumeName 
 // DetachVolume detaches a volume from a nano instance
 func (oc *OpenShift) DetachVolume(ctx *lepton.Context, instanceName, volumeName string) error {
 	return nil
+}
+
+// InstanceStats show metrics for instances on openshift.
+func (oc *OpenShift) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }

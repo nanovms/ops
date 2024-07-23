@@ -2,6 +2,7 @@ package lepton
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -21,14 +22,20 @@ type CloudImage struct {
 // Cloud Providers.
 // mainly used for formatting standard response from any cloud provider
 type CloudInstance struct {
-	ID         string
-	Name       string
-	Status     string
-	Created    string // TODO: prob. should be datetime w/helpers for human formatting
-	PrivateIps []string
-	PublicIps  []string
-	Ports      []string
-	Image      string
+	ID          string
+	Name        string
+	Status      string
+	Created     string // TODO: prob. should be datetime w/helpers for human formatting
+	PrivateIps  []string
+	PublicIps   []string
+	Ports       []string
+	Image       string
+	FreeMemory  int64
+	TotalMemory int64
+}
+
+func (i CloudInstance) HumanMem() string {
+	return strconv.FormatInt((i.TotalMemory-i.FreeMemory), 10) + "mb / " + strconv.FormatInt(i.TotalMemory, 10) + "mb"
 }
 
 // MarshalJSON ensures correct json serialization of potential null

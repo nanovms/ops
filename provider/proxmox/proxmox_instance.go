@@ -576,3 +576,8 @@ func (p *ProxMox) PrintInstanceLogs(ctx *lepton.Context, instancename string, wa
 func (p *ProxMox) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil
 }
+
+// InstanceStats show metrics for instances on proxmox
+func (p *ProxMox) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}

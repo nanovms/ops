@@ -603,3 +603,8 @@ func (v *Vsphere) GetInstanceLogs(ctx *lepton.Context, instancename string) (str
 
 	return buf.String(), nil
 }
+
+// InstanceStats show metrics for instances on vsphere.
+func (p *Vsphere) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}

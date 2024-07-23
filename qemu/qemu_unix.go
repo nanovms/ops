@@ -500,6 +500,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	q.addOption("-m", rconfig.Memory)
 
 	q.addOption("-device", "virtio-rng-pci")
+	q.addOption("-device", "virtio-balloon")
 
 	disks := 1
 

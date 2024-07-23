@@ -5,6 +5,7 @@ package digitalocean
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -260,6 +261,11 @@ func (do *DigitalOcean) StopInstance(ctx *lepton.Context, instancename string) e
 // GetInstanceLogs gets instance related logs
 func (do *DigitalOcean) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil
+}
+
+// InstanceStats show metrics for instances on digitalocean.
+func (do *DigitalOcean) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }
 
 // PrintInstanceLogs writes instance logs to console

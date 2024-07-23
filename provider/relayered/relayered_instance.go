@@ -5,6 +5,7 @@ package relayered
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -236,4 +237,9 @@ func (v *Relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (s
 	}
 
 	return string(body), nil
+}
+
+// InstanceStats show metrics for instances on relayered
+func (p *Relayered) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }

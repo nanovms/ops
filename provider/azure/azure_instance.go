@@ -568,3 +568,8 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 
 	return downloadedData.String(), nil
 }
+
+// InstanceStats show metrics for instances on azure.
+func (p *Azure) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}
