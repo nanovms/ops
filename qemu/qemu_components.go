@@ -41,7 +41,7 @@ type device struct {
 	addr    string
 }
 
-func archCheck() bool {
+func ArchCheck() bool {
 	usex86 := true
 	if (isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "amd64" {
 		usex86 = true
@@ -64,7 +64,7 @@ func (dv device) String() string {
 	// simple pci net hack -- FIXME
 	if dv.driver == "virtio-net" {
 
-		usex86 := archCheck()
+		usex86 := ArchCheck()
 
 		if usex86 {
 			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=%s,%s=%s", dv.driver, dv.addr, dv.devtype, dv.devid))

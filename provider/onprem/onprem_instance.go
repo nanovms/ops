@@ -520,10 +520,15 @@ func (p *OnPrem) InstanceStats(ctx *lepton.Context) error {
 
 		last := instance.Mgmt
 
+		devid := "2"
+		if qemu.ArchCheck() {
+			devid = "3"
+		}
+
 		commands := []string{
 			`{ "execute": "qmp_capabilities" }`,
-			`{ "execute": "qom-set", "arguments": { "path": "/machine/peripheral-anon/device[3]", "property": "guest-stats-polling-interval", "value": 2}}`,
-			`{ "execute": "qom-get", "arguments": { "path": "/machine/peripheral-anon/device[3]", "property": "guest-stats" } }`,
+			`{ "execute": "qom-set", "arguments": { "path": "/machine/peripheral-anon/device[` + devid + `]", "property": "guest-stats-polling-interval", "value": 2}}`,
+			`{ "execute": "qom-get", "arguments": { "path": "/machine/peripheral-anon/device[` + devid + `]", "property": "guest-stats" } }`,
 		}
 
 		s := executeQMPLastRead(commands, last)
