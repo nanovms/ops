@@ -45,7 +45,7 @@ func VolumeCommands() *cobra.Command {
 }
 
 func volumeCreateCommand() *cobra.Command {
-	var data, size string
+	var data, size, typeof string
 	cmdVolumeCreate := &cobra.Command{
 		Use:   "create <volume_name>",
 		Short: "create volume",
@@ -54,6 +54,7 @@ func volumeCreateCommand() *cobra.Command {
 	}
 	cmdVolumeCreate.PersistentFlags().StringVarP(&data, "data", "d", "", "volume data source")
 	cmdVolumeCreate.PersistentFlags().StringVarP(&size, "size", "s", "", "volume initial size")
+	cmdVolumeCreate.PersistentFlags().StringVarP(&typeof, "typeof", "", "", "volume type")
 	return cmdVolumeCreate
 }
 
@@ -61,6 +62,7 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	data, _ := cmd.Flags().GetString("data")
 	size, _ := cmd.Flags().GetString("size")
+	typeof, _ := cmd.Flags().GetString("typeof")
 
 	c, err := getVolumeCommandDefaultConfig(cmd)
 	if err != nil {
@@ -75,7 +77,7 @@ func volumeCreateCommandHandler(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	res, err := p.CreateVolume(ctx, name, data, c.CloudConfig.Platform)
+	res, err := p.CreateVolume(ctx, name, data, typeof, c.CloudConfig.Platform)
 	if err != nil {
 		exitWithError(err.Error())
 	}
