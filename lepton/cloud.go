@@ -36,7 +36,7 @@ type CloudInstance struct {
 
 // HumanMem returns the used / total memory in human format.
 func (c CloudInstance) HumanMem() string {
-	return strconv.FormatInt((i.TotalMemory-i.FreeMemory), 10) + "mb / " + strconv.FormatInt(i.TotalMemory, 10) + "mb"
+	return strconv.FormatInt((c.TotalMemory-c.FreeMemory), 10) + "mb / " + strconv.FormatInt(c.TotalMemory, 10) + "mb"
 }
 
 // MarshalJSON ensures correct json serialization of potential null
