@@ -392,3 +392,8 @@ func (o *OpenStack) GetInstanceLogs(ctx *lepton.Context, instancename string) (s
 
 	return output, nil
 }
+
+// InstanceStats show metrics for instances on openstack
+func (o *OpenStack) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}

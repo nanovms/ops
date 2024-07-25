@@ -455,7 +455,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		pciBus = "pcie.0"
 	}
 
-	usex86 := archCheck()
+	usex86 := ArchCheck()
 
 	if usex86 {
 		q.addOption("-machine", "q35")
@@ -500,6 +500,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	q.addOption("-m", rconfig.Memory)
 
 	q.addOption("-device", "virtio-rng-pci")
+	q.addOption("-device", "virtio-balloon")
 
 	disks := 1
 

@@ -253,3 +253,8 @@ func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (st
 func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("Unsupported")
 }
+
+// InstanceStats show metrics for instances on hyperv
+func (p *Provider) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}

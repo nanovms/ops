@@ -5,6 +5,7 @@ package vultr
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -249,4 +250,9 @@ func (v *Vultr) PrintInstanceLogs(ctx *lepton.Context, instancename string, watc
 // GetInstanceLogs gets instance related logs
 func (v *Vultr) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil
+}
+
+// InstanceStats show metrics for instances on vultr.
+func (v *Vultr) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }

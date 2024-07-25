@@ -280,3 +280,8 @@ func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (st
 func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
 	return nil
 }
+
+// InstanceStats show metrics for instances on provider.
+func (p *Provider) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
+}

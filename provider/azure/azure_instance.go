@@ -19,7 +19,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-07-01/network"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
-	//	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
@@ -567,4 +566,9 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 	reader.Close()
 
 	return downloadedData.String(), nil
+}
+
+// InstanceStats show metrics for instances on azure.
+func (a *Azure) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }

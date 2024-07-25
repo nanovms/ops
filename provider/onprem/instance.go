@@ -17,6 +17,9 @@ type instance struct {
 	Mac       string   `json:"mac"`
 	Pid       string   `json:"pid"`
 	Mgmt      string   `json:"mgmt"`
+
+	FreeMemory  int64
+	TotalMemory int64
 }
 
 func (in *instance) portList() string {

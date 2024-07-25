@@ -504,6 +504,80 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 	return
 }
 
+// InstanceStats shows metrics for instance onprem .
+func (p *OnPrem) InstanceStats(ctx *lepton.Context) error {
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(instances); i++ {
+
+		instance, err := p.GetMetaInstanceByName(ctx, instances[i].Name)
+		if err != nil {
+			return err
+		}
+
+		last := instance.Mgmt
+
+		devid := "2"
+		if qemu.ArchCheck() {
+			devid = "3"
+		}
+
+		commands := []string{
+			`{ "execute": "qmp_capabilities" }`,
+			`{ "execute": "qom-set", "arguments": { "path": "/machine/peripheral-anon/device[` + devid + `]", "property": "guest-stats-polling-interval", "value": 2}}`,
+			`{ "execute": "qom-get", "arguments": { "path": "/machine/peripheral-anon/device[` + devid + `]", "property": "guest-stats" } }`,
+		}
+
+		s := executeQMPLastRead(commands, last)
+
+		var lr qmpResponse
+
+		err = json.Unmarshal([]byte(s), &lr)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		instances[i].FreeMemory = (lr.qmpReturn.Stats.FreeMemory / int64(1000000))
+		instances[i].TotalMemory = (lr.qmpReturn.Stats.TotalMemory / int64(1000000))
+	}
+
+	// perhaps this could be a new type
+	if ctx.Config().RunConfig.JSON {
+		if len(instances) == 0 {
+			fmt.Println("[]")
+			return nil
+		}
+		return json.NewEncoder(os.Stdout).Encode(instances)
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"PID", "Name", "Memory"})
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+
+	table.SetRowLine(true)
+
+	for _, i := range instances {
+		var rows []string
+
+		rows = append(rows, i.ID)
+		rows = append(rows, i.Name)
+		rows = append(rows, i.HumanMem())
+
+		table.Append(rows)
+	}
+
+	table.Render()
+
+	return nil
+
+}
+
 // ListInstances on premise
 func (p *OnPrem) ListInstances(ctx *lepton.Context) error {
 	instances, err := p.GetInstances(ctx)
@@ -592,6 +666,60 @@ func executeQMP(commands []string, last string) {
 			os.Exit(1)
 		}
 	}
+}
+
+type qmpResponse struct {
+	qmpReturn `json:"return"`
+}
+
+type qmpReturn struct {
+	Stats      qmpStats `json:"stats"`
+	LastUpdate int64    `json:"last-update"`
+}
+
+type qmpStats struct {
+	HtlbPGalloc     int64 `"json:stat-htlb-pgalloc"`
+	SwapOut         int64 `json:"stat-swap-out"`
+	AvailableMemory int64 `json:"stat-available-memory"`
+	HtlbPgfail      int64 `json:"stat-htlb-pgfail"`
+	FreeMemory      int64 `json:"stat-free-memory"`
+	MinorFaults     int64 `json:"stat-minor-faults"`
+	MajorFaults     int64 `json:"stat-major-faults"`
+	TotalMemory     int64 `json:"stat-total-memory"`
+	SwapIn          int64 `json:"stat-swap-in"`
+	DiskCaches      int64 `json:"stat-disk-caches"`
+}
+
+// bit of a hack
+func executeQMPLastRead(commands []string, last string) string {
+	lo := ""
+
+	c, err := net.Dial("tcp", "localhost:"+last)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer c.Close()
+
+	str, err := bufio.NewReader(c).ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(str)
+	}
+
+	for i := 0; i < len(commands); i++ {
+		_, err := c.Write([]byte(commands[i] + "\n"))
+		if err != nil {
+			fmt.Println(err)
+		}
+		str, err := bufio.NewReader(c).ReadString('\n')
+		lo = str
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	return lo
 }
 
 // RebootInstance from on premise

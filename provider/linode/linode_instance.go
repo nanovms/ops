@@ -4,6 +4,7 @@ package linode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -289,4 +290,9 @@ func (v *Linode) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 // GetInstanceLogs gets instance related logs
 func (v *Linode) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", nil
+}
+
+// InstanceStats show metrics for instances on Linnode
+func (v *Linode) InstanceStats(ctx *lepton.Context) error {
+	return errors.New("currently not avilable")
 }

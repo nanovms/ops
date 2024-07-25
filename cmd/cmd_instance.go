@@ -20,7 +20,7 @@ func InstanceCommands() *cobra.Command {
 	var cmdInstance = &cobra.Command{
 		Use:       "instance",
 		Short:     "manage nanos instances",
-		ValidArgs: []string{"create", "list", "delete", "stop", "start", "reboot", "logs"},
+		ValidArgs: []string{"create", "list", "delete", "stop", "start", "stats", "reboot", "logs"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -29,6 +29,7 @@ func InstanceCommands() *cobra.Command {
 
 	cmdInstance.AddCommand(instanceCreateCommand())
 	cmdInstance.AddCommand(instanceListCommand())
+	cmdInstance.AddCommand(instanceStatsCommand())
 	cmdInstance.AddCommand(instanceDeleteCommand())
 	cmdInstance.AddCommand(instanceStopCommand())
 	cmdInstance.AddCommand(instanceStartCommand())
@@ -146,6 +147,15 @@ func instanceListCommand() *cobra.Command {
 	return cmdInstanceList
 }
 
+func instanceStatsCommand() *cobra.Command {
+	var cmdInstanceStats = &cobra.Command{
+		Use:   "stats",
+		Short: "list instance stats",
+		Run:   instanceStatsCommandHandler,
+	}
+	return cmdInstanceStats
+}
+
 func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	c, err := getInstanceCommandDefaultConfig(cmd)
 	if err != nil {
@@ -158,6 +168,23 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	err = p.ListInstances(ctx)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
+func instanceStatsCommandHandler(cmd *cobra.Command, args []string) {
+	c, err := getInstanceCommandDefaultConfig(cmd)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		exitForCmd(cmd, err.Error())
+	}
+
+	err = p.InstanceStats(ctx)
 	if err != nil {
 		exitWithError(err.Error())
 	}
