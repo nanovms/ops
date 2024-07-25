@@ -2,10 +2,13 @@
 
 package ibm
 
-import "github.com/nanovms/ops/lepton"
+import (
+	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
+)
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (v *IBM) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
+func (v *IBM) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	var vol lepton.NanosVolume
 	return vol, nil
 }

@@ -458,3 +458,10 @@ func (c Config) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(cMap)
 }
+
+type CloudVolume struct {
+	Name       string
+	Typeof     string
+	Iops       int64
+	Throughput int64
+}

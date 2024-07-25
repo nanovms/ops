@@ -12,10 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 )
 
 // CreateVolume creates a snapshot and use it to create a volume
-func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, volType, provider string) (lepton.NanosVolume, error) {
+func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 	var sizeInGb int64
 	var vol lepton.NanosVolume
@@ -29,7 +30,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, volType, provider st
 	}
 
 	// Create volume
-	vol, err := lepton.CreateLocalVolume(config, name, data, provider)
+	vol, err := lepton.CreateLocalVolume(config, cv.Name, data, provider)
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
@@ -74,7 +75,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, volType, provider st
 	}
 
 	// Create tags to assign to the volume
-	tags, _ := buildAwsTags(config.CloudConfig.Tags, name)
+	tags, _ := buildAwsTags(config.CloudConfig.Tags, cv.Name)
 
 	// Create volume from snapshot
 	createVolumeInput := &ec2.CreateVolumeInput{
@@ -88,8 +89,26 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, volType, provider st
 		},
 	}
 
-	if volType != "" {
-		createVolumeInput.VolumeType = aws.String(volType)
+	if cv.Typeof != "" {
+		createVolumeInput.VolumeType = aws.String(cv.Typeof)
+	}
+
+	if cv.Iops != 0 {
+		if cv.Typeof == "" {
+			fmt.Println("Setting iops is not supported for gp2")
+			os.Exit(1)
+		}
+
+		createVolumeInput.Iops = aws.Int64(cv.Iops)
+	}
+
+	if cv.Throughput != 0 {
+		if cv.Typeof == "" {
+			fmt.Println("You can not provision iops without setting type to gp3")
+			os.Exit(1)
+		}
+
+		createVolumeInput.Throughput = aws.Int64(cv.Throughput)
 	}
 
 	if sizeInGb != 0 {

@@ -9,13 +9,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
+
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/volumeattach"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/log"
 )
 
 func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
@@ -25,7 +27,7 @@ func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
 }
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
+func (o *OpenStack) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	var vol lepton.NanosVolume
 
 	imagesClient, err := o.getImagesClient()
@@ -33,12 +35,12 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, typeof, provid
 		return vol, err
 	}
 
-	image, err := o.createImage(imagesClient, name)
+	image, err := o.createImage(imagesClient, cv.Name)
 	if err != nil {
 		return vol, err
 	}
 
-	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, provider)
+	vol, err = lepton.CreateLocalVolume(ctx.Config(), cv.Name, data, provider)
 	if err != nil {
 		return vol, err
 	}
@@ -63,7 +65,7 @@ func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, typeof, provid
 	}
 
 	createOpts := volumes.CreateOpts{
-		Name:    name,
+		Name:    cv.Name,
 		Size:    sizeInGb,
 		ImageID: image.ID,
 	}
