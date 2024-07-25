@@ -5,7 +5,7 @@ package digitalocean
 import "github.com/nanovms/ops/lepton"
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (do *DigitalOcean) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+func (do *DigitalOcean) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
 	var vol lepton.NanosVolume
 	return vol, nil
 }
