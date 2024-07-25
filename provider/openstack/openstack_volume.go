@@ -25,7 +25,7 @@ func (o *OpenStack) getVolumesClient() (*gophercloud.ServiceClient, error) {
 }
 
 // CreateVolume is a stub to satisfy VolumeService interface
-func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+func (o *OpenStack) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
 	var vol lepton.NanosVolume
 
 	imagesClient, err := o.getImagesClient()

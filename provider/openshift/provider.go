@@ -138,7 +138,7 @@ func (oc *OpenShift) PrintInstanceLogs(ctx *lepton.Context, instancename string,
 }
 
 // CreateVolume creates a volume on the openshift cluster
-func (oc *OpenShift) CreateVolume(ctx *lepton.Context, volumeName, data, provider string) (lepton.NanosVolume, error) {
+func (oc *OpenShift) CreateVolume(ctx *lepton.Context, volumeName, data, typeof, provider string) (lepton.NanosVolume, error) {
 	return lepton.NanosVolume{}, nil
 }
 

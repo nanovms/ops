@@ -15,7 +15,7 @@ import (
 )
 
 // CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
-func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
 	arch := name + ".tar.gz"

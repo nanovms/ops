@@ -12,7 +12,7 @@ import (
 )
 
 // CreateVolume creates a local volume and uploads the volume to oci
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, provider string) (vol lepton.NanosVolume, err error) {
+func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, tyepof, provider string) (vol lepton.NanosVolume, err error) {
 	return lepton.NanosVolume{}, errors.New("Unsupported")
 
 	size, err := lepton.GetSizeInGb(ctx.Config().BaseVolumeSz)

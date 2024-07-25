@@ -15,7 +15,7 @@ import (
 )
 
 // CreateVolume creates a snapshot and use it to create a volume
-func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, volType, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 	var sizeInGb int64
 	var vol lepton.NanosVolume
@@ -87,6 +87,11 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, name, data, provider string) (le
 			},
 		},
 	}
+
+	if volType != "" {
+		createVolumeInput.VolumeType = aws.String(volType)
+	}
+
 	if sizeInGb != 0 {
 		createVolumeInput.Size = &sizeInGb
 	}

@@ -16,7 +16,7 @@ import (
 )
 
 // CreateVolume uploads the volume raw file and creates a disk from it
-func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, provider string) (lepton.NanosVolume, error) {
+func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
 	var vol lepton.NanosVolume
