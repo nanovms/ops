@@ -293,6 +293,6 @@ func (v *Linode) GetInstanceLogs(ctx *lepton.Context, instancename string) (stri
 }
 
 // InstanceStats show metrics for instances on Linnode
-func (p *Linode) InstanceStats(ctx *lepton.Context) error {
+func (v *Linode) InstanceStats(ctx *lepton.Context) error {
 	return errors.New("currently not avilable")
 }

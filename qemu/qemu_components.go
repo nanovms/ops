@@ -41,6 +41,8 @@ type device struct {
 	addr    string
 }
 
+// ArchCheck returns true if the user is on or wants to use amd64
+// otherwise it returns false.
 func ArchCheck() bool {
 	usex86 := true
 	if (isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "amd64" {

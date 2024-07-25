@@ -34,7 +34,8 @@ type CloudInstance struct {
 	TotalMemory int64
 }
 
-func (i CloudInstance) HumanMem() string {
+// HumanMem returns the used / total memory in human format.
+func (c CloudInstance) HumanMem() string {
 	return strconv.FormatInt((i.TotalMemory-i.FreeMemory), 10) + "mb / " + strconv.FormatInt(i.TotalMemory, 10) + "mb"
 }
 

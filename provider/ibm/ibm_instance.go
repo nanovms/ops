@@ -277,6 +277,6 @@ func (v *IBM) GetInstanceLogs(ctx *lepton.Context, instancename string) (string,
 }
 
 // InstanceStats show metrics for instances on ibm.
-func (p *IBM) InstanceStats(ctx *lepton.Context) error {
+func (v *IBM) InstanceStats(ctx *lepton.Context) error {
 	return errors.New("currently not avilable")
 }
