@@ -363,6 +363,6 @@ func (p *Provider) waitForServerState(uuid, state string) (err error) {
 }
 
 // InstanceStats show metrics for instances on Provider.
-func (p *Provider) InstanceStats(ctx *lepton.Context) error {
+func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string) error {
 	return errors.New("currently not avilable")
 }

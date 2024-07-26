@@ -163,6 +163,6 @@ func (oc *OpenShift) DetachVolume(ctx *lepton.Context, instanceName, volumeName 
 }
 
 // InstanceStats show metrics for instances on openshift.
-func (oc *OpenShift) InstanceStats(ctx *lepton.Context) error {
+func (oc *OpenShift) InstanceStats(ctx *lepton.Context, instancename string) error {
 	return errors.New("currently not avilable")
 }

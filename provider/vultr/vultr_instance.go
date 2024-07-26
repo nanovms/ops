@@ -253,6 +253,6 @@ func (v *Vultr) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 }
 
 // InstanceStats show metrics for instances on vultr.
-func (v *Vultr) InstanceStats(ctx *lepton.Context) error {
+func (v *Vultr) InstanceStats(ctx *lepton.Context, instancename string) error {
 	return errors.New("currently not avilable")
 }
