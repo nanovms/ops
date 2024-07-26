@@ -10,22 +10,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
+
 	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v6/upcloud/request"
-	"github.com/nanovms/ops/lepton"
 )
 
 // CreateVolume creates a local volume and uploads the volume to upcloud
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (vol lepton.NanosVolume, err error) {
-	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, provider)
+func (p *Provider) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
+	vol, err := lepton.CreateLocalVolume(ctx.Config(), cv.Name, data, provider)
 	if err != nil {
-		return
+		return vol, nil
 	}
 	defer os.Remove(vol.Path)
 
-	storageDetails, err := p.createStorage(ctx, name, vol.Path)
+	storageDetails, err := p.createStorage(ctx, cv.Name, vol.Path)
 	if err != nil {
-		return
+		return vol, nil
 	}
 
 	ctx.Logger().Debugf("%+v", storageDetails)

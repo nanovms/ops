@@ -11,14 +11,16 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
+
 	compute "google.golang.org/api/compute/v1"
 )
 
 // CreateVolume creates local volume and converts it to GCP format before orchestrating the necessary upload procedures
-func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
+func (g *GCloud) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
-	arch := name + ".tar.gz"
+	arch := cv.Name + ".tar.gz"
 
 	var sizeInGb int64
 	var vol lepton.NanosVolume
@@ -31,7 +33,7 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, typeof, provider 
 		sizeInGb = int64(size)
 	}
 
-	lv, err := lepton.CreateLocalVolume(config, name, data, provider)
+	lv, err := lepton.CreateLocalVolume(config, cv.Name, data, provider)
 	if err != nil {
 		return lv, err
 	}
@@ -65,7 +67,7 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, typeof, provider 
 
 	labels := buildGcpLabels(nil, "")
 	img := &compute.Image{
-		Name:   name,
+		Name:   cv.Name,
 		Labels: labels,
 		RawDisk: &compute.ImageRawDisk{
 			Source: fmt.Sprintf(GCPStorageURL, config.CloudConfig.BucketName, arch),
@@ -81,10 +83,10 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, name, data, typeof, provider 
 	}
 
 	disk := &compute.Disk{
-		Name:        name,
+		Name:        cv.Name,
 		Labels:      labels,
 		SizeGb:      sizeInGb,
-		SourceImage: "global/images/" + name,
+		SourceImage: "global/images/" + cv.Name,
 		Type:        fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-standard", config.CloudConfig.ProjectID, config.CloudConfig.Zone),
 	}
 

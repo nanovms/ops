@@ -7,13 +7,14 @@ import (
 	"os"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
 )
 
 // CreateVolume creates a local volume and uploads the volume to upcloud
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (vol lepton.NanosVolume, err error) {
-	vol, err = lepton.CreateLocalVolume(ctx.Config(), name, data, provider)
+func (p *Provider) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
+	vol, err := lepton.CreateLocalVolume(ctx.Config(), cv.Name, data, provider)
 	if err != nil {
-		return
+		return vol, nil
 	}
 	defer os.Remove(vol.Path)
 

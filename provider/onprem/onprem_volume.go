@@ -20,12 +20,12 @@ const (
 )
 
 // CreateVolume creates volume for onprem image
-func (op *OnPrem) CreateVolume(ctx *lepton.Context, name, data, typeof string, provider string) (lepton.NanosVolume, error) {
+func (op *OnPrem) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data, provider string) (lepton.NanosVolume, error) {
 	c := ctx.Config()
 	if c.BaseVolumeSz == "" {
 		c.BaseVolumeSz = strconv.Itoa(MinimumVolumeSize)
 	}
-	return lepton.CreateLocalVolume(c, name, data, provider)
+	return lepton.CreateLocalVolume(c, cv.Name, data, provider)
 }
 
 // GetAllVolumes prints list of all onprem nanos-managed volumes

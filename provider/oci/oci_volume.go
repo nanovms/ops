@@ -8,18 +8,20 @@ import (
 	"strconv"
 
 	"github.com/nanovms/ops/lepton"
+	"github.com/nanovms/ops/types"
+
 	"github.com/oracle/oci-go-sdk/core"
 )
 
 // CreateVolume creates a local volume and uploads the volume to oci
-func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, tyepof, provider string) (vol lepton.NanosVolume, err error) {
+func (p *Provider) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	return lepton.NanosVolume{}, errors.New("Unsupported")
 
 	size, err := lepton.GetSizeInGb(ctx.Config().BaseVolumeSz)
 	if err != nil {
 		ctx.Logger().Log(err.Error())
 		err = errors.New("failed converting size to number")
-		return
+		return lepton.NanosVolume{}, err
 	}
 	sizeInGBs := int64(size)
 
@@ -31,22 +33,22 @@ func (p *Provider) CreateVolume(ctx *lepton.Context, name, data, tyepof, provide
 		CreateVolumeDetails: core.CreateVolumeDetails{
 			AvailabilityDomain: &p.availabilityDomain,
 			CompartmentId:      &p.compartmentID,
-			DisplayName:        &name,
+			DisplayName:        &cv.Name,
 			FreeformTags:       ociOpsTags,
 			SizeInGBs:          &sizeInGBs,
 		},
 	})
 	if err != nil {
-		return
+		return lepton.NanosVolume{}, err
 	}
 
-	vol = lepton.NanosVolume{
+	vol := lepton.NanosVolume{
 		ID:   *createVolumeRes.Id,
-		Name: name,
+		Name: cv.Name,
 		Size: strconv.Itoa(int(sizeInGBs)),
 	}
 
-	return
+	return vol, nil
 }
 
 // GetAllVolumes returns a list of oci volumes

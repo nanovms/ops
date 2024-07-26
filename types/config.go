@@ -458,3 +458,12 @@ func (c Config) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(cMap)
 }
+
+// CloudVolume is an abstraction used for configuring various cloud
+// based volumes.
+type CloudVolume struct {
+	Name       string
+	Typeof     string
+	Iops       int64
+	Throughput int64
+}

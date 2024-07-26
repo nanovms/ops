@@ -13,10 +13,11 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/types"
 )
 
 // CreateVolume uploads the volume raw file and creates a disk from it
-func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
+func (a *Azure) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
 	var vol lepton.NanosVolume
@@ -38,13 +39,13 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, typeof, provider s
 		sizeInGb = int64(size)
 	}
 
-	vol, err = lepton.CreateLocalVolume(config, name, data, provider)
+	vol, err = lepton.CreateLocalVolume(config, cv.Name, data, provider)
 	if err != nil {
 		return vol, fmt.Errorf("create local volume: %v", err)
 	}
 	defer os.Remove(vol.Path)
 
-	config.CloudConfig.ImageName = name
+	config.CloudConfig.ImageName = cv.Name
 
 	err = a.Storage.CopyToBucket(config, vol.Path)
 	if err != nil {
@@ -57,13 +58,13 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, typeof, provider s
 	}
 
 	container := "quickstart-nanos"
-	disk := name + ".vhd"
+	disk := cv.Name + ".vhd"
 
 	sourceURI := "https://" + bucket + ".blob.core.windows.net/" + container + "/" + disk
 
 	diskParams := compute.Disk{
 		Location: to.StringPtr(location),
-		Name:     to.StringPtr(name),
+		Name:     to.StringPtr(cv.Name),
 		DiskProperties: &compute.DiskProperties{
 			HyperVGeneration: compute.V1,
 			DiskSizeGB:       to.Int32Ptr(int32(sizeInGb)),
@@ -75,7 +76,7 @@ func (a *Azure) CreateVolume(ctx *lepton.Context, name, data, typeof, provider s
 		},
 	}
 
-	_, err = disksClient.CreateOrUpdate(context.TODO(), a.groupName, name, diskParams)
+	_, err = disksClient.CreateOrUpdate(context.TODO(), a.groupName, cv.Name, diskParams)
 	if err != nil {
 		return vol, err
 	}

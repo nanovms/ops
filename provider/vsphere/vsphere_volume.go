@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
+	otypes "github.com/nanovms/ops/types"
+
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
@@ -19,11 +21,11 @@ import (
 )
 
 // CreateVolume converts local volume raw file to mkfs and uploads required files to datastore
-func (v *Vsphere) CreateVolume(ctx *lepton.Context, name, data, typeof, provider string) (lepton.NanosVolume, error) {
+func (v *Vsphere) CreateVolume(ctx *lepton.Context, cv otypes.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 	var vol lepton.NanosVolume
 
-	vol, err := lepton.CreateLocalVolume(config, name, data, provider)
+	vol, err := lepton.CreateLocalVolume(config, cv.Name, data, provider)
 	if err != nil {
 		return vol, err
 	}
