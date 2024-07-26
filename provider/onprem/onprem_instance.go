@@ -505,15 +505,28 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 }
 
 // InstanceStats shows metrics for instance onprem .
-func (p *OnPrem) InstanceStats(ctx *lepton.Context) error {
+func (p *OnPrem) InstanceStats(ctx *lepton.Context, iname string) error {
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(instances); i++ {
+	rinstances := []lepton.CloudInstance{}
 
-		instance, err := p.GetMetaInstanceByName(ctx, instances[i].Name)
+	for i := 0; i < len(instances); i++ {
+		if iname != "" {
+			if iname != instances[i].Name {
+				continue
+			} else {
+				rinstances = append(rinstances, instances[i])
+			}
+		} else {
+			rinstances = append(rinstances, instances[i])
+		}
+	}
+
+	for i := 0; i < len(rinstances); i++ {
+		instance, err := p.GetMetaInstanceByName(ctx, rinstances[i].Name)
 		if err != nil {
 			return err
 		}
@@ -540,17 +553,17 @@ func (p *OnPrem) InstanceStats(ctx *lepton.Context) error {
 			fmt.Println(err)
 		}
 
-		instances[i].FreeMemory = (lr.qmpReturn.Stats.FreeMemory / int64(1000000))
-		instances[i].TotalMemory = (lr.qmpReturn.Stats.TotalMemory / int64(1000000))
+		rinstances[i].FreeMemory = (lr.qmpReturn.Stats.FreeMemory / int64(1000000))
+		rinstances[i].TotalMemory = (lr.qmpReturn.Stats.TotalMemory / int64(1000000))
 	}
 
 	// perhaps this could be a new type
 	if ctx.Config().RunConfig.JSON {
-		if len(instances) == 0 {
+		if len(rinstances) == 0 {
 			fmt.Println("[]")
 			return nil
 		}
-		return json.NewEncoder(os.Stdout).Encode(instances)
+		return json.NewEncoder(os.Stdout).Encode(rinstances)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -562,7 +575,7 @@ func (p *OnPrem) InstanceStats(ctx *lepton.Context) error {
 
 	table.SetRowLine(true)
 
-	for _, i := range instances {
+	for _, i := range rinstances {
 		var rows []string
 
 		rows = append(rows, i.ID)

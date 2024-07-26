@@ -153,6 +153,8 @@ func instanceStatsCommand() *cobra.Command {
 		Short: "list instance stats",
 		Run:   instanceStatsCommandHandler,
 	}
+	cmdInstanceStats.PersistentFlags().StringP("instance-name", "i", "", "instance name")
+
 	return cmdInstanceStats
 }
 
@@ -174,6 +176,8 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 }
 
 func instanceStatsCommandHandler(cmd *cobra.Command, args []string) {
+	iname, _ := cmd.Flags().GetString("instance-name")
+
 	c, err := getInstanceCommandDefaultConfig(cmd)
 	if err != nil {
 		exitWithError(err.Error())
@@ -184,7 +188,7 @@ func instanceStatsCommandHandler(cmd *cobra.Command, args []string) {
 		exitForCmd(cmd, err.Error())
 	}
 
-	err = p.InstanceStats(ctx)
+	err = p.InstanceStats(ctx, iname)
 	if err != nil {
 		exitWithError(err.Error())
 	}

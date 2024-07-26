@@ -264,7 +264,7 @@ func (do *DigitalOcean) GetInstanceLogs(ctx *lepton.Context, instancename string
 }
 
 // InstanceStats show metrics for instances on digitalocean.
-func (do *DigitalOcean) InstanceStats(ctx *lepton.Context) error {
+func (do *DigitalOcean) InstanceStats(ctx *lepton.Context, instancename string) error {
 	return errors.New("currently not avilable")
 }
 

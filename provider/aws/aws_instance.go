@@ -543,7 +543,7 @@ func (p *AWS) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch 
 }
 
 // InstanceStats show metrics for instances on aws.
-func (p *AWS) InstanceStats(ctx *lepton.Context) error {
+func (p *AWS) InstanceStats(ctx *lepton.Context, instancename string) error {
 	return errors.New("currently not avilable")
 }
 
