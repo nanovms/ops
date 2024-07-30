@@ -187,6 +187,9 @@ type ProviderConfig struct {
 	// to gcp.
 	ProjectID string `cloud:"projectid" json:",omitempty"`
 
+	// RootVolume are specific settings for the root volume.
+	RootVolume CloudVolume `cloud:"root_volume" json:",omitempty"`
+
 	// SecurityGroup
 	SecurityGroup string `json:",omitempty"`
 
@@ -462,8 +465,18 @@ func (c Config) MarshalJSON() ([]byte, error) {
 // CloudVolume is an abstraction used for configuring various cloud
 // based volumes.
 type CloudVolume struct {
-	Name       string
-	Typeof     string
-	Iops       int64
-	Throughput int64
+	Name       string `json:"name"`
+	Iops       int64  `json:"iops"`
+	Size       int64  `json:"size"`
+	Throughput int64  `json:"throughput"`
+	Typeof     string `json:"typeof"`
+}
+
+// IsCustom returns true if any custom root volume settings are set by
+// the user.
+func (cv CloudVolume) IsCustom() bool {
+	if cv.Name != "" || cv.Typeof != "" || cv.Iops != 0 || cv.Throughput != 0 {
+		return true
+	}
+	return false
 }
