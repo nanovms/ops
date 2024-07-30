@@ -183,11 +183,16 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	layout := "2006-01-02T15:04:05.000Z"
 	var image *ec2.Image
 
+	rv := ctx.Config().CloudConfig.RootVolume
+
+	// if custom block device settings are set we need the snapshotid
+	snapId := ""
 	for i := 0; i < len(result.Images); i++ {
 		if result.Images[i].Tags != nil {
 			for _, tag := range result.Images[i].Tags {
 				if *tag.Key == "Name" && *tag.Value == imgName {
 					image = result.Images[i]
+					snapId = *(result.Images[i].BlockDeviceMappings[0].Ebs.SnapshotId)
 					break
 				}
 			}
@@ -287,6 +292,45 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			{ResourceType: aws.String("instance"), Tags: tags},
 			{ResourceType: aws.String("volume"), Tags: tags},
 		},
+	}
+
+	if rv.IsCustom() {
+		ctx.Logger().Debug("setting custom root settings")
+		ebs := &ec2.EbsBlockDevice{}
+		ebs.SnapshotId = aws.String(snapId)
+
+		if rv.Typeof != "" {
+			ebs.VolumeType = aws.String(rv.Typeof)
+		}
+
+		if rv.Iops != 0 {
+			if rv.Typeof == "" {
+				fmt.Println("Setting iops is not supported for gp2")
+				os.Exit(1)
+			}
+
+			ebs.Iops = aws.Int64(rv.Iops)
+		}
+
+		if rv.Throughput != 0 {
+			if rv.Typeof == "" {
+				fmt.Println("You can not provision iops without setting type to gp3")
+				os.Exit(1)
+			}
+
+			ebs.Throughput = aws.Int64(rv.Throughput)
+		}
+
+		if rv.Size != 0 {
+			ebs.VolumeSize = aws.Int64(rv.Size)
+		}
+
+		instanceInput.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
+			&ec2.BlockDeviceMapping{
+				DeviceName: aws.String("/dev/sda1"),
+				Ebs:        ebs,
+			},
+		}
 	}
 
 	if ctx.Config().CloudConfig.DedicatedHostID != "" {
