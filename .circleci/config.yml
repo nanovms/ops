@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/go:1.22.2
+      - image: cimg/go:1.22.3
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -15,11 +15,11 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install qemu-system-x86
       - run: go install github.com/jstemmer/go-junit-report@latest
-      - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf
+      - run: wget https://github.com/bufbuild/buf/releases/download/v1.35.0/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-openapiv2-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-grpc-gateway-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.21.0/protoc-gen-openapiv2-v2.21.0-linux-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.21.0/protoc-gen-grpc-gateway-v2.21.0-linux-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
       - run: make deps
       - run: make generate
       - run: ./hack/verify-gofmt.sh
@@ -34,14 +34,14 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   nightly-build:
     docker:
-      - image: cimg/go:1.22.2
+      - image: cimg/go:1.22.3
     steps:
       - checkout
       - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-openapiv2-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
-      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.15.0/protoc-gen-grpc-gateway-v2.15.0-linux-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.21.0/protoc-gen-openapiv2-v2.21.0-linux-x86_64 -o ~/go/bin/protoc-gen-openapiv2 && chmod +x ~/go/bin/protoc-gen-openapiv2
+      - run: curl -L https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v2.21.0/protoc-gen-grpc-gateway-v2.21.0-linux-x86_64 -o ~/go/bin/protoc-gen-grpc-gateway && chmod +x ~/go/bin/protoc-gen-grpc-gateway
       - run: make generate
 
       - run: echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
