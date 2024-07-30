@@ -186,13 +186,13 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	rv := ctx.Config().CloudConfig.RootVolume
 
 	// if custom block device settings are set we need the snapshotid
-	snapId := ""
+	snapID := ""
 	for i := 0; i < len(result.Images); i++ {
 		if result.Images[i].Tags != nil {
 			for _, tag := range result.Images[i].Tags {
 				if *tag.Key == "Name" && *tag.Value == imgName {
 					image = result.Images[i]
-					snapId = *(result.Images[i].BlockDeviceMappings[0].Ebs.SnapshotId)
+					snapID = *(result.Images[i].BlockDeviceMappings[0].Ebs.SnapshotId)
 					break
 				}
 			}
@@ -297,7 +297,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	if rv.IsCustom() {
 		ctx.Logger().Debug("setting custom root settings")
 		ebs := &ec2.EbsBlockDevice{}
-		ebs.SnapshotId = aws.String(snapId)
+		ebs.SnapshotId = aws.String(snapID)
 
 		if rv.Typeof != "" {
 			ebs.VolumeType = aws.String(rv.Typeof)

@@ -472,10 +472,11 @@ type CloudVolume struct {
 	Typeof     string `json:"typeof"`
 }
 
+// IsCustom returns true if any custom root volume settings are set by
+// the user.
 func (cv CloudVolume) IsCustom() bool {
 	if cv.Name != "" || cv.Typeof != "" || cv.Iops != 0 || cv.Throughput != 0 {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
