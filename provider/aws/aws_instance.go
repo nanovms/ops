@@ -326,7 +326,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		}
 
 		instanceInput.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
-			&ec2.BlockDeviceMapping{
+			{
 				DeviceName: aws.String("/dev/sda1"),
 				Ebs:        ebs,
 			},
