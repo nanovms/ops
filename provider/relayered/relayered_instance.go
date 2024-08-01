@@ -240,6 +240,6 @@ func (v *Relayered) GetInstanceLogs(ctx *lepton.Context, instancename string) (s
 }
 
 // InstanceStats show metrics for instances on relayered
-func (v *Relayered) InstanceStats(ctx *lepton.Context, instancename string) error {
+func (v *Relayered) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("currently not avilable")
 }

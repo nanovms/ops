@@ -148,12 +148,14 @@ func instanceListCommand() *cobra.Command {
 }
 
 func instanceStatsCommand() *cobra.Command {
+	var watch bool
 	var cmdInstanceStats = &cobra.Command{
 		Use:   "stats",
 		Short: "list instance stats",
 		Run:   instanceStatsCommandHandler,
 	}
 	cmdInstanceStats.PersistentFlags().StringP("instance-name", "i", "", "instance name")
+	cmdInstanceStats.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "watch stats")
 
 	return cmdInstanceStats
 }
@@ -178,6 +180,12 @@ func instanceListCommandHandler(cmd *cobra.Command, args []string) {
 func instanceStatsCommandHandler(cmd *cobra.Command, args []string) {
 	iname, _ := cmd.Flags().GetString("instance-name")
 
+	watch, err := strconv.ParseBool(cmd.Flag("watch").Value.String())
+	if err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
 	c, err := getInstanceCommandDefaultConfig(cmd)
 	if err != nil {
 		exitWithError(err.Error())
@@ -188,7 +196,7 @@ func instanceStatsCommandHandler(cmd *cobra.Command, args []string) {
 		exitForCmd(cmd, err.Error())
 	}
 
-	err = p.InstanceStats(ctx, iname)
+	err = p.InstanceStats(ctx, iname, watch)
 	if err != nil {
 		exitWithError(err.Error())
 	}
