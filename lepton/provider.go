@@ -33,7 +33,7 @@ type Provider interface {
 
 	CreateInstance(ctx *Context) error
 	ListInstances(ctx *Context) error
-	InstanceStats(ctx *Context, instancename string) error
+	InstanceStats(ctx *Context, instancename string, watch bool) error
 	GetInstances(ctx *Context) ([]CloudInstance, error)
 	GetInstanceByName(ctx *Context, name string) (*CloudInstance, error)
 	DeleteInstance(ctx *Context, instancename string) error

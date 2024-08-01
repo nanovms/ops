@@ -504,31 +504,11 @@ func (p *OnPrem) GetInstances(ctx *lepton.Context) (instances []lepton.CloudInst
 	return
 }
 
-// InstanceStats shows metrics for instance onprem .
-func (p *OnPrem) InstanceStats(ctx *lepton.Context, iname string) error {
-	instances, err := p.GetInstances(ctx)
-	if err != nil {
-		return err
-	}
-
-	rinstances := []lepton.CloudInstance{}
-
-	for i := 0; i < len(instances); i++ {
-		if iname != "" {
-			if iname != instances[i].Name {
-				continue
-			} else {
-				rinstances = append(rinstances, instances[i])
-			}
-		} else {
-			rinstances = append(rinstances, instances[i])
-		}
-	}
-
+func (p *OnPrem) getInstancesStats(ctx *lepton.Context, rinstances []lepton.CloudInstance) ([]lepton.CloudInstance, error) {
 	for i := 0; i < len(rinstances); i++ {
 		instance, err := p.GetMetaInstanceByName(ctx, rinstances[i].Name)
 		if err != nil {
-			return err
+			fmt.Println(err)
 		}
 
 		last := instance.Mgmt
@@ -557,38 +537,79 @@ func (p *OnPrem) InstanceStats(ctx *lepton.Context, iname string) error {
 		rinstances[i].TotalMemory = (lr.qmpReturn.Stats.TotalMemory / int64(1000000))
 	}
 
-	// perhaps this could be a new type
-	if ctx.Config().RunConfig.JSON {
-		if len(rinstances) == 0 {
-			fmt.Println("[]")
-			return nil
+	return rinstances, nil
+}
+
+// InstanceStats shows metrics for instance onprem .
+func (p *OnPrem) InstanceStats(ctx *lepton.Context, iname string, watch bool) error {
+	instances, err := p.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
+
+	rinstances := []lepton.CloudInstance{}
+
+	for i := 0; i < len(instances); i++ {
+		if iname != "" {
+			if iname != instances[i].Name {
+				continue
+			} else {
+				rinstances = append(rinstances, instances[i])
+			}
+		} else {
+			rinstances = append(rinstances, instances[i])
 		}
-		return json.NewEncoder(os.Stdout).Encode(rinstances)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"PID", "Name", "Memory"})
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+	// FIXME: if we're watching no need to establish a connection
+	// everytime
+	if watch {
+		for {
+			rinstances, err = p.getInstancesStats(ctx, rinstances)
+			if err != nil {
+				fmt.Println(err)
+			}
 
-	table.SetRowLine(true)
+			json.NewEncoder(os.Stdout).Encode(rinstances)
+			time.Sleep(500 * time.Millisecond)
+		}
+	} else {
+		rinstances, err = p.getInstancesStats(ctx, rinstances)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	for _, i := range rinstances {
-		var rows []string
+		if ctx.Config().RunConfig.JSON {
+			if len(rinstances) == 0 {
+				fmt.Println("[]")
+				return nil
+			}
+			return json.NewEncoder(os.Stdout).Encode(rinstances)
+		}
 
-		rows = append(rows, i.ID)
-		rows = append(rows, i.Name)
-		rows = append(rows, i.HumanMem())
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"PID", "Name", "Memory"})
+		table.SetHeaderColor(
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
 
-		table.Append(rows)
+		table.SetRowLine(true)
+
+		for _, i := range rinstances {
+			var rows []string
+
+			rows = append(rows, i.ID)
+			rows = append(rows, i.Name)
+			rows = append(rows, i.HumanMem())
+
+			table.Append(rows)
+		}
+
+		table.Render()
+
+		return nil
 	}
-
-	table.Render()
-
-	return nil
-
 }
 
 // ListInstances on premise

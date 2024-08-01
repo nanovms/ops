@@ -255,6 +255,6 @@ func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, w
 }
 
 // InstanceStats show metrics for instances on hyperv
-func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string) error {
+func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("currently not avilable")
 }

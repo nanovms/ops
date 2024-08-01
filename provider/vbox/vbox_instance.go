@@ -296,6 +296,6 @@ func findOrCreateVmsDir() (string, error) {
 }
 
 // InstanceStats show metrics for instances on Provider
-func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string) error {
+func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("currently not avilable")
 }

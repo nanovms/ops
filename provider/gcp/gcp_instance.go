@@ -558,6 +558,6 @@ func (p *GCloud) getLogs(ctx *lepton.Context, instancename string, start int64) 
 }
 
 // InstanceStats show metrics for instances on gcp.
-func (p *GCloud) InstanceStats(ctx *lepton.Context, instancename string) error {
+func (p *GCloud) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("currently not avilable")
 }
