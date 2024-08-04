@@ -53,7 +53,7 @@ func TestDoGetImages(t *testing.T) {
 	do := &DigitalOcean{
 		Client: client,
 	}
-	images, err := do.GetImages(&lepton.Context{})
+	images, err := do.GetImages(&lepton.Context{}, "")
 	if err != nil {
 		t.Error(err)
 	}

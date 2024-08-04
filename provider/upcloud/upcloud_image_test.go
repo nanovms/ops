@@ -58,7 +58,7 @@ func TestListImages(t *testing.T) {
 		Return(&upcloud.Storages{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
-	err := p.ListImages(ctx)
+	err := p.ListImages(ctx, "")
 
 	assert.Nil(t, err)
 }
@@ -71,7 +71,7 @@ func TestGetImages(t *testing.T) {
 		Return(&upcloud.Storages{}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 
 	assert.Nil(t, err)
 
