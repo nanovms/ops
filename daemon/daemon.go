@@ -77,7 +77,7 @@ func (*server) GetImages(_ context.Context, in *imageservice.ImageListRequest) (
 	}
 
 	ctx := api.NewContext(c)
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 	if err != nil {
 		return nil, err
 	}
