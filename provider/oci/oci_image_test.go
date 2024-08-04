@@ -176,7 +176,7 @@ func TestListImages(t *testing.T) {
 			},
 		}, nil)
 
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 
 	assert.NilError(t, err)
 

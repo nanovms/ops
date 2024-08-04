@@ -24,8 +24,8 @@ type Provider interface {
 	BuildImage(ctx *Context) (string, error)
 	BuildImageWithPackage(ctx *Context, pkgpath string) (string, error)
 	CreateImage(ctx *Context, imagePath string) error
-	ListImages(ctx *Context) error
-	GetImages(ctx *Context) ([]CloudImage, error)
+	ListImages(ctx *Context, filter string) error
+	GetImages(ctx *Context, filter string) ([]CloudImage, error)
 	DeleteImage(ctx *Context, imagename string) error
 	ResizeImage(ctx *Context, imagename string, hbytes string) error
 	SyncImage(config *types.Config, target Provider, imagename string) error

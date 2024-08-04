@@ -81,7 +81,7 @@ func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error
 }
 
 // GetImages return all images on DigitalOcean
-func (do *DigitalOcean) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (do *DigitalOcean) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	opt := &godo.ListOptions{}
 	list, _, err := do.Client.Images.ListByTag(context.TODO(), opsTag, opt)
 	if err != nil {
@@ -98,8 +98,8 @@ func (do *DigitalOcean) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, err
 }
 
 // ListImages lists images on Digital Ocean.
-func (do *DigitalOcean) ListImages(ctx *lepton.Context) error {
-	images, err := do.GetImages(ctx)
+func (do *DigitalOcean) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := do.GetImages(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (do *DigitalOcean) BuildImageWithPackage(ctx *lepton.Context, pkgpath strin
 }
 
 func (do *DigitalOcean) getImageByName(ctx *lepton.Context, imageName string) (*lepton.CloudImage, error) {
-	images, err := do.GetImages(ctx)
+	images, err := do.GetImages(ctx, "")
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -67,12 +68,22 @@ func (p *OnPrem) ResizeImage(ctx *lepton.Context, imagename string, hbytes strin
 }
 
 // GetImages return all images on prem
-func (p *OnPrem) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err error) {
+func (p *OnPrem) GetImages(ctx *lepton.Context, search string) (images []lepton.CloudImage, err error) {
 	opshome := lepton.GetOpsHome()
 	imgpath := path.Join(opshome, "images")
 
 	if _, err = os.Stat(imgpath); os.IsNotExist(err) {
 		return
+	}
+
+	var r *regexp.Regexp
+	var filter bool
+	if search != "" {
+		filter = true
+		r, err = regexp.Compile(search)
+		if err != nil {
+			filter = false
+		}
 	}
 
 	err = filepath.Walk(imgpath, func(hostpath string, info os.FileInfo, err error) error {
@@ -83,12 +94,24 @@ func (p *OnPrem) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err
 			return nil
 		}
 
-		images = append(images, lepton.CloudImage{
-			Name:    info.Name(),
-			Path:    hostpath,
-			Size:    info.Size(),
-			Created: info.ModTime(),
-		})
+		if filter {
+			if r.MatchString(info.Name()) {
+				images = append(images, lepton.CloudImage{
+					Name:    info.Name(),
+					Path:    hostpath,
+					Size:    info.Size(),
+					Created: info.ModTime(),
+				})
+			}
+		} else {
+			images = append(images, lepton.CloudImage{
+				Name:    info.Name(),
+				Path:    hostpath,
+				Size:    info.Size(),
+				Created: info.ModTime(),
+			})
+		}
+
 		return nil
 	})
 
@@ -96,8 +119,8 @@ func (p *OnPrem) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err
 }
 
 // ListImages on premise
-func (p *OnPrem) ListImages(ctx *lepton.Context) error {
-	images, err := p.GetImages(ctx)
+func (p *OnPrem) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := p.GetImages(ctx, filter)
 	if err != nil {
 		return err
 	}

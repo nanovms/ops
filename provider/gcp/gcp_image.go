@@ -146,7 +146,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images on GCloud
-func (p *GCloud) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (p *GCloud) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	context := context.TODO()
 	creds, err := google.FindDefaultCredentials(context)
 	if err != nil {
@@ -192,8 +192,8 @@ func (p *GCloud) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on Google Cloud
-func (p *GCloud) ListImages(ctx *lepton.Context) error {
-	images, err := p.GetImages(ctx)
+func (p *GCloud) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := p.GetImages(ctx, filter)
 	if err != nil {
 		return err
 	}

@@ -58,12 +58,12 @@ func (oc *OpenShift) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // ListImages lists all the images
-func (oc *OpenShift) ListImages(ctx *lepton.Context) error {
+func (oc *OpenShift) ListImages(ctx *lepton.Context, filter string) error {
 	return nil
 }
 
 // GetImages gets all the images
-func (oc *OpenShift) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (oc *OpenShift) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	return nil, nil
 }
 

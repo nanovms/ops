@@ -137,7 +137,7 @@ func (o *OpenStack) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images for openstack
-func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (o *OpenStack) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	var cimages []lepton.CloudImage
 
 	imageClient, err := openstack.NewImageServiceV2(o.provider, gophercloud.EndpointOpts{
@@ -177,9 +177,9 @@ func (o *OpenStack) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 }
 
 // ListImages lists images on a datastore.
-func (o *OpenStack) ListImages(ctx *lepton.Context) error {
+func (o *OpenStack) ListImages(ctx *lepton.Context, filter string) error {
 
-	cimages, err := o.GetImages(ctx)
+	cimages, err := o.GetImages(ctx, filter)
 	if err != nil {
 		return err
 	}

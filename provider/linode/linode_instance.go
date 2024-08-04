@@ -73,7 +73,7 @@ func (v *Linode) addConfig(instanceID int, diskID int, imgName string) {
 }
 
 func (v *Linode) fetchImageID(ctx *lepton.Context) (int, error) {
-	imgs, err := v.GetImages(ctx)
+	imgs, err := v.GetImages(ctx, "")
 	if err != nil || len(imgs) == 0 {
 		return 0, fmt.Errorf("error fetching image id: %w", err)
 	}

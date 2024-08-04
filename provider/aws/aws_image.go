@@ -542,7 +542,7 @@ func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
 }
 
 // GetImages return all images on AWS
-func (p *AWS) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (p *AWS) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	var cimages []lepton.CloudImage
 
 	result, err := getAWSImages(p.ec2)
@@ -581,8 +581,8 @@ func (p *AWS) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on AWS
-func (p *AWS) ListImages(ctx *lepton.Context) error {
-	cimages, err := p.GetImages(ctx)
+func (p *AWS) ListImages(ctx *lepton.Context, filter string) error {
+	cimages, err := p.GetImages(ctx, "")
 	if err != nil {
 		return err
 	}

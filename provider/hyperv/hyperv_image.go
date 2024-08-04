@@ -102,8 +102,8 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // ListImages prints hyper-v images in table format
-func (p *Provider) ListImages(ctx *lepton.Context) error {
-	images, err := p.GetImages(ctx)
+func (p *Provider) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := p.GetImages(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 }
 
 // GetImages returns the list of images available to run hyper-v virtual machines
-func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err error) {
+func (p *Provider) GetImages(ctx *lepton.Context, filter string) (images []lepton.CloudImage, err error) {
 	if _, err = os.Stat(vhdxImagesDir); os.IsNotExist(err) {
 		return
 	}

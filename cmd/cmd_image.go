@@ -23,7 +23,7 @@ func ImageCommands() *cobra.Command {
 	var cmdImage = &cobra.Command{
 		Use:       "image",
 		Short:     "manage nanos images",
-		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cat", "cp", "ls", "tree", "env", "mirror"},
+		ValidArgs: []string{"create", "list", "delete", "resize", "sync", "cat", "cp", "ls", "search", "tree", "env", "mirror"},
 		Args:      cobra.OnlyValidArgs,
 	}
 
@@ -41,6 +41,7 @@ func ImageCommands() *cobra.Command {
 	cmdImage.AddCommand(imageTreeCommand())
 	cmdImage.AddCommand(imageEnvCommand())
 	cmdImage.AddCommand(imageMirrorCommand())
+	cmdImage.AddCommand(imageSearchCommand())
 
 	return cmdImage
 }
@@ -137,6 +138,47 @@ func imageListCommand() *cobra.Command {
 	return cmdImageList
 }
 
+func imageSearchCommand() *cobra.Command {
+	var cmdSearchList = &cobra.Command{
+		Use:   "search [imagename]",
+		Short: "search images from provider",
+		Run:   imageSearchCommandHandler,
+	}
+	return cmdSearchList
+}
+
+func imageSearchCommandHandler(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		fmt.Println("search requires a regex to search an image for")
+		os.Exit(1)
+	}
+
+	q := args[0]
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	err = p.ListImages(ctx, q)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+}
+
 func imageListCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
@@ -157,7 +199,7 @@ func imageListCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	err = p.ListImages(ctx)
+	err = p.ListImages(ctx, "")
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -209,7 +251,7 @@ func imageDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	// Check if image being used
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 	if err != nil {
 		exitWithError(err.Error())
 	}

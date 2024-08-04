@@ -191,8 +191,8 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 }
 
 // ListImages prints oci images in table format
-func (p *Provider) ListImages(ctx *lepton.Context) error {
-	images, err := p.GetImages(ctx)
+func (p *Provider) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := p.GetImages(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (p *Provider) ListImages(ctx *lepton.Context) error {
 }
 
 // GetImages returns the list of images
-func (p *Provider) GetImages(ctx *lepton.Context) (images []lepton.CloudImage, err error) {
+func (p *Provider) GetImages(ctx *lepton.Context, filter string) (images []lepton.CloudImage, err error) {
 	images = []lepton.CloudImage{}
 
 	imagesList, err := p.computeClient.ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr(p.compartmentID)})
@@ -260,7 +260,7 @@ func (p *Provider) DeleteImage(ctx *lepton.Context, imagename string) (err error
 }
 
 func (p *Provider) getImageByName(ctx *lepton.Context, name string) (*lepton.CloudImage, error) {
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 	if err != nil {
 		return nil, err
 	}

@@ -91,7 +91,7 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images for vsphere
-func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *Vsphere) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	var cimages []lepton.CloudImage
 
 	f := find.NewFinder(v.client, true)
@@ -146,8 +146,8 @@ func (v *Vsphere) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 // This is incredibly naive at the moment and probably worth putting
 // under a root folder.
 // essentially does the equivalent of 'govc datastore.ls'
-func (v *Vsphere) ListImages(ctx *lepton.Context) error {
-	images, err := v.GetImages(ctx)
+func (v *Vsphere) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := v.GetImages(ctx, "")
 	if err != nil {
 		return err
 	}

@@ -117,7 +117,7 @@ type Image struct {
 
 // GetImages return all images on relayered
 // needs tags added
-func (v *Relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *Relayered) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	client := &http.Client{}
 
 	uri := baseURI + "/images/list"
@@ -169,8 +169,8 @@ func (v *Relayered) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) 
 }
 
 // ListImages lists images on relayered
-func (v *Relayered) ListImages(ctx *lepton.Context) error {
-	images, err := v.GetImages(ctx)
+func (v *Relayered) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := v.GetImages(ctx, filter)
 	if err != nil {
 		fmt.Println(err)
 	}
