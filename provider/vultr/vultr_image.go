@@ -77,7 +77,7 @@ func (v *Vultr) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images on Vultr
-func (v *Vultr) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *Vultr) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	snaps, _, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,
 		Cursor:  "",
@@ -104,7 +104,7 @@ func (v *Vultr) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on Vultr
-func (v *Vultr) ListImages(ctx *lepton.Context) error {
+func (v *Vultr) ListImages(ctx *lepton.Context, filter string) error {
 
 	snaps, _, _, err := v.Client.Snapshot.List(context.TODO(), &govultr.ListOptions{
 		PerPage: 100,

@@ -145,7 +145,7 @@ type Image struct {
 
 // GetImages return all images on IBM
 // needs tags added
-func (v *IBM) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *IBM) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	client := &http.Client{}
 
 	c := ctx.Config()
@@ -196,8 +196,8 @@ func (v *IBM) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on IBM
-func (v *IBM) ListImages(ctx *lepton.Context) error {
-	images, err := v.GetImages(ctx)
+func (v *IBM) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := v.GetImages(ctx, filter)
 	if err != nil {
 		fmt.Println(err)
 	}

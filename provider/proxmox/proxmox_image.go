@@ -150,7 +150,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images on ProxMox
-func (p *ProxMox) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (p *ProxMox) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	return nil, nil
 }
 
@@ -166,7 +166,7 @@ type ImageInfo struct {
 }
 
 // ListImages lists images on ProxMox
-func (p *ProxMox) ListImages(ctx *lepton.Context) error {
+func (p *ProxMox) ListImages(ctx *lepton.Context, filter string) error {
 
 	var err error
 

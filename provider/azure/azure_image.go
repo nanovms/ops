@@ -143,7 +143,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	dName := c.CloudConfig.ImageName + ".vhd"
 
-	images, err := a.GetImages(ctx)
+	images, err := a.GetImages(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (a *Azure) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // GetImages return all images for azure
-func (a *Azure) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (a *Azure) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	var cimages []lepton.CloudImage
 
 	pager := a.clientFactory.NewGalleryImagesClient().NewListByGalleryPager(a.groupName, a.galleryName(), nil)
@@ -226,9 +226,9 @@ func (a *Azure) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on azure
-func (a *Azure) ListImages(ctx *lepton.Context) error {
+func (a *Azure) ListImages(ctx *lepton.Context, filter string) error {
 
-	cimages, err := a.GetImages(ctx)
+	cimages, err := a.GetImages(ctx, "")
 	if err != nil {
 		return err
 	}

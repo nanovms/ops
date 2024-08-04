@@ -69,7 +69,7 @@ type Image struct {
 }
 
 // GetImages return all images on Linode
-func (v *Linode) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (v *Linode) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	token := os.Getenv("TOKEN")
 	client := &http.Client{}
 
@@ -118,8 +118,8 @@ func (v *Linode) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
 }
 
 // ListImages lists images on Linode
-func (v *Linode) ListImages(ctx *lepton.Context) error {
-	images, err := v.GetImages(ctx)
+func (v *Linode) ListImages(ctx *lepton.Context, filter string) error {
+	images, err := v.GetImages(ctx, "")
 	if err != nil {
 		fmt.Println(err)
 	}

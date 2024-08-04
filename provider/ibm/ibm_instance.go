@@ -30,7 +30,7 @@ func (v *IBM) CreateInstance(ctx *lepton.Context) error {
 
 	region := extractRegionFromZone(zone)
 
-	imgs, err := v.GetImages(ctx)
+	imgs, err := v.GetImages(ctx, "")
 	if err != nil {
 		fmt.Println(err)
 	}

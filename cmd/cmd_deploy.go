@@ -74,7 +74,7 @@ func deployCommandHandler(cmd *cobra.Command, args []string) {
 	}
 
 	// Delete image with the same name
-	images, err := p.GetImages(ctx)
+	images, err := p.GetImages(ctx, "")
 	if err != nil {
 		exitWithError(err.Error())
 	}
