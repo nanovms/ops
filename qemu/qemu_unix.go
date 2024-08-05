@@ -481,11 +481,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 		q.addOption("-machine", "gic-version=2")
 
-		// https://github.com/kubernetes/minikube/pull/14291
-		// https://github.com/utmapp/UTM/issues/3946
-
-		q.addOption("-machine", "highmem=off")
-
 		q.addOption("-kernel", rconfig.Kernel)
 
 		q.addOption("-device", "virtio-blk-pci,drive=hd0")
