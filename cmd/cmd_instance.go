@@ -59,6 +59,8 @@ func instanceCreateCommand() *cobra.Command {
 	cmdInstanceCreate.PersistentFlags().Bool("bridged", false, "bridge [local only]")
 	cmdInstanceCreate.PersistentFlags().StringP("tap", "", "", "tap interface [local only]")
 	cmdInstanceCreate.PersistentFlags().StringP("ip-address", "", "", "static ip address [local only]")
+	cmdInstanceCreate.PersistentFlags().StringP("memory", "m", "", "RAM size [local only]")
+	cmdInstanceCreate.PersistentFlags().Bool("qmp", false, "qmp [local only]")
 
 	return cmdInstanceCreate
 }
@@ -96,6 +98,18 @@ func instanceCreateCommandHandler(cmd *cobra.Command, args []string) {
 		c.RunConfig.Bridged = bridged
 		c.RunConfig.IPAddress = ipAddress
 		c.RunConfig.NetMask = "255.255.255.0" // stubbed
+	}
+
+	// local only
+	qmp, _ := cmd.Flags().GetBool("qmp")
+	if qmp {
+		c.RunConfig.QMP = true
+	}
+
+	// local only
+	mem, _ := cmd.Flags().GetString("memory")
+	if mem != "" {
+		c.RunConfig.Memory = mem
 	}
 
 	if instanceName != "" {
