@@ -399,6 +399,13 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	jsonOutput, err := flags.GetBool("json")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	files := []fdr{}
+
 	filepath.Walk(expackage, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -408,13 +415,30 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 			return nil
 		}
 		if info.IsDir() {
-			fmt.Println("Dir :" + contentpath)
+			files = append(files, fdr{Name: contentpath, Dir: true})
 		} else {
-			fmt.Println("File :" + contentpath)
+			files = append(files, fdr{Name: contentpath, Dir: false})
 		}
 
 		return nil
 	})
+
+	if jsonOutput {
+		json.NewEncoder(os.Stdout).Encode(files)
+	} else {
+		for i := 0; i < len(files); i++ {
+			if files[i].Dir {
+				fmt.Println("Dir :" + files[i].Name)
+			} else {
+				fmt.Println("File :" + files[i].Name)
+			}
+		}
+	}
+}
+
+type fdr struct {
+	Name string
+	Dir  bool
 }
 
 func addCommandHandler(cmd *cobra.Command, args []string) {
