@@ -530,7 +530,10 @@ func (p *OnPrem) getInstancesStats(ctx *lepton.Context, rinstances []lepton.Clou
 
 		err = json.Unmarshal([]byte(s), &lr)
 		if err != nil {
-			fmt.Println(err)
+			// silently fail here as sometimes we get invalid values
+			// (eg: at instance start)
+			//
+			//			fmt.Println(err)
 		}
 
 		rinstances[i].FreeMemory = (lr.qmpReturn.Stats.FreeMemory / int64(1000000))
