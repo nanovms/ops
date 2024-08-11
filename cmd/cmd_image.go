@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/nanovms/ops/fs"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -698,8 +699,62 @@ func imageTreeCommand() *cobra.Command {
 func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 	reader := getLocalImageReader(flags, args)
-	dumpFSEntry(reader, "/", 0)
-	reader.Close()
+
+	jsonOutput, err := flags.GetBool("json")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	if jsonOutput {
+		files, err := dumpFSEntryJSON(reader, "/")
+		if err != nil {
+			fmt.Println(err)
+		}
+		reader.Close()
+
+		json.NewEncoder(os.Stdout).Encode(files)
+		return
+
+	} else {
+		dumpFSEntry(reader, "/", 0)
+		reader.Close()
+	}
+}
+
+func dumpFSEntryJSON(reader *fs.Reader, srcPath string) ([]string, error) {
+	files := []string{}
+
+	fileInfo, err := reader.Stat(srcPath)
+
+	if err != nil {
+		exitWithError(fmt.Sprintf("cannot access '%s': %v", srcPath, err))
+	}
+
+	switch fileInfo.Mode() {
+	case os.ModeDir:
+		dirEntries, err := reader.ReadDir(srcPath)
+		if err != nil {
+			exitWithError(fmt.Sprintf("cannot read directory '%s': %v", srcPath, err))
+		}
+		for _, entry := range dirEntries {
+			p, err := dumpFSEntryJSON(reader, path.Join(srcPath, entry.Name()))
+			if err != nil {
+				fmt.Println(err)
+			}
+			for x := 0; x < len(p); x++ {
+				if fileInfo.Name() == "/" {
+					files = append(files, fileInfo.Name()+p[x])
+				} else {
+					files = append(files, fileInfo.Name()+"/"+p[x])
+				}
+			}
+		}
+	case os.ModeSymlink:
+		files = append(files, fileInfo.Name())
+	case 0:
+		files = append(files, fileInfo.Name())
+	}
+	return files, nil
 }
 
 func dumpFSEntry(reader *fs.Reader, srcPath string, indent int) {
