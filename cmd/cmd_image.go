@@ -714,11 +714,10 @@ func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
 
 		json.NewEncoder(os.Stdout).Encode(files)
 		return
-
-	} else {
-		dumpFSEntry(reader, "/", 0)
-		reader.Close()
 	}
+
+	dumpFSEntry(reader, "/", 0)
+	reader.Close()
 }
 
 func dumpFSEntryJSON(reader *fs.Reader, srcPath string) ([]string, error) {
