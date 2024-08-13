@@ -47,6 +47,7 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 			BuildDir:   "",
 			Debugflags: []string{"trace", "debugsyscalls", "fault", "futex_trace", "syscall_summary"}, // "futex_trace" is just for temporay compatibility
 			Force:      true,
+			Klibs:      []string{"strace"},
 			NoTrace:    []string{"a"},
 			RunConfig: types.RunConfig{
 				Accel:      true,
