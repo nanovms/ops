@@ -4,9 +4,7 @@ import (
 	"debug/elf"
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -81,9 +79,7 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 	}
 
 	if (flags.Trace || flags.SyscallSummary) && !slices.Contains(c.Klibs, "strace") {
-		if _, err := os.Stat(filepath.Join(c.KlibDir, "strace")); err == nil {
-			c.Klibs = append(c.Klibs, "strace") // debugsyscalls, notrace, tracelist, syscall_summary
-		}
+		c.Klibs = append(c.Klibs, "strace") // debugsyscalls, notrace, tracelist, syscall_summary
 	}
 
 	if flags.MissingFiles {
