@@ -180,12 +180,14 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 
 	c.NameServers = []string{dnsIP}
 
-	l := filepath.Join(api.GetOpsHome(), "packages")
-	if local {
-		l = filepath.Join(api.GetOpsHome(), "local_packages")
-	}
+	/*
+		l := filepath.Join(api.GetOpsHome(), "packages")
+		if local {
+			l = filepath.Join(api.GetOpsHome(), "local_packages")
+		}
+	*/
 
-	api.ValidateELF(filepath.Join(l, executableName))
+	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), "sysroot/"+executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -256,7 +258,7 @@ func (com Compose) spawnDNS(non string) string {
 		Package: "eyberg/ops-dns:0.0.1",
 	}
 
-	executableName := c.Program
+	//	executableName := c.Program
 
 	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
 
@@ -269,8 +271,17 @@ func (com Compose) spawnDNS(non string) string {
 
 	unWarpConfig(ppath, c)
 
-	e := strings.ReplaceAll(pkgFlags.Package, ":", "_")
-	api.ValidateELF(filepath.Join(api.GetOpsHome(), "packages", e+"/"+executableName))
+	//	e := strings.ReplaceAll(pkgFlags.Package, ":", "_")
+
+	packageFolder := filepath.Base(pkgFlags.PackagePath())
+	executableName := c.Program
+	if strings.Contains(executableName, packageFolder) {
+		executableName = filepath.Base(executableName)
+	} else {
+		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
+	}
+
+	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -295,6 +306,8 @@ func (com Compose) spawnDNS(non string) string {
 
 	c.Env = env
 
+	api.AltGOARCH = "amd64"
+
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
 	if err != nil {
@@ -313,6 +326,7 @@ type Package struct {
 	Pkg   string
 	Name  string
 	Local bool
+	Arch  string
 }
 
 // ComposeFile represents a configuration for ops compose.
