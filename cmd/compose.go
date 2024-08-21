@@ -90,7 +90,7 @@ func (com Compose) UP(composeFile string) {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, dnsIP, com.config)
+		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, y.Packages[i].Arch, dnsIP, com.config)
 		ip, err := com.waitForIP(pid)
 		if err != nil {
 			fmt.Println(err)
@@ -147,7 +147,9 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 	}
 }
 
-func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP string, c *types.Config) string {
+func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch string, dnsIP string, c *types.Config) string {
+	api.AltGOARCH = arch // this isn't really mt-safe..
+
 	pkgFlags := PkgCommandFlags{
 		Package:      pkgName,
 		LocalPackage: local,
@@ -160,18 +162,17 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 
 	unWarpConfig(ppath, c)
 
-	// ideally all of this should happen in one place
-	if c.Kernel == "" {
-		version, err := getCurrentVersion()
-		if err != nil {
-			fmt.Println(err)
-		}
-		version = setKernelVersion(version)
-
-		c.Kernel = getKernelVersion(version)
-
-		c.RunConfig.Kernel = c.Kernel
+	// we need to reset this for each instance in the compose.
+	// FIXME: this is not mt-safe at all; eventually api.AltGOARCH needs
+	// to be instantiated per instance - it's just that every other
+	// operation in ops assumes a single event.
+	version, err := getCurrentVersion()
+	if err != nil {
+		fmt.Println(err)
 	}
+	version = setKernelVersion(version)
+	c.Kernel = getKernelVersion(version)
+	c.RunConfig.Kernel = c.Kernel
 
 	executableName := c.Program
 
@@ -180,12 +181,12 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 
 	c.NameServers = []string{dnsIP}
 
-	l := filepath.Join(api.GetOpsHome(), "packages")
-	if local {
-		l = filepath.Join(api.GetOpsHome(), "local_packages")
+	packageFolder := filepath.Base(pkgFlags.PackagePath())
+	if strings.Contains(executableName, packageFolder) {
+		executableName = filepath.Base(executableName)
+	} else {
+		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
 	}
-
-	api.ValidateELF(filepath.Join(l, executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -231,6 +232,8 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 	return pid
 }
 
+// spawnDNS will grab whatever native pkg exists for the platform.
+// no need to set a custom one.
 func (com Compose) spawnDNS(non string) string {
 	c := api.NewConfig()
 	c.Program = "dns"
@@ -256,8 +259,6 @@ func (com Compose) spawnDNS(non string) string {
 		Package: "eyberg/ops-dns:0.0.1",
 	}
 
-	executableName := c.Program
-
 	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
 
 	_, err := os.Stat(ppath)
@@ -269,8 +270,15 @@ func (com Compose) spawnDNS(non string) string {
 
 	unWarpConfig(ppath, c)
 
-	e := strings.ReplaceAll(pkgFlags.Package, ":", "_")
-	api.ValidateELF(filepath.Join(api.GetOpsHome(), "packages", e+"/"+executableName))
+	packageFolder := filepath.Base(pkgFlags.PackagePath())
+	executableName := c.Program
+	if strings.Contains(executableName, packageFolder) {
+		executableName = filepath.Base(executableName)
+	} else {
+		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
+	}
+
+	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -313,6 +321,7 @@ type Package struct {
 	Pkg   string
 	Name  string
 	Local bool
+	Arch  string
 }
 
 // ComposeFile represents a configuration for ops compose.
