@@ -90,7 +90,7 @@ func (com Compose) UP(composeFile string) {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, dnsIP, com.config)
+		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, y.Packages[i].Arch, dnsIP, com.config)
 		ip, err := com.waitForIP(pid)
 		if err != nil {
 			fmt.Println(err)
@@ -147,7 +147,10 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 	}
 }
 
-func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP string, c *types.Config) string {
+func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch string, dnsIP string, c *types.Config) string {
+	fmt.Printf("arch shuld be: %s\n", arch)
+	api.AltGOARCH = arch // this isn't really mt-safe..
+
 	pkgFlags := PkgCommandFlags{
 		Package:      pkgName,
 		LocalPackage: local,
@@ -161,17 +164,22 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 	unWarpConfig(ppath, c)
 
 	// ideally all of this should happen in one place
-	if c.Kernel == "" {
-		version, err := getCurrentVersion()
-		if err != nil {
-			fmt.Println(err)
-		}
-		version = setKernelVersion(version)
+	//	if c.Kernel == "" {
+	// we need to reset this for each instance in the compose.
 
-		c.Kernel = getKernelVersion(version)
-
-		c.RunConfig.Kernel = c.Kernel
+	version, err := getCurrentVersion()
+	if err != nil {
+		fmt.Println(err)
 	}
+	version = setKernelVersion(version)
+
+	c.Kernel = getKernelVersion(version)
+
+	fmt.Printf("setting %s\n", c.Kernel)
+
+	c.RunConfig.Kernel = c.Kernel
+	//	}
+	fmt.Printf("setting %s\n", c.Kernel)
 
 	executableName := c.Program
 
@@ -187,7 +195,17 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, dnsIP 
 		}
 	*/
 
-	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), "sysroot/"+executableName))
+	packageFolder := filepath.Base(pkgFlags.PackagePath())
+	//	executableName := c.Program
+	if strings.Contains(executableName, packageFolder) {
+		executableName = filepath.Base(executableName)
+	} else {
+		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
+	}
+
+	//	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
+
+	//	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), "sysroot/"+executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -241,6 +259,8 @@ func (com Compose) spawnDNS(non string) string {
 	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", "dns")
 
+	fmt.Println("using %s\n", version)
+
 	// ideally all of this should happen in one place
 	if c.Kernel == "" {
 		version, err := getCurrentVersion()
@@ -250,6 +270,8 @@ func (com Compose) spawnDNS(non string) string {
 		version = setKernelVersion(version)
 
 		c.Kernel = getKernelVersion(version)
+
+		fmt.Println("using kernel of %s", c.Kernel)
 
 		c.RunConfig.Kernel = c.Kernel
 	}
@@ -305,8 +327,6 @@ func (com Compose) spawnDNS(non string) string {
 	env := map[string]string{"non": non}
 
 	c.Env = env
-
-	api.AltGOARCH = "amd64"
 
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
