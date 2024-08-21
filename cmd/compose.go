@@ -169,7 +169,9 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 
 	unWarpConfig(ppath, c)
 
-	c.BaseVolumeSz = baseVolumeSz
+	if baseVolumeSz != "" {
+		c.BaseVolumeSz = baseVolumeSz
+	}
 
 	// we need to reset this for each instance in the compose.
 	// FIXME: this is not mt-safe at all; eventually api.AltGOARCH needs
