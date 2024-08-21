@@ -90,7 +90,7 @@ func (com Compose) UP(composeFile string) {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i].Name, y.Packages[i].Pkg, y.Packages[i].Local, y.Packages[i].Arch, dnsIP, com.config)
+		pid := com.spawnProgram(y.Packages[i], dnsIP, com.config)
 		ip, err := com.waitForIP(pid)
 		if err != nil {
 			fmt.Println(err)
@@ -147,7 +147,14 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 	}
 }
 
-func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch string, dnsIP string, c *types.Config) string {
+func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config) string {
+
+	pkgName := comp.Name
+	pname := comp.Pkg
+	local := comp.Local
+	arch := comp.Arch
+	baseVolumeSz := comp.BaseVolumeSz
+
 	api.AltGOARCH = arch // this isn't really mt-safe..
 
 	pkgFlags := PkgCommandFlags{
@@ -161,6 +168,10 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch s
 	}
 
 	unWarpConfig(ppath, c)
+
+	if baseVolumeSz != "" {
+		c.BaseVolumeSz = baseVolumeSz
+	}
 
 	// we need to reset this for each instance in the compose.
 	// FIXME: this is not mt-safe at all; eventually api.AltGOARCH needs
@@ -316,17 +327,18 @@ func (com Compose) spawnDNS(non string) string {
 	return pid
 }
 
-// Package is a part of the compose yaml file.
-type Package struct {
-	Pkg   string
-	Name  string
-	Local bool
-	Arch  string
+// ComposePackage is a part of the compose yaml file.
+type ComposePackage struct {
+	Pkg          string
+	Name         string
+	Local        bool
+	Arch         string
+	BaseVolumeSz string `yaml:"base_volume_sz"`
 }
 
 // ComposeFile represents a configuration for ops compose.
 type ComposeFile struct {
-	Packages []Package
+	Packages []ComposePackage
 }
 
 func genNon(length int) string {
