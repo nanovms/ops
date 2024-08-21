@@ -148,7 +148,6 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 }
 
 func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch string, dnsIP string, c *types.Config) string {
-	fmt.Printf("arch shuld be: %s\n", arch)
 	api.AltGOARCH = arch // this isn't really mt-safe..
 
 	pkgFlags := PkgCommandFlags{
@@ -163,23 +162,17 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch s
 
 	unWarpConfig(ppath, c)
 
-	// ideally all of this should happen in one place
-	//	if c.Kernel == "" {
 	// we need to reset this for each instance in the compose.
-
+	// FIXME: this is not mt-safe at all; eventually api.AltGOARCH needs
+	// to be instantiated per instance - it's just that every other
+	// operation in ops assumes a single event.
 	version, err := getCurrentVersion()
 	if err != nil {
 		fmt.Println(err)
 	}
 	version = setKernelVersion(version)
-
 	c.Kernel = getKernelVersion(version)
-
-	fmt.Printf("setting %s\n", c.Kernel)
-
 	c.RunConfig.Kernel = c.Kernel
-	//	}
-	fmt.Printf("setting %s\n", c.Kernel)
 
 	executableName := c.Program
 
@@ -188,24 +181,12 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch s
 
 	c.NameServers = []string{dnsIP}
 
-	/*
-		l := filepath.Join(api.GetOpsHome(), "packages")
-		if local {
-			l = filepath.Join(api.GetOpsHome(), "local_packages")
-		}
-	*/
-
 	packageFolder := filepath.Base(pkgFlags.PackagePath())
-	//	executableName := c.Program
 	if strings.Contains(executableName, packageFolder) {
 		executableName = filepath.Base(executableName)
 	} else {
 		executableName = filepath.Join(api.PackageSysRootFolderName, executableName)
 	}
-
-	//	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), executableName))
-
-	//	api.ValidateELF(filepath.Join(pkgFlags.PackagePath(), "sysroot/"+executableName))
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
@@ -251,6 +232,8 @@ func (com Compose) spawnProgram(pkgName string, pname string, local bool, arch s
 	return pid
 }
 
+// spawnDNS will grab whatever native pkg exists for the platform.
+// no need to set a custom one.
 func (com Compose) spawnDNS(non string) string {
 	c := api.NewConfig()
 	c.Program = "dns"
@@ -258,8 +241,6 @@ func (com Compose) spawnDNS(non string) string {
 	version := api.LocalReleaseVersion
 	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", "dns")
-
-	fmt.Println("using %s\n", version)
 
 	// ideally all of this should happen in one place
 	if c.Kernel == "" {
@@ -271,16 +252,12 @@ func (com Compose) spawnDNS(non string) string {
 
 		c.Kernel = getKernelVersion(version)
 
-		fmt.Println("using kernel of %s", c.Kernel)
-
 		c.RunConfig.Kernel = c.Kernel
 	}
 
 	pkgFlags := PkgCommandFlags{
 		Package: "eyberg/ops-dns:0.0.1",
 	}
-
-	//	executableName := c.Program
 
 	ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
 
@@ -292,8 +269,6 @@ func (com Compose) spawnDNS(non string) string {
 	}
 
 	unWarpConfig(ppath, c)
-
-	//	e := strings.ReplaceAll(pkgFlags.Package, ":", "_")
 
 	packageFolder := filepath.Base(pkgFlags.PackagePath())
 	executableName := c.Program
