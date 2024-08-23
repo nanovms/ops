@@ -17,6 +17,7 @@ type instance struct {
 	Mac       string   `json:"mac"`
 	Pid       string   `json:"pid"`
 	Mgmt      string   `json:"mgmt"`
+	Arch      string   `json:"arch"`
 
 	FreeMemory  int64
 	TotalMemory int64
