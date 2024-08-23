@@ -126,12 +126,18 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 
 	instances := path.Join(opshome, "instances")
 
+	arch := "arm64"
+	if qemu.ArchCheck() {
+		arch = "amd64"
+	}
+
 	i := instance{
 		Instance: c.RunConfig.InstanceName,
 		Image:    c.RunConfig.ImageName,
 		Ports:    c.RunConfig.Ports,
 		Pid:      pid,
 		Mgmt:     c.RunConfig.Mgmt,
+		Arch:     arch,
 	}
 
 	if c.RunConfig.Bridged {
@@ -514,7 +520,7 @@ func (p *OnPrem) getInstancesStats(ctx *lepton.Context, rinstances []lepton.Clou
 		last := instance.Mgmt
 
 		devid := "2"
-		if qemu.ArchCheck() {
+		if instance.Arch == "amd64" {
 			devid = "3"
 		}
 

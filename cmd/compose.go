@@ -229,6 +229,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 
 	c.RunConfig.InstanceName = pname
 	c.CloudConfig.ImageName = pname
+	c.RunConfig.QMP = true
 
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
@@ -313,6 +314,7 @@ func (com Compose) spawnDNS(non string) string {
 	env := map[string]string{"non": non}
 
 	c.Env = env
+	c.RunConfig.QMP = true
 
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
