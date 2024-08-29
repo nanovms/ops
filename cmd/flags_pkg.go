@@ -193,7 +193,6 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	c.Version = pkgConfig.Version
 
 	c.Language = pkgConfig.Language
-	c.Runtime = pkgConfig.Runtime
 	c.Description = pkgConfig.Description
 
 	c.Args = append(pkgConfig.Args, c.Args...)

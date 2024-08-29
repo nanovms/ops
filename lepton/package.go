@@ -37,7 +37,6 @@ type PackageList struct {
 
 // Package is the definition of an OPS package.
 type Package struct {
-	Runtime     string `json:"runtime"`
 	Version     string `json:"version"`
 	Language    string `json:"language"`
 	Description string `json:"description,omitempty"`
@@ -624,7 +623,6 @@ func newManifestConfig(c *types.Config) *types.Config {
 
 		Version:     c.Version,
 		Language:    c.Language,
-		Runtime:     c.Runtime,
 		Description: c.Description,
 
 		// default zero value

@@ -122,9 +122,6 @@ type Config struct {
 	// Language
 	Language string `json:",omitempty"`
 
-	// Runtime
-	Runtime string `json:",omitempty"`
-
 	// Description
 	Description string `json:",omitempty"`
 

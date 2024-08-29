@@ -173,7 +173,6 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 		if filter &&
 			!(r.MatchString(pkg.Language) ||
-				r.MatchString(pkg.Runtime) ||
 				r.MatchString(pkg.Name) ||
 				r.MatchString(pkg.Namespace)) {
 			continue
@@ -182,7 +181,6 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		row = append(row, pkg.Name)
 		row = append(row, pkg.Version)
 		row = append(row, pkg.Language)
-		row = append(row, pkg.Runtime)
 		row = append(row, pkg.Arch)
 		row = append(row, pkg.Description)
 		rows = append(rows, row)
@@ -253,7 +251,6 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 		row = append(row, pkg.Name)
 		row = append(row, pkg.Version)
 		row = append(row, pkg.Language)
-		row = append(row, pkg.Runtime)
 		row = append(row, pkg.Arch)
 		row = append(row, pkg.Description)
 		rows = append(rows, row)
@@ -938,9 +935,8 @@ func loadCommandHandler(cmd *cobra.Command, args []string) {
 
 func pkgTable(packages []api.Package) *tablewriter.Table {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "Runtime", "CPU Arch", "Description"})
+	table.SetHeader([]string{"Namespace", "PackageName", "Version", "Language", "CPU Arch", "Description"})
 	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},

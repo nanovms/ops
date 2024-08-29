@@ -25,7 +25,6 @@ func BuildRequestForArchiveUpload(namespace, name string, pkg Package, archiveLo
 		"name":        name,
 		"description": pkg.Description,
 		"language":    pkg.Language,
-		"runtime":     pkg.Runtime,
 		"version":     pkg.Version,
 		"arch":        arch,
 		"namespace":   namespace,
