@@ -90,14 +90,18 @@ func (q *qemu) Stop() {
 	if q.cmd != nil {
 		fmt.Println("death")
 
+		// {"execute": "system_powerdown"}
+
 		commands := []string{
 			`{ "execute": "qmp_capabilities" }`,
-			`{ "execute": "stop" }`,
+			`{ "execute": "system_powerdown" }`,
+			//			`{ "execute": "stop" }`,
 		}
 
 		if q.mgmt != "" {
 			fmt.Println("shutting vm down")
 			ExecuteQMP(commands, q.mgmt)
+			fmt.Println("done")
 			time.Sleep(2 * time.Second)
 		}
 
@@ -168,6 +172,9 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 			log.Error(err)
 		}
 	} else {
+		q.cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid: true,
+		}
 		if err := q.cmd.Run(); err != nil {
 			log.Error(err)
 		}
