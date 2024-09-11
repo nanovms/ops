@@ -7,6 +7,9 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	mrand "math/rand"
+	"time"
+
 	"errors"
 	"fmt"
 	"os"
@@ -25,6 +28,13 @@ import (
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
+
+// GenMgmtPort should generate mgmt before launching instance and
+// persist in instance metadata
+func GenMgmtPort() string {
+	dd := mrand.Int31n(10000) + 40000
+	return strconv.Itoa(int(dd))
+}
 
 func qemuBaseCommand() string {
 	x86 := "qemu-system-x86_64"
@@ -65,6 +75,7 @@ type qemu struct {
 	flags      []string
 	kernel     string
 	atExitHook string
+	mgmt       string // not sure why we have this as string..
 }
 
 func newQemu() Hypervisor {
@@ -77,6 +88,19 @@ func (q *qemu) SetKernel(kernel string) {
 
 func (q *qemu) Stop() {
 	if q.cmd != nil {
+		fmt.Println("death")
+
+		commands := []string{
+			`{ "execute": "qmp_capabilities" }`,
+			`{ "execute": "stop" }`,
+		}
+
+		if q.mgmt != "" {
+			fmt.Println("shutting vm down")
+			ExecuteQMP(commands, q.mgmt)
+			time.Sleep(2 * time.Second)
+		}
+
 		if err := q.cmd.Process.Kill(); err != nil {
 			log.Error(err)
 		}
@@ -117,6 +141,7 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		syscall.SIGQUIT)
 	go func(chan os.Signal) {
 		<-c
+		fmt.Println("caught a kill")
 		q.Stop()
 	}(c)
 
@@ -131,6 +156,10 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 		}
 		q.cmd.Stdout = os.Stdout
 		q.cmd.Stderr = os.Stderr
+	}
+
+	if rconfig.QMP {
+		q.mgmt = rconfig.Mgmt
 	}
 
 	if rconfig.Background {

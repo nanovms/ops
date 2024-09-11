@@ -28,6 +28,8 @@ func RunCommand() *cobra.Command {
 	PersistNightlyCommandFlags(persistentFlags)
 	PersistNanosVersionCommandFlags(persistentFlags)
 
+	persistentFlags.Bool("qmp", false, "qmp [local only]")
+
 	return cmdRun
 }
 
@@ -59,6 +61,11 @@ func runCommandHandler(cmd *cobra.Command, args []string) {
 	err = mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
+	}
+
+	qmp, _ := cmd.Flags().GetBool("qmp")
+	if qmp {
+		c.RunConfig.QMP = true
 	}
 
 	if c.Mounts != nil {
