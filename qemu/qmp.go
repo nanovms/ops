@@ -22,7 +22,6 @@ func ExecuteQMP(commands []string, last string) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("wrote %s\n", commands[i])
 		received := make([]byte, 1024)
 		_, err = c.Read(received)
 		if err != nil {

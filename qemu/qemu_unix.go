@@ -88,20 +88,14 @@ func (q *qemu) SetKernel(kernel string) {
 
 func (q *qemu) Stop() {
 	if q.cmd != nil {
-		fmt.Println("death")
-
-		// {"execute": "system_powerdown"}
 
 		commands := []string{
 			`{ "execute": "qmp_capabilities" }`,
 			`{ "execute": "system_powerdown" }`,
-			//			`{ "execute": "stop" }`,
 		}
 
 		if q.mgmt != "" {
-			fmt.Println("shutting vm down")
 			ExecuteQMP(commands, q.mgmt)
-			fmt.Println("done")
 			time.Sleep(2 * time.Second)
 		}
 
@@ -145,7 +139,6 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		syscall.SIGQUIT)
 	go func(chan os.Signal) {
 		<-c
-		fmt.Println("caught a kill")
 		q.Stop()
 	}(c)
 

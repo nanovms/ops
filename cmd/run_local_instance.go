@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	//	"os"
-	//	"os/signal"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/network"
@@ -56,16 +54,6 @@ func RunLocalInstance(c *types.Config) (err error) {
 	if c.RunConfig.QMP {
 		c.RunConfig.Mgmt = qemu.GenMgmtPort()
 	}
-
-	// this prob needs to happen in the context of the qemu run itself.
-	/*	ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
-		go func() {
-			for sig := range ch {
-				fmt.Println("caught %v - halting vm", sig)
-			}
-		}()
-	*/
 
 	fmt.Printf("booting %s ...\n", c.RunConfig.ImageName)
 	hypervisor.Start(&c.RunConfig)
