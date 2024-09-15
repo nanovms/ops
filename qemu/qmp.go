@@ -9,7 +9,8 @@ import (
 	"os"
 )
 
-// turn me private and have the actual commands be exportable
+// ExecuteQMP ships a list of commands to the QMP to execute.
+// TODO: turn me private and have the actual commands be exportable.
 func ExecuteQMP(commands []string, last string) {
 	c, err := net.Dial("tcp", "localhost:"+last)
 	if err != nil {
