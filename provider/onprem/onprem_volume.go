@@ -11,6 +11,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/nanovms/ops/qemu"
 	"github.com/nanovms/ops/types"
 )
 
@@ -109,7 +110,7 @@ func (op *OnPrem) AttachVolume(ctx *lepton.Context, instanceName string, volumeN
 		deviceAddCmd,
 	}
 
-	executeQMP(commands, last)
+	qemu.ExecuteQMP(commands, last)
 
 	return nil
 }

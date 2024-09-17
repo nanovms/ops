@@ -7,6 +7,9 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	mrand "math/rand"
+	"time"
+
 	"errors"
 	"fmt"
 	"os"
@@ -25,6 +28,13 @@ import (
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
+
+// GenMgmtPort should generate mgmt before launching instance and
+// persist in instance metadata
+func GenMgmtPort() string {
+	dd := mrand.Int31n(10000) + 40000
+	return strconv.Itoa(int(dd))
+}
 
 func qemuBaseCommand() string {
 	x86 := "qemu-system-x86_64"
@@ -65,6 +75,7 @@ type qemu struct {
 	flags      []string
 	kernel     string
 	atExitHook string
+	mgmt       string // not sure why we have this as string..
 }
 
 func newQemu() Hypervisor {
@@ -77,6 +88,17 @@ func (q *qemu) SetKernel(kernel string) {
 
 func (q *qemu) Stop() {
 	if q.cmd != nil {
+
+		commands := []string{
+			`{ "execute": "qmp_capabilities" }`,
+			`{ "execute": "system_powerdown" }`,
+		}
+
+		if q.mgmt != "" {
+			ExecuteQMP(commands, q.mgmt)
+			time.Sleep(2 * time.Second)
+		}
+
 		if err := q.cmd.Process.Kill(); err != nil {
 			log.Error(err)
 		}
@@ -133,12 +155,19 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 		q.cmd.Stderr = os.Stderr
 	}
 
+	if rconfig.QMP {
+		q.mgmt = rconfig.Mgmt
+	}
+
 	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
 			log.Error(err)
 		}
 	} else {
+		q.cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid: true,
+		}
 		if err := q.cmd.Run(); err != nil {
 			log.Error(err)
 		}

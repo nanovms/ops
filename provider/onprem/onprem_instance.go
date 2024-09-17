@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"os/exec"
@@ -30,13 +29,6 @@ import (
 // CreateInstancePID creates an instance and returns the pid.
 func (p *OnPrem) CreateInstancePID(ctx *lepton.Context) (string, error) {
 	return p.createInstance(ctx)
-}
-
-// genMgmtPort should generate mgmt before launching instance and
-// persist in instance metadata
-func genMgmtPort() string {
-	dd := rand.Int31n(10000) + 40000
-	return strconv.Itoa(int(dd))
 }
 
 func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
@@ -106,7 +98,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	c.RunConfig.ImageName = imgpath
 	c.RunConfig.Background = true
 
-	c.RunConfig.Mgmt = genMgmtPort()
+	c.RunConfig.Mgmt = qemu.GenMgmtPort()
 
 	err := hypervisor.Start(&c.RunConfig)
 	if err != nil {
@@ -686,29 +678,8 @@ func (p *OnPrem) StartInstance(ctx *lepton.Context, instancename string) error {
 		`{ "execute": "cont" }`,
 	}
 
-	executeQMP(commands, last)
+	qemu.ExecuteQMP(commands, last)
 	return nil
-}
-
-func executeQMP(commands []string, last string) {
-	c, err := net.Dial("tcp", "localhost:"+last)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer c.Close()
-
-	for i := 0; i < len(commands); i++ {
-		_, err := c.Write([]byte(commands[i] + "\n"))
-		if err != nil {
-			fmt.Println(err)
-		}
-		received := make([]byte, 1024)
-		_, err = c.Read(received)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	}
 }
 
 type qmpResponse struct {
@@ -779,7 +750,7 @@ func (p *OnPrem) RebootInstance(ctx *lepton.Context, instancename string) error 
 		`{ "execute": "system_reset" }`,
 	}
 
-	executeQMP(commands, last)
+	qemu.ExecuteQMP(commands, last)
 
 	return nil
 }
@@ -798,7 +769,7 @@ func (p *OnPrem) StopInstance(ctx *lepton.Context, instancename string) error {
 		`{ "execute": "stop" }`,
 	}
 
-	executeQMP(commands, last)
+	qemu.ExecuteQMP(commands, last)
 	return nil
 }
 
