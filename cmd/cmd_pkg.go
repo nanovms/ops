@@ -47,7 +47,7 @@ func PackageCommands() *cobra.Command {
 		Use:       "pkg",
 		Short:     "Package related commands",
 		Args:      cobra.OnlyValidArgs,
-		ValidArgs: []string{"list", "get", "describe", "contents", "add", "load", "from-docker", "login", "from-pkg"},
+		ValidArgs: []string{"list", "get", "describe", "delete", "contents", "add", "load", "from-docker", "login", "from-pkg"},
 	}
 
 	cmdPkgSearch.PersistentFlags().StringP("arch", "", "", "set different architecture")
@@ -61,6 +61,7 @@ func PackageCommands() *cobra.Command {
 	cmdPkg.AddCommand(fromPackageCommand())
 	cmdPkg.AddCommand(listCommand())
 	cmdPkg.AddCommand(LoadCommand())
+	cmdPkg.AddCommand(DeleteCommand())
 	cmdPkg.AddCommand(pushCommand())
 
 	cmdPkg.AddCommand(cmdPkgSearch)
@@ -689,6 +690,27 @@ func randomToken(n int) (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
+// DeleteCommand helps you to run application with package
+func DeleteCommand() *cobra.Command {
+	var cmdLoadPackage = &cobra.Command{
+		Use:   "delete [packagename]",
+		Short: "delete a package",
+		Args:  cobra.MinimumNArgs(1),
+		Run:   deleteCommandHandler,
+	}
+
+	persistentFlags := cmdLoadPackage.PersistentFlags()
+	PersistConfigCommandFlags(persistentFlags)
+	PersistBuildImageCommandFlags(persistentFlags)
+	PersistRunLocalInstanceCommandFlags(persistentFlags)
+	PersistNightlyCommandFlags(persistentFlags)
+	PersistNanosVersionCommandFlags(persistentFlags)
+
+	persistentFlags.BoolP("local", "l", false, "load local package")
+
+	return cmdLoadPackage
+}
+
 // LoadCommand helps you to run application with package
 func LoadCommand() *cobra.Command {
 	var cmdLoadPackage = &cobra.Command{
@@ -882,6 +904,40 @@ func pushCommand() *cobra.Command {
 	persistentFlags.BoolP("private", "p", false, "set the package as private")
 
 	return cmdPushPackage
+}
+
+func deleteCommandHandler(cmd *cobra.Command, args []string) {
+	flags := cmd.Flags()
+
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	nightlyFlags := NewNightlyCommandFlags(flags)
+	nanosVersionFlags := NewNanosVersionCommandFlags(flags)
+	buildImageFlags := NewBuildImageCommandFlags(flags)
+	runLocalInstanceFlags := NewRunLocalInstanceCommandFlags(flags)
+	pkgFlags := NewPkgCommandFlags(flags)
+	pkgFlags.Package = args[0]
+
+	c := api.NewConfig()
+
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, runLocalInstanceFlags, pkgFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
+	local, _ := cmd.Flags().GetBool("local")
+
+	if local {
+		err := os.RemoveAll(pkgFlags.PackagePath())
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	} else {
+		fmt.Println("not implemented for public pkgs atm - please use the website instead")
+		os.Exit(1)
+	}
 }
 
 func loadCommandHandler(cmd *cobra.Command, args []string) {
