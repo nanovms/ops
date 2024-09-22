@@ -23,6 +23,56 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
+func getCMDExecutable(imageName string) (string, error) {
+	ctx := context.Background()
+	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
+	if err != nil {
+		return "", err
+	}
+
+	// grab latest if not specified
+	if !strings.Contains(imageName, ":") {
+		imageName += ":latest"
+	}
+
+	images, err := cli.ImageList(ctx, dockerTypes.ImageListOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	id := ""
+	for _, img := range images {
+		tags := img.RepoTags
+		for i := 0; i < len(tags); i++ {
+			if tags[i] == imageName {
+				fmt.Printf("found it %s %s\n", img.ID, tags[i])
+				id = img.ID
+				break
+			}
+		}
+	}
+
+	hir, err := cli.ImageHistory(ctx, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	prog := ""
+	//	for i := 0; i < len(hir); i++ {
+	//		fmt.Printf("%+v\n", hir[i].CreatedBy)
+	//	}
+
+	// could make this a lot smarter in the future
+	if strings.Contains(hir[0].CreatedBy, "CMD") {
+		st := strings.Split(hir[0].CreatedBy, "CMD [\"")
+		st = strings.Split(st[1], "\"]")
+		prog = st[0]
+	}
+
+	fmt.Printf("returning %s\n", prog)
+	return prog, err
+}
+
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
 func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
 	var err error
@@ -35,6 +85,14 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		}
 		// just in case the version is blank
 		packageName = strings.TrimRight(name+"_"+version, "_")
+	}
+
+	// try to look up the CMD
+	if targetExecutable == "" {
+		targetExecutable, err = getCMDExecutable(imageName)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	script := fmt.Sprintf(`{
