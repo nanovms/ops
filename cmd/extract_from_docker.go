@@ -58,9 +58,6 @@ func getCMDExecutable(imageName string) (string, error) {
 	}
 
 	prog := ""
-	//	for i := 0; i < len(hir); i++ {
-	//		fmt.Printf("%+v\n", hir[i].CreatedBy)
-	//	}
 
 	// could make this a lot smarter in the future
 	if strings.Contains(hir[0].CreatedBy, "CMD") {
@@ -69,7 +66,6 @@ func getCMDExecutable(imageName string) (string, error) {
 		prog = st[0]
 	}
 
-	fmt.Printf("returning %s\n", prog)
 	return prog, err
 }
 
@@ -87,49 +83,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		packageName = strings.TrimRight(name+"_"+version, "_")
 	}
 
-	// try to look up the CMD
-	if targetExecutable == "" {
-		targetExecutable, err = getCMDExecutable(imageName)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	script := fmt.Sprintf(`{
-		colors=""
-
-		read_libs() {
-			for lib in $(echo "$(ldd "$1" | rev | cut -d' ' -f2 | rev)"); do
-				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
-					exists=0
-					resolved_lib=$(readlink -f $lib)
-
-					for i in $(echo "$colors"); do
-						if [ "$i" = "'$lib'" ] || [ "$i" = "'$resolved_lib'" ]; then
-							exists=1
-							break
-						fi
-					done
-
-					if [ "$exists" = "0" ]; then
-						echo "$resolved_lib => $lib"
-						colors="$colors '$lib'"
-
-						read_libs "$resolved_lib"
-					fi
-				fi
-			done
-		}
-
-		app="$(command -v "%s")"
-		echo "$app"
-		# skip statically linked binaries
-		if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
-			read_libs "$app"
-		fi
-	}`, targetExecutable)
-
-	ctx, cli, containerInfo, err := createContainer(imageName, []string{"sh", "-c", script}, true, quiet)
+	ctx, cli, containerInfo, targetExecutable, err := createContainer(imageName, targetExecutable, true, quiet)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -249,11 +203,11 @@ func sanitizeLine(line string) string {
 	return line
 }
 
-func createContainer(image string, command []string, pull bool, quiet bool) (context.Context, *dockerClient.Client, dockerContainer.CreateResponse, error) {
+func createContainer(image string, targetExecutable string, pull bool, quiet bool) (context.Context, *dockerClient.Client, dockerContainer.CreateResponse, string, error) {
 	ctx := context.Background()
 	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, nil, dockerContainer.CreateResponse{}, err
+		return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 	}
 
 	// grab latest if not specified
@@ -281,7 +235,7 @@ out:
 	if pull {
 		reader, err := cli.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
 		if err != nil {
-			return nil, nil, dockerContainer.CreateResponse{}, err
+			return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 		}
 		defer reader.Close()
 
@@ -291,16 +245,61 @@ out:
 		}
 	}
 
+	// try to look up the CMD
+	// we have to do this after the pull if it doesn't exist yet
+	if targetExecutable == "" {
+		targetExecutable, err = getCMDExecutable(image)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	script := fmt.Sprintf(`{
+		colors=""
+
+		read_libs() {
+			for lib in $(echo "$(ldd "$1" | rev | cut -d' ' -f2 | rev)"); do
+				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
+					exists=0
+					resolved_lib=$(readlink -f $lib)
+
+					for i in $(echo "$colors"); do
+						if [ "$i" = "'$lib'" ] || [ "$i" = "'$resolved_lib'" ]; then
+							exists=1
+							break
+						fi
+					done
+
+					if [ "$exists" = "0" ]; then
+						echo "$resolved_lib => $lib"
+						colors="$colors '$lib'"
+
+						read_libs "$resolved_lib"
+					fi
+				fi
+			done
+		}
+
+		app="$(command -v "%s")"
+		echo "$app"
+		# skip statically linked binaries
+		if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
+			read_libs "$app"
+		fi
+	}`, targetExecutable)
+
+	command := []string{"sh", "-c", script}
+
 	containerInfo, err := cli.ContainerCreate(ctx, &dockerContainer.Config{
 		Image:      image,
 		Cmd:        command,
 		Entrypoint: []string{},
 	}, nil, nil, nil, "")
 	if err != nil {
-		return nil, nil, dockerContainer.CreateResponse{}, err
+		return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 	}
 
-	return ctx, cli, containerInfo, nil
+	return ctx, cli, containerInfo, targetExecutable, nil
 }
 
 func copyFromContainer(cli *dockerClient.Client, containerID string, containerPath string, hostPath string) error {
