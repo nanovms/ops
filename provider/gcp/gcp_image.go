@@ -22,8 +22,20 @@ import (
 // GCPStorageURL is GCP storage path
 const GCPStorageURL string = "https://storage.googleapis.com/%v/%v"
 
+func getArchitecture(flavor string) string {
+	if flavor != "" {
+		armFlavors := []string{"t2a", "c4a"}
+		for _, armFlavor := range armFlavors {
+			if strings.HasPrefix(flavor, armFlavor) {
+				return "arm64"
+			}
+		}
+	}
+	return "x86_64"
+}
+
 func amendConfig(c *types.Config) {
-	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
+	if getArchitecture(c.CloudConfig.Flavor) == "arm64" {
 		c.Uefi = true
 	}
 	if c.CloudConfig.ConfidentialVM {
@@ -123,7 +135,7 @@ func (p *GCloud) CreateImage(ctx *lepton.Context, imagePath string) error {
 		})
 	}
 
-	if strings.HasPrefix(c.CloudConfig.Flavor, "t2a") {
+	if getArchitecture(c.CloudConfig.Flavor) == "arm64" {
 		rb.Architecture = "ARM64"
 	} else {
 		rb.GuestOsFeatures = append(rb.GuestOsFeatures, &compute.GuestOsFeature{
