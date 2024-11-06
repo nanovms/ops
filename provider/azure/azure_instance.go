@@ -208,7 +208,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 			},
 			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: &armcompute.ImageReference{
-					ID: to.Ptr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/galleries/sample_gallery/images/" + ctx.Config().CloudConfig.ImageName),
+					ID: to.Ptr("/subscriptions/" + a.subID + "/resourceGroups/" + a.groupName + "/providers/Microsoft.Compute/galleries/" + a.galleryName() + "/images/" + ctx.Config().CloudConfig.ImageName),
 				},
 				OSDisk: &armcompute.OSDisk{
 					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
