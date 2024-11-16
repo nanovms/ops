@@ -211,7 +211,14 @@ func FindBridgedIPByPID(pid string) string {
 		}
 	}
 
-	oo := strings.Split(out, "netdev=vmnet,mac=")
+	devspl := ""
+	if runtime.GOOS == "darwin" {
+		devspl = "netdev=vmnet,mac="
+	} else {
+		devspl = ",mac="
+	}
+
+	oo := strings.Split(out, devspl)
 	mac := ""
 	if len(oo) > 1 {
 		ooz := strings.Split(oo[1], " ")

@@ -1,21 +1,23 @@
 package cmd
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/provider/onprem"
 	"github.com/nanovms/ops/types"
-
-	"net/http"
 
 	"gopkg.in/yaml.v2"
 )
@@ -48,10 +50,7 @@ type Compose struct {
 	config *types.Config // don't think this belongs here
 }
 
-// UP reads in a compose.yaml and starts all services listed with svc
-// discovery.
-func (com Compose) UP(composeFile string) {
-
+func getComposeContents(composeFile string) []byte {
 	if composeFile == "" {
 
 		dir, err := os.Getwd()
@@ -69,15 +68,44 @@ func (com Compose) UP(composeFile string) {
 		os.Exit(1)
 	}
 
+	return body
+}
+
+func genBridgeName() string {
+	return "ops0"
+}
+
+// UP reads in a compose.yaml and starts all services listed with svc
+// discovery.
+func (com Compose) UP(composeFile string) {
+
+	body := getComposeContents(composeFile)
+
+	h := sha1.New()
+	h.Write([]byte(body))
+	sha := hex.EncodeToString(h.Sum(nil))
+
+	fmt.Println(sha)
+
 	y := ComposeFile{}
 
-	err = yaml.Unmarshal(body, &y)
+	err := yaml.Unmarshal(body, &y)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	brName := genBridgeName()
+
+	opshome := api.GetOpsHome()
+	composes := path.Join(opshome, "composes")
+
+	err = os.WriteFile(composes+"/"+sha, []byte(brName), 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	non := genNon(32)
-	pid := com.spawnDNS(non)
+	pid := com.spawnDNS(non, brName)
 
 	dnsIP, err := com.waitForIP(pid)
 	if err != nil {
@@ -90,7 +118,7 @@ func (com Compose) UP(composeFile string) {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i], dnsIP, com.config)
+		pid := com.spawnProgram(y.Packages[i], dnsIP, com.config, brName)
 		ip, err := com.waitForIP(pid)
 		if err != nil {
 			fmt.Println(err)
@@ -102,7 +130,7 @@ func (com Compose) UP(composeFile string) {
 
 func (com Compose) waitForIP(pid string) (string, error) {
 	ip := ""
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		ip = onprem.FindBridgedIPByPID(pid)
 		if ip == "" {
 			if com.config.RunConfig.ShowDebug {
@@ -147,7 +175,7 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
 	}
 }
 
-func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config) string {
+func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config, brName string) string {
 
 	pkgName := comp.Name
 	pname := comp.Pkg
@@ -227,6 +255,15 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 		exitWithError(err.Error())
 	}
 
+	if runtime.GOOS == "linux" {
+		// linux specific config for compose - need a ifdef here
+		c.RunConfig.Bridged = true  // prob. need to set the actual bridge name?
+		c.RunConfig.TapName = pname // should prob. generate these - max 16 chars && no '/'
+
+		// TODO: pass this in as uniq bridge group if under linux
+		c.RunConfig.BridgeName = brName
+	}
+
 	c.RunConfig.InstanceName = pname
 	c.CloudConfig.ImageName = pname
 	c.RunConfig.QMP = true
@@ -246,7 +283,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 
 // spawnDNS will grab whatever native pkg exists for the platform.
 // no need to set a custom one.
-func (com Compose) spawnDNS(non string) string {
+func (com Compose) spawnDNS(non string, brName string) string {
 	c := api.NewConfig()
 	c.Program = "dns"
 
@@ -304,6 +341,7 @@ func (com Compose) spawnDNS(non string) string {
 		fmt.Println(err)
 	}
 
+	fmt.Println("creating image")
 	err = p.CreateImage(ctx, keypath)
 	if err != nil {
 		exitWithError(err.Error())
@@ -316,6 +354,18 @@ func (com Compose) spawnDNS(non string) string {
 	c.Env = env
 	c.RunConfig.QMP = true
 
+	if runtime.GOOS == "linux" {
+		// linux specific config for compose - need a ifdef here
+		c.RunConfig.Bridged = true  // prob. need to set the actual bridge name?
+		c.RunConfig.TapName = "dns" // right now assumes only one compose set at a time
+		c.RunConfig.BridgeName = brName
+
+		// TODO: scan for existing networks and create one not in use.
+		// maybe just uniq on wordlist..
+		createBridgedNetwork(brName, "")
+	}
+
+	fmt.Println("spawning instance..")
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
 	if err != nil {
