@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
