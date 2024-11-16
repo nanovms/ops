@@ -581,8 +581,13 @@ func DownloadCommonFiles() error {
 }
 
 // CheckNanosVersionExists verifies whether version exists in filesystem
-func CheckNanosVersionExists(version string) (bool, error) {
-	_, err := os.Stat(path.Join(GetOpsHome(), version))
+func CheckNanosVersionExists(version string, arch string) (bool, error) {
+	fullNanosVersion := version
+	if arch == "arm" {
+		fullNanosVersion += "-arm"
+	}
+
+	_, err := os.Stat(path.Join(GetOpsHome(), fullNanosVersion))
 	if err != nil && os.IsNotExist(err) {
 		return false, nil
 	} else if err != nil {
@@ -595,7 +600,6 @@ func CheckNanosVersionExists(version string) (bool, error) {
 // DownloadReleaseImages downloads nanos for particular release version
 // arch defaults to x86-64 if empty
 func DownloadReleaseImages(version string, arch string) error {
-
 	url := getReleaseURL(version)
 	if arch == "arm" || AltGOARCH == "arm64" {
 		url = strings.Replace(url, ".tar.gz", "-virt.tar.gz", -1)

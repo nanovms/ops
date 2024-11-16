@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
@@ -32,14 +33,16 @@ func (flags *NanosVersionCommandFlags) MergeToConfig(config *types.Config) (err 
 	nanosVersion := flags.NanosVersion
 
 	if nanosVersion != "" {
+		arch := archPath()
+
 		var exists bool
-		exists, err = lepton.CheckNanosVersionExists(nanosVersion)
+
+		exists, err = lepton.CheckNanosVersionExists(nanosVersion, arch)
 		if err != nil {
 			return err
 		}
 
 		if !exists {
-			arch := archPath()
 			err = lepton.DownloadReleaseImages(nanosVersion, arch)
 			if err != nil {
 				return
