@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"runtime"
-
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 
@@ -15,11 +13,18 @@ type NanosVersionCommandFlags struct {
 }
 
 func archPath() string {
-	if runtime.GOARCH == "arm64" || lepton.AltGOARCH == "arm64" {
-		return "arm"
+	parch := ""
+	if lepton.AltGOARCH != "" {
+		if lepton.AltGOARCH == "arm64" {
+			parch = "arm"
+		}
+	} else {
+		if lepton.RealGOARCH == "arm64" {
+			parch = "arm"
+		}
 	}
 
-	return ""
+	return parch
 }
 
 // MergeToConfig downloads specified nanos version build and change configuration nanos tools paths
