@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"os"
+	"path"
+	"runtime"
 
 	"github.com/nanovms/ops/qemu"
 	"github.com/spf13/cobra"
@@ -48,7 +52,7 @@ func composeUpCommand() *cobra.Command {
 }
 
 func composeDownCommandHandler(cmd *cobra.Command, args []string) {
-	if qemu.OPSD == "" {
+	if runtime.GOOS == "darwin" && qemu.OPSD == "" {
 		fmt.Println("this command is only enabled if you have OPSD compiled in.")
 		os.Exit(1)
 	}
@@ -60,10 +64,14 @@ func composeDownCommandHandler(cmd *cobra.Command, args []string) {
 		exitForCmd(cmd, err.Error())
 	}
 
+	// this looks like it's killing everything when it should only be
+	// killing the set desired.
 	instances, err := p.GetInstances(ctx)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// get bridge of one of these instances..
 
 	for i := 0; i < len(instances); i++ {
 		err = p.DeleteInstance(ctx, instances[i].Name)
@@ -71,10 +79,31 @@ func composeDownCommandHandler(cmd *cobra.Command, args []string) {
 			exitWithError(err.Error())
 		}
 	}
+
+	if runtime.GOOS == "linux" {
+		body := getComposeContents("")
+
+		h := sha1.New()
+		h.Write([]byte(body))
+		sha := hex.EncodeToString(h.Sum(nil))
+
+		opshome := api.GetOpsHome()
+		composes := path.Join(opshome, "composes")
+
+		body, err := os.ReadFile(composes + "/" + sha)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		brName := string(body)
+
+		// need to tune down the taps here too...
+		removeBridge(brName)
+	}
 }
 
 func composeUpCommandHandler(cmd *cobra.Command, args []string) {
-	if qemu.OPSD == "" {
+	if runtime.GOOS == "darwin" && qemu.OPSD == "" {
 		fmt.Println("this command is only enabled if you have OPSD compiled in.")
 		os.Exit(1)
 	}

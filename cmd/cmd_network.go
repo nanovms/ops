@@ -58,6 +58,11 @@ func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 	}
 
+	createBridgedNetwork(bn, subnet)
+}
+
+// this assumes linux - mac uses vmnet
+func createBridgedNetwork(bn string, subnet string) {
 	bridge := "br0"
 	if bn != "" {
 		bridge = bn
@@ -66,7 +71,7 @@ func networkCreateCommandHandler(cmd *cobra.Command, args []string) {
 	// mv me elsewhere
 
 	// option; also break out class-c to provide range
-	network := "192.168.1.1/24"
+	network := "192.168.33.1/24"
 	if subnet != "" {
 		network = subnet
 	}
@@ -195,15 +200,18 @@ func networkDeleteCommand() *cobra.Command {
 }
 
 func networkDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	killBridge(args[0])
+	removeBridge(args[0])
+}
+
+func removeBridge(brName string) {
+	killBridge(brName)
 
 	opshome := lepton.GetOpsHome()
-	ipath := path.Join(opshome, "networks", args[0])
+	ipath := path.Join(opshome, "networks", brName)
 	err := os.Remove(ipath)
 	if err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 // mv elsewhere and get rid of shelling

@@ -77,9 +77,13 @@ func GetOpsHome() string {
 		opshome = altHomeDir
 	}
 
+	// it prob. makes sense to join the networks/composes together and
+	// have compose be optional on network.
+
 	images := path.Join(opshome, "images")
 	instances := path.Join(opshome, "instances")
 	networks := path.Join(opshome, "networks")
+	composes := path.Join(opshome, "composes")
 	manifests := path.Join(opshome, "manifests")
 	volumes := path.Join(opshome, "volumes")
 
@@ -101,6 +105,10 @@ func GetOpsHome() string {
 
 	if _, err := os.Stat(networks); os.IsNotExist(err) {
 		os.MkdirAll(networks, 0755)
+	}
+
+	if _, err := os.Stat(composes); os.IsNotExist(err) {
+		os.MkdirAll(composes, 0755)
 	}
 
 	if _, err := os.Stat(volumes); os.IsNotExist(err) {

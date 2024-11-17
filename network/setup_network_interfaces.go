@@ -4,6 +4,7 @@ package network
 
 import (
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -36,7 +37,7 @@ func SetupNetworkInterfaces(network Service, tapDeviceName string, bridgeName st
 	if !tapExists {
 		_, err := network.AddTap(tapDeviceName)
 		if err != nil {
-			return errors.New("Not able to create tap")
+			return fmt.Errorf("Not able to create tap %s", tapDeviceName)
 		}
 	}
 
