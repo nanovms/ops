@@ -381,10 +381,14 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	identifier := args[0]
-	tokens := strings.Split(identifier, "/")
-	if len(tokens) < 2 {
-		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+	local, _ := cmd.Flags().GetBool("local")
+
+	if !local {
+		identifier := args[0]
+		tokens := strings.Split(identifier, "/")
+		if len(tokens) < 2 {
+			log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
+		}
 	}
 
 	pkgFlags.Package = args[0]
