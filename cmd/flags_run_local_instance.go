@@ -30,6 +30,7 @@ type RunLocalInstanceCommandFlags struct {
 	MissingFiles    bool
 	NoTrace         []string
 	Ports           []string
+	UDPPorts        []string
 	SkipBuild       bool
 	Memory          string
 	Smp             int
@@ -145,6 +146,10 @@ func (flags *RunLocalInstanceCommandFlags) MergeToConfig(c *types.Config) error 
 
 	}
 
+	if len(flags.UDPPorts) != 0 {
+		c.RunConfig.UDPPorts = append(c.RunConfig.UDPPorts, flags.UDPPorts...)
+	}
+
 	for _, port := range flags.Ports {
 		conn, err := net.DialTimeout("tcp", ":"+port, time.Second)
 		if err != nil {
@@ -216,6 +221,11 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 		exitWithError(err.Error())
 	}
 
+	flags.UDPPorts, err = cmdFlags.GetStringArray("udp")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 	flags.SkipBuild, err = cmdFlags.GetBool("skipbuild")
 	if err != nil {
 		exitWithError(err.Error())
@@ -267,6 +277,7 @@ func NewRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) (flags *RunLocalIn
 // PersistRunLocalInstanceCommandFlags append a command the required flags to run an image
 func PersistRunLocalInstanceCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArrayP("port", "p", nil, "port to forward")
+	cmdFlags.StringArrayP("udp", "", nil, "udp ports to forward")
 	cmdFlags.BoolP("force", "f", false, "update images")
 	cmdFlags.BoolP("debug", "d", false, "enable interactive debugger")
 	cmdFlags.BoolP("trace", "", false, "enable required flags to trace")
