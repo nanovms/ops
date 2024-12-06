@@ -424,6 +424,11 @@ func (a *Azure) createGalleryImage(ctx context.Context, location string, imageNa
 }
 
 func (a *Azure) galleryName() string {
+	galleryName := os.Getenv("AZURE_GALLERY_NAME")
+	if galleryName != "" {
+		return galleryName
+	}
+
 	return "nanos_gallery"
 }
 
