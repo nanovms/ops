@@ -93,6 +93,7 @@ func (a *Azure) CustomizeImage(ctx *lepton.Context) (string, error) {
 func (a *Azure) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 
 	c := ctx.Config()
+	amendConfig(c)
 
 	a.hyperVGen = armcompute.HyperVGenerationV1
 	imageType := strings.ToLower(c.CloudConfig.ImageType)
