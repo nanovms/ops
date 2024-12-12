@@ -124,7 +124,7 @@ func addPasswd(m *fs.Manifest, c *types.Config) {
 }
 
 // bunch of default files that's required.
-func addCommonFilesToManifest(m *fs.Manifest) error {
+func addCommonFilesToManifest(m *fs.Manifest, arm bool) error {
 
 	commonPath := path.Join(GetOpsHome(), "common")
 	if _, err := os.Stat(commonPath); os.IsNotExist(err) {
@@ -142,11 +142,14 @@ func addCommonFilesToManifest(m *fs.Manifest) error {
 	}
 	ExtractPackage(localtar, commonPath, NewConfig())
 
-	localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
-	if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
-		err = m.AddFile(libDNS, localLibDNS)
-		if err != nil {
-			return err
+	// for now we'll ignore this
+	if !arm {
+		localLibDNS := path.Join(commonPath, "libnss_dns.so.2")
+		if _, err := os.Stat(localLibDNS); !os.IsNotExist(err) {
+			err = m.AddFile(libDNS, localLibDNS)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -384,7 +387,11 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 
 	m := fs.NewManifest(c.TargetRoot)
 
-	addCommonFilesToManifest(m)
+	if strings.Contains(c.Kernel, "arm") {
+		addCommonFilesToManifest(m, true)
+	} else {
+		addCommonFilesToManifest(m, false)
+	}
 
 	err = m.AddUserProgram(c.Program)
 	if err != nil {
