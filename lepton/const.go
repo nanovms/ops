@@ -256,11 +256,15 @@ func getLastReleaseLocalFolder() string {
 	return getReleaseLocalFolder(getLatestRelVersion())
 }
 
-func getKlibsDir(nightly bool, nanosVersion string) string {
+func getKlibsDir(nightly bool, nanosVersion string, arm bool) string {
 	if nightly {
 		return NightlyLocalFolder() + "/klibs"
 	} else if nanosVersion != "" && nanosVersion != "0.0" {
-		return getReleaseLocalFolder(nanosVersion) + "/klibs"
+		if arm {
+			return getReleaseLocalFolder(nanosVersion) + "-arm/klibs"
+		} else {
+			return getReleaseLocalFolder(nanosVersion) + "/klibs"
+		}
 	}
 
 	return getLastReleaseLocalFolder() + "/klibs"

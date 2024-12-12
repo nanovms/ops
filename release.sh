@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export VERSION="0.1.42"
+export VERSION="0.1.43"
 plat="$(uname -s | awk '{print tolower($0)}')"
 
 # x86-linux
