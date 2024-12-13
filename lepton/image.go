@@ -260,7 +260,11 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 	if c.KlibDir != "" {
 		m.SetKlibDir(c.KlibDir)
 	} else {
-		m.SetKlibDir(getKlibsDir(c.NightlyBuild, c.NanosVersion))
+		if strings.Contains(c.Kernel, "arm") {
+			m.SetKlibDir(getKlibsDir(c.NightlyBuild, c.NanosVersion, true))
+		} else {
+			m.SetKlibDir(getKlibsDir(c.NightlyBuild, c.NanosVersion, false))
+		}
 	}
 
 	m.AddKlibs(c.Klibs)
