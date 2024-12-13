@@ -51,8 +51,28 @@ func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
 	m.root["ip6addr"] = networkConfig.IPv6
 }
 
+// b7 = 183 = arm; 3e = 62 = x86
+func archCheck(imgpath string) string {
+	f, err := os.Open(imgpath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer f.Close()
+
+	h := make([]byte, 19)
+	_, err = f.Read(h)
+
+	//	fmt.Println(h)
+
+	if h[18] == 183 {
+		return "arm"
+	}
+
+	return "amd64"
+}
+
 // AddUserProgram adds user program
-func (m *Manifest) AddUserProgram(imgpath string) (err error) {
+func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 	parts := strings.Split(imgpath, "/")
 	if parts[0] == "." {
 		parts = parts[1:]
@@ -62,6 +82,15 @@ func (m *Manifest) AddUserProgram(imgpath string) (err error) {
 	if filepath.IsAbs(imgpath) {
 		imgpath = filepath.Join(m.targetRoot, imgpath)
 	}
+
+	fmt.Printf("adding user program of %s\n", imgpath)
+	a := archCheck(imgpath)
+	if arm && a != "arm" || !arm && a == "arm" {
+		fmt.Printf("you are trying to mix %s with a arm kernel\n", imgpath)
+		fmt.Printf("try re-creating the image with --arch=")
+		os.Exit(1)
+	}
+
 	err = m.AddFile(program, imgpath)
 	if err != nil {
 		return
