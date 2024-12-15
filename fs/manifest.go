@@ -62,8 +62,6 @@ func archCheck(imgpath string) string {
 	h := make([]byte, 19)
 	_, err = f.Read(h)
 
-	//	fmt.Println(h)
-
 	if h[18] == 183 {
 		return "arm"
 	}
@@ -86,7 +84,7 @@ func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 	fmt.Printf("adding user program of %s\n", imgpath)
 	a := archCheck(imgpath)
 	if arm && a != "arm" || !arm && a == "arm" {
-		fmt.Printf("you are trying to mix %s with a arm kernel\n", imgpath)
+		fmt.Printf("you are trying to mix %s [%s] with the wrong kernel\n", imgpath, a)
 		fmt.Printf("try re-creating the image with --arch=")
 		os.Exit(1)
 	}
