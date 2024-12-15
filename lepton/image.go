@@ -387,13 +387,14 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 
 	m := fs.NewManifest(c.TargetRoot)
 
+	arm := false
 	if strings.Contains(c.Kernel, "arm") {
-		addCommonFilesToManifest(m, true)
-	} else {
-		addCommonFilesToManifest(m, false)
+		arm = true
 	}
 
-	err = m.AddUserProgram(c.Program)
+	addCommonFilesToManifest(m, arm)
+
+	err = m.AddUserProgram(c.Program, arm)
 	if err != nil {
 		return nil, err
 	}
