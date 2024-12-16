@@ -81,7 +81,6 @@ func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 		imgpath = filepath.Join(m.targetRoot, imgpath)
 	}
 
-	fmt.Printf("adding user program of %s\n", imgpath)
 	a := archCheck(imgpath)
 	if arm && a != "arm" || !arm && a == "arm" {
 		fmt.Printf("you are trying to mix %s [%s] with the wrong kernel\n", imgpath, a)
