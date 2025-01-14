@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 )
@@ -18,7 +19,7 @@ import (
 // CreateVolume creates a snapshot and use it to create a volume
 func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
-	var sizeInGb int64
+	var sizeInGb int32
 	var vol lepton.NanosVolume
 	if config.BaseVolumeSz != "" {
 		size, err := lepton.GetSizeInGb(config.BaseVolumeSz)
@@ -26,7 +27,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 			return vol, fmt.Errorf("cannot get volume size: %v", err)
 		}
 		config.BaseVolumeSz = "" // create minimum-sized local volume
-		sizeInGb = int64(size)
+		sizeInGb = int32(size)
 	}
 
 	// Create volume
@@ -48,17 +49,17 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 
 	input := &ec2.ImportSnapshotInput{
 		Description: aws.String("name"),
-		DiskContainer: &ec2.SnapshotDiskContainer{
+		DiskContainer: &awsEc2Types.SnapshotDiskContainer{
 			Description: aws.String("snapshot imported"),
 			Format:      aws.String("raw"),
-			UserBucket: &ec2.UserBucket{
-				S3Bucket: aws.String(bucket),
-				S3Key:    aws.String(key),
+			UserBucket: &awsEc2Types.UserBucket{
+				S3Bucket: &bucket,
+				S3Key:    &key,
 			},
 		},
 	}
 
-	res, err := a.ec2.ImportSnapshot(input)
+	res, err := a.ec2.ImportSnapshot(a.execCtx, input)
 	if err != nil {
 		return vol, fmt.Errorf("import snapshot: %v", err)
 	}
@@ -69,7 +70,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 	}
 
 	// delete the tmp s3 volume
-	err = a.Storage.DeleteFromBucket(config, key)
+	err = a.Storage.DeleteFromBucket(a.execCtx, config, key)
 	if err != nil {
 		return vol, err
 	}
@@ -81,16 +82,16 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 	createVolumeInput := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(config.CloudConfig.Zone),
 		SnapshotId:       snapshotID,
-		TagSpecifications: []*ec2.TagSpecification{
+		TagSpecifications: []awsEc2Types.TagSpecification{
 			{
-				ResourceType: aws.String("volume"),
+				ResourceType: awsEc2Types.ResourceTypeVolume,
 				Tags:         tags,
 			},
 		},
 	}
 
 	if cv.Typeof != "" {
-		createVolumeInput.VolumeType = aws.String(cv.Typeof)
+		createVolumeInput.VolumeType = awsEc2Types.VolumeType(cv.Typeof)
 	}
 
 	if cv.Iops != 0 {
@@ -99,7 +100,7 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 			os.Exit(1)
 		}
 
-		createVolumeInput.Iops = aws.Int64(cv.Iops)
+		createVolumeInput.Iops = aws.Int32(int32(cv.Iops))
 	}
 
 	if cv.Throughput != 0 {
@@ -108,13 +109,13 @@ func (a *AWS) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data strin
 			os.Exit(1)
 		}
 
-		createVolumeInput.Throughput = aws.Int64(cv.Throughput)
+		createVolumeInput.Throughput = aws.Int32(int32(cv.Throughput))
 	}
 
 	if sizeInGb != 0 {
 		createVolumeInput.Size = &sizeInGb
 	}
-	_, err = a.ec2.CreateVolume(createVolumeInput)
+	_, err = a.ec2.CreateVolume(a.execCtx, createVolumeInput)
 	if err != nil {
 		return vol, fmt.Errorf("create aws volume: %v", err)
 	}
@@ -127,12 +128,12 @@ func (a *AWS) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, error) 
 	vols := &[]lepton.NanosVolume{}
 
 	input := &ec2.DescribeVolumesInput{
-		Filters: []*ec2.Filter{
-			{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+		Filters: []awsEc2Types.Filter{
+			{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}},
 		},
 	}
 
-	output, err := a.ec2.DescribeVolumes(input)
+	output, err := a.ec2.DescribeVolumes(a.execCtx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func (a *AWS) GetAllVolumes(ctx *lepton.Context) (*[]lepton.NanosVolume, error) 
 		vol := lepton.NanosVolume{
 			ID:         *volume.VolumeId,
 			Name:       name,
-			Status:     *volume.State,
+			Status:     string(volume.State),
 			Size:       strconv.Itoa(int(*volume.Size)),
 			Path:       "",
 			CreatedAt:  volume.CreateTime.String(),
@@ -177,7 +178,7 @@ func (a *AWS) DeleteVolume(ctx *lepton.Context, name string) error {
 	input := &ec2.DeleteVolumeInput{
 		VolumeId: aws.String(*vol.VolumeId),
 	}
-	_, err = a.ec2.DeleteVolume(input)
+	_, err = a.ec2.DeleteVolume(a.execCtx, input)
 	if err != nil {
 		return err
 	}
@@ -230,7 +231,7 @@ func (a *AWS) AttachVolume(ctx *lepton.Context, instanceName, name string, attac
 		InstanceId: aws.String(*instance.InstanceId),
 		VolumeId:   aws.String(*vol.VolumeId),
 	}
-	_, err = a.ec2.AttachVolume(input)
+	_, err = a.ec2.AttachVolume(a.execCtx, input)
 	if err != nil {
 		return err
 	}
@@ -255,7 +256,7 @@ func (a *AWS) DetachVolume(ctx *lepton.Context, instanceName, name string) error
 		VolumeId:   aws.String(*vol.VolumeId),
 	}
 
-	_, err = a.ec2.DetachVolume(input)
+	_, err = a.ec2.DetachVolume(a.execCtx, input)
 	if err != nil {
 		return err
 	}
@@ -263,25 +264,25 @@ func (a *AWS) DetachVolume(ctx *lepton.Context, instanceName, name string) error
 	return nil
 }
 
-func (a *AWS) findVolumeByName(name string) (*ec2.Volume, error) {
+func (a *AWS) findVolumeByName(name string) (*awsEc2Types.Volume, error) {
 	input := &ec2.DescribeVolumesInput{
-		Filters: []*ec2.Filter{
-			{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+		Filters: []awsEc2Types.Filter{
+			{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}},
 		},
 	}
 
-	output, err := a.ec2.DescribeVolumes(input)
+	output, err := a.ec2.DescribeVolumes(a.execCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, volume := range output.Volumes {
 		if *volume.VolumeId == name {
-			return volume, nil
+			return &volume, nil
 		}
 		for _, tag := range volume.Tags {
 			if (*tag.Key == "Name") && (*tag.Value == name) {
-				return volume, nil
+				return &volume, nil
 			}
 		}
 	}

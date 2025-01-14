@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,9 +11,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/nanovms/ops/log"
 )
 
@@ -150,22 +150,22 @@ func roleError(bucket string, err error) {
 	fmt.Printf("role :\n%+v\n", vmieDoc)
 }
 
-func findBucketInPolicy(svc *iam.IAM, bucket string) (string, error) {
+func findBucketInPolicy(execCtx context.Context, svc *iam.Client, bucket string) (string, error) {
 
 	// find the policy
 	lpi := &iam.ListAttachedRolePoliciesInput{
 		RoleName: aws.String(vmiName),
 	}
 
-	pl, err := svc.ListAttachedRolePolicies(lpi)
+	pl, err := svc.ListAttachedRolePolicies(execCtx, lpi)
 	if err != nil {
 		return "", err
 	}
 
 	pid := ""
 	for i := 0; i < len(pl.AttachedPolicies); i++ {
-		if aws.StringValue(pl.AttachedPolicies[i].PolicyName) == vmiName {
-			pid = aws.StringValue(pl.AttachedPolicies[i].PolicyArn)
+		if aws.ToString(pl.AttachedPolicies[i].PolicyName) == vmiName {
+			pid = aws.ToString(pl.AttachedPolicies[i].PolicyArn)
 			break
 		}
 	}
@@ -178,7 +178,7 @@ func findBucketInPolicy(svc *iam.IAM, bucket string) (string, error) {
 		PolicyArn: aws.String(pid),
 	}
 
-	po, err := svc.GetPolicy(gpi)
+	po, err := svc.GetPolicy(execCtx, gpi)
 	if err != nil {
 		return "", err
 	}
@@ -188,12 +188,12 @@ func findBucketInPolicy(svc *iam.IAM, bucket string) (string, error) {
 		VersionId: po.Policy.DefaultVersionId,
 	}
 
-	pv, err := svc.GetPolicyVersion(gpvi)
+	pv, err := svc.GetPolicyVersion(execCtx, gpvi)
 	if err != nil {
 		return "", err
 	}
 
-	s := aws.StringValue(pv.PolicyVersion.Document)
+	s := aws.ToString(pv.PolicyVersion.Document)
 
 	return url.QueryUnescape(s)
 
@@ -201,17 +201,8 @@ func findBucketInPolicy(svc *iam.IAM, bucket string) (string, error) {
 
 // VerifyRole ensures we have a role and attached policy for the vmie service to hit our
 // bucket.
-func VerifyRole(zone string, bucket string) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(zone)},
-	)
-	if err != nil {
-		log.Fatalf("error while creation session: %s", err.Error())
-	}
-
-	svc := iam.New(sess)
-
-	resp, err := svc.ListRoles(&iam.ListRolesInput{})
+func VerifyRole(execCtx context.Context, iamClient *iam.Client, zone string, bucket string) {
+	resp, err := iamClient.ListRoles(execCtx, &iam.ListRolesInput{}, func(opts *iam.Options) { opts.Region = zone })
 	if err != nil {
 		roleError(bucket, err)
 		os.Exit(1)
@@ -220,9 +211,9 @@ func VerifyRole(zone string, bucket string) {
 	// this is probably a good candidate to cache in a metadata file
 	// somewhere - having to do this on each upload is insane
 	for _, role := range resp.Roles {
-		if aws.StringValue(role.RoleName) == vmiName {
+		if aws.ToString(role.RoleName) == vmiName {
 
-			dval, err := findBucketInPolicy(svc, bucket)
+			dval, err := findBucketInPolicy(execCtx, iamClient, bucket)
 			if err != nil {
 				roleError(bucket, err)
 				os.Exit(1)
@@ -240,7 +231,7 @@ func VerifyRole(zone string, bucket string) {
 				PolicyDocument: aws.String(s),
 			}
 
-			_, err = svc.PutRolePolicy(uri)
+			_, err = iamClient.PutRolePolicy(execCtx, uri)
 			if err != nil {
 				roleError(bucket, err)
 				os.Exit(1)
@@ -250,7 +241,7 @@ func VerifyRole(zone string, bucket string) {
 		}
 	}
 
-	err = createRole(svc, bucket)
+	err = createRole(execCtx, iamClient, bucket)
 	if err != nil {
 		roleError(bucket, err)
 		os.Exit(1)
@@ -258,7 +249,7 @@ func VerifyRole(zone string, bucket string) {
 
 }
 
-func createRole(svc *iam.IAM, bucket string) error {
+func createRole(execCtx context.Context, svc *iam.Client, bucket string) error {
 	log.Info("creating a vmimport role for bucket " + bucket)
 
 	ri := &iam.CreateRoleInput{
@@ -266,7 +257,7 @@ func createRole(svc *iam.IAM, bucket string) error {
 		RoleName:                 aws.String(vmiName),
 	}
 
-	_, err := svc.CreateRole(ri)
+	_, err := svc.CreateRole(execCtx, ri)
 	if err != nil {
 		return err
 	}
@@ -278,7 +269,7 @@ func createRole(svc *iam.IAM, bucket string) error {
 		PolicyName:     aws.String(vmiName),
 	}
 
-	policyOut, err := svc.CreatePolicy(cpi)
+	policyOut, err := svc.CreatePolicy(execCtx, cpi)
 	if err != nil {
 		return err
 	}
@@ -288,7 +279,7 @@ func createRole(svc *iam.IAM, bucket string) error {
 		RoleName:  aws.String(vmiName),
 	}
 
-	_, err = svc.AttachRolePolicy(ari)
+	_, err = svc.AttachRolePolicy(execCtx, ari)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	b64 "encoding/base64"
 	"encoding/json"
@@ -16,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ebs"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ebs"
+	awsEbsTypes "github.com/aws/aws-sdk-go-v2/service/ebs/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
@@ -115,7 +116,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	key := c.CloudConfig.ImageName
 
 	ctx.Logger().Info("Creating snapshot")
-	snapshotID, err := p.createSnapshot(imagePath, c.CloudConfig.KMS)
+	snapshotID, err := p.createSnapshot(&c.CloudConfig.Zone, imagePath, c.CloudConfig.KMS)
 	if err != nil {
 		return err
 	}
@@ -124,8 +125,8 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	tags, _ := buildAwsTags(c.CloudConfig.Tags, key)
 
 	ctx.Logger().Info("Tagging snapshot")
-	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
-		Resources: aws.StringSlice([]string{snapshotID}),
+	_, err = p.ec2.CreateTags(p.execCtx, &ec2.CreateTagsInput{
+		Resources: []string{snapshotID},
 		Tags:      tags,
 	})
 	if err != nil {
@@ -140,14 +141,14 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	// register ami
 	rinput := &ec2.RegisterImageInput{
 		Name:         aws.String(amiName),
-		Architecture: aws.String(getArchitecture(c.CloudConfig.Flavor)),
-		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
+		Architecture: awsEc2Types.ArchitectureValues(getArchitecture(c.CloudConfig.Flavor)),
+		BlockDeviceMappings: []awsEc2Types.BlockDeviceMapping{
 			{
 				DeviceName: aws.String("/dev/sda1"),
-				Ebs: &ec2.EbsBlockDevice{
+				Ebs: &awsEc2Types.EbsBlockDevice{
 					DeleteOnTermination: aws.Bool(true),
 					SnapshotId:          aws.String(snapshotID),
-					VolumeType:          aws.String("gp2"),
+					VolumeType:          awsEc2Types.VolumeTypeGp2,
 				},
 			},
 		},
@@ -158,15 +159,15 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	ctx.Logger().Info("Registering image")
-	resreg, err := p.ec2.RegisterImage(rinput)
+	resreg, err := p.ec2.RegisterImage(p.execCtx, rinput)
 	if err != nil {
 		return err
 	}
 
 	// Add name tag to the created ami
 	ctx.Logger().Info("Tagging image")
-	_, err = p.ec2.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{resreg.ImageId},
+	_, err = p.ec2.CreateTags(p.execCtx, &ec2.CreateTagsInput{
+		Resources: []string{aws.ToString(resreg.ImageId)},
 		Tags:      tags,
 	})
 	if err != nil {
@@ -178,18 +179,7 @@ func (p *AWS) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 // MirrorImage copies an image using its imageName from one region to another
 func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion string) (string, error) {
-	srcSession, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(stripZone(srcRegion)),
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	srcEc2 := ec2.New(srcSession)
-
-	i, err := p.findImageByNameUsingSession(srcEc2, imageName)
+	i, err := p.findImageByNameUsingSession(p.ec2, imageName)
 	if i == nil {
 		return "", fmt.Errorf("no image with name %s found", imageName)
 	}
@@ -197,18 +187,7 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 		return "", fmt.Errorf("error while search for image: %s", err.Error())
 	}
 
-	dstSession, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(stripZone(dstRegion)),
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	dstEc2 := ec2.New(dstSession)
-
-	output, err := dstEc2.CopyImage(&ec2.CopyImageInput{
+	output, err := p.ec2.CopyImage(p.execCtx, &ec2.CopyImageInput{
 		Name:          aws.String(imageName),
 		SourceImageId: i.ImageId,
 		SourceRegion:  &srcRegion,
@@ -219,8 +198,8 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 
 	tags, _ := buildAwsTags(ctx.Config().CloudConfig.Tags, imageName)
 
-	dstEc2.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{output.ImageId},
+	_, err = p.ec2.CreateTags(p.execCtx, &ec2.CreateTagsInput{
+		Resources: []string{aws.ToString(output.ImageId)},
 		Tags:      tags,
 	})
 
@@ -232,7 +211,7 @@ func (p *AWS) MirrorImage(ctx *lepton.Context, imageName, srcRegion, dstRegion s
 
 // createSnapshot process create Snapshot to EBS
 // Returns snapshotID and err
-func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
+func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string, error) {
 	// Open file first
 	f, err := os.Open(imagePath)
 	if err != nil {
@@ -256,7 +235,7 @@ func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
 	bar := progressbar.Default(maxBar)
 
 	esi := &ebs.StartSnapshotInput{
-		Tags:       []*ebs.Tag{},
+		Tags:       []awsEbsTypes.Tag{},
 		VolumeSize: aws.Int64(sizeInGb),
 	}
 
@@ -268,7 +247,7 @@ func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
 		}
 	}
 
-	snapshotOutput, err := p.volumeService.StartSnapshot(esi)
+	snapshotOutput, err := p.volumeService.StartSnapshot(p.execCtx, esi)
 	if err != nil {
 		return "", err
 	}
@@ -341,11 +320,11 @@ func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
 	h.Write(snapshotBlocksChecksums)
 	snapshotChecksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
 
-	if _, err := p.volumeService.CompleteSnapshot(&ebs.CompleteSnapshotInput{
-		ChangedBlocksCount:        &blockIndex,
+	if _, err := p.volumeService.CompleteSnapshot(p.execCtx, &ebs.CompleteSnapshotInput{
+		ChangedBlocksCount:        aws.Int32(int32(blockIndex)),
 		Checksum:                  aws.String(snapshotChecksum),
-		ChecksumAggregationMethod: aws.String("LINEAR"),
-		ChecksumAlgorithm:         aws.String("SHA256"),
+		ChecksumAggregationMethod: awsEbsTypes.ChecksumAggregationMethodChecksumAggregationLinear,
+		ChecksumAlgorithm:         awsEbsTypes.ChecksumAlgorithmChecksumAlgorithmSha256,
 		SnapshotId:                aws.String(snapshotID),
 	}); err != nil {
 		return snapshotID, err
@@ -353,8 +332,8 @@ func (p *AWS) createSnapshot(imagePath string, kms string) (string, error) {
 
 	bar.Add64(1)
 
-	if err := p.ec2.WaitUntilSnapshotCompleted(&ec2.DescribeSnapshotsInput{
-		SnapshotIds: aws.StringSlice([]string{*snapshotOutput.SnapshotId}),
+	if err := WaitUntilEc2SnapshotCompleted(p.execCtx, zone, &ec2.DescribeSnapshotsInput{
+		SnapshotIds: []string{*snapshotOutput.SnapshotId},
 	}); err != nil {
 		return snapshotID, err
 	}
@@ -376,7 +355,7 @@ func (p *AWS) retryPutSnapshotBlocks(bar *progressbar.ProgressBar, f *os.File, s
 			input, _ := buildSnapshotBlockInput(snapshotID, data.BlockIndex, block)
 
 			log.Debug("RetryPutSnapshotBlock", data.BlockIndex, "PreviousErr", data.Error)
-			if _, err := p.volumeService.PutSnapshotBlock(input); err != nil {
+			if _, err := p.volumeService.PutSnapshotBlock(p.execCtx, input); err != nil {
 				errs = append(errs, err)
 			}
 
@@ -392,10 +371,10 @@ func (p *AWS) retryPutSnapshotBlocks(bar *progressbar.ProgressBar, f *os.File, s
 func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, chanBlockResult chan PutSnapshotBlockResult) {
 	defer wg.Done()
 
-	_, err := p.volumeService.PutSnapshotBlock(input)
+	_, err := p.volumeService.PutSnapshotBlock(p.execCtx, input)
 	chanBlockResult <- PutSnapshotBlockResult{
 		Error:      err,
-		BlockIndex: *input.BlockIndex,
+		BlockIndex: int64(*input.BlockIndex),
 	}
 }
 
@@ -406,11 +385,11 @@ func buildSnapshotBlockInput(snapshotID string, blockIndex int64, block []byte) 
 	checksum := b64.StdEncoding.EncodeToString(h.Sum(nil))
 
 	return &ebs.PutSnapshotBlockInput{
-		BlockData:         aws.ReadSeekCloser(bytes.NewReader(block)),
-		BlockIndex:        aws.Int64(blockIndex),
+		BlockData:         bytes.NewReader(block),
+		BlockIndex:        aws.Int32(int32(blockIndex)),
 		Checksum:          aws.String(checksum),
-		ChecksumAlgorithm: aws.String("SHA256"),
-		DataLength:        aws.Int64(SnapshotBlockDataLength),
+		ChecksumAlgorithm: awsEbsTypes.ChecksumAlgorithmChecksumAlgorithmSha256,
+		DataLength:        aws.Int32(SnapshotBlockDataLength),
 		SnapshotId:        aws.String(snapshotID),
 	}, h.Sum(nil)
 }
@@ -516,20 +495,18 @@ func getArchitecture(flavor string) string {
 	return "x86_64"
 }
 
-func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
-	filters := []*ec2.Filter{{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})}}
+func getAWSImages(execCtx context.Context, ec2Service *ec2.Client) (*ec2.DescribeImagesOutput, error) {
+	filters := []awsEc2Types.Filter{{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}}}
 
 	input := &ec2.DescribeImagesInput{
-		Owners: []*string{
-			aws.String("self"),
-		},
+		Owners:  []string{"self"},
 		Filters: filters,
 	}
 
-	result, err := ec2Service.DescribeImages(input)
+	result, err := ec2Service.DescribeImages(execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				return nil, errors.New(aerr.Error())
 			}
@@ -545,7 +522,7 @@ func getAWSImages(ec2Service *ec2.EC2) (*ec2.DescribeImagesOutput, error) {
 func (p *AWS) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	var cimages []lepton.CloudImage
 
-	result, err := getAWSImages(p.ec2)
+	result, err := getAWSImages(p.execCtx, p.ec2)
 	if err != nil {
 		return nil, err
 	}
@@ -555,7 +532,7 @@ func (p *AWS) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage
 		tagName := p.getNameTag(image.Tags)
 
 		if tagName == nil {
-			tagName = &ec2.Tag{Value: aws.String("n/a")}
+			tagName = &awsEc2Types.Tag{Value: aws.String("n/a")}
 		}
 
 		labels := []string{}
@@ -569,7 +546,7 @@ func (p *AWS) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage
 			Tag:     *tagName.Value,
 			Name:    *image.Name,
 			ID:      *image.ImageId,
-			Status:  *image.State,
+			Status:  string(image.State),
 			Labels:  labels,
 			Created: imageCreatedAt,
 		}
@@ -636,8 +613,8 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 		return fmt.Errorf("error running deregister image operation: %s", err)
 	}
 
-	amiID := aws.StringValue(image.ImageId)
-	snapID := aws.StringValue(image.BlockDeviceMappings[0].Ebs.SnapshotId)
+	amiID := aws.ToString(image.ImageId)
+	snapID := aws.ToString(image.BlockDeviceMappings[0].Ebs.SnapshotId)
 
 	// grab snapshotid && grab image id
 
@@ -645,7 +622,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 		ImageId: aws.String(amiID),
 		DryRun:  aws.Bool(false),
 	}
-	_, err = p.ec2.DeregisterImage(params)
+	_, err = p.ec2.DeregisterImage(p.execCtx, params)
 	if err != nil {
 		return fmt.Errorf("error running deregister image operation: %s", err)
 	}
@@ -655,7 +632,7 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 		SnapshotId: aws.String(snapID),
 		DryRun:     aws.Bool(false),
 	}
-	_, err = p.ec2.DeleteSnapshot(params2)
+	_, err = p.ec2.DeleteSnapshot(p.execCtx, params2)
 	if err != nil {
 		return fmt.Errorf("error running snapshot delete: %s", err)
 	}
@@ -663,24 +640,24 @@ func (p *AWS) DeleteImage(ctx *lepton.Context, imagename string) error {
 	return nil
 }
 
-func (p *AWS) findImageByName(name string) (*ec2.Image, error) {
+func (p *AWS) findImageByName(name string) (*awsEc2Types.Image, error) {
 	return p.findImageByNameUsingSession(p.ec2, name)
 }
 
-func (p *AWS) findImageByNameUsingSession(ec2Session *ec2.EC2, name string) (*ec2.Image, error) {
-	ec2Filters := []*ec2.Filter{
-		{Name: aws.String("tag:Name"), Values: []*string{&name}},
-		{Name: aws.String("tag:CreatedBy"), Values: []*string{aws.String("ops")}},
+func (p *AWS) findImageByNameUsingSession(ec2Session *ec2.Client, name string) (*awsEc2Types.Image, error) {
+	ec2Filters := []awsEc2Types.Filter{
+		{Name: aws.String("tag:Name"), Values: []string{name}},
+		{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}},
 	}
 
 	input := &ec2.DescribeImagesInput{
 		Filters: ec2Filters,
 	}
 
-	result, err := ec2Session.DescribeImages(input)
+	result, err := ec2Session.DescribeImages(p.execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				log.Error(aerr)
 			}
@@ -694,7 +671,7 @@ func (p *AWS) findImageByNameUsingSession(ec2Session *ec2.EC2, name string) (*ec
 		return nil, fmt.Errorf("image %v not found", name)
 	}
 
-	return result.Images[0], nil
+	return &result.Images[0], nil
 }
 
 // SyncImage syncs image from provider to another provider
@@ -717,10 +694,10 @@ func (p *AWS) getArchiveName(ctx *lepton.Context) string {
 
 func (p *AWS) waitSnapshotToBeReady(config *types.Config, importTaskID *string) (*string, error) {
 	taskFilter := &ec2.DescribeImportSnapshotTasksInput{
-		ImportTaskIds: []*string{importTaskID},
+		ImportTaskIds: []string{aws.ToString(importTaskID)},
 	}
 
-	_, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
+	_, err := p.ec2.DescribeImportSnapshotTasks(p.execCtx, taskFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -731,52 +708,7 @@ func (p *AWS) waitSnapshotToBeReady(config *types.Config, importTaskID *string) 
 	bar := progressbar.New(100)
 	bar.RenderBlank()
 
-	ct := aws.BackgroundContext()
-	w := request.Waiter{
-		Name:        "DescribeImportSnapshotTasks",
-		Delay:       request.ConstantWaiterDelay(15 * time.Second),
-		MaxAttempts: 120,
-		Acceptors: []request.WaiterAcceptor{
-			{
-				State:    request.SuccessWaiterState,
-				Matcher:  request.PathAllWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "completed",
-			},
-			{
-				State:    request.FailureWaiterState,
-				Matcher:  request.PathAnyWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "deleted",
-			},
-			{
-				State:    request.FailureWaiterState,
-				Matcher:  request.PathAnyWaiterMatch,
-				Argument: "ImportSnapshotTasks[].SnapshotTaskDetail.Status",
-				Expected: "deleting",
-			},
-		},
-		NewRequest: func(opts []request.Option) (*request.Request, error) {
-			// update progress bar
-			snapshotTasksOutput, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
-			if err == nil && len(snapshotTasksOutput.ImportSnapshotTasks) > 0 {
-				snapshotProgress := (*snapshotTasksOutput.ImportSnapshotTasks[0]).SnapshotTaskDetail.Progress
-
-				if snapshotProgress != nil {
-					progress, _ := strconv.Atoi(*snapshotProgress)
-					bar.Set(progress)
-					bar.RenderBlank()
-				}
-			}
-
-			req, _ := p.ec2.DescribeImportSnapshotTasksRequest(taskFilter)
-			req.SetContext(ct)
-			req.ApplyOptions(opts...)
-			return req, nil
-		},
-	}
-
-	err = w.WaitWithContext(ct)
+	err = WaitUntilEc2SnapshotCompleted(p.execCtx, &config.CloudConfig.Zone, &ec2.DescribeSnapshotsInput{Filters: taskFilter.Filters})
 
 	bar.Set(100)
 	bar.Finish()
@@ -789,7 +721,7 @@ func (p *AWS) waitSnapshotToBeReady(config *types.Config, importTaskID *string) 
 
 	fmt.Printf("\nimport done - took %f minutes\n", time.Since(waitStartTime).Minutes())
 
-	describeOutput, err := p.ec2.DescribeImportSnapshotTasks(taskFilter)
+	describeOutput, err := p.ec2.DescribeImportSnapshotTasks(p.execCtx, taskFilter)
 	if err != nil {
 		return nil, err
 	}

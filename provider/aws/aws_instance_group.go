@@ -5,9 +5,11 @@ package aws
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/autoscaling"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
+	awsAutoscalingTypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/nanovms/ops/log"
 )
 
@@ -15,21 +17,21 @@ import (
 type LaunchTemplateInput struct {
 	AutoScalingGroup         string
 	ImageID                  string
-	InstanceNetworkInterface *ec2.InstanceNetworkInterfaceSpecification
+	InstanceNetworkInterface *awsEc2Types.InstanceNetworkInterfaceSpecification
 	InstanceProfileName      string
 	InstanceType             string
 	LaunchTemplateName       string
-	Tags                     []*ec2.Tag
+	Tags                     []awsEc2Types.Tag
 }
 
 // launchTemplateInstanceNetworkInterfaceSpecificationRequest
 // convert from InstanceNetworkInterfaceSpecification to LaunchTemplateInstanceNetworkInterfaceSpecificationRequest
-func (lti LaunchTemplateInput) launchTemplateInstanceNetworkInterfaceSpecificationRequest() *ec2.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest {
+func (lti LaunchTemplateInput) launchTemplateInstanceNetworkInterfaceSpecificationRequest() *awsEc2Types.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest {
 	if lti.InstanceNetworkInterface == nil {
 		return nil
 	}
 
-	req := &ec2.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest{
+	req := &awsEc2Types.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest{
 		DeleteOnTermination: lti.InstanceNetworkInterface.DeleteOnTermination,
 		DeviceIndex:         lti.InstanceNetworkInterface.DeviceIndex,
 		Groups:              lti.InstanceNetworkInterface.Groups,
@@ -38,7 +40,7 @@ func (lti LaunchTemplateInput) launchTemplateInstanceNetworkInterfaceSpecificati
 	}
 
 	for _, item := range lti.InstanceNetworkInterface.Ipv6Addresses {
-		req.Ipv6Addresses = append(req.Ipv6Addresses, &ec2.InstanceIpv6AddressRequest{
+		req.Ipv6Addresses = append(req.Ipv6Addresses, awsEc2Types.InstanceIpv6AddressRequest{
 			Ipv6Address: item.Ipv6Address,
 		})
 	}
@@ -68,27 +70,27 @@ func (p *AWS) autoScalingLaunchTemplate(req *LaunchTemplateInput) error {
 // and call CreateLaunchTemplate API for Amazon Elastic Compute Cloud.
 func (p *AWS) createLaunchTemplate(req *LaunchTemplateInput) (*ec2.CreateLaunchTemplateOutput, error) {
 	input := &ec2.CreateLaunchTemplateInput{
-		LaunchTemplateData: &ec2.RequestLaunchTemplateData{
-			BlockDeviceMappings: []*ec2.LaunchTemplateBlockDeviceMappingRequest{
+		LaunchTemplateData: &awsEc2Types.RequestLaunchTemplateData{
+			BlockDeviceMappings: []awsEc2Types.LaunchTemplateBlockDeviceMappingRequest{
 				{
 					DeviceName: aws.String("/dev/sda1"),
-					Ebs: &ec2.LaunchTemplateEbsBlockDeviceRequest{
+					Ebs: &awsEc2Types.LaunchTemplateEbsBlockDeviceRequest{
 						DeleteOnTermination: aws.Bool(true),
-						VolumeType:          aws.String("gp2"),
+						VolumeType:          awsEc2Types.VolumeTypeGp2,
 					},
 				},
 			},
 			ImageId:      aws.String(req.ImageID),
-			InstanceType: aws.String(req.InstanceType),
-			Monitoring: &ec2.LaunchTemplatesMonitoringRequest{
+			InstanceType: awsEc2Types.InstanceType(req.InstanceType),
+			Monitoring: &awsEc2Types.LaunchTemplatesMonitoringRequest{
 				Enabled: aws.Bool(true),
 			},
-			NetworkInterfaces: []*ec2.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest{
-				req.launchTemplateInstanceNetworkInterfaceSpecificationRequest(),
+			NetworkInterfaces: []awsEc2Types.LaunchTemplateInstanceNetworkInterfaceSpecificationRequest{
+				*req.launchTemplateInstanceNetworkInterfaceSpecificationRequest(),
 			},
-			TagSpecifications: []*ec2.LaunchTemplateTagSpecificationRequest{
+			TagSpecifications: []awsEc2Types.LaunchTemplateTagSpecificationRequest{
 				{
-					ResourceType: aws.String("instance"),
+					ResourceType: awsEc2Types.ResourceTypeInstance,
 					Tags:         req.Tags,
 				},
 			},
@@ -98,12 +100,12 @@ func (p *AWS) createLaunchTemplate(req *LaunchTemplateInput) (*ec2.CreateLaunchT
 	}
 
 	if req.InstanceProfileName != "" {
-		input.LaunchTemplateData.IamInstanceProfile = &ec2.LaunchTemplateIamInstanceProfileSpecificationRequest{
+		input.LaunchTemplateData.IamInstanceProfile = &awsEc2Types.LaunchTemplateIamInstanceProfileSpecificationRequest{
 			Name: aws.String(req.InstanceProfileName),
 		}
 	}
 
-	return p.ec2.CreateLaunchTemplate(input)
+	return p.ec2.CreateLaunchTemplate(p.execCtx, input)
 }
 
 // modifyLaunchTemplate from one version to DefaultVersion
@@ -112,24 +114,22 @@ func (p *AWS) modifyLaunchTemplate(version string, ltName string) error {
 		DefaultVersion:     aws.String(version),
 		LaunchTemplateName: aws.String(ltName),
 	}
-	_, err := p.ec2.ModifyLaunchTemplate(params)
+	_, err := p.ec2.ModifyLaunchTemplate(p.execCtx, params)
 	return err
 }
 
 // updateAutoScalingGroup
 // build UpdateAutoScalingGroupInput and Updates the configuration for the specified Auto Scaling group.
 func (p *AWS) updateAutoScalingGroup(asgName string, ltName string) error {
-	asgCli := autoscaling.New(p.session)
-
 	params := &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: aws.String(asgName),
-		LaunchTemplate: &autoscaling.LaunchTemplateSpecification{
+		LaunchTemplate: &awsAutoscalingTypes.LaunchTemplateSpecification{
 			LaunchTemplateName: aws.String(ltName),
 			Version:            aws.String("$Default"),
 		},
 	}
 
-	if _, err := asgCli.UpdateAutoScalingGroup(params); err != nil {
+	if _, err := p.asg.UpdateAutoScalingGroup(p.execCtx, params); err != nil {
 		return err
 	}
 

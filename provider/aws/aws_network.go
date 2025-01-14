@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -12,40 +13,39 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/network"
 	"github.com/nanovms/ops/types"
 )
 
 // GetSecurityGroup checks whether the configuration security group exists and has the configuration VPC assigned
-func (p *AWS) GetSecurityGroup(ctx *lepton.Context, svc *ec2.EC2, vpc *ec2.Vpc) (sg *ec2.SecurityGroup, err error) {
+func (p *AWS) GetSecurityGroup(execCtx context.Context, ctx *lepton.Context, svc *ec2.Client, vpc *awsEc2Types.Vpc) (sg *awsEc2Types.SecurityGroup, err error) {
 	sgName := ctx.Config().CloudConfig.SecurityGroup
 
 	input := &ec2.DescribeSecurityGroupsInput{
-		Filters: []*ec2.Filter{
+		Filters: []awsEc2Types.Filter{
 			{
 				Name:   aws.String("group-name"),
-				Values: aws.StringSlice([]string{sgName}),
+				Values: aws.ToStringSlice([]*string{aws.String(sgName)}),
 			},
 		},
 	}
 
 	var result *ec2.DescribeSecurityGroupsOutput
 
-	result, err = svc.DescribeSecurityGroups(input)
+	result, err = svc.DescribeSecurityGroups(execCtx, input)
 	if err != nil {
 		return
 	} else if len(result.SecurityGroups) == 0 {
 		input := &ec2.DescribeSecurityGroupsInput{
-			GroupIds: []*string{
-				aws.String(sgName),
-			},
+			GroupIds: aws.ToStringSlice([]*string{aws.String(sgName)}),
 		}
 
-		result, err = svc.DescribeSecurityGroups(input)
+		result, err = svc.DescribeSecurityGroups(execCtx, input)
 		if err != nil {
 			err = fmt.Errorf("get security group with id '%s': %s", sg, err.Error())
 			return
@@ -60,26 +60,26 @@ func (p *AWS) GetSecurityGroup(ctx *lepton.Context, svc *ec2.EC2, vpc *ec2.Vpc) 
 		return
 	}
 
-	sg = result.SecurityGroups[0]
+	sg = &result.SecurityGroups[0]
 
 	return
 }
 
 // GetSubnet returns a subnet with the context subnet name or the default subnet of vpc passed by argument
-func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.Subnet, error) {
+func (p *AWS) GetSubnet(execCtx context.Context, ctx *lepton.Context, svc *ec2.Client, vpcID string) (*awsEc2Types.Subnet, error) {
 	subnetName := ctx.Config().CloudConfig.Subnet
-	var filters []*ec2.Filter
+	var filters []awsEc2Types.Filter
 	var result *ec2.DescribeSubnetsOutput
 	var err error
 
-	filters = append(filters, &ec2.Filter{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{vpcID})})
+	filters = append(filters, awsEc2Types.Filter{Name: aws.String("vpc-id"), Values: []string{vpcID}})
 
 	if subnetName != "" {
 		subnetIDRegexp, _ := regexp.Compile("^subnet-.+")
 
 		if subnetIDRegexp.Match([]byte(subnetName)) {
-			result, err = svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
-				SubnetIds: aws.StringSlice([]string{subnetName}),
+			result, err = svc.DescribeSubnets(execCtx, &ec2.DescribeSubnetsInput{
+				SubnetIds: []string{subnetName},
 				Filters:   filters,
 			})
 			if err != nil {
@@ -87,8 +87,8 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 				return nil, err
 			}
 		} else {
-			result, err = svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
-				Filters: append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{subnetName})}),
+			result, err = svc.DescribeSubnets(execCtx, &ec2.DescribeSubnetsInput{
+				Filters: append(filters, awsEc2Types.Filter{Name: aws.String("tag:Name"), Values: []string{subnetName}}),
 			})
 			if err != nil {
 				err = fmt.Errorf("unable to describe subnets, %v", err)
@@ -97,7 +97,7 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 		}
 
 		if len(result.Subnets) != 0 {
-			return result.Subnets[0], nil
+			return &result.Subnets[0], nil
 		}
 
 	} else {
@@ -105,7 +105,7 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 			Filters: filters,
 		}
 
-		result, err = svc.DescribeSubnets(input)
+		result, err = svc.DescribeSubnets(execCtx, input)
 		if err != nil {
 			err = fmt.Errorf("unable to describe subnets, %v", err)
 			return nil, err
@@ -120,23 +120,23 @@ func (p *AWS) GetSubnet(ctx *lepton.Context, svc *ec2.EC2, vpcID string) (*ec2.S
 
 	for _, subnet := range result.Subnets {
 		if *subnet.DefaultForAz {
-			return subnet, nil
+			return &subnet, nil
 		}
 	}
 
-	return result.Subnets[0], nil
+	return &result.Subnets[0], nil
 }
 
 // CreateSubnet creates a subnet on vpc
-func (p *AWS) CreateSubnet(ctx *lepton.Context, vpc *ec2.Vpc) (subnet *ec2.Subnet, err error) {
+func (p *AWS) CreateSubnet(execCtx context.Context, ctx *lepton.Context, vpc *awsEc2Types.Vpc) (subnet *awsEc2Types.Subnet, err error) {
 	tags, _ := buildAwsTags([]types.Tag{}, ctx.Config().CloudConfig.Subnet)
 
 	createSubnetInput := &ec2.CreateSubnetInput{
 		AvailabilityZone: aws.String(ctx.Config().CloudConfig.Zone),
 		VpcId:            vpc.VpcId,
 		CidrBlock:        vpc.CidrBlock,
-		TagSpecifications: []*ec2.TagSpecification{
-			{Tags: tags, ResourceType: aws.String("subnet")},
+		TagSpecifications: []awsEc2Types.TagSpecification{
+			{Tags: tags, ResourceType: awsEc2Types.ResourceTypeSubnet},
 		},
 	}
 
@@ -149,7 +149,7 @@ func (p *AWS) CreateSubnet(ctx *lepton.Context, vpc *ec2.Vpc) (subnet *ec2.Subne
 		createSubnetInput.Ipv6CidrBlock = types.StringPtr(ipv6Addr.String() + "/64")
 	}
 
-	result, err := p.ec2.CreateSubnet(createSubnetInput)
+	result, err := p.ec2.CreateSubnet(execCtx, createSubnetInput)
 	if err != nil {
 		return
 	}
@@ -160,10 +160,10 @@ func (p *AWS) CreateSubnet(ctx *lepton.Context, vpc *ec2.Vpc) (subnet *ec2.Subne
 }
 
 // GetVPC returns a vpc with the context vpc name or the default vpc
-func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
+func (p *AWS) GetVPC(execCtx context.Context, ctx *lepton.Context, svc *ec2.Client) (*awsEc2Types.Vpc, error) {
 	vpcName := ctx.Config().CloudConfig.VPC
 
-	var vpc *ec2.Vpc
+	var vpc *awsEc2Types.Vpc
 	var input *ec2.DescribeVpcsInput
 	var result *ec2.DescribeVpcsOutput
 	var err error
@@ -175,22 +175,22 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 			ctx.Logger().Debugf("no vpcs with name %s found", vpcName)
 			ctx.Logger().Debugf("getting vpcs filtered by id %s", vpcName)
 			input = &ec2.DescribeVpcsInput{
-				VpcIds: aws.StringSlice([]string{vpcName}),
+				VpcIds: []string{vpcName},
 			}
-			result, err = svc.DescribeVpcs(input)
+			result, err = svc.DescribeVpcs(execCtx, input)
 			if err != nil {
 				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 			}
 		} else {
 			ctx.Logger().Debugf("getting vpcs filtered by name %s", vpcName)
-			var filters []*ec2.Filter
+			var filters []awsEc2Types.Filter
 
-			filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{vpcName})})
+			filters = append(filters, awsEc2Types.Filter{Name: aws.String("tag:Name"), Values: []string{vpcName}})
 			input = &ec2.DescribeVpcsInput{
 				Filters: filters,
 			}
 
-			result, err = svc.DescribeVpcs(input)
+			result, err = svc.DescribeVpcs(execCtx, input)
 			if err != nil {
 				return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 			}
@@ -199,12 +199,12 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 		ctx.Logger().Debugf("found %d vpcs that match the criteria %s", len(result.Vpcs), vpcName)
 
 		if len(result.Vpcs) != 0 {
-			return result.Vpcs[0], nil
+			return &result.Vpcs[0], nil
 		}
 	} else {
 		ctx.Logger().Debug("no vpc name specified")
 		ctx.Logger().Debug("getting all vpcs")
-		result, err = svc.DescribeVpcs(input)
+		result, err = svc.DescribeVpcs(execCtx, input)
 		if err != nil {
 			return nil, fmt.Errorf("unable to describe VPCs, %v", err)
 		}
@@ -214,14 +214,14 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 			isDefault := *s.IsDefault
 			if isDefault {
 				ctx.Logger().Debug("picking default vpc")
-				vpc = result.Vpcs[i]
+				vpc = &result.Vpcs[i]
 			}
 		}
 
 		// if there is no default VPC select the first vpc of the list
 		if vpc == nil && len(result.Vpcs) != 0 {
 			ctx.Logger().Debug("no default vpc found")
-			vpc = result.Vpcs[0]
+			vpc = &result.Vpcs[0]
 			ctx.Logger().Debugf("picking vpc %+v", vpc)
 		}
 	}
@@ -229,7 +229,7 @@ func (p *AWS) GetVPC(ctx *lepton.Context, svc *ec2.EC2) (*ec2.Vpc, error) {
 	return vpc, nil
 }
 
-func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *ec2.IpPermission {
+func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *awsEc2Types.IpPermission {
 	fromPort := port
 	toPort := port
 
@@ -253,36 +253,36 @@ func (p *AWS) buildFirewallRule(protocol string, port string, ipv4, ipv6 bool) *
 		os.Exit(1)
 	}
 
-	var ec2Permission = new(ec2.IpPermission)
-	ec2Permission.SetIpProtocol(protocol)
-	ec2Permission.SetFromPort(int64(fromPortInt))
-	ec2Permission.SetToPort(int64(toPortInt))
+	var ec2Permission = new(awsEc2Types.IpPermission)
+	ec2Permission.IpProtocol = &protocol
+	ec2Permission.FromPort = aws.Int32(int32(fromPortInt))
+	ec2Permission.ToPort = aws.Int32(int32(toPortInt))
 
 	if ipv4 {
-		ec2Permission.SetIpRanges([]*ec2.IpRange{
+		ec2Permission.IpRanges = []awsEc2Types.IpRange{
 			{CidrIp: aws.String("0.0.0.0/0")},
-		})
+		}
 	}
 
 	if ipv6 {
-		ec2Permission.SetIpv6Ranges([]*ec2.Ipv6Range{
+		ec2Permission.Ipv6Ranges = []awsEc2Types.Ipv6Range{
 			{CidrIpv6: aws.String("::/0")},
-		})
+		}
 	}
 
 	return ec2Permission
 }
 
 // DeleteSG deletes a security group
-func (p *AWS) DeleteSG(groupID *string) {
+func (p *AWS) DeleteSG(execCtx context.Context, groupID *string) {
 	input := &ec2.DeleteSecurityGroupInput{
 		GroupId: groupID,
 	}
 
-	_, err := p.ec2.DeleteSecurityGroup(input)
+	_, err := p.ec2.DeleteSecurityGroup(execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				fmt.Println(aerr.Error())
 			}
@@ -296,27 +296,27 @@ func (p *AWS) DeleteSG(groupID *string) {
 
 // CreateSG - Create security group
 // instance specific
-func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, iname string, vpcID string) (sg *ec2.SecurityGroup, err error) {
+func (p *AWS) CreateSG(execCtx context.Context, ctx *lepton.Context, svc *ec2.Client, iname string, vpcID string) (sg *awsEc2Types.SecurityGroup, err error) {
 	t := time.Now().UnixNano()
 	s := strconv.FormatInt(t, 10)
 
 	sgName := iname + "-" + s
 
 	// Create tags to assign to the instance
-	tags := []*ec2.Tag{}
-	tags = append(tags, &ec2.Tag{Key: aws.String("ops-created"), Value: aws.String("true")})
+	tags := []awsEc2Types.Tag{}
+	tags = append(tags, awsEc2Types.Tag{Key: aws.String("ops-created"), Value: aws.String("true")})
 
-	createRes, err := svc.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+	createRes, err := svc.CreateSecurityGroup(execCtx, &ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(sgName),
 		Description: aws.String("security group for " + iname),
 		VpcId:       aws.String(vpcID),
-		TagSpecifications: []*ec2.TagSpecification{
-			{ResourceType: aws.String("security-group"), Tags: tags},
+		TagSpecifications: []awsEc2Types.TagSpecification{
+			{ResourceType: awsEc2Types.ResourceTypeSecurityGroup, Tags: tags},
 		},
 	})
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			case "InvalidVpcID.NotFound":
 				errstr := fmt.Sprintf("Unable to find VPC with ID %q.", vpcID)
 				err = errors.New(errstr)
@@ -331,31 +331,30 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, iname string, vpcID st
 		err = errors.New(errstr)
 		return
 	}
-	fmt.Printf("Created security group %s with VPC %s.\n",
-		aws.StringValue(createRes.GroupId), vpcID)
+	fmt.Printf("Created security group %s with VPC %s.\n", createRes.GroupId, vpcID)
 
-	var ec2Permissions []*ec2.IpPermission
+	var ec2Permissions []awsEc2Types.IpPermission
 
 	var ipv6 bool
 	if ctx.Config().CloudConfig.EnableIPv6 {
 		rule := p.buildFirewallRule("icmpv6", "-1", false, true)
-		ec2Permissions = append(ec2Permissions, rule)
+		ec2Permissions = append(ec2Permissions, *rule)
 		ipv6 = true
 	}
 
 	for _, port := range ctx.Config().RunConfig.Ports {
 		rule := p.buildFirewallRule("tcp", port, true, ipv6)
-		ec2Permissions = append(ec2Permissions, rule)
+		ec2Permissions = append(ec2Permissions, *rule)
 	}
 
 	for _, port := range ctx.Config().RunConfig.UDPPorts {
 		rule := p.buildFirewallRule("udp", port, true, ipv6)
-		ec2Permissions = append(ec2Permissions, rule)
+		ec2Permissions = append(ec2Permissions, *rule)
 	}
 
 	// maybe have these ports specified from config.json in near future
 	if len(ec2Permissions) != 0 {
-		_, err = svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+		_, err = svc.AuthorizeSecurityGroupIngress(execCtx, &ec2.AuthorizeSecurityGroupIngressInput{
 			GroupId:       createRes.GroupId,
 			IpPermissions: ec2Permissions,
 		})
@@ -366,8 +365,8 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, iname string, vpcID st
 		}
 	}
 
-	result, err := svc.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-		GroupIds: aws.StringSlice([]string{*createRes.GroupId}),
+	result, err := svc.DescribeSecurityGroups(execCtx, &ec2.DescribeSecurityGroupsInput{
+		GroupIds: []string{*createRes.GroupId},
 	})
 	if err != nil {
 		return
@@ -375,13 +374,13 @@ func (p *AWS) CreateSG(ctx *lepton.Context, svc *ec2.EC2, iname string, vpcID st
 		err = errors.New("failed creating security group")
 	}
 
-	sg = result.SecurityGroups[0]
+	sg = &result.SecurityGroups[0]
 
 	return
 }
 
 // CreateVPC creates a virtual network
-func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err error) {
+func (p *AWS) CreateVPC(execCtx context.Context, ctx *lepton.Context, svc *ec2.Client) (vpc *awsEc2Types.Vpc, err error) {
 	vnetName := ctx.Config().CloudConfig.VPC
 
 	if vnetName == "" {
@@ -391,7 +390,7 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 
 	tags, _ := buildAwsTags([]types.Tag{}, vnetName)
 
-	vpcs, err := svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
+	vpcs, err := svc.DescribeVpcs(execCtx, &ec2.DescribeVpcsInput{})
 	if err != nil {
 		return
 	}
@@ -404,19 +403,19 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 
 	createInput := &ec2.CreateVpcInput{
 		CidrBlock: aws.String(network.AllocateNewCidrBlock(cidrBlocks)),
-		TagSpecifications: []*ec2.TagSpecification{
-			{Tags: tags, ResourceType: aws.String("vpc")},
+		TagSpecifications: []awsEc2Types.TagSpecification{
+			{Tags: tags, ResourceType: awsEc2Types.ResourceTypeVpc},
 		},
 	}
 
 	if ctx.Config().CloudConfig.EnableIPv6 {
-		createInput.SetAmazonProvidedIpv6CidrBlock(true)
+		createInput.AmazonProvidedIpv6CidrBlock = aws.Bool(true)
 	}
 
-	_, err = svc.CreateVpc(createInput)
+	_, err = svc.CreateVpc(execCtx, createInput)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				err = errors.New(aerr.Error())
 			}
@@ -426,23 +425,19 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 		return
 	}
 
-	vpc, err = p.GetVPC(ctx, svc)
+	vpc, err = p.GetVPC(execCtx, ctx, svc)
 	if err != nil {
 		return
 	}
 
 	// Add routes to allow external traffic
-	var routeTable *ec2.RouteTable
-	rtFilters := []*ec2.Filter{{Name: aws.String("vpc-id"), Values: aws.StringSlice([]string{*vpc.VpcId})}}
-	err = svc.DescribeRouteTablesPages(&ec2.DescribeRouteTablesInput{Filters: rtFilters}, func(page *ec2.DescribeRouteTablesOutput, lastPage bool) bool {
-		if len(page.RouteTables) != 0 {
-			routeTable = page.RouteTables[0]
-		}
-
-		return false
-	})
+	var routeTable *awsEc2Types.RouteTable
+	rtFilters := []awsEc2Types.Filter{{Name: aws.String("vpc-id"), Values: []string{*vpc.VpcId}}}
+	describeRouteTablesOutput, err := svc.DescribeRouteTables(execCtx, &ec2.DescribeRouteTablesInput{Filters: rtFilters})
 	if err != nil {
 		return
+	} else if len(describeRouteTablesOutput.RouteTables) != 0 {
+		routeTable = &describeRouteTablesOutput.RouteTables[0]
 	}
 
 	if routeTable == nil {
@@ -452,34 +447,30 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 		return
 	}
 
-	var gw *ec2.InternetGateway
-	gwFilters := []*ec2.Filter{{Name: aws.String("attachment.vpc-id"), Values: aws.StringSlice([]string{*vpc.VpcId})}}
-	err = svc.DescribeInternetGatewaysPages(&ec2.DescribeInternetGatewaysInput{Filters: gwFilters}, func(page *ec2.DescribeInternetGatewaysOutput, lastPage bool) bool {
-		if len(page.InternetGateways) != 0 {
-			gw = page.InternetGateways[0]
-		}
-
-		return false
-	})
+	var gw *awsEc2Types.InternetGateway
+	gwFilters := []awsEc2Types.Filter{{Name: aws.String("attachment.vpc-id"), Values: []string{*vpc.VpcId}}}
+	describeGatewaysOutput, err := svc.DescribeInternetGateways(execCtx, &ec2.DescribeInternetGatewaysInput{Filters: gwFilters})
 	if err != nil {
 		return
+	} else if len(describeGatewaysOutput.InternetGateways) != 0 {
+		gw = &describeGatewaysOutput.InternetGateways[0]
 	}
 
 	if gw == nil {
 		gwInput := &ec2.CreateInternetGatewayInput{}
-		gwOutput, err := svc.CreateInternetGateway(gwInput)
+		gwOutput, err := svc.CreateInternetGateway(execCtx, gwInput)
 		if err != nil {
 			err = fmt.Errorf("failed creating an Internet Gateway: %v", err)
 			return nil, err
 		}
 
-		_, err = svc.AttachInternetGateway(&ec2.AttachInternetGatewayInput{VpcId: vpc.VpcId, InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId})
+		_, err = svc.AttachInternetGateway(execCtx, &ec2.AttachInternetGatewayInput{VpcId: vpc.VpcId, InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId})
 		if err != nil {
 			err = fmt.Errorf("failed attaching an Internet Gateway to a VPC: %v", err)
 			return nil, err
 		}
 
-		gw = &ec2.InternetGateway{InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId}
+		gw = &awsEc2Types.InternetGateway{InternetGatewayId: gwOutput.InternetGateway.InternetGatewayId}
 	}
 
 	if ctx.Config().CloudConfig.EnableIPv6 {
@@ -488,7 +479,7 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 			RouteTableId:             routeTable.RouteTableId,
 			GatewayId:                gw.InternetGatewayId,
 		}
-		_, err = svc.CreateRoute(createRouteInput)
+		_, err = svc.CreateRoute(execCtx, createRouteInput)
 		if err != nil {
 			err = fmt.Errorf("failed creating ipv6 public route: %v", err)
 			return
@@ -500,7 +491,7 @@ func (p *AWS) CreateVPC(ctx *lepton.Context, svc *ec2.EC2) (vpc *ec2.Vpc, err er
 		RouteTableId:         routeTable.RouteTableId,
 		GatewayId:            gw.InternetGatewayId,
 	}
-	_, err = svc.CreateRoute(createRouteInput)
+	_, err = svc.CreateRoute(execCtx, createRouteInput)
 	if err != nil {
 		err = fmt.Errorf("failed creating ipv4 public route: %v", err)
 		return
