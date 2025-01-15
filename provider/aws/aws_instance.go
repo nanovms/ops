@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,61 +12,53 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
 	"github.com/olekukonko/tablewriter"
 )
 
-func formalizeAWSInstance(instance *ec2.Instance) *lepton.CloudInstance {
+func formalizeAWSInstance(instance *awsEc2Types.Instance) *lepton.CloudInstance {
 	imageName := "unknown"
 	instanceName := "unknown"
 	for x := 0; x < len(instance.Tags); x++ {
-		if aws.StringValue(instance.Tags[x].Key) == "Name" {
-			instanceName = aws.StringValue(instance.Tags[x].Value)
-		} else if aws.StringValue(instance.Tags[x].Key) == "image" {
-			imageName = aws.StringValue(instance.Tags[x].Value)
+		if aws.ToString(instance.Tags[x].Key) == "Name" {
+			instanceName = aws.ToString(instance.Tags[x].Value)
+		} else if aws.ToString(instance.Tags[x].Key) == "image" {
+			imageName = aws.ToString(instance.Tags[x].Value)
 		}
 	}
 
 	var privateIps, publicIps []string
 	for _, ninterface := range instance.NetworkInterfaces {
-		privateIps = append(privateIps, aws.StringValue(ninterface.PrivateIpAddress))
+		privateIps = append(privateIps, aws.ToString(ninterface.PrivateIpAddress))
 
 		if ninterface.Association != nil && ninterface.Association.PublicIp != nil {
-			publicIps = append(publicIps, aws.StringValue(ninterface.Association.PublicIp))
+			publicIps = append(publicIps, aws.ToString(ninterface.Association.PublicIp))
 		}
 	}
 
 	return &lepton.CloudInstance{
-		ID:         aws.StringValue(instance.InstanceId),
+		ID:         aws.ToString(instance.InstanceId),
 		Name:       instanceName,
-		Status:     aws.StringValue(instance.State.Name),
-		Created:    aws.TimeValue(instance.LaunchTime).String(),
+		Status:     string(instance.State.Name),
+		Created:    aws.ToTime(instance.LaunchTime).String(),
 		PublicIps:  publicIps,
 		PrivateIps: privateIps,
 		Image:      imageName,
 	}
 }
 
-func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance {
-	svc, err := session.NewSession(&aws.Config{
-		Region: aws.String(stripZone(region))},
-	)
-	if err != nil {
-		log.Fatalf("failed creation session: %s", err.Error())
-	}
-	compute := ec2.New(svc)
-
-	filter = append(filter, &ec2.Filter{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})})
+func getAWSInstances(execCtx context.Context, ec2Client *ec2.Client, region string, filter []awsEc2Types.Filter) ([]lepton.CloudInstance, error) {
+	filter = append(filter, awsEc2Types.Filter{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}})
 
 	request := ec2.DescribeInstancesInput{
 		Filters: filter,
 	}
-	result, err := compute.DescribeInstances(&request)
+	result, err := ec2Client.DescribeInstances(execCtx, &request, func(opts *ec2.Options) { opts.Region = region })
 	if err != nil {
 		log.Fatalf("failed getting instances: ", err.Error())
 	}
@@ -77,12 +70,12 @@ func getAWSInstances(region string, filter []*ec2.Filter) []lepton.CloudInstance
 		for i := 0; i < len(reservation.Instances); i++ {
 			instance := reservation.Instances[i]
 
-			cinstances = append(cinstances, *formalizeAWSInstance(instance))
+			cinstances = append(cinstances, *formalizeAWSInstance(&instance))
 		}
 
 	}
 
-	return cinstances
+	return cinstances, nil
 }
 
 // RebootInstance reboots the instance.
@@ -103,21 +96,21 @@ func (p *AWS) StartInstance(ctx *lepton.Context, instanceName string) error {
 	}
 
 	input := &ec2.StartInstancesInput{
-		InstanceIds: []*string{
-			aws.String(*instance.InstanceId),
+		InstanceIds: []string{
+			aws.ToString(instance.InstanceId),
 		},
 	}
 
-	result, err := p.ec2.StartInstances(input)
+	result, err := p.ec2.StartInstances(p.execCtx, input)
 
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
-				return errors.New(aerr.Message())
+				return errors.New(aerr.ErrorMessage())
 			}
 		} else {
-			return errors.New(aerr.Message())
+			return errors.New(aerr.ErrorMessage())
 		}
 
 	}
@@ -141,21 +134,19 @@ func (p *AWS) StopInstance(ctx *lepton.Context, instanceName string) error {
 	}
 
 	input := &ec2.StopInstancesInput{
-		InstanceIds: []*string{
-			aws.String(*instance.InstanceId),
-		},
+		InstanceIds: []string{aws.ToString(instance.InstanceId)},
 	}
 
-	result, err := p.ec2.StopInstances(input)
+	result, err := p.ec2.StopInstances(p.execCtx, input)
 
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
-				return errors.New(aerr.Message())
+				return errors.New(aerr.ErrorMessage())
 			}
 		} else {
-			return errors.New(aerr.Message())
+			return errors.New(aerr.ErrorMessage())
 		}
 
 	}
@@ -170,7 +161,7 @@ func (p *AWS) StopInstance(ctx *lepton.Context, instanceName string) error {
 // CreateInstance - Creates instance on AWS Platform
 func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ctx.Logger().Debug("getting aws images")
-	result, err := getAWSImages(p.ec2)
+	result, err := getAWSImages(p.execCtx, p.ec2)
 	if err != nil {
 		ctx.Logger().Errorf("failed getting images")
 		return err
@@ -181,7 +172,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	ami := ""
 	var last time.Time
 	layout := "2006-01-02T15:04:05.000Z"
-	var image *ec2.Image
+	var image *awsEc2Types.Image
 
 	rv := ctx.Config().CloudConfig.RootVolume
 
@@ -191,7 +182,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		if result.Images[i].Tags != nil {
 			for _, tag := range result.Images[i].Tags {
 				if *tag.Key == "Name" && *tag.Value == imgName {
-					image = result.Images[i]
+					image = &result.Images[i]
 					snapID = *(result.Images[i].BlockDeviceMappings[0].Ebs.SnapshotId)
 					break
 				}
@@ -203,9 +194,9 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		return fmt.Errorf("can't find ami with name %s", imgName)
 	}
 
-	ami = aws.StringValue(image.ImageId)
+	ami = aws.ToString(image.ImageId)
 
-	ntime := aws.StringValue(image.CreationDate)
+	ntime := aws.ToString(image.CreationDate)
 	t, err := time.Parse(layout, ntime)
 	if err != nil {
 		return err
@@ -222,45 +213,45 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	// create security group - could take a potential 'RemotePort' from
 	// config.json in future
 	ctx.Logger().Debug("getting vpc")
-	vpc, err := p.GetVPC(ctx, svc)
+	vpc, err := p.GetVPC(p.execCtx, ctx, svc)
 	if err != nil {
 		return err
 	}
 
 	if vpc == nil {
 		ctx.Logger().Debugf("creating vpc with name %s", cloudConfig.VPC)
-		vpc, err = p.CreateVPC(ctx, svc)
+		vpc, err = p.CreateVPC(p.execCtx, ctx, svc)
 		if err != nil {
 			return err
 		}
 	}
 
-	var sg *ec2.SecurityGroup
+	var sg *awsEc2Types.SecurityGroup
 
 	if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
 		ctx.Logger().Debugf("getting security group with name %s", cloudConfig.SecurityGroup)
-		sg, err = p.GetSecurityGroup(ctx, svc, vpc)
+		sg, err = p.GetSecurityGroup(p.execCtx, ctx, svc, vpc)
 		if err != nil {
 			return err
 		}
 	} else {
 		iname := ctx.Config().RunConfig.InstanceName
 		ctx.Logger().Debugf("creating new security group in vpc %s", *vpc.VpcId)
-		sg, err = p.CreateSG(ctx, svc, iname, *vpc.VpcId)
+		sg, err = p.CreateSG(p.execCtx, ctx, svc, iname, *vpc.VpcId)
 		if err != nil {
 			return err
 		}
 	}
 
 	ctx.Logger().Debug("getting subnet")
-	var subnet *ec2.Subnet
-	subnet, err = p.GetSubnet(ctx, svc, *vpc.VpcId)
+	var subnet *awsEc2Types.Subnet
+	subnet, err = p.GetSubnet(p.execCtx, ctx, svc, *vpc.VpcId)
 	if err != nil {
 		return err
 	}
 
 	if subnet == nil {
-		subnet, err = p.CreateSubnet(ctx, vpc)
+		subnet, err = p.CreateSubnet(p.execCtx, ctx, vpc)
 		if err != nil {
 			return err
 		}
@@ -272,35 +263,35 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	// Create tags to assign to the instance
 	tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
-	tags = append(tags, &ec2.Tag{Key: aws.String("image"), Value: &imgName})
+	tags = append(tags, awsEc2Types.Tag{Key: aws.String("image"), Value: &imgName})
 
-	instanceNIS := &ec2.InstanceNetworkInterfaceSpecification{
+	instanceNIS := &awsEc2Types.InstanceNetworkInterfaceSpecification{
 		DeleteOnTermination: aws.Bool(true),
-		DeviceIndex:         aws.Int64(0),
-		Groups: []*string{
-			aws.String(*sg.GroupId),
+		DeviceIndex:         aws.Int32(0),
+		Groups: []string{
+			aws.ToString(sg.GroupId),
 		},
 		SubnetId: aws.String(*subnet.SubnetId),
 	}
 
 	instanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String(ami),
-		InstanceType: aws.String(cloudConfig.Flavor),
-		MinCount:     aws.Int64(1),
-		MaxCount:     aws.Int64(1),
-		TagSpecifications: []*ec2.TagSpecification{
-			{ResourceType: aws.String("instance"), Tags: tags},
-			{ResourceType: aws.String("volume"), Tags: tags},
+		InstanceType: awsEc2Types.InstanceType(cloudConfig.Flavor),
+		MinCount:     aws.Int32(1),
+		MaxCount:     aws.Int32(1),
+		TagSpecifications: []awsEc2Types.TagSpecification{
+			{ResourceType: awsEc2Types.ResourceType("instance"), Tags: tags},
+			{ResourceType: awsEc2Types.ResourceType("volume"), Tags: tags},
 		},
 	}
 
 	if rv.IsCustom() {
 		ctx.Logger().Debug("setting custom root settings")
-		ebs := &ec2.EbsBlockDevice{}
+		ebs := &awsEc2Types.EbsBlockDevice{}
 		ebs.SnapshotId = aws.String(snapID)
 
 		if rv.Typeof != "" {
-			ebs.VolumeType = aws.String(rv.Typeof)
+			ebs.VolumeType = awsEc2Types.VolumeType(rv.Typeof)
 		}
 
 		if rv.Iops != 0 {
@@ -309,7 +300,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 				os.Exit(1)
 			}
 
-			ebs.Iops = aws.Int64(rv.Iops)
+			ebs.Iops = aws.Int32(int32(rv.Iops))
 		}
 
 		if rv.Throughput != 0 {
@@ -318,14 +309,14 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 				os.Exit(1)
 			}
 
-			ebs.Throughput = aws.Int64(rv.Throughput)
+			ebs.Throughput = aws.Int32(int32(rv.Throughput))
 		}
 
 		if rv.Size != 0 {
-			ebs.VolumeSize = aws.Int64(rv.Size)
+			ebs.VolumeSize = aws.Int32(int32(rv.Size))
 		}
 
-		instanceInput.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
+		instanceInput.BlockDeviceMappings = []awsEc2Types.BlockDeviceMapping{
 			{
 				DeviceName: aws.String("/dev/sda1"),
 				Ebs:        ebs,
@@ -334,7 +325,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	if ctx.Config().CloudConfig.DedicatedHostID != "" {
-		instanceInput.Placement = &ec2.Placement{
+		instanceInput.Placement = &awsEc2Types.Placement{
 			HostId: aws.String(ctx.Config().CloudConfig.DedicatedHostID),
 		}
 	}
@@ -346,19 +337,19 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 	if ctx.Config().CloudConfig.EnableIPv6 {
 		if ctx.Config().RunConfig.IPv6Address != "" {
 			v6ad := ctx.Config().RunConfig.IPv6Address
-			addie := &ec2.InstanceIpv6Address{
+			addie := &awsEc2Types.InstanceIpv6Address{
 				Ipv6Address: aws.String(v6ad),
 			}
-			instanceNIS.Ipv6Addresses = []*ec2.InstanceIpv6Address{addie}
+			instanceNIS.Ipv6Addresses = []awsEc2Types.InstanceIpv6Address{*addie}
 		} else {
-			instanceNIS.SetIpv6AddressCount(1)
+			instanceNIS.Ipv6AddressCount = aws.Int32(1)
 		}
 	}
 
-	instanceInput.NetworkInterfaces = []*ec2.InstanceNetworkInterfaceSpecification{instanceNIS}
+	instanceInput.NetworkInterfaces = []awsEc2Types.InstanceNetworkInterfaceSpecification{*instanceNIS}
 
 	if cloudConfig.InstanceProfile != "" {
-		instanceInput.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
+		instanceInput.IamInstanceProfile = &awsEc2Types.IamInstanceProfileSpecification{
 			Name: aws.String(cloudConfig.InstanceProfile),
 		}
 	}
@@ -377,7 +368,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 			return err
 		}
 
-		instanceInput.LaunchTemplate = &ec2.LaunchTemplateSpecification{
+		instanceInput.LaunchTemplate = &awsEc2Types.LaunchTemplateSpecification{
 			LaunchTemplateName: aws.String(ltInput.LaunchTemplateName),
 			Version:            aws.String("$Default"),
 		}
@@ -385,7 +376,7 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 	// Specify the details of the instance that you want to create.
 	ctx.Logger().Debugf("running instance with input %v", instanceInput)
-	_, err = svc.RunInstances(instanceInput)
+	_, err = svc.RunInstances(p.execCtx, instanceInput)
 	if err != nil {
 		log.Errorf("Could not create instance %v", err)
 		return err
@@ -414,9 +405,9 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 				InstanceId: aws.String(instance.ID),
 				PublicIp:   aws.String(cloudConfig.StaticIP),
 			}
-			result, err := svc.AssociateAddress(input)
+			result, err := svc.AssociateAddress(p.execCtx, input)
 			if err != nil {
-				log.Errorf("Could not associate elastic IP: %v", err.(awserr.Error).Error())
+				log.Errorf("Could not associate elastic IP: %v", err.(smithy.APIError).Error())
 			} else {
 				log.Debugf("result: %v", result)
 			}
@@ -457,17 +448,21 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 
 // GetInstances return all instances on AWS
 func (p *AWS) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
-	cinstances := getAWSInstances(ctx.Config().CloudConfig.Zone, nil)
-
+	cinstances, err := getAWSInstances(p.execCtx, p.ec2, ctx.Config().CloudConfig.Zone, nil)
+	if err != nil {
+		return nil, err
+	}
 	return cinstances, nil
 }
 
 // GetInstanceByName returns instance with given name
 func (p *AWS) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	var filters []*ec2.Filter
-	filters = append(filters, &ec2.Filter{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})})
-	instances := getAWSInstances(ctx.Config().CloudConfig.Zone, filters)
-	if len(instances) == 0 {
+	var filters []awsEc2Types.Filter
+	filters = append(filters, awsEc2Types.Filter{Name: aws.String("tag:Name"), Values: []string{name}})
+	instances, err := getAWSInstances(p.execCtx, p.ec2, ctx.Config().CloudConfig.Zone, filters)
+	if err != nil {
+		return nil, err
+	} else if len(instances) == 0 {
 		return nil, lepton.ErrInstanceNotFound(name)
 	}
 	return &instances[0], nil
@@ -533,8 +528,8 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 	}
 
 	input := &ec2.TerminateInstancesInput{
-		InstanceIds: []*string{
-			aws.String(*instance.InstanceId),
+		InstanceIds: []string{
+			aws.ToString(instance.InstanceId),
 		},
 	}
 
@@ -543,10 +538,10 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		return err
 	}
 
-	_, err = p.ec2.TerminateInstances(input)
+	_, err = p.ec2.TerminateInstances(p.execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				log.Error(aerr)
 			}
@@ -560,17 +555,17 @@ func (p *AWS) DeleteInstance(ctx *lepton.Context, instanceName string) error {
 		fmt.Println("waiting for sg to be removed")
 
 		i2 := &ec2.DescribeInstancesInput{
-			InstanceIds: []*string{
-				aws.String(*instance.InstanceId),
+			InstanceIds: []string{
+				aws.ToString(instance.InstanceId),
 			},
 		}
 
-		err = p.ec2.WaitUntilInstanceTerminated(i2)
+		_, err = WaitUntilEc2InstanceTerminated(p.execCtx, p.ec2, i2)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		p.DeleteSG(sg.GroupId)
+		p.DeleteSG(p.execCtx, sg.GroupId)
 	}
 
 	return nil
@@ -608,10 +603,10 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 		InstanceId: aws.String(*instance.InstanceId),
 	}
 
-	result, err := p.ec2.GetConsoleOutput(input)
+	result, err := p.ec2.GetConsoleOutput(p.execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				log.Error(aerr)
 			}
@@ -621,7 +616,7 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 		return "", err
 	}
 
-	data, err := base64.StdEncoding.DecodeString(aws.StringValue(result.Output))
+	data, err := base64.StdEncoding.DecodeString(aws.ToString(result.Output))
 	if err != nil {
 		return "", err
 	}
@@ -631,17 +626,17 @@ func (p *AWS) GetInstanceLogs(ctx *lepton.Context, instanceName string) (string,
 	return l, nil
 }
 
-func (p *AWS) findInstanceByName(name string) (*ec2.Instance, error) {
-	filter := []*ec2.Filter{
-		{Name: aws.String("tag:CreatedBy"), Values: aws.StringSlice([]string{"ops"})},
-		{Name: aws.String("tag:Name"), Values: aws.StringSlice([]string{name})},
-		{Name: aws.String("instance-state-name"), Values: aws.StringSlice([]string{"running", "pending", "shutting-down", "stopping", "stopped"})},
+func (p *AWS) findInstanceByName(name string) (*awsEc2Types.Instance, error) {
+	filter := []awsEc2Types.Filter{
+		{Name: aws.String("tag:CreatedBy"), Values: []string{"ops"}},
+		{Name: aws.String("tag:Name"), Values: []string{name}},
+		{Name: aws.String("instance-state-name"), Values: []string{"running", "pending", "shutting-down", "stopping", "stopped"}},
 	}
 
 	request := ec2.DescribeInstancesInput{
 		Filters: filter,
 	}
-	result, err := p.ec2.DescribeInstances(&request)
+	result, err := p.ec2.DescribeInstances(p.execCtx, &request)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting instances: %v", err)
 	}
@@ -650,25 +645,25 @@ func (p *AWS) findInstanceByName(name string) (*ec2.Instance, error) {
 		return nil, fmt.Errorf("instance with name %s not found", name)
 	}
 
-	return result.Reservations[0].Instances[0], nil
+	return &result.Reservations[0].Instances[0], nil
 }
 
 // bit of a hack here
 // can convert to explicit tag
 // currently only returns sgs created by ops
-func (p *AWS) findSGByName(name string) (*ec2.SecurityGroup, error) {
-	filter := []*ec2.Filter{
-		{Name: aws.String("tag:ops-created"), Values: aws.StringSlice([]string{"true"})},
-		{Name: aws.String("description"), Values: aws.StringSlice([]string{"security group for " + name})},
+func (p *AWS) findSGByName(name string) (*awsEc2Types.SecurityGroup, error) {
+	filter := []awsEc2Types.Filter{
+		{Name: aws.String("tag:ops-created"), Values: []string{"true"}},
+		{Name: aws.String("description"), Values: []string{"security group for " + name}},
 	}
 
 	request := ec2.DescribeSecurityGroupsInput{
 		Filters: filter,
 	}
-	result, err := p.ec2.DescribeSecurityGroups(&request)
+	result, err := p.ec2.DescribeSecurityGroups(p.execCtx, &request)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting security group: %v", err)
 	}
 
-	return result.SecurityGroups[0], nil
+	return &result.SecurityGroups[0], nil
 }

@@ -3,15 +3,16 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	smithy "github.com/aws/smithy-go"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 )
@@ -23,13 +24,18 @@ type S3 struct{}
 func (s *S3) CopyToBucket(config *types.Config, archPath string) error {
 
 	bucket := config.CloudConfig.BucketName
-	zone := config.CloudConfig.Zone
+	execCtx := context.Background()
+	awsSdkConfig, err := GetAwsSdkConfig(execCtx, &config.CloudConfig.Zone)
 
 	// this verification/role creator can be skipped for users that
 	// already have it setup but don't have rights to verify
 	if !config.CloudConfig.SkipImportVerify {
+		if err != nil {
+			return err
+		}
+		iamClient := iam.NewFromConfig(*awsSdkConfig)
 		// verify we can even use the vm importer
-		VerifyRole(zone, bucket)
+		VerifyRole(execCtx, iamClient, config.CloudConfig.Zone, bucket)
 	}
 
 	file, err := os.Open(archPath)
@@ -38,18 +44,13 @@ func (s *S3) CopyToBucket(config *types.Config, archPath string) error {
 	}
 	defer file.Close()
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(stripZone(zone))},
-	)
-	if err != nil {
-		return err
-	}
+	s3Client := s3.NewFromConfig(*awsSdkConfig)
 
 	fileStats, _ := file.Stat()
 	log.Info("Uploading image with", fmt.Sprintf("%fMB", float64(fileStats.Size())/math.Pow(10, 6)))
 
-	uploader := s3manager.NewUploader(sess)
-	_, err = uploader.Upload(&s3manager.UploadInput{
+	uploader := manager.NewUploader(s3Client)
+	_, err = uploader.Upload(execCtx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(config.CloudConfig.ImageName),
 		Body:   file,
@@ -64,27 +65,24 @@ func (s *S3) CopyToBucket(config *types.Config, archPath string) error {
 }
 
 // DeleteFromBucket deletes key from config's bucket
-func (s *S3) DeleteFromBucket(config *types.Config, key string) error {
+func (s *S3) DeleteFromBucket(execCtx context.Context, config *types.Config, key string) error {
 	bucket := config.CloudConfig.BucketName
-	zone := config.CloudConfig.Zone
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(stripZone(zone))},
-	)
+	awsSdkConfig, err := GetAwsSdkConfig(execCtx, &config.CloudConfig.Zone)
 	if err != nil {
 		return err
 	}
-	svc := s3.New(sess)
+	s3Client := s3.NewFromConfig(*awsSdkConfig)
 
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
 
-	_, err = svc.DeleteObject(input)
+	_, err = s3Client.DeleteObject(execCtx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if aerr, ok := err.(smithy.APIError); ok {
+			switch aerr.ErrorCode() {
 			default:
 				log.Error(aerr)
 			}
