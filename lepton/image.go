@@ -358,6 +358,11 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 		}
 	}
 
+	_, ok := c.ManifestPassthrough["firewall"]
+	if ok {
+		m.AddKlibs([]string{"firewall"})
+	}
+
 	for k, v := range c.Mounts {
 		m.AddMount(k, v)
 	}
