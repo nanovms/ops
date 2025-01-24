@@ -40,12 +40,12 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) error {
 }
 
 // ListImages ...
-func (p *Provider) ListImages(ctx *lepton.Context) error {
+func (p *Provider) ListImages(ctx *lepton.Context, filter string) error {
 	return nil
 }
 
 // GetImages ...
-func (p *Provider) GetImages(ctx *lepton.Context) ([]lepton.CloudImage, error) {
+func (p *Provider) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	return nil, nil
 }
 
@@ -76,6 +76,11 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
 // ListInstances ...
 func (p *Provider) ListInstances(ctx *lepton.Context) error {
+	return nil
+}
+
+// InstanceStats ...
+func (p *Provider) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return nil
 }
 
@@ -120,7 +125,7 @@ func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, w
 }
 
 // CreateVolume ...
-func (p *Provider) CreateVolume(ctx *lepton.Context, volumeName, data, provider string) (lepton.NanosVolume, error) {
+func (p *Provider) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data, provider string) (lepton.NanosVolume, error) {
 	return lepton.NanosVolume{}, nil
 }
 
