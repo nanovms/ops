@@ -15,6 +15,8 @@ func ExecuteQMP(commands []string, last string) {
 	c, err := net.Dial("tcp", "localhost:"+last)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println("can't connect to QMP - is it enabled?\nhttps://docs.ops.city/ops/configuration#runconfig.qmp")
+		os.Exit(1)
 	}
 	defer c.Close()
 
