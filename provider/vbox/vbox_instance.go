@@ -109,6 +109,13 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) (err error) {
 		return
 	}
 
+	modifyVM = exec.Command("VBoxManage", "modifyvm", vm.Name, "--uart1", "0x3F8", "4", "--uartmode1", "file", "/tmp/"+name+".log")
+	err = modifyVM.Run()
+	if err != nil {
+		ctx.Logger().Errorf("failed to adjust uart")
+		return
+	}
+
 	err = virtualbox.SetGuestProperty(vm.Name, "Image", imageName)
 	if err != nil {
 		ctx.Logger().Errorf("failed to set image as guest property")
@@ -271,12 +278,22 @@ func (p *Provider) GetInstanceByName(ctx *lepton.Context, name string) (instance
 
 // GetInstanceLogs is a stub
 func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
-	return "", errors.New("Unsupported")
+	data, err := os.ReadFile("/tmp/" + instancename + ".log")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return string(data), nil
 }
 
 // PrintInstanceLogs prints vm log on console
 func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
-	return errors.New("Unsupported")
+	l, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		return err
+	}
+	fmt.Println(l)
+	return nil
 }
 
 func findOrCreateVmsDir() (string, error) {
