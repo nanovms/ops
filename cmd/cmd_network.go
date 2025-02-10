@@ -76,21 +76,31 @@ func createBridgedNetwork(bn string, subnet string) {
 		network = subnet
 	}
 
-	ecmd := exec.Command("sudo", "brctl", "show", bridge)
+	// get device info - "ip link show dev br0"
+	ecmd := exec.Command("ip", "link", "show", "dev", bridge)
 	out, err := ecmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ip link show dev", bridge, err)
 	}
 
-	if strings.Contains(string(out), "does not exist!") {
+	if strings.Contains(string(out), "does not exist") {
 
-		ecmd = exec.Command("sudo", "brctl", "addbr", bridge)
+		// create bridge device - "ip link add name br0 type bridge"
+		ecmd = exec.Command("sudo", "ip", "link", "add", "name", bridge, "type", "bridge")
+		_, err = ecmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("ip link add name", bridge, "type bridge", err)
+		}
+
+		// set bridge device ip address - "ip addr add 192.168.33.1/24 dev br0"
+		ecmd = exec.Command("sudo", "ip", "addr", "add", network, "dev", bridge)
 		_, err = ecmd.CombinedOutput()
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		ecmd = exec.Command("sudo", "ifconfig", bridge, "inet", network)
+		// bring bridge device up - "ip link set dev br0 up"
+		ecmd = exec.Command("sudo", "ip", "link", "set", "dev", bridge, "up")
 		_, err = ecmd.CombinedOutput()
 		if err != nil {
 			fmt.Println(err)
@@ -223,10 +233,11 @@ func killBridge(bridgeName string) {
 		fmt.Printf("killing bridge %s\n", bridgeName)
 	}
 
-	ecmd := exec.Command("sudo", "ifconfig", bridgeName, "down")
+	// bring bridge device down - "ip link set dev br0 down"
+	ecmd := exec.Command("sudo", "ip", "link", "set", "dev", bridgeName, "down")
 	out, err := ecmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ip link set dev", bridgeName, "down", err)
 	}
 
 	if log {
@@ -249,10 +260,11 @@ func killBridge(bridgeName string) {
 		fmt.Println(string(out))
 	}
 
-	ecmd = exec.Command("sudo", "brctl", "delbr", bridgeName)
+	// delete bridge device - "ip link delete dev br0 type bridge"
+	ecmd = exec.Command("sudo", "ip", "link", "delete", "dev", bridgeName, "type", "bridge")
 	out, err = ecmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ip link delete dev", bridgeName, "type bridge", err)
 	}
 
 	if log {
@@ -276,13 +288,14 @@ func getPidOfBridge(bridgeName string) string {
 }
 
 func emptyBridge(bridgeName string) bool {
-	o, err := tools.ExecCmd("brctl show | grep " + bridgeName)
+	// "ip link show master br0"
+	ecmd := exec.Command("ip", "link", "show", "master", bridgeName)
+	out, err := ecmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ip link show master", bridgeName, err)
 	}
 
-	oo := strings.Split(o, "no")
-	if strings.TrimSpace(oo[1]) == "" {
+	if strings.TrimSpace(string(out)) == "" {
 		fmt.Println("bridge is reporting nothing else in it")
 		return true
 	}
