@@ -122,9 +122,9 @@ func NewReader(imagePath string) (*Reader, error) {
 		partType := part[4]
 		var rootFSPart int
 		if partType == 0xEF { // EFI System Partition
-			rootFSPart = 2
+			rootFSPart = 2 // 0 - uefi, 1 - bootfs, 2 - rootfs
 		} else {
-			rootFSPart = 1
+			rootFSPart = 1 // 0 - bootfs, 1 - rootfs
 		}
 		part = getPartition(mbr, rootFSPart)
 		var lbaStart, sectors uint32
@@ -142,6 +142,38 @@ func NewReader(imagePath string) (*Reader, error) {
 		imageFile: imageFile,
 	}
 	reader.rootFS, err = tfsRead(imageFile, fsStart, fsSize)
+	return reader, err
+}
+
+// NewReaderBootFS returns an instance of Reader for bootFS
+func NewReaderBootFS(imagePath string) (*Reader, error) {
+	imageFile, err := os.Open(imagePath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open image file: %v", err)
+	}
+	mbr := make([]byte, sectorSize)
+	if _, err = imageFile.Read(mbr); err != nil {
+		return nil, fmt.Errorf("cannot read MBR: %v", err)
+	}
+	if (mbr[sectorSize-2] != 0x55) || (mbr[sectorSize-1] != 0xAA) { // assume raw filesystem
+		return nil, fmt.Errorf("%s", "bootfs not found")
+	}
+	part := getPartition(mbr, 0)
+	partType := part[4]
+	if partType == 0xEF { // EFI System Partition
+		part = getPartition(mbr, 1) // 0 - uefi, 1 - bootfs, 2 - rootfs
+	}
+	var lbaStart, sectors uint32
+	binary.Read(bytes.NewReader(part[8:12]), binary.LittleEndian, &lbaStart)
+	binary.Read(bytes.NewReader(part[12:16]), binary.LittleEndian, &sectors)
+	if lbaStart == 0 || sectors == 0 { // assume raw filesystem
+		return nil, fmt.Errorf("%s", "bootfs not found")
+	}
+	bootFSStart := uint64(lbaStart) * sectorSize
+	reader := &Reader{
+		imageFile: imageFile,
+	}
+	reader.rootFS, err = tfsRead(imageFile, bootFSStart, bootFSSize)
 	return reader, err
 }
 
