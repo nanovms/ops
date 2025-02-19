@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-
-	"github.com/nanovms/ops/log"
 )
 
 // link refers to a link filetype
@@ -83,9 +81,7 @@ func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 
 	a := archCheck(imgpath)
 	if arm && a != "arm" || !arm && a == "arm" {
-		fmt.Printf("you are trying to mix %s [%s] with the wrong kernel\n", imgpath, a)
-		fmt.Printf("try re-creating the image with --arch=")
-		os.Exit(1)
+		return fmt.Errorf("you are trying to mix %q [%s] with the wrong kernel, try re-creating the image with --arch=\n", imgpath, a)
 	}
 
 	err = m.AddFile(program, imgpath)
@@ -156,7 +152,7 @@ func (m *Manifest) AddKlibs(klibs []string) {
 		if _, err := os.Stat(klibPath); !os.IsNotExist(err) {
 			m.AddFileTo(klibDir, klib, klibPath)
 		} else {
-			fmt.Printf("Klib %s not found in directory %s\n", klib, hostDir)
+			fmt.Printf("Klib %q not found in directory %q\n", klib, hostDir)
 		}
 	}
 	m.root["klibs"] = "bootfs"
@@ -252,9 +248,7 @@ func (m *Manifest) AddDirectory(dir string, workDir string, opath string, inside
 					node[parts[i]] = make(map[string]interface{})
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
-					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
-					log.Error(err)
-					return err
+					return fmt.Errorf("directory %q is conflicting with an existing file", hostpath)
 				}
 				node = node[parts[i]].(map[string]interface{})
 			}
@@ -304,9 +298,7 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 					node[parts[i]] = make(map[string]interface{})
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
-					err := fmt.Errorf("directory %s is conflicting with an existing file", hostpath)
-					log.Error(err)
-					return err
+					return fmt.Errorf("directory %q is conflicting with an existing file", hostpath)
 				}
 				node = node[parts[i]].(map[string]interface{})
 			}
@@ -352,25 +344,24 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
-		err := fmt.Errorf("file %s overriding an existing directory", filepath)
-		log.Error(err)
+		fmt.Printf("warning: file %q overriding an existing directory\n", filepath)
 	}
 
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && node[parts[len(parts)-1]] != hostpath {
-		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, node[parts[len(parts)-1]], hostpath)
+		fmt.Printf("warning: overwriting existing file %q hostpath old: %q new: %q\n", filepath, node[parts[len(parts)-1]], hostpath)
 	}
 
 	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("file \"%s\" is missing: %v", hostpath, err)
+			return fmt.Errorf("file %q is missing: %w", hostpath, err)
 		}
 		return err
 	}
 
 	s, err := os.Readlink(hostpath)
 	if err != nil {
-		log.Fatalf("bad link")
+		return fmt.Errorf("bad link: %w", err)
 	}
 
 	node[parts[len(parts)-1]] = link{path: s}
@@ -396,18 +387,17 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() != reflect.String {
-		err := fmt.Errorf("file '%s' overriding an existing directory", filepath)
-		log.Error(err)
+		fmt.Printf("warning: file %q overriding an existing directory", filepath)
 	}
 
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String && pathtest != hostpath {
-		fmt.Printf("warning: overwriting existing file %s hostpath old: %s new: %s\n", filepath, pathtest, hostpath)
+		fmt.Printf("warning: overwriting existing file %q hostpath old: %s new: %q\n", filepath, pathtest, hostpath)
 	}
 
 	_, err := LookupFile(m.targetRoot, hostpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("file \"%s\" is missing: %v", hostpath, err)
+			return fmt.Errorf("file %q is missing: %v", hostpath, err)
 		}
 		return err
 	}

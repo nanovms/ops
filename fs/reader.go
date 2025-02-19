@@ -39,28 +39,28 @@ func (r *Reader) CopyFile(src, dest string, dereference bool) error {
 	if !dereference {
 		fileInfo, err := r.rootFS.stat(src)
 		if err != nil {
-			return fmt.Errorf("cannot stat source file: %v", err)
+			return fmt.Errorf("cannot stat source file: %w", err)
 		}
 		if fileInfo.Mode() == os.ModeSymlink {
 			target, err := r.rootFS.readLink(src)
 			if err != nil {
-				return fmt.Errorf("cannot read link target from source file: %v", err)
+				return fmt.Errorf("cannot read link target from source file: %w", err)
 			}
 			os.Remove(dest)
 			err = os.Symlink(target, dest)
 			if err != nil {
-				return fmt.Errorf("cannot create symbolic link: %v", err)
+				return fmt.Errorf("cannot create symbolic link: %w", err)
 			}
 			return nil
 		}
 	}
 	srcReader, err := r.rootFS.fileReader(src)
 	if err != nil {
-		return fmt.Errorf("cannot read source file: %v", err)
+		return fmt.Errorf("cannot read source file: %w", err)
 	}
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return fmt.Errorf("cannot create destination file: %v", err)
+		return fmt.Errorf("cannot create destination file: %w", err)
 	}
 	_, err = io.Copy(destFile, srcReader)
 	destFile.Close()
@@ -101,17 +101,17 @@ func (r *Reader) Close() error {
 func NewReader(imagePath string) (*Reader, error) {
 	imageFile, err := os.Open(imagePath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open image file: %v", err)
+		return nil, fmt.Errorf("cannot open image file: %w", err)
 	}
 	var info os.FileInfo
 	info, err = imageFile.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("cannot read image file: %v", err)
+		return nil, fmt.Errorf("cannot read image file: %w", err)
 	}
 	mbr := make([]byte, sectorSize)
 	_, err = imageFile.Read(mbr)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read MBR: %v", err)
+		return nil, fmt.Errorf("cannot read MBR: %w", err)
 	}
 	var fsStart, fsSize uint64
 	if (mbr[sectorSize-2] != 0x55) || (mbr[sectorSize-1] != 0xAA) { // assume raw filesystem
@@ -149,11 +149,11 @@ func NewReader(imagePath string) (*Reader, error) {
 func NewReaderBootFS(imagePath string) (*Reader, error) {
 	imageFile, err := os.Open(imagePath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open image file: %v", err)
+		return nil, fmt.Errorf("cannot open image file: %w", err)
 	}
 	mbr := make([]byte, sectorSize)
 	if _, err = imageFile.Read(mbr); err != nil {
-		return nil, fmt.Errorf("cannot read MBR: %v", err)
+		return nil, fmt.Errorf("cannot read MBR: %w", err)
 	}
 	if (mbr[sectorSize-2] != 0x55) || (mbr[sectorSize-1] != 0xAA) { // assume raw filesystem
 		return nil, fmt.Errorf("%s", "bootfs not found")
