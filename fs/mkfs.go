@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/go-errors/errors"
 )
 
 const sectorSize = 512
@@ -165,7 +163,7 @@ func (m *MkfsCommand) SetFileSystemSize(size string) error {
 		mul = 1
 		unitsIndex = len(size)
 	} else if unitsIndex == 0 {
-		return errors.New("invalid size " + size)
+		return fmt.Errorf("invalid size: %s", size)
 	} else {
 		units := strings.ToLower(size[unitsIndex:])
 		if units == "k" {
@@ -175,13 +173,13 @@ func (m *MkfsCommand) SetFileSystemSize(size string) error {
 		} else if units == "g" {
 			mul = 1024 * 1024 * 1024
 		} else {
-			return errors.New("invalid units " + units)
+			return fmt.Errorf("invalid units: %s", units)
 		}
 	}
 	var err error
 	m.size, err = strconv.ParseInt(size[:unitsIndex], 10, 64)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 	m.size *= mul
 	sectors := (m.size + sectorSize - 1) / sectorSize
@@ -225,7 +223,7 @@ func (m *MkfsCommand) Execute() error {
 	var err error
 	outFile, err = os.Create(m.outPath)
 	if err != nil {
-		return fmt.Errorf("cannot create output file %s: %v", m.outPath, err)
+		return fmt.Errorf("cannot create output file %q: %w", m.outPath, err)
 	}
 	defer outFile.Close()
 	var outOffset uint64
@@ -233,7 +231,7 @@ func (m *MkfsCommand) Execute() error {
 	if m.bootPath != "" {
 		bootFile, err = os.Open(m.bootPath)
 		if err != nil {
-			return fmt.Errorf("cannot open boot image %s: %v", m.bootPath, err)
+			return fmt.Errorf("cannot open boot image %q: %w", m.bootPath, err)
 		}
 		defer bootFile.Close()
 		b := make([]byte, 8192)
@@ -242,11 +240,11 @@ func (m *MkfsCommand) Execute() error {
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return fmt.Errorf("cannot read boot image %s: %v", m.bootPath, err)
+				return fmt.Errorf("cannot read boot image %q: %w", m.bootPath, err)
 			}
 			n, err = outFile.Write(b[:n])
 			if err != nil {
-				return fmt.Errorf("cannot write output file %s: %v", m.outPath, err)
+				return fmt.Errorf("cannot write output file %q: %w", m.outPath, err)
 			}
 			outOffset += uint64(n)
 		}
@@ -257,7 +255,7 @@ func (m *MkfsCommand) Execute() error {
 		mbr[sectorSize-1] = 0xAA
 		_, err = outFile.Write(mbr)
 		if err != nil {
-			return fmt.Errorf("cannot write partition table: %v", err)
+			return fmt.Errorf("cannot write partition table: %w", err)
 		}
 		outOffset = sectorSize
 	}
@@ -267,7 +265,7 @@ func (m *MkfsCommand) Execute() error {
 	if m.uefiPath != "" {
 		outOffset, err = writeUefiPart(outFile, outOffset, m.uefiPath)
 		if err != nil {
-			return fmt.Errorf("cannot write UEFI partition: %v", err)
+			return fmt.Errorf("cannot write UEFI partition: %w", err)
 		}
 	}
 	manifest := m.manifest
@@ -277,7 +275,7 @@ func (m *MkfsCommand) Execute() error {
 		if manifest.boot != nil {
 			_, err = tfsWrite(outFile, outOffset, bootFSSize, "", manifest.boot, m.oldEncoding)
 			if err != nil {
-				return fmt.Errorf("cannot write boot filesystem: %v", err)
+				return fmt.Errorf("cannot write boot filesystem: %w", err)
 			}
 			outOffset += bootFSSize
 		}
@@ -287,25 +285,25 @@ func (m *MkfsCommand) Execute() error {
 	}
 	m.rootTfs, err = tfsWrite(outFile, outOffset, 0, m.label, root, m.oldEncoding)
 	if err != nil {
-		return fmt.Errorf("cannot write root filesystem: %v", err)
+		return fmt.Errorf("cannot write root filesystem: %w", err)
 	}
 	if m.size != 0 {
 		var info os.FileInfo
 		info, err = outFile.Stat()
 		if err != nil {
-			return fmt.Errorf("cannot get size of output file: %v", err)
+			return fmt.Errorf("cannot get size of output file: %w", err)
 		}
 		if info.Size() < m.size {
 			err = outFile.Truncate(m.size)
 			if err != nil {
-				return fmt.Errorf("cannot set size of output file: %v", err)
+				return fmt.Errorf("cannot set size of output file: %w", err)
 			}
 		}
 	}
 	if m.partitions {
 		err = writeMBR(outFile, m.uefiPath != "")
 		if err != nil {
-			return fmt.Errorf("cannot write MBR: %v", err)
+			return fmt.Errorf("cannot write MBR: %w", err)
 		}
 	}
 	return nil
@@ -330,7 +328,7 @@ func getRootDir(root map[string]interface{}) map[string]interface{} {
 func writeUefiPart(imgFile *os.File, offset uint64, uefiPath string) (uint64, error) {
 	uefiLoader, err := os.Open(uefiPath)
 	if err != nil {
-		return offset, fmt.Errorf("cannot open UEFI loader file: %v", err)
+		return offset, fmt.Errorf("cannot open UEFI loader file: %w", err)
 	}
 	defer uefiLoader.Close()
 	_, err = imgFile.Seek(int64(offset), io.SeekStart)
@@ -369,7 +367,7 @@ func writeUefiPart(imgFile *os.File, offset uint64, uefiPath string) (uint64, er
 	var fileInfo os.FileInfo
 	fileInfo, err = uefiLoader.Stat()
 	if err != nil {
-		return offset, fmt.Errorf("failed to get UEFI loader file info: %v", err)
+		return offset, fmt.Errorf("failed to get UEFI loader file info: %w", err)
 	}
 	firstCluster := uint32(0x06)
 	lastCluster := firstCluster + uint32((fileInfo.Size()+sectorSize-1)/sectorSize)
@@ -409,7 +407,7 @@ func writeUefiPart(imgFile *os.File, offset uint64, uefiPath string) (uint64, er
 	} else if fileName == "bootaa64.efi" {
 		_, err = imgFile.Write(uefiFileBootaa64)
 	} else {
-		return offset, fmt.Errorf("invalid UEFI loader file name '%s'", fileName)
+		return offset, fmt.Errorf("invalid UEFI loader file name %q", fileName)
 	}
 	if err != nil {
 		return offset, err
@@ -433,7 +431,7 @@ func writeUefiPart(imgFile *os.File, offset uint64, uefiPath string) (uint64, er
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return offset, fmt.Errorf("cannot read UEFI loader file: %v", err)
+			return offset, fmt.Errorf("cannot read UEFI loader file: %w", err)
 		}
 		_, err = imgFile.Write(b[:n])
 		if err != nil {
@@ -471,13 +469,13 @@ func writeBlobPadded(imgFile *os.File, blob []byte, withTrailer bool) error {
 func writeMBR(imgFile *os.File, uefi bool) error {
 	info, err := imgFile.Stat()
 	if err != nil {
-		return fmt.Errorf("cannot get size of file: %v", err)
+		return fmt.Errorf("cannot get size of file: %w", err)
 	}
 	mbr := make([]byte, sectorSize)
 	var n int
 	n, err = imgFile.ReadAt(mbr, 0)
 	if (n != cap(mbr)) || (err != nil) {
-		return fmt.Errorf("failed to read MBR: %v", err)
+		return fmt.Errorf("failed to read MBR: %w", err)
 	}
 	if (mbr[sectorSize-2] != 0x55) || (mbr[sectorSize-1] != 0xAA) {
 		return fmt.Errorf("invalid MBR signature")
@@ -507,7 +505,7 @@ func writeMBR(imgFile *os.File, uefi bool) error {
 	// Write MBR
 	n, err = imgFile.WriteAt(mbr, 0)
 	if (n != cap(mbr)) || (err != nil) {
-		return fmt.Errorf("failed to write MBR: %v", err)
+		return fmt.Errorf("failed to write MBR: %w", err)
 	}
 
 	return nil

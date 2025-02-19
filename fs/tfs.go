@@ -117,7 +117,7 @@ func (t *tfs) logExtend() error {
 func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
 	buffer := make([]byte, size)
 	if _, err := t.imgFile.ReadAt(buffer, int64(t.imgOffset+offset)); err != nil {
-		return 0, fmt.Errorf("cannot read image file: %v", err)
+		return 0, fmt.Errorf("cannot read image file: %w", err)
 	}
 	if bytes.Compare(buffer[0:len(tfsMagic)], []byte(tfsMagic)) != 0 {
 		return 0, errors.New("TFS magic number not found")
@@ -522,13 +522,13 @@ func (t *tfs) writeLink(name string, target string) error {
 func (t *tfs) writeFile(name string, hostPath string) error {
 	file, err := os.Open(hostPath)
 	if err != nil {
-		return fmt.Errorf("cannot open file %s: %v", hostPath, err)
+		return fmt.Errorf("cannot open file %q: %w", hostPath, err)
 	}
 	defer file.Close()
 	var info os.FileInfo
 	info, err = file.Stat()
 	if err != nil {
-		return fmt.Errorf("cannot get size of file %s: %v", hostPath, err)
+		return fmt.Errorf("cannot get size of file %q: %w", hostPath, err)
 	}
 	tuple := make(map[string]interface{})
 	tuple["filelength"] = strconv.FormatInt(info.Size(), 10)
@@ -541,7 +541,7 @@ func (t *tfs) writeFile(name string, hostPath string) error {
 		}
 		_, err = t.imgFile.Seek(int64(t.imgOffset+t.allocated), 0)
 		if err != nil {
-			return fmt.Errorf("cannot seek image file: %v", err)
+			return fmt.Errorf("cannot seek image file: %w", err)
 		}
 		b := make([]byte, 8192)
 		for {
@@ -550,11 +550,11 @@ func (t *tfs) writeFile(name string, hostPath string) error {
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return fmt.Errorf("cannot read file %s: %v", hostPath, err)
+				return fmt.Errorf("cannot read file %q: %w", hostPath, err)
 			}
 			n, err = t.imgFile.Write(b[:n])
 			if err != nil {
-				return fmt.Errorf("cannot write image file: %v", err)
+				return fmt.Errorf("cannot write image file: %w", err)
 			}
 		}
 		extent := make(map[string]interface{})
@@ -633,7 +633,7 @@ func (t *tfs) flush() error {
 	var info os.FileInfo
 	info, err = t.imgFile.Stat()
 	if err != nil {
-		return fmt.Errorf("cannot get size of image file: %v", err)
+		return fmt.Errorf("cannot get size of image file: %w", err)
 	}
 	minSize := t.imgOffset
 	if t.size != 0 {
@@ -644,7 +644,7 @@ func (t *tfs) flush() error {
 	if uint64(info.Size()) < minSize {
 		err = t.imgFile.Truncate(int64(minSize))
 		if err != nil {
-			return fmt.Errorf("cannot truncate image file: %v", err)
+			return fmt.Errorf("cannot truncate image file: %w", err)
 		}
 	}
 	return nil
@@ -653,11 +653,11 @@ func (t *tfs) flush() error {
 func (t *tfs) readExtent(p []byte, extent *map[string]interface{}, offset uint64) (int, uint64, error) {
 	extentOffset, err := strconv.ParseUint(getString(extent, "offset"), 10, 64)
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot parse extent offset: %v", err)
+		return 0, 0, fmt.Errorf("cannot parse extent offset: %w", err)
 	}
 	extentLength, err := strconv.ParseUint(getString(extent, "length"), 10, 64)
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot parse extent length: %v", err)
+		return 0, 0, fmt.Errorf("cannot parse extent length: %w", err)
 	}
 	extentOffset *= sectorSize
 	extentLength *= sectorSize
@@ -683,7 +683,7 @@ func (t *tfs) stat(path string) (os.FileInfo, error) {
 func (t *tfs) readLink(path string) (string, error) {
 	tuple, _, err := t.lookup(t.root, path)
 	if err != nil {
-		return "", fmt.Errorf("cannot look up '%s': %v", path, err)
+		return "", fmt.Errorf("cannot look up %q: %w", path, err)
 	}
 	return getString(tuple, "linktarget"), nil
 }
@@ -695,7 +695,7 @@ func (t *tfs) fileReader(path string) (io.Reader, error) {
 	for {
 		tuple, parent, err := t.lookup(currentDir, path)
 		if err != nil {
-			return nil, fmt.Errorf("cannot look up '%s': %v", path, err)
+			return nil, fmt.Errorf("cannot look up %q: %w", path, err)
 		}
 		target := getString(tuple, "linktarget")
 		if target == "" {
@@ -703,7 +703,7 @@ func (t *tfs) fileReader(path string) (io.Reader, error) {
 			break
 		}
 		if hopCount == symlinkHopsMax {
-			return nil, fmt.Errorf("too many symbolic links, aborting at '%s'", path)
+			return nil, fmt.Errorf("too many symbolic links, aborting at %q", path)
 		}
 		hopCount++
 		currentDir = parent
@@ -711,7 +711,7 @@ func (t *tfs) fileReader(path string) (io.Reader, error) {
 	}
 	extents := getTuple(fileTuple, "extents")
 	if extents == nil {
-		return nil, fmt.Errorf("'%s' is not a file", path)
+		return nil, fmt.Errorf("%q is not a file", path)
 	}
 	var fileLength uint64 = 0
 	fileLengthStr := getString(fileTuple, "filelength")
@@ -719,14 +719,14 @@ func (t *tfs) fileReader(path string) (io.Reader, error) {
 		var err error
 		fileLength, err = strconv.ParseUint(fileLengthStr, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse file length for '%s': %v", path, err)
+			return nil, fmt.Errorf("cannot parse file length for %q: %w", path, err)
 		}
 	}
 	var extentOffsets []int
 	for fileOffset := range *extents {
 		offset, err := strconv.ParseUint(fileOffset, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse file extent offset for '%s': %v", path, err)
+			return nil, fmt.Errorf("cannot parse file extent offset for %q: %w", path, err)
 		}
 		extentOffsets = append(extentOffsets, int(offset*sectorSize))
 	}
@@ -958,7 +958,7 @@ func (r *tfsFileReader) getExtentRange() (uint64, uint64, error) {
 	start := uint64(r.extentOffsets[r.curExtIndex])
 	length, err := strconv.ParseUint(getString(r.currentExtent, "length"), 10, 64)
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot parse extent length: %v", err)
+		return 0, 0, fmt.Errorf("cannot parse extent length: %w", err)
 	}
 	return start, length * sectorSize, nil
 }
@@ -1102,11 +1102,11 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 	rand.Seed(time.Now().UnixNano())
 	_, err := rand.Read(tfs.uuid[:])
 	if err != nil {
-		return nil, fmt.Errorf("error generating random uuid: %v", err)
+		return nil, fmt.Errorf("error generating random uuid: %w", err)
 	}
 	err = tfs.logInit(oldEncoding)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create filesystem log: %v", err)
+		return nil, fmt.Errorf("cannot create filesystem log: %w", err)
 	}
 	tfs.encodeTupleHeader(len(root))
 	for k, v := range root {
@@ -1130,12 +1130,12 @@ func tfsRead(imgFile *os.File, fsOffset, fsSize uint64) (*tfs, error) {
 	tfs.decoder.dict = make(map[int]interface{})
 	nextExt, err := tfs.readLogExt(0, sectorSize)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read filesystem at first log extension: %v", err)
+		return nil, fmt.Errorf("cannot read filesystem at first log extension: %w", err)
 	}
 	for nextExt != 0 {
 		nextExt, err = tfs.readLogExt(nextExt, logExtensionSize)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read filesystem log extension: %v", err)
+			return nil, fmt.Errorf("cannot read filesystem log extension: %w", err)
 		}
 	}
 	tfs.root, err = tfs.getDictTuple(1)
