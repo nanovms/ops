@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	"github.com/nanovms/ops/fs"
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
@@ -506,6 +507,7 @@ func imageCopyCommand() *cobra.Command {
 	flags := cmdCopy.PersistentFlags()
 	flags.BoolP("recursive", "r", false, "copy directories recursively")
 	flags.BoolP("dereference", "L", false, "always follow symbolic links in image")
+	flags.BoolP("bootfs", "", false, "use boot filesystem")
 	return cmdCopy
 }
 
@@ -597,6 +599,7 @@ func imageLsCommand() *cobra.Command {
 	}
 	flags := cmdLs.PersistentFlags()
 	flags.BoolP("long-format", "l", false, "use a long listing format")
+	flags.BoolP("bootfs", "", false, "use boot filesystem")
 	return cmdLs
 }
 
@@ -693,6 +696,8 @@ func imageTreeCommand() *cobra.Command {
 		Run:   imageTreeCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
+	flags := cmdTree.PersistentFlags()
+	flags.BoolP("bootfs", "", false, "use boot filesystem")
 	return cmdTree
 }
 
@@ -836,7 +841,16 @@ func getLocalImageReader(flags *pflag.FlagSet, args []string) *fs.Reader {
 			}
 		}
 	}
-	reader, err := fs.NewReader(imagePath)
+
+	var reader *fs.Reader
+	bootFS, _ := flags.GetBool("bootfs")
+
+	switch {
+	case bootFS:
+		reader, err = fs.NewReaderBootFS(imagePath)
+	default:
+		reader, err = fs.NewReader(imagePath)
+	}
 	if err != nil {
 		exitWithError(fmt.Sprintf("Cannot load image %s: %v", imageName, err))
 	}
