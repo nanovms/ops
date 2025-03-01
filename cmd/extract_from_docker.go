@@ -84,6 +84,10 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	}
 
 	ctx, cli, containerInfo, targetExecutable, err := createContainer(imageName, targetExecutable, true, quiet)
+	fmt.Printf("found exec: %s\n", targetExecutable)
+
+	fmt.Printf("cinfo: %+v\n", containerInfo)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,8 +117,18 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		log.Fatal(err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(bytes)), "\n")
-	targetExecutablePath, librariesPath := sanitizeLine(lines[0]), lines[1:]
+	sbytes := string(bytes)
+	fmt.Printf("found %+v\n", sbytes)
+
+	lines := strings.Split(strings.TrimSpace(sbytes), "\n")
+	nlines := []string{}
+	for i := 0; i < len(lines); i++ {
+		if !strings.Contains(lines[i], "ldd") {
+			nlines = append(nlines, lines[i])
+		}
+	}
+
+	targetExecutablePath, librariesPath := sanitizeLine(nlines[0]), nlines[1:]
 
 	tempDirectory, err := os.MkdirTemp("", "*")
 	if err != nil {
@@ -254,6 +268,8 @@ out:
 		}
 	}
 
+	fmt.Printf("looking for executable of %s\n", targetExecutable)
+
 	script := fmt.Sprintf(`{
 		colors=""
 
@@ -280,12 +296,17 @@ out:
 			done
 		}
 
-		app="$(command -v "%s")"
-		echo "$app"
-		# skip statically linked binaries
-		if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
-			read_libs "$app"
-		fi
+#		if command -v ldd &> /dev/null; then
+			app="$(command -v "%s")"
+			echo "$app"
+			# skip statically linked binaries
+			if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
+				read_libs "$app"
+			fi
+#		else
+#			 app="$(command -v "%s")"
+#			 echo "$app"
+#		fi
 	}`, targetExecutable)
 
 	command := []string{"sh", "-c", script}
@@ -296,6 +317,7 @@ out:
 		Entrypoint: []string{},
 	}, nil, nil, nil, "")
 	if err != nil {
+		fmt.Printf("balls of %+v\n", containerInfo)
 		return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 	}
 
