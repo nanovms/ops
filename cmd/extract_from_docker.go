@@ -127,7 +127,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	}
 
 	sbytes := string(bytes)
-	fmt.Printf("found %+v\n", sbytes)
+	//fmt.Printf("found #%+v#\n", sbytes)
 
 	lines := strings.Split(strings.TrimSpace(sbytes), "\n")
 	nlines := []string{}
@@ -172,6 +172,10 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 
 	for _, libraryLine := range librariesPath {
 		sanitizedLibraryLine := sanitizeLine(libraryLine)
+
+		if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
+			continue
+		}
 
 		if strings.Contains(sanitizedLibraryLine, "ld-") {
 			foundld = true
@@ -338,7 +342,7 @@ out:
 						echo "$resolved_lib => $lib"
 						colors="$colors '$lib'"
 
-						read_libs "$resolved_lib"
+						read_linker "$resolved_lib"
 					fi
 				fi
 			done
@@ -378,11 +382,9 @@ out:
 			app="$(command -v "%s")"
 			echo "$app"
 			# skip statically linked binaries
-			if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
-				read_libs "$app"
-			fi
+			read_linker "$app"
 		fi
-	}`, targetExecutable)
+	}`, targetExecutable, targetExecutable)
 
 	command := []string{"sh", "-c", script}
 
