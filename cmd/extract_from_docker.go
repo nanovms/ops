@@ -83,7 +83,20 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		packageName = strings.TrimRight(name+"_"+version, "_")
 	}
 
+	fmt.Printf("using parch of %s", parch)
+
 	ctx, cli, containerInfo, targetExecutable, err := createContainer(imageName, targetExecutable, true, quiet)
+	fmt.Printf("found exec: %s\n", targetExecutable)
+
+	fmt.Printf("cinfo: %+v\n", containerInfo)
+
+	// hack as this is not taking into account cross-arch atm.
+	if len(containerInfo.Warnings) > 0 {
+		if strings.Contains(containerInfo.Warnings[0], "requested image's platform (linux/amd64)") {
+			parch = "amd64"
+		}
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,8 +126,18 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		log.Fatal(err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(bytes)), "\n")
-	targetExecutablePath, librariesPath := sanitizeLine(lines[0]), lines[1:]
+	sbytes := string(bytes)
+	//fmt.Printf("found #%+v#\n", sbytes)
+
+	lines := strings.Split(strings.TrimSpace(sbytes), "\n")
+	nlines := []string{}
+	for i := 0; i < len(lines); i++ {
+		if !strings.Contains(lines[i], "ldd") {
+			nlines = append(nlines, lines[i])
+		}
+	}
+
+	targetExecutablePath, librariesPath := sanitizeLine(nlines[0]), nlines[1:]
 
 	tempDirectory, err := os.MkdirTemp("", "*")
 	if err != nil {
@@ -145,8 +168,18 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		}
 	}
 
+	foundld := false
+
 	for _, libraryLine := range librariesPath {
 		sanitizedLibraryLine := sanitizeLine(libraryLine)
+
+		if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
+			continue
+		}
+
+		if strings.Contains(sanitizedLibraryLine, "ld-") {
+			foundld = true
+		}
 
 		if verbose {
 			fmt.Printf("Line: %s\n", sanitizedLibraryLine)
@@ -164,6 +197,30 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 			continue
 		}
 		err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// it's also not copying symlinks so we either need to map those or
+	// cp them.
+
+	// for chainguard, might not have ldd or file and might be static but
+	// still need to cp ld; this could use some more work as there could
+	// be multiple ones installed on the image (not common but possible)
+	//
+	// /lib/ld-linux-x86-64.so.2
+	// /lib/ld-linux.so.2
+	// /lib/ld-musl-x86_64.so.1
+	// /lib64/ld-linux-x86-64.so.2
+	//
+	// if file is not on the image once we cp out the binary we can run
+	// file on it locally to resolve the proper ld
+	// or can just use the combination of '--copy' && '--file'
+	if !foundld {
+		fmt.Println("no loader found - trying")
+		ldp := "/lib64/ld-linux-x86-64.so.2"
+		err = copyFromContainer(cli, containerInfo.ID, ldp, sysroot+ldp)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -239,6 +296,7 @@ out:
 		}
 		defer reader.Close()
 
+		quiet = false
 		if !quiet {
 			termFd, isTerm := term.GetFdInfo(os.Stderr)
 			jsonmessage.DisplayJSONMessagesStream(reader, os.Stdout, termFd, isTerm, nil)
@@ -254,8 +312,41 @@ out:
 		}
 	}
 
+	fmt.Printf("looking for executable of %s\n", targetExecutable)
+
+	// should have multiple cmds here..
+	// 1) determine arch
+	// 2) determine what loader we're using
+	//
+
+	// /lib64/ld-linux-x86-64.so.2 --list /usr/bin/node
+	// if we don't have ldd invoke the loader itself.
+
 	script := fmt.Sprintf(`{
 		colors=""
+
+		read_linker() {
+			for lib in $(echo "$(/lib64/ld-linux-x86-64.so.2 --list "$1" | rev | cut -d' ' -f2 | rev)"); do
+				if [ "$(echo $lib | cut -c1-1)" = "/" ]; then
+					exists=0
+					resolved_lib=$(readlink -f $lib)
+
+					for i in $(echo "$colors"); do
+						if [ "$i" = "'$lib'" ] || [ "$i" = "'$resolved_lib'" ]; then
+							exists=1
+							break
+						fi
+					done
+
+					if [ "$exists" = "0" ]; then
+						echo "$resolved_lib => $lib"
+						colors="$colors '$lib'"
+
+						read_linker "$resolved_lib"
+					fi
+				fi
+			done
+		}
 
 		read_libs() {
 			for lib in $(echo "$(ldd "$1" | rev | cut -d' ' -f2 | rev)"); do
@@ -280,13 +371,20 @@ out:
 			done
 		}
 
-		app="$(command -v "%s")"
-		echo "$app"
-		# skip statically linked binaries
-		if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
-			read_libs "$app"
+		if command -v ldd &> /dev/null; then
+			app="$(command -v "%s")"
+			echo "$app"
+			# skip statically linked binaries
+			if ! ldd "$app" 2>&1 | grep -q "Not a valid dynamic program"; then
+				read_libs "$app"
+			fi
+		else
+			app="$(command -v "%s")"
+			echo "$app"
+			# skip statically linked binaries
+			read_linker "$app"
 		fi
-	}`, targetExecutable)
+	}`, targetExecutable, targetExecutable)
 
 	command := []string{"sh", "-c", script}
 
@@ -296,6 +394,7 @@ out:
 		Entrypoint: []string{},
 	}, nil, nil, nil, "")
 	if err != nil {
+		fmt.Printf("contains %+v\n", containerInfo)
 		return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 	}
 
