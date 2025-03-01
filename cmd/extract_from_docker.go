@@ -303,6 +303,7 @@ out:
 }
 
 func copyFromContainer(cli *dockerClient.Client, containerID string, containerPath string, hostPath string) error {
+	fmt.Printf("copying %s to %s\n", containerPath, hostPath)
 	err := os.MkdirAll(path.Dir(hostPath), 0764)
 	if err != nil {
 		log.Fatal(err)
