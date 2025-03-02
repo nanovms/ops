@@ -69,7 +69,7 @@ func getCMDExecutable(imageName string) (string, error) {
 }
 
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
-func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
+func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, nodiscover bool, args []string) (string, string) {
 	var err error
 	var version string
 	var name string
@@ -164,7 +164,8 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	foundld := false
 	fmt.Println(librariesPath)
 
-	/*
+	if !nodiscover {
+
 		for _, libraryLine := range librariesPath {
 			sanitizedLibraryLine := sanitizeLine(libraryLine)
 
@@ -193,10 +194,10 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 			}
 			err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
 			if err != nil {
-				fmt.Println("shit..")
 				log.Fatal(err)
 			}
-		}*/
+		}
+	}
 
 	// for chainguard, might not have ldd or file and might be static but
 	// still need to cp ld; this could use some more work as there could
@@ -210,15 +211,14 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	// if file is not on the image once we cp out the binary we can run
 	// file on it locally to resolve the proper ld
 	// or can just use the combination of '--copy' && '--file'
-	/*	if !foundld {
+	if !foundld && !nodiscover {
 		fmt.Println("no loader found - trying others")
 		ldp := "/lib64/ld-linux-x86-64.so.2"
 		err = copyFromContainer(cli, containerInfo.ID, ldp, sysroot+ldp)
 		if err != nil {
 			log.Fatal(err)
 		}
-	}*/
-	fmt.Println(foundld)
+	}
 
 	// like docker if the user doesn't provide version of the image we consider "latest" as the version
 	if version == "" {
