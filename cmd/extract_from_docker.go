@@ -69,7 +69,7 @@ func getCMDExecutable(imageName string) (string, error) {
 }
 
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
-func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, args []string) (string, string) {
+func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, nodiscover bool, args []string) (string, string) {
 	var err error
 	var version string
 	var name string
@@ -163,35 +163,38 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 
 	foundld := false
 
-	for _, libraryLine := range librariesPath {
-		sanitizedLibraryLine := sanitizeLine(libraryLine)
+	if !nodiscover {
 
-		if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
-			continue
-		}
+		for _, libraryLine := range librariesPath {
+			sanitizedLibraryLine := sanitizeLine(libraryLine)
 
-		if strings.Contains(sanitizedLibraryLine, "ld-") {
-			foundld = true
-		}
+			if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
+				continue
+			}
 
-		if verbose {
-			fmt.Printf("Line: %s\n", sanitizedLibraryLine)
-		}
+			if strings.Contains(sanitizedLibraryLine, "ld-") {
+				foundld = true
+			}
 
-		parts := strings.Split(sanitizedLibraryLine, " => ")
+			if verbose {
+				fmt.Printf("Line: %s\n", sanitizedLibraryLine)
+			}
 
-		if len(parts) != 2 {
-			log.Fatalf("Invalid library declaration: %s", libraryLine)
-		}
+			parts := strings.Split(sanitizedLibraryLine, " => ")
 
-		libraryPath, libraryDestination := parts[0], sysroot+path.Clean(parts[1])
+			if len(parts) != 2 {
+				log.Fatalf("Invalid library declaration: %s", libraryLine)
+			}
 
-		if _, err = os.Stat(libraryDestination); err == nil {
-			continue
-		}
-		err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
-		if err != nil {
-			log.Fatal(err)
+			libraryPath, libraryDestination := parts[0], sysroot+path.Clean(parts[1])
+
+			if _, err = os.Stat(libraryDestination); err == nil {
+				continue
+			}
+			err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
@@ -207,7 +210,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	// if file is not on the image once we cp out the binary we can run
 	// file on it locally to resolve the proper ld
 	// or can just use the combination of '--copy' && '--file'
-	if !foundld {
+	if !foundld && !nodiscover {
 		fmt.Println("no loader found - trying others")
 		ldp := "/lib64/ld-linux-x86-64.so.2"
 		err = copyFromContainer(cli, containerInfo.ID, ldp, sysroot+ldp)
@@ -482,6 +485,12 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 				if err := os.MkdirAll(target, 0755); err != nil {
 					return err
 				}
+			}
+
+		case tar.TypeSymlink:
+			err = os.Symlink(header.Linkname, target)
+			if err != nil {
+				fmt.Println(err)
 			}
 
 		// file
