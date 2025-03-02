@@ -162,38 +162,41 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	}
 
 	foundld := false
+	fmt.Println(librariesPath)
 
-	for _, libraryLine := range librariesPath {
-		sanitizedLibraryLine := sanitizeLine(libraryLine)
+	/*
+		for _, libraryLine := range librariesPath {
+			sanitizedLibraryLine := sanitizeLine(libraryLine)
 
-		if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
-			continue
-		}
+			if strings.Contains(sanitizedLibraryLine, "error while loading shared libraries") {
+				continue
+			}
 
-		if strings.Contains(sanitizedLibraryLine, "ld-") {
-			foundld = true
-		}
+			if strings.Contains(sanitizedLibraryLine, "ld-") {
+				foundld = true
+			}
 
-		if verbose {
-			fmt.Printf("Line: %s\n", sanitizedLibraryLine)
-		}
+			if verbose {
+				fmt.Printf("Line: %s\n", sanitizedLibraryLine)
+			}
 
-		parts := strings.Split(sanitizedLibraryLine, " => ")
+			parts := strings.Split(sanitizedLibraryLine, " => ")
 
-		if len(parts) != 2 {
-			log.Fatalf("Invalid library declaration: %s", libraryLine)
-		}
+			if len(parts) != 2 {
+				log.Fatalf("Invalid library declaration: %s", libraryLine)
+			}
 
-		libraryPath, libraryDestination := parts[0], sysroot+path.Clean(parts[1])
+			libraryPath, libraryDestination := parts[0], sysroot+path.Clean(parts[1])
 
-		if _, err = os.Stat(libraryDestination); err == nil {
-			continue
-		}
-		err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+			if _, err = os.Stat(libraryDestination); err == nil {
+				continue
+			}
+			err = copyFromContainer(cli, containerInfo.ID, libraryPath, libraryDestination)
+			if err != nil {
+				fmt.Println("shit..")
+				log.Fatal(err)
+			}
+		}*/
 
 	// for chainguard, might not have ldd or file and might be static but
 	// still need to cp ld; this could use some more work as there could
@@ -207,14 +210,15 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	// if file is not on the image once we cp out the binary we can run
 	// file on it locally to resolve the proper ld
 	// or can just use the combination of '--copy' && '--file'
-	if !foundld {
+	/*	if !foundld {
 		fmt.Println("no loader found - trying others")
 		ldp := "/lib64/ld-linux-x86-64.so.2"
 		err = copyFromContainer(cli, containerInfo.ID, ldp, sysroot+ldp)
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
+	}*/
+	fmt.Println(foundld)
 
 	// like docker if the user doesn't provide version of the image we consider "latest" as the version
 	if version == "" {
@@ -482,6 +486,33 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 				if err := os.MkdirAll(target, 0755); err != nil {
 					return err
 				}
+			}
+
+		case tar.TypeSymlink:
+			fmt.Printf("found a symlink %s\n", target)
+			/*
+			   f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+
+			   	if err != nil {
+			   		return err
+			   	}
+
+			   	if _, err := io.Copy(f, tr); err != nil {
+			   		return err
+			   	}
+
+			   f.Close()
+			*/
+			//			fmt.Printf("Symlink: %s -> %s\n\n", header.Name, header.Linkname)
+			/*
+				targetPath, err := os.Readlink(target)
+				if err != nil {
+					fmt.Println("Error reading symlink:", err)
+				}
+			*/
+			err = os.Symlink(header.Linkname, target) // target, targetPath) // oldPath, newPath)
+			if err != nil {
+				fmt.Println(err)
 			}
 
 		// file
