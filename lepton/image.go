@@ -3,6 +3,7 @@ package lepton
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/fs"
 	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
@@ -42,11 +42,11 @@ func BuildImage(c types.Config) error {
 func BuildImageFromPackage(packagepath string, c types.Config) error {
 	m, err := BuildPackageManifest(packagepath, &c)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	if err := createImageFile(&c, m); err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func createFile(filepath string) (*os.File, error) {
 	}
 	fd, err := os.Create(filepath)
 	if err != nil {
-		return nil, errors.Wrap(err, 1)
+		return nil, err
 	}
 	return fd, nil
 }
@@ -226,7 +226,7 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 
 	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
-		return nil, errors.Wrap(err, 1)
+		return nil, err
 	}
 
 	if !c.DisableArgsCopy && len(c.Args) > 1 {
@@ -273,7 +273,7 @@ func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error 
 	m.AddKlibs(c.Klibs)
 
 	for _, f := range c.Files {
-		hostPath := f
+		var hostPath string
 
 		if filepath.IsAbs(f) {
 			hostPath = filepath.Join(c.TargetRoot, f)
@@ -406,12 +406,12 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 
 	err = setManifestFromConfig(m, c, ppath)
 	if err != nil {
-		return nil, errors.Wrap(err, 1)
+		return nil, err
 	}
 
 	deps, err := getSharedLibs(c.TargetRoot, c.Program, c)
 	if err != nil {
-		return nil, errors.Wrap(err, 1)
+		return nil, err
 	}
 	for libpath, hostpath := range deps {
 		m.AddFile(libpath, hostpath)
@@ -496,7 +496,7 @@ func createImageFile(c *types.Config, m *fs.Manifest) error {
 		fd.Close()
 	}()
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	defer cleanup(c)
@@ -569,7 +569,7 @@ func DownloadNightlyImages(c *types.Config) error {
 
 	if remote != local || c.Force {
 		if err = DownloadFileWithProgress(localtar, NightlyReleaseURLm, 600); err != nil {
-			return errors.Wrap(err, 1)
+			return err
 		}
 		// update local timestamp
 		updateLocalTimestamp(remote)
@@ -640,7 +640,7 @@ func DownloadReleaseImages(version string, arch string) error {
 			return fmt.Errorf("release '%s' is not found", version)
 		}
 
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	if _, err := os.Stat(localFolder); os.IsNotExist(err) {
@@ -729,29 +729,42 @@ func DownloadFile(fpath string, url string, timeout int, showProgress bool) erro
 }
 
 // CreateArchive compress files into an archive
-func CreateArchive(archive string, files []string) error {
+func CreateArchive(archive string, files map[string]string) (err error) {
 	fd, err := os.Create(archive)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = errors.Join(err, fd.Close())
+	}()
 
 	gzw := gzip.NewWriter(fd)
+	defer func() {
+		err = errors.Join(err, gzw.Close())
+	}()
 
 	tw := tar.NewWriter(gzw)
+	defer func() {
+		err = errors.Join(err, tw.Close())
+	}()
 
-	for _, file := range files {
+	for file, rename := range files {
 		fstat, err := os.Stat(file)
 		if err != nil {
 			return err
 		}
-
+		if rename == "" {
+			rename = filepath.Base(file)
+		}
 		// write the header
-		if err := tw.WriteHeader(&tar.Header{
-			Name:   filepath.Base(file),
-			Mode:   int64(fstat.Mode()),
-			Size:   fstat.Size(),
-			Format: tar.FormatGNU,
-		}); err != nil {
+		if err := tw.WriteHeader(
+			&tar.Header{
+				Name:   rename,
+				Mode:   int64(fstat.Mode()),
+				Size:   fstat.Size(),
+				Format: tar.FormatGNU,
+			},
+		); err != nil {
 			return err
 		}
 
@@ -762,22 +775,12 @@ func CreateArchive(archive string, files []string) error {
 
 		// copy file data to tar
 		if _, err := io.CopyN(tw, fi, fstat.Size()); err != nil {
-			return err
+			return errors.Join(err, fi.Close())
 		}
 		if err = fi.Close(); err != nil {
 			return err
 		}
 	}
 
-	// Explicitly close all writers in correct order without any error
-	if err := tw.Close(); err != nil {
-		return err
-	}
-	if err := gzw.Close(); err != nil {
-		return err
-	}
-	if err := fd.Close(); err != nil {
-		return err
-	}
 	return nil
 }
