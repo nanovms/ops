@@ -82,12 +82,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		packageName = strings.TrimRight(name+"_"+version, "_")
 	}
 
-	fmt.Printf("using parch of %s", parch)
-
 	ctx, cli, containerInfo, targetExecutable, err := createContainer(imageName, targetExecutable, true, quiet)
-	fmt.Printf("found exec: %s\n", targetExecutable)
-
-	fmt.Printf("cinfo: %+v\n", containerInfo)
 
 	// hack as this is not taking into account cross-arch atm.
 	if len(containerInfo.Warnings) > 0 {
@@ -126,7 +121,6 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	}
 
 	sbytes := string(bytes)
-	//fmt.Printf("found #%+v#\n", sbytes)
 
 	lines := strings.Split(strings.TrimSpace(sbytes), "\n")
 	nlines := []string{}
@@ -201,9 +195,6 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		}
 	}
 
-	// it's also not copying symlinks so we either need to map those or
-	// cp them.
-
 	// for chainguard, might not have ldd or file and might be static but
 	// still need to cp ld; this could use some more work as there could
 	// be multiple ones installed on the image (not common but possible)
@@ -217,7 +208,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	// file on it locally to resolve the proper ld
 	// or can just use the combination of '--copy' && '--file'
 	if !foundld {
-		fmt.Println("no loader found - trying")
+		fmt.Println("no loader found - trying others")
 		ldp := "/lib64/ld-linux-x86-64.so.2"
 		err = copyFromContainer(cli, containerInfo.ID, ldp, sysroot+ldp)
 		if err != nil {
@@ -311,15 +302,9 @@ out:
 		}
 	}
 
-	fmt.Printf("looking for executable of %s\n", targetExecutable)
-
 	// should have multiple cmds here..
 	// 1) determine arch
 	// 2) determine what loader we're using
-	//
-
-	// /lib64/ld-linux-x86-64.so.2 --list /usr/bin/node
-	// if we don't have ldd invoke the loader itself.
 
 	script := fmt.Sprintf(`{
 		colors=""
