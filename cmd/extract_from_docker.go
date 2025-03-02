@@ -162,7 +162,6 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 	}
 
 	foundld := false
-	fmt.Println(librariesPath)
 
 	if !nodiscover {
 
@@ -489,28 +488,7 @@ func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDi
 			}
 
 		case tar.TypeSymlink:
-			fmt.Printf("found a symlink %s\n", target)
-			/*
-			   f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-
-			   	if err != nil {
-			   		return err
-			   	}
-
-			   	if _, err := io.Copy(f, tr); err != nil {
-			   		return err
-			   	}
-
-			   f.Close()
-			*/
-			//			fmt.Printf("Symlink: %s -> %s\n\n", header.Name, header.Linkname)
-			/*
-				targetPath, err := os.Readlink(target)
-				if err != nil {
-					fmt.Println("Error reading symlink:", err)
-				}
-			*/
-			err = os.Symlink(header.Linkname, target) // target, targetPath) // oldPath, newPath)
+			err = os.Symlink(header.Linkname, target)
 			if err != nil {
 				fmt.Println(err)
 			}
