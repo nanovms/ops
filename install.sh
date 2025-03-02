@@ -181,6 +181,10 @@ ops_apt_install_qemu(){
   apt install qemu-system-x86 -y --no-upgrade
 }
 
+ops_pacman_install_qemu(){
+  pacman -S qemu-system-x86
+}
+
 ops_dnf_install_qemu(){
   dnf install qemu-kvm qemu-img -y
 }
@@ -210,6 +214,9 @@ ops_install_qemu() {
         ;;
       *debian*)
         ops_apt_install_qemu
+        ;;
+      *arch linux*)
+        ops_pacman_install_qemu
         ;;
     esac
   fi
