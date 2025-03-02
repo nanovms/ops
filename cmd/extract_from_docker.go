@@ -45,7 +45,6 @@ func getCMDExecutable(imageName string) (string, error) {
 		tags := img.RepoTags
 		for i := 0; i < len(tags); i++ {
 			if tags[i] == imageName {
-				fmt.Printf("found it %s %s\n", img.ID, tags[i])
 				id = img.ID
 				break
 			}
@@ -303,7 +302,6 @@ out:
 }
 
 func copyFromContainer(cli *dockerClient.Client, containerID string, containerPath string, hostPath string) error {
-	fmt.Printf("copying %s to %s\n", containerPath, hostPath)
 	err := os.MkdirAll(path.Dir(hostPath), 0764)
 	if err != nil {
 		log.Fatal(err)
