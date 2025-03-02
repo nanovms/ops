@@ -116,7 +116,7 @@ func extractArchivedPackage(pkg string, target string, config *types.Config) str
 
 // MovePackageFiles moves a package from a directory to another
 func MovePackageFiles(origin string, target string) string {
-	fmt.Println("moving %s to %s", origin, target)
+	fmt.Printf("moving %s to %s\n", origin, target)
 	manifestPath := path.Join(origin, "package.manifest")
 	pkgConfig := &types.Config{}
 
@@ -147,6 +147,7 @@ func MovePackageFiles(origin string, target string) string {
 }
 
 func xrename(srcPath, destPath string) error {
+	fmt.Printf("mving %s to %s\n", srcPath, destPath)
 	err := os.Rename(srcPath, destPath)
 	if err == nil {
 		return nil
@@ -169,7 +170,10 @@ func xrename(srcPath, destPath string) error {
 			}
 
 			for _, entry := range dirEntries {
-				return xrename(srcPath+"/"+entry.Name(), destPath+"/"+entry.Name())
+				err = xrename(srcPath+"/"+entry.Name(), destPath+"/"+entry.Name())
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 
 		} else {
