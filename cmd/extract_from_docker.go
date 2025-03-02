@@ -45,7 +45,6 @@ func getCMDExecutable(imageName string) (string, error) {
 		tags := img.RepoTags
 		for i := 0; i < len(tags); i++ {
 			if tags[i] == imageName {
-				fmt.Printf("found it %s %s\n", img.ID, tags[i])
 				id = img.ID
 				break
 			}

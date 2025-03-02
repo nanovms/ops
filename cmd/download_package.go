@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -135,10 +136,73 @@ func MovePackageFiles(origin string, target string) string {
 	}
 
 	for _, f := range files {
-		os.Rename(path.Join(origin, f.Name()), path.Join(target, f.Name()))
+		err = xrename(path.Join(origin, f.Name()), path.Join(target, f.Name()))
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	return target
+}
+
+func xrename(srcPath, destPath string) error {
+	err := os.Rename(srcPath, destPath)
+	if err == nil {
+		return nil
+	}
+
+	if linkErr, ok := err.(*os.LinkError); ok && linkErr.Op == "rename" {
+		fi, err := os.Stat(srcPath)
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			dirEntries, err := os.ReadDir(srcPath)
+			if err != nil {
+				fmt.Println(err)
+			}
+			err = os.Mkdir(destPath, 0755)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			for _, entry := range dirEntries {
+				err = xrename(srcPath+"/"+entry.Name(), destPath+"/"+entry.Name())
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+
+		} else {
+
+			src, err := os.Open(srcPath)
+			if err != nil {
+				return err
+			}
+			defer src.Close()
+
+			dst, err := os.Create(destPath)
+			if err != nil {
+				return err
+			}
+			defer dst.Close()
+
+			_, err = io.Copy(dst, src)
+			if err != nil {
+				os.Remove(destPath)
+				return err
+			}
+
+			err = os.Remove(srcPath)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+	return nil
+	}
+	return err
 }
 
 func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) (string, error) {
