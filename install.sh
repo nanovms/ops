@@ -215,7 +215,7 @@ ops_install_qemu() {
       *debian*)
         ops_apt_install_qemu
         ;;
-      *arch linux*)
+      "arch linux")
         ops_pacman_install_qemu
         ;;
     esac

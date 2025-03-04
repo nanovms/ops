@@ -200,7 +200,7 @@ func xrename(srcPath, destPath string) error {
 			return nil
 		}
 
-	return nil
+		return nil
 	}
 	return err
 }
