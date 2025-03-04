@@ -499,13 +499,14 @@ func fromDockerCommandHandler(cmd *cobra.Command, args []string) {
 	packageName, _ := flags.GetString("name")
 	targetExecutable, _ := flags.GetString("file")
 	copyWholeFS, _ := flags.GetBool("copy")
+	nodiscover, _ := flags.GetBool("nodiscover")
 
 	cmdArgs, err := flags.GetStringArray("args")
 	if err != nil {
 		exitWithError(err.Error())
 	}
 
-	packageName, _ = ExtractFromDockerImage(imageName, packageName, pkgFlags.Parch(), targetExecutable, quiet, verbose, copyWholeFS, cmdArgs)
+	packageName, _ = ExtractFromDockerImage(imageName, packageName, pkgFlags.Parch(), targetExecutable, quiet, verbose, copyWholeFS, nodiscover, cmdArgs)
 	fmt.Println(packageName)
 }
 
@@ -827,6 +828,7 @@ func fromDockerCommand() *cobra.Command {
 	persistentFlags.BoolP("copy", "", false, "copy whole file system")
 	persistentFlags.StringP("name", "", "", "name of the package")
 	persistentFlags.BoolP("local", "l", false, "load local package")
+	persistentFlags.BoolP("nodiscover", "", false, "don't try to discover linked libs")
 
 	return cmdFromDocker
 }
