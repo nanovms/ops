@@ -27,7 +27,7 @@ import (
 // PackageSysRootFolderName is the name of package root folder
 const PackageSysRootFolderName = "sysroot"
 
-var packageRegex = regexp.MustCompile(`(?P<packageName>[A-Za-z-]+)[_-](?P<version>\S+)`)
+var packageRegex = regexp.MustCompile(`(?P<packageName>[A-Za-z-0-9]+)[_-](?P<version>\S+)`)
 
 // PackageList contains a list of known packages.
 type PackageList struct {
@@ -268,57 +268,6 @@ var LocalPackagesRoot = GetOpsHome() + "/local_packages"
 
 // PackagesRoot is the location of the packages root directory.
 var PackagesRoot = GetOpsHome() + "/packages"
-
-// GetLocalPackageList provides list of local packages
-func GetLocalPackageList() ([]Package, error) {
-	packages := []Package{}
-
-	arches := []string{"amd64", "arm64"}
-
-	for i := 0; i < len(arches); i++ {
-
-		localPackagesDir := LocalPackagesRoot + "/" + arches[i]
-
-		localPackages, err := os.ReadDir(localPackagesDir)
-		if err != nil {
-			log.Infof("could not find local packages directory for arch: %s\n", arches[i])
-			continue
-		}
-		username := GetLocalUsername()
-		for _, pkg := range localPackages {
-			pkgName := pkg.Name()
-
-			// ignore packages compressed
-			if !strings.Contains(pkgName, "tar.gz") {
-				_, name, _ := GetNSPkgnameAndVersion(pkgName)
-				manifestLoc := fmt.Sprintf("%s/%s/package.manifest", localPackagesDir, pkgName)
-				if _, err := os.Stat(manifestLoc); err == nil {
-
-					data, err := os.ReadFile(manifestLoc)
-					if err != nil {
-						fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
-						os.Exit(1)
-						return nil, err
-					}
-
-					var pkg Package
-					err = json.Unmarshal(data, &pkg)
-					if err != nil {
-						fmt.Printf("having trouble parsing the manifest of package: %s - can you verify the package.manifest is correct via jsonlint.com?\n", pkgName)
-						os.Exit(1)
-						return nil, err
-					}
-					pkg.Namespace = username
-					pkg.Name = name
-					packages = append(packages, pkg)
-				}
-
-			}
-		}
-	}
-
-	return packages, nil
-}
 
 // GetPackageManifestFile give path for package manifest file
 func GetPackageManifestFile() string {
