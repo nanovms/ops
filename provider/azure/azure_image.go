@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -65,27 +64,6 @@ func (a *Azure) getArchiveName(ctx *lepton.Context) string {
 // CustomizeImage returns image path with adaptations needed by cloud provider
 func (a *Azure) CustomizeImage(ctx *lepton.Context) (string, error) {
 	imagePath := ctx.Config().RunConfig.ImageName
-	symlink := filepath.Join(filepath.Dir(imagePath), "disk.raw")
-
-	if _, err := os.Lstat(symlink); err == nil {
-		if err := os.Remove(symlink); err != nil {
-			return "", fmt.Errorf("failed to unlink: %+v", err)
-		}
-	}
-
-	err := os.Link(imagePath, symlink)
-	if err != nil {
-		return "", err
-	}
-
-	archPath := filepath.Join(filepath.Dir(imagePath), a.getArchiveName(ctx))
-	files := []string{symlink}
-
-	err = lepton.CreateArchive(archPath, files)
-	if err != nil {
-		return "", err
-	}
-
 	return imagePath, nil
 }
 
