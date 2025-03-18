@@ -20,8 +20,6 @@ import (
 func (g *GCloud) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data string, provider string) (lepton.NanosVolume, error) {
 	config := ctx.Config()
 
-	arch := cv.Name + ".tar.gz"
-
 	var sizeInGb int64
 	var vol lepton.NanosVolume
 	if config.BaseVolumeSz != "" {
@@ -39,21 +37,13 @@ func (g *GCloud) CreateVolume(ctx *lepton.Context, cv types.CloudVolume, data st
 	}
 	defer os.Remove(lv.Path)
 
-	link := filepath.Join(filepath.Dir(lv.Path), "disk.raw")
-	if _, err := os.Lstat(link); err == nil {
-		if err := os.Remove(link); err != nil {
-			return lv, fmt.Errorf("failed to unlink: %+v", err)
-		}
-	}
-	defer os.Remove(link)
-
-	err = os.Link(lv.Path, link)
-	if err != nil {
-		return lv, err
-	}
+	arch := cv.Name + ".tar.gz"
 	archPath := filepath.Join(filepath.Dir(lv.Path), arch)
 
-	err = lepton.CreateArchive(archPath, []string{link})
+	files := map[string]string{
+		lv.Path: "disk.raw",
+	}
+	err = lepton.CreateArchive(archPath, files)
 	if err != nil {
 		return lv, err
 	}
