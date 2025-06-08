@@ -417,6 +417,7 @@ func (q *qemu) addAccel() (bool, error) {
 	// acceleration the same as detecting no hardware acceleration - we don't
 	// add the flag.
 
+
 	// Check qemu is installed or not
 	if q.isInstalled() == false {
 		return false, &errQemuNotInstalled{errCustom{"QEMU not found", nil}}
@@ -446,13 +447,17 @@ func (q *qemu) addAccel() (bool, error) {
 		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", nil}}
 	}
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" && !isInception() {
 		q.addFlag("-machine accel=kvm:tcg")
 		q.addOption("-cpu", "host")
 		if err := kvmAvailable(); err != nil {
 			return true, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 		}
 		return true, nil
+	}
+
+	if isInception() {
+		q.addFlag("--enable-kvm")
 	}
 
 	return false, nil
@@ -491,13 +496,20 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		q.addOption("-machine", "q35")
 
 		// x86
+		if !isInception() {
 		q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
 		q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x1")
 		q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
+	}
 
 		// FIXME for multiple local tenants
 		// x86
+
+		if !isInception() {
 		q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
+	} else {
+		q.addOption("-device", "virtio-scsi-pci,id=scsi0,disable-modern=true")
+	}
 		q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
 
 		if !rconfig.Vga {
@@ -518,14 +530,22 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		q.addFlag("-semihosting")
 	}
 
+	if isInception() {
+	q.addOption("-kernel", rconfig.Kernel)
+}
+
 	if rconfig.CPUs > 0 {
 		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
 	}
 
 	q.addOption("-m", rconfig.Memory)
 
+	if !isInception() {
 	q.addOption("-device", "virtio-rng-pci")
 	q.addOption("-device", "virtio-balloon")
+} else {
+	q.addOption("-bios", "/usr/share/qemu/qboot.rom")
+}
 
 	disks := 1
 
@@ -585,9 +605,13 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
 	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && lepton.AltGOARCH == "" {
+		if !isInception() {
 		q.addOption("-cpu", "host")
+	}
 	} else {
+		if !isInception() {
 		q.addOption("-cpu", "max")
+	}
 	}
 
 	if rconfig.GdbPort > 0 {
@@ -662,6 +686,10 @@ func (q *qemu) Args(rconfig *types.RunConfig) ([]string, error) {
 	// for now let's make this optional
 	if rconfig.QMP {
 		args = append(args, "-qmp tcp:localhost:"+rconfig.Mgmt+",server,wait=off")
+	}
+
+	if isInception() {
+		args = append(args, "-device pci-bridge,bus=pcie.0,id=pci-bridge-0,chassis_nr=1,shpc=off,addr=2,io-reserve=4k,mem-reserve=1m,pref64-reserve=1m")
 	}
 
 	// The returned args must tokenized by whitespace
