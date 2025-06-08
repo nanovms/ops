@@ -69,7 +69,12 @@ func (dv device) String() string {
 		usex86 := ArchCheck()
 
 		if usex86 {
+			if isInception() {
+			sb.WriteString(fmt.Sprintf("-device %s,addr=3,%s=%s", dv.driver, dv.devtype, dv.devid))
+		} else {
 			sb.WriteString(fmt.Sprintf("-device %s,bus=pci.3,addr=%s,%s=%s", dv.driver, dv.addr, dv.devtype, dv.devid))
+		}
+
 		} else {
 			sb.WriteString(fmt.Sprintf("-device %s,%s=%s", dv.driver, dv.devtype, dv.devid))
 		}

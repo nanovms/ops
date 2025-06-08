@@ -5,7 +5,19 @@ import (
 	"strings"
 )
 
+func isInception() bool {
+	if os.Getenv("INCEPTION") != "" {
+		return true
+	}
+
+	return false
+}
+
 func hvSupport() (bool, error) {
+	if isInception() {
+		return true, nil
+	}
+
 	const intel string = "vmx"
 	const amd string = "svm"
 
