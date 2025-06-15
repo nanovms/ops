@@ -531,6 +531,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	if isInception() {
 		q.addOption("-kernel", rconfig.Kernel)
+		q.addOption("-bios", "/usr/share/qemu/qboot.rom")
 	}
 
 	if rconfig.CPUs > 0 {
@@ -541,10 +542,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	q.addOption("-device", "virtio-rng-pci")
 	q.addOption("-device", "virtio-balloon")
-
-	if isInception() {
-		q.addOption("-bios", "/usr/share/qemu/qboot.rom")
-	}
 
 	disks := 1
 
