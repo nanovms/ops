@@ -417,7 +417,6 @@ func (q *qemu) addAccel() (bool, error) {
 	// acceleration the same as detecting no hardware acceleration - we don't
 	// add the flag.
 
-
 	// Check qemu is installed or not
 	if q.isInstalled() == false {
 		return false, &errQemuNotInstalled{errCustom{"QEMU not found", nil}}
@@ -494,7 +493,6 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	if usex86 {
 		q.addOption("-machine", "q35")
-
 
 		q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
 		q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x6")
@@ -604,8 +602,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 		q.addOption("-cpu", "host")
 	} else {
 		if !isInception() {
-		q.addOption("-cpu", "max")
-	}
+			q.addOption("-cpu", "max")
+		}
 	}
 
 	if rconfig.GdbPort > 0 {
