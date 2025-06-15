@@ -47,7 +47,7 @@ func (p *AWS) GetSecurityGroup(execCtx context.Context, ctx *lepton.Context, svc
 
 		result, err = svc.DescribeSecurityGroups(execCtx, input)
 		if err != nil {
-			err = fmt.Errorf("get security group with id '%s': %s", sg, err.Error())
+			err = fmt.Errorf("get security group with id : %s", err.Error())
 			return
 		}
 	}
@@ -331,7 +331,7 @@ func (p *AWS) CreateSG(execCtx context.Context, ctx *lepton.Context, svc *ec2.Cl
 		err = errors.New(errstr)
 		return
 	}
-	fmt.Printf("Created security group %s with VPC %s.\n", createRes.GroupId, vpcID)
+	fmt.Printf("Created security group %s with VPC %s.\n", *createRes.GroupId, vpcID)
 
 	var ec2Permissions []awsEc2Types.IpPermission
 
