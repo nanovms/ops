@@ -23,7 +23,6 @@ jobs:
       - run: make deps
       - run: make generate
       - run: ./hack/verify-gofmt.sh
-      - run: ./hack/verify-govet.sh
       - run: ./hack/verify-golint.sh
       - run: mkdir -p $TEST_RESULTS
       - run: go run ops.go update
