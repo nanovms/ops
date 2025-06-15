@@ -93,7 +93,7 @@ func WaitUntilEc2InstanceTerminated(execCtx context.Context, ec2Client *ec2.Clie
 	return nil, fmt.Errorf("exceeded max wait time for an EC2 instance to terminate")
 }
 
-// Waits for snapshot completion. This is a blocking operation on the provided execution context.
+// WaitUntilEc2SnapshotCompleted waits for snapshot completion. This is a blocking operation on the provided execution context.
 // Ensure proper filters since this function expects a single snapshot given the input
 func WaitUntilEc2SnapshotCompleted(execCtx context.Context, zone *string, describeSnapshotsInput *ec2.DescribeSnapshotsInput) error {
 	// Retry 120 times every 15-16 seconds
