@@ -27,7 +27,7 @@ func TestStringDevice(t *testing.T) {
 		devtype: "netdev",
 		devid:   "n0"}
 
-	expected := "-device virtio-net,netdev=n0,mac=7e:b8:7e:87:4a:ea"
+	expected := "-device virtio-net,bus=pci.4,addr=0x0,netdev=n0,mac=7e:b8:7e:87:4a:ea"
 	checkQemuString(testDevice, expected, t)
 }
 
