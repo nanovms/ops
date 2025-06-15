@@ -11,7 +11,7 @@ import (
 )
 
 func TestBuildImage(t *testing.T) {
-	p, _, _, _, _, _, _ := NewProvider(t)
+	p := NewProvider()
 
 	ctx := lepton.NewContext(lepton.NewConfig())
 
