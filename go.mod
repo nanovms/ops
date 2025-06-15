@@ -1,7 +1,8 @@
 module github.com/nanovms/ops
 
-go 1.22
-toolchain go1.24.1
+go 1.23.0
+
+toolchain go1.24.4
 
 require (
 	cloud.google.com/go/storage v1.36.0
