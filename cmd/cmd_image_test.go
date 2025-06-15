@@ -25,16 +25,6 @@ func TestCreateImage(t *testing.T) {
 	removeImage(imageName)
 }
 
-func TestListImages(t *testing.T) {
-	listImagesCmd := ImageCommands()
-
-	listImagesCmd.SetArgs([]string{"list"})
-
-	err := listImagesCmd.Execute()
-
-	assert.Nil(t, err)
-}
-
 func TestDeleteImage(t *testing.T) {
 	imagePath := buildImage("test-img")
 

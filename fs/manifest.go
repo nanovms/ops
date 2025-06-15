@@ -81,7 +81,7 @@ func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 
 	a := archCheck(imgpath)
 	if arm && a != "arm" || !arm && a == "arm" {
-		return fmt.Errorf("you are trying to mix %q [%s] with the wrong kernel, try re-creating the image with --arch=\n", imgpath, a)
+		return fmt.Errorf("you are trying to mix %q [%s] with the wrong kernel, try re-creating the image with --arch=", imgpath, a)
 	}
 
 	err = m.AddFile(program, imgpath)

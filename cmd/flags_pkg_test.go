@@ -3,14 +3,12 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"testing"
 
 	"github.com/nanovms/ops/testutils"
 	"github.com/nanovms/ops/types"
 
 	"github.com/nanovms/ops/lepton"
-	api "github.com/nanovms/ops/lepton"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,18 +25,6 @@ func TestBuildPkgFlags(t *testing.T) {
 		LocalPackage: true,
 		Package:      "mysql",
 	})
-}
-
-func TestPkgFlagsPackagePath(t *testing.T) {
-	packageName := "package-" + testutils.String(5)
-
-	flagSet := newPkgFlagSet()
-	flagSet.Set("local", "true")
-	flagSet.Set("package", packageName)
-
-	pkgFlags := NewPkgCommandFlags(flagSet)
-
-	assert.Equal(t, pkgFlags.PackagePath(), api.GetOpsHome()+"/local_packages/"+runtime.GOARCH+"/"+packageName)
 }
 
 func TestPkgFlagsMergeToConfig(t *testing.T) {

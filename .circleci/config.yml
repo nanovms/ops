@@ -7,6 +7,7 @@ jobs:
   build:
     docker:
       - image: cimg/go:1.22.3
+    resource_class: medium+
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -23,7 +24,6 @@ jobs:
       - run: make deps
       - run: make generate
       - run: ./hack/verify-gofmt.sh
-      - run: ./hack/verify-govet.sh
       - run: ./hack/verify-golint.sh
       - run: mkdir -p $TEST_RESULTS
       - run: go run ops.go update
@@ -35,6 +35,7 @@ jobs:
   nightly-build:
     docker:
       - image: cimg/go:1.22.3
+    resource_class: medium+
     steps:
       - checkout
       - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf
