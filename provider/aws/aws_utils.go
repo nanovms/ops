@@ -16,7 +16,8 @@ import (
 	smithyWaiter "github.com/aws/smithy-go/waiter"
 )
 
-// Create and return an aws-sdk-v2 configuration object
+// GetAwsSdkConfig creates and return an aws-sdk-v2 configuration
+// object.
 func GetAwsSdkConfig(execCtx context.Context, zone *string) (*aws.Config, error) {
 	awsSdkConfigOpts := []func(*awsConfig.LoadOptions) error{}
 	awsProfile := os.Getenv("AWS_PROFILE")
@@ -35,8 +36,9 @@ func GetAwsSdkConfig(execCtx context.Context, zone *string) (*aws.Config, error)
 	return &awsSdkConfig, nil
 }
 
-// Wait until an EC2 instance is terminated. This is a blocking operation on the provided execution context.
-// Ensure proper filters since this function expects a single EC2 given the input
+// WaitUntilEc2InstanceTerminated waits until an EC2 instance is terminated. This is a blocking operation on the provided execution context.
+// Ensure proper filters since this function expects a single EC2 given
+// the input.
 // Derived from NewSnapshotCompletedWaiter impl. at https://github.com/aws/aws-sdk-go-v2/blob/v1.32.8/service/ec2/api_op_DescribeSnapshots.go#L348
 func WaitUntilEc2InstanceTerminated(execCtx context.Context, ec2Client *ec2.Client, describeInstancesInput *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
 	minDelay := 15 * time.Second
