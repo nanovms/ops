@@ -495,21 +495,20 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	if usex86 {
 		q.addOption("-machine", "q35")
 
-		// x86
-		if !isInception() {
+
 		q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
-		q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x1")
-		q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.3,bus="+pciBus+",addr=0x3.0x2")
-	}
+		q.addOption("-device", "pcie-root-port,port=0x11,chassis=2,id=pci.2,bus="+pciBus+",addr=0x3.0x6")
+		q.addOption("-device", "pcie-root-port,port=0x12,chassis=3,id=pci.4,bus="+pciBus+",addr=0x3.0x4")
 
 		// FIXME for multiple local tenants
 		// x86
 
 		if !isInception() {
-		q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
-	} else {
-		q.addOption("-device", "virtio-scsi-pci,id=scsi0,disable-modern=true")
-	}
+			q.addOption("-device", "virtio-scsi-pci,bus=pci.2,addr=0x0,id=scsi0")
+		} else {
+			q.addOption("-device", "virtio-scsi-pci,id=scsi0,disable-modern=true")
+		}
+
 		q.addOption("-device", "scsi-hd,bus=scsi0.0,drive=hd0")
 
 		if !rconfig.Vga {
@@ -531,8 +530,8 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	}
 
 	if isInception() {
-	q.addOption("-kernel", rconfig.Kernel)
-}
+		q.addOption("-kernel", rconfig.Kernel)
+	}
 
 	if rconfig.CPUs > 0 {
 		q.addOption("-smp", strconv.Itoa(rconfig.CPUs))
@@ -540,12 +539,12 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	q.addOption("-m", rconfig.Memory)
 
-	if !isInception() {
 	q.addOption("-device", "virtio-rng-pci")
 	q.addOption("-device", "virtio-balloon")
-} else {
-	q.addOption("-bios", "/usr/share/qemu/qboot.rom")
-}
+
+	if isInception() {
+		q.addOption("-bios", "/usr/share/qemu/qboot.rom")
+	}
 
 	disks := 1
 
@@ -605,9 +604,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
 	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && lepton.AltGOARCH == "" {
-		if !isInception() {
 		q.addOption("-cpu", "host")
-	}
 	} else {
 		if !isInception() {
 		q.addOption("-cpu", "max")
@@ -689,7 +686,7 @@ func (q *qemu) Args(rconfig *types.RunConfig) ([]string, error) {
 	}
 
 	if isInception() {
-		args = append(args, "-device pci-bridge,bus=pcie.0,id=pci-bridge-0,chassis_nr=1,shpc=off,addr=2,io-reserve=4k,mem-reserve=1m,pref64-reserve=1m")
+		args = append(args, "-device pci-bridge,bus=pcie.0,id=pci-bridge-0,chassis_nr=1,shpc=off,addr=6,io-reserve=4k,mem-reserve=1m,pref64-reserve=1m")
 	}
 
 	// The returned args must tokenized by whitespace
