@@ -223,6 +223,7 @@ ops_install_qemu() {
 
   if ! which qemu-system-x86_64>/dev/null; then
     printf "QEMU not found. Please install QEMU using your package manager and re-run this script"
+    exit 1
   fi
 }
 
