@@ -44,7 +44,7 @@ require (
 	github.com/vmware/govmomi v0.22.2
 	github.com/vultr/govultr/v3 v3.2.0
 	golang.org/x/crypto v0.36.0
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sys v0.31.0
 	google.golang.org/api v0.162.0
 	google.golang.org/grpc v1.65.0
