@@ -75,6 +75,37 @@ func genBridgeName() string {
 	return "ops0"
 }
 
+func (com Compose) validatePackagesExist(y ComposeFile) {
+
+	for i := 0; i < len(y.Packages); i++ {
+		comp := y.Packages[i]
+
+		pkgName := comp.Name
+		local := comp.Local
+		arch := comp.Arch
+
+		api.AltGOARCH = arch // this isn't really mt-safe..
+
+		pkgFlags := PkgCommandFlags{
+			Package:      pkgName,
+			LocalPackage: local,
+		}
+
+		if !local {
+			ppath := filepath.Join(pkgFlags.PackagePath()) + "/package.manifest"
+
+			_, err := os.Stat(ppath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					fmt.Printf("%s not found - downloading\n", pkgName)
+					downloadPackage(pkgName, &types.Config{})
+				}
+			}
+		}
+
+	}
+}
+
 // UP reads in a compose.yaml and starts all services listed with svc
 // discovery.
 func (com Compose) UP(composeFile string) {
@@ -85,14 +116,14 @@ func (com Compose) UP(composeFile string) {
 	h.Write([]byte(body))
 	sha := hex.EncodeToString(h.Sum(nil))
 
-	fmt.Println(sha)
-
 	y := ComposeFile{}
 
 	err := yaml.Unmarshal(body, &y)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	com.validatePackagesExist(y)
 
 	brName := genBridgeName()
 
