@@ -66,7 +66,7 @@ func NewProvider() *Azure {
 
 func getAzureDefaultTags() map[string]*string {
 	return map[string]*string{
-		"CreatedAt": to.StringPtr(fmt.Sprintf(time.Now().Format(time.RFC3339))),
+		"CreatedAt": to.StringPtr(fmt.Sprintf("%s", time.Now().Format(time.RFC3339))),
 		"CreatedBy": to.StringPtr("ops"),
 	}
 }

@@ -527,7 +527,7 @@ func (p *GCloud) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 				fmt.Println(err)
 			} else {
 				line = last
-				fmt.Printf(l)
+				fmt.Printf("%s", l)
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -537,7 +537,7 @@ func (p *GCloud) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 	if err != nil {
 		return err
 	}
-	fmt.Printf(l)
+	fmt.Printf("%s", l)
 	return nil
 }
 

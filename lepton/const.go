@@ -56,7 +56,7 @@ func GenerateImageName(program string) string {
 func GetOpsHome() string {
 	home, err := HomeDir()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 		os.Exit(1)
 	}
 	opshome := path.Join(home, ".ops")

@@ -707,7 +707,7 @@ func imageTreeCommandHandler(cmd *cobra.Command, args []string) {
 
 	jsonOutput, err := flags.GetBool("json")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	if jsonOutput {

@@ -570,7 +570,7 @@ func (v *Vsphere) PrintInstanceLogs(ctx *lepton.Context, instancename string, wa
 	if err != nil {
 		return err
 	}
-	fmt.Printf(l)
+	fmt.Printf("%s", l)
 	return nil
 }
 
