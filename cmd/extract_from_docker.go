@@ -14,7 +14,8 @@ import (
 	"strings"
 
 	"github.com/distribution/reference"
-	dockerTypes "github.com/docker/docker/api/types"
+	dockerImage "github.com/docker/docker/api/types/image"
+
 	dockerContainer "github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -35,7 +36,7 @@ func getCMDExecutable(imageName string) (string, error) {
 		imageName += ":latest"
 	}
 
-	images, err := cli.ImageList(ctx, dockerTypes.ImageListOptions{})
+	images, err := cli.ImageList(ctx, dockerImage.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -266,7 +267,7 @@ func createContainer(image string, targetExecutable string, pull bool, quiet boo
 	}
 
 	// try local image first
-	images, err := cli.ImageList(ctx, dockerTypes.ImageListOptions{})
+	images, err := cli.ImageList(ctx, dockerImage.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -283,7 +284,7 @@ out:
 	}
 
 	if pull {
-		reader, err := cli.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
+		reader, err := cli.ImagePull(ctx, image, dockerImage.PullOptions{})
 		if err != nil {
 			return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 		}
