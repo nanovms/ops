@@ -73,14 +73,14 @@ func emitLocalPkg(pkgName string, lpdir string, ns string) (Package, error) {
 	if _, err := os.Stat(manifestLoc); err == nil {
 		data, err := os.ReadFile(manifestLoc)
 		if err != nil {
-			fmt.Printf(herr)
+			fmt.Printf("%s\n", herr)
 			os.Exit(1)
 		}
 
 		var pkg Package
 		err = json.Unmarshal(data, &pkg)
 		if err != nil {
-			fmt.Printf(herr)
+			fmt.Printf("%s\n", herr)
 			os.Exit(1)
 		}
 		pkg.Namespace = ns

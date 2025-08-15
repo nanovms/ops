@@ -840,7 +840,7 @@ func (p *OnPrem) PrintInstanceLogs(ctx *lepton.Context, instancename string, wat
 	if err != nil {
 		return err
 	}
-	fmt.Printf(l)
+	fmt.Printf("%s", l)
 	return nil
 }
 

@@ -19,12 +19,12 @@ func TestSubtractDateNotation(t *testing.T) {
 
 		_, err := SubtractTimeNotation(date, "kjfgd")
 		if err == nil {
-			t.Errorf(ErrInvalidTimeNotation("kjfgd"))
+			t.Errorf("%s", ErrInvalidTimeNotation("kjfgd"))
 		}
 
 		_, err = SubtractTimeNotation(date, "123")
 		if err == nil {
-			t.Errorf(ErrInvalidTimeNotation("123"))
+			t.Errorf("%s", ErrInvalidTimeNotation("123"))
 		}
 	})
 

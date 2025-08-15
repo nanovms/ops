@@ -134,12 +134,12 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	jsonOutput, err := cmd.Flags().GetBool("json")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	table := pkgTable(packages)
@@ -233,7 +233,7 @@ func cmdSearchPackages(cmd *cobra.Command, args []string) {
 
 	jsonOutput, err := cmd.Flags().GetBool("json")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	if jsonOutput {
@@ -311,7 +311,7 @@ func describeCommandHandler(cmd *cobra.Command, args []string) {
 
 	jsonOutput, err := cmd.Flags().GetBool("json")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	pkgFlags.Package = args[0]
@@ -403,7 +403,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 	jsonOutput, err := flags.GetBool("json")
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Printf("%s\n", err.Error())
 	}
 
 	files := []fdr{}
