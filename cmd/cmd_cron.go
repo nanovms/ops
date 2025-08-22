@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/provider/aws"
 	"github.com/spf13/cobra"
@@ -136,37 +138,22 @@ func cronDeleteCommand() *cobra.Command {
 }
 
 func cronDeleteCommandHandler(cmd *cobra.Command, args []string) {
-	/*
-		flags := cmd.Flags()
+	flags := cmd.Flags()
 
-		configFlags := NewConfigCommandFlags(flags)
-		globalFlags := NewGlobalCommandFlags(flags)
-		providerFlags := NewProviderCommandFlags(flags)
+	configFlags := NewConfigCommandFlags(flags)
+	globalFlags := NewGlobalCommandFlags(flags)
+	providerFlags := NewProviderCommandFlags(flags)
 
-		c := api.NewConfig()
+	c := api.NewConfig()
 
-		mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
-		err := mergeContainer.Merge(c)
-		if err != nil {
-			exitWithError(err.Error())
-		}
+	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, providerFlags)
+	err := mergeContainer.Merge(c)
+	if err != nil {
+		exitWithError(err.Error())
+	}
 
-		zone, _ := cmd.Flags().GetString("zone")
-		if zone != "" {
-			c.CloudConfig.Zone = zone
-		}
-
-		lru, _ := cmd.Flags().GetString("lru")
-		assumeYes, _ := cmd.Flags().GetBool("assume-yes")
-		forceFlag, _ := cmd.Flags().GetBool("force")
-
-		p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
-		if err != nil {
-			exitWithError(err.Error())
-		}
-
-		// Check if image being used
-		images, err := p.GetImages(ctx, "")
+	// Check if image being used
+	/*	images, err := p.GetImages(ctx, "")
 		if err != nil {
 			exitWithError(err.Error())
 		}
@@ -181,96 +168,17 @@ func cronDeleteCommandHandler(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		if !forceFlag {
-
-			instances, err := p.GetInstances(ctx)
-			if err != nil {
-				exitWithError(err.Error())
-			}
-
-			if len(instances) > 0 {
-				for imgName, imgPath := range imageMap {
-					for _, is := range instances {
-						var matchedImage bool
-						if c.CloudConfig.Platform == onprem.ProviderName {
-							matchedImage = (is.Image == imgPath)
-						} else {
-							matchedImage = (is.Image == imgName)
-						}
-
-						if matchedImage {
-							fmt.Printf("image '%s' is being used\n", imgName)
-							os.Exit(1)
-						}
-					}
-				}
-			}
-
-		}
-
-		imagesToDelete := []string{}
-
-		if lru != "" {
-			olderThanDate, err := SubtractTimeNotation(time.Now(), lru)
-			if err != nil {
-				exitWithError(fmt.Errorf("failed getting date from lru flag: %s", err).Error())
-			}
-
-			for _, image := range images {
-				if image.Created.Before(olderThanDate) {
-					if image.ID != "" {
-						imagesToDelete = append(imagesToDelete, image.ID)
-					} else {
-						imagesToDelete = append(imagesToDelete, image.Name)
-					}
-				}
-			}
-		}
-
 		if len(args) > 0 {
 			imagesToDelete = append(imagesToDelete, args...)
 		}
-
-		if len(imagesToDelete) == 0 {
-			log.Info("There are no images to delete")
-			return
-		}
-
-		if assumeYes != true {
-			fmt.Printf("You are about to delete the next images:\n")
-			for _, i := range imagesToDelete {
-				fmt.Println(i)
-			}
-			fmt.Println("Are you sure? (yes/no)")
-			confirmation := askForConfirmation()
-			if !confirmation {
-				return
-			}
-		}
-
-		responses := make(chan error)
-
-		deleteImage := func(imageName string) {
-			errMsg := p.DeleteImage(ctx, imageName)
-			if errMsg != nil {
-				errMsg = fmt.Errorf("failed deleting %s: %v", imageName, errMsg)
-			}
-
-			responses <- errMsg
-		}
-
-		for _, i := range imagesToDelete {
-			go deleteImage(i)
-		}
-
-		for range imagesToDelete {
-			err = <-responses
-			if err != nil {
-				log.Error(err)
-			}
-
-		}
 	*/
+	p := aws.NewProvider()
+	ctx := api.NewContext(c)
+
+	errMsg := p.DeleteCron(ctx, "itesting")
+	if errMsg != nil {
+		errMsg = fmt.Errorf("failed deleting %s: %v", "", errMsg)
+	}
 
 }
 
@@ -286,6 +194,16 @@ func cronEnableCommand() *cobra.Command {
 }
 
 func cronEnableCommandHandler(cmd *cobra.Command, args []string) {
+	c := api.NewConfig()
+
+	p := aws.NewProvider()
+	ctx := api.NewContext(c)
+
+	err := p.EnableCron(ctx, "itesting")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 }
 
 func cronDisableCommand() *cobra.Command {
@@ -300,4 +218,14 @@ func cronDisableCommand() *cobra.Command {
 }
 
 func cronDisableCommandHandler(cmd *cobra.Command, args []string) {
+	c := api.NewConfig()
+
+	p := aws.NewProvider()
+	ctx := api.NewContext(c)
+
+	err := p.DisableCron(ctx, "")
+	if err != nil {
+		exitWithError(err.Error())
+	}
+
 }

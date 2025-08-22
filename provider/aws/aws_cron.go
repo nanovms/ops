@@ -148,16 +148,68 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 	return nil
 }
 
-func (p *AWS) DeleteCron(ctx *lepton.Context) error {
+func (p *AWS) DeleteCron(ctx *lepton.Context, schedule string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	svc := scheduler.NewFromConfig(cfg)
+
+	input := &scheduler.DeleteScheduleInput{
+		Name: &schedule,
+	}
+
+	_, err = svc.DeleteSchedule(context.TODO(), input)
+	if err != nil {
+		if _, ok := err.(*types.ResourceNotFoundException); ok {
+			fmt.Printf("Schedule '%s' not found.\n", schedule)
+		} else {
+			log.Fatalf("failed to delete schedule: %v", err)
+		}
+	} else {
+		fmt.Printf("Schedule '%s' deleted successfully.\n", schedule)
+	}
+
 	return fmt.Errorf("operation not supported")
 }
 
-func (p *AWS) EnableCron(ctx *lepton.Context) error {
-	return fmt.Errorf("operation not supported")
+func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	svc := scheduler.NewFromConfig(cfg)
+
+	_, err = svc.UpdateSchedule(context.TODO(), &scheduler.UpdateScheduleInput{
+		Name:  &schedule,
+		State: types.ScheduleStateEnabled,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (p *AWS) DisableCron(ctx *lepton.Context) error {
-	return fmt.Errorf("operation not supported")
+func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	svc := scheduler.NewFromConfig(cfg)
+
+	_, err = svc.UpdateSchedule(context.TODO(), &scheduler.UpdateScheduleInput{
+		Name:  &schedule,
+		State: types.ScheduleStateDisabled,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *AWS) ListCrons(ctx *lepton.Context) error {
@@ -168,10 +220,7 @@ func (p *AWS) ListCrons(ctx *lepton.Context) error {
 
 	svc := scheduler.NewFromConfig(cfg)
 
-	input := &scheduler.ListSchedulesInput{
-		// perhaps this should be 'nanos' or tagged?
-		// GroupName
-	}
+	input := &scheduler.ListSchedulesInput{}
 
 	result, err := svc.ListSchedules(context.TODO(), input)
 	if err != nil {
