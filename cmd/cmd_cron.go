@@ -106,13 +106,6 @@ func cronListCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	/*
-	   p, ctx, err := getProviderAndContext(c, c.CloudConfig.Platform)
-
-	   	if err != nil {
-	   		exitWithError(err.Error())
-	   	}
-	*/
 	p := aws.NewProvider()
 	ctx := api.NewContext(c)
 
@@ -152,26 +145,6 @@ func cronDeleteCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	// Check if image being used
-	/*	images, err := p.GetImages(ctx, "")
-		if err != nil {
-			exitWithError(err.Error())
-		}
-
-		imageMap := make(map[string]string)
-		for _, name := range args {
-			for _, img := range images {
-				if img.Name == name {
-					imageMap[name] = img.Path
-					break
-				}
-			}
-		}
-
-		if len(args) > 0 {
-			imagesToDelete = append(imagesToDelete, args...)
-		}
-	*/
 	p := aws.NewProvider()
 	ctx := api.NewContext(c)
 
@@ -199,7 +172,9 @@ func cronEnableCommandHandler(cmd *cobra.Command, args []string) {
 	p := aws.NewProvider()
 	ctx := api.NewContext(c)
 
-	err := p.EnableCron(ctx, "itesting")
+	cronName := args[0]
+
+	err := p.EnableCron(ctx, cronName)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -223,7 +198,9 @@ func cronDisableCommandHandler(cmd *cobra.Command, args []string) {
 	p := aws.NewProvider()
 	ctx := api.NewContext(c)
 
-	err := p.DisableCron(ctx, "")
+	cronName := args[0]
+
+	err := p.DisableCron(ctx, cronName)
 	if err != nil {
 		exitWithError(err.Error())
 	}

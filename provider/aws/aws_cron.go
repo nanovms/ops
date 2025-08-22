@@ -4,17 +4,29 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	schedulerTypes "github.com/aws/aws-sdk-go-v2/service/scheduler/types"
+
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler/types"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/log"
+	"github.com/olekukonko/tablewriter"
 )
+
+type Cron struct {
+	Id        string
+	Name      string
+	State     string
+	CreatedAt time.Time
+}
 
 // a *lot* of this shares w/instance create and we should have it
 // share..
@@ -60,6 +72,10 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 
 	cloudConfig := ctx.Config().CloudConfig
 
+	if cloudConfig.Flavor == "" {
+		cloudConfig.Flavor = "t2.micro"
+	}
+
 	ctx.Logger().Debug("getting vpc")
 	vpc, err := p.GetVPC(p.execCtx, ctx, svc)
 	if err != nil {
@@ -74,23 +90,22 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 		}
 	}
 
-	/*	var sg *awsEc2Types.SecurityGroup
+	var sg *awsEc2Types.SecurityGroup
 
-		if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
-			ctx.Logger().Debugf("getting security group with name %s", cloudConfig.SecurityGroup)
-			sg, err = p.GetSecurityGroup(p.execCtx, ctx, svc, vpc)
-			if err != nil {
-				return err
-			}
-		} else {
-			iname := ctx.Config().RunConfig.InstanceName
-			ctx.Logger().Debugf("creating new security group in vpc %s", *vpc.VpcId)
-			sg, err = p.CreateSG(p.execCtx, ctx, svc, iname, *vpc.VpcId)
-			if err != nil {
-				return err
-			}
+	if cloudConfig.SecurityGroup != "" && cloudConfig.VPC != "" {
+		ctx.Logger().Debugf("getting security group with name %s", cloudConfig.SecurityGroup)
+		sg, err = p.GetSecurityGroup(p.execCtx, ctx, svc, vpc)
+		if err != nil {
+			return err
 		}
-	*/
+	} else {
+		iname := ctx.Config().RunConfig.InstanceName
+		ctx.Logger().Debugf("creating new security group in vpc %s", *vpc.VpcId)
+		sg, err = p.CreateSG(p.execCtx, ctx, svc, iname, *vpc.VpcId)
+		if err != nil {
+			return err
+		}
+	}
 
 	ctx.Logger().Debug("getting subnet")
 	var subnet *awsEc2Types.Subnet
@@ -108,6 +123,11 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 
 	client := scheduler.NewFromConfig(cfg)
 
+	/*
+		tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
+		tags = append(tags, awsEc2Types.Tag{Key: aws.String("image"), Value: &imgName})
+	*/
+
 	scheduleName := "itesting"
 	targetArn := "arn:aws:scheduler:::aws-sdk:ec2:runInstances"
 	executionRoleArn := os.Getenv("EXECUTIONARN")
@@ -116,13 +136,16 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 
 	inputJSON := `{
 	      "ImageId":"` + ami + `", 	
-      "InstanceType":"t2.micro",
+      "InstanceType":"` + cloudConfig.Flavor + `",
 	      "MinCount":1,
 	      "MaxCount":1,
 	      "NetworkInterfaces":[
 	          {
 	          "DeleteOnTermination": true,
 	          "DeviceIndex":         0,
+			 "Groups": [
+					"` + *sg.GroupId + `"
+				],
 	          "SubnetId":"` + *subnet.SubnetId + `"
 	          }
 	      ]
@@ -174,7 +197,14 @@ func (p *AWS) DeleteCron(ctx *lepton.Context, schedule string) error {
 	return fmt.Errorf("operation not supported")
 }
 
+// seems like these two want all the options simply to toggle it
+// on/off..
 func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
+	cron, err := p.getCronByName(ctx, schedule)
+	if err != nil {
+		return err
+	}
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		return err
@@ -182,9 +212,13 @@ func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
 
 	svc := scheduler.NewFromConfig(cfg)
 
+	fmt.Println("updating %s", schedule)
 	_, err = svc.UpdateSchedule(context.TODO(), &scheduler.UpdateScheduleInput{
-		Name:  &schedule,
-		State: types.ScheduleStateEnabled,
+		Name:               &schedule,
+		ScheduleExpression: cron.ScheduleExpression,
+		Target:             cron.Target,
+		FlexibleTimeWindow: cron.FlexibleTimeWindow,
+		State:              types.ScheduleStateEnabled,
 	})
 	if err != nil {
 		return err
@@ -194,6 +228,11 @@ func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
 }
 
 func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
+	cron, err := p.getCronByName(ctx, schedule)
+	if err != nil {
+		return err
+	}
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		return err
@@ -202,8 +241,11 @@ func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
 	svc := scheduler.NewFromConfig(cfg)
 
 	_, err = svc.UpdateSchedule(context.TODO(), &scheduler.UpdateScheduleInput{
-		Name:  &schedule,
-		State: types.ScheduleStateDisabled,
+		Name:               &schedule,
+		ScheduleExpression: cron.ScheduleExpression,
+		Target:             cron.Target,
+		FlexibleTimeWindow: cron.FlexibleTimeWindow,
+		State:              types.ScheduleStateDisabled,
 	})
 	if err != nil {
 		return err
@@ -213,9 +255,47 @@ func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
 }
 
 func (p *AWS) ListCrons(ctx *lepton.Context) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	crons, err := p.getCrons(ctx)
 	if err != nil {
 		return err
+	}
+
+	if ctx.Config().RunConfig.JSON {
+		if err := json.NewEncoder(os.Stdout).Encode(cimages); err != nil {
+			return err
+		}
+	} else {
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Name", "State", "Created"})
+		table.SetHeaderColor(
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.FgCyanColor})
+		table.SetRowLine(true)
+
+		for _, image := range crons {
+			var row []string
+
+			row = append(row, image.Id)
+			row = append(row, image.Name)
+			row = append(row, image.State)
+			row = append(row, lepton.Time2Human(image.CreatedAt))
+
+			table.Append(row)
+		}
+
+		table.Render()
+	}
+	return nil
+}
+
+// target, time, expression needed
+func (p *AWS) getCronByName(ctx *lepton.Context, name string) (schedulerTypes.ScheduleSummary, error) {
+
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
 	}
 
 	svc := scheduler.NewFromConfig(cfg)
@@ -224,48 +304,91 @@ func (p *AWS) ListCrons(ctx *lepton.Context) error {
 
 	result, err := svc.ListSchedules(context.TODO(), input)
 	if err != nil {
-		log.Fatalf("failed to list schedules, %v", err)
+		return nil, err
+	}
+
+	if len(result.Schedules) == 0 {
+		fmt.Println("No schedules found.")
+		return nil, err
+	} else {
+		for _, schedule := range result.Schedules {
+
+			if name == *schedule.Name {
+				return *schedule
+			} else {
+
+				for result.NextToken != nil {
+					input.NextToken = result.NextToken
+					result, err = svc.ListSchedules(context.TODO(), input)
+					if err != nil {
+						return crons, err
+					}
+					for _, schedule := range result.Schedules {
+						if name == *schedule.Name {
+							return *schedule
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	return nil, err
+}
+
+func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {
+	var crons []Cron
+
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return crons, err
+	}
+
+	svc := scheduler.NewFromConfig(cfg)
+
+	input := &scheduler.ListSchedulesInput{}
+
+	result, err := svc.ListSchedules(context.TODO(), input)
+	if err != nil {
+		return crons, err
 	}
 
 	if len(result.Schedules) == 0 {
 		fmt.Println("No schedules found.")
 	} else {
-		fmt.Println("Found schedules:")
 		for _, schedule := range result.Schedules {
-			fmt.Printf("%+v\n", schedule)
-			fmt.Printf("%+v\n", schedule.Arn)
+
+			c := Cron{
+				Id:        *schedule.Arn,
+				Name:      *schedule.Name,
+				State:     string(schedule.State),
+				CreatedAt: *schedule.CreationDate,
+			}
+			crons = append(crons, c)
+
+			for result.NextToken != nil {
+				input.NextToken = result.NextToken
+				result, err = svc.ListSchedules(context.TODO(), input)
+				if err != nil {
+					return crons, err
+				}
+				for _, schedule := range result.Schedules {
+					fmt.Printf("%+v\n", schedule)
+
+					c := Cron{
+						Id:        *schedule.Arn,
+						Name:      *schedule.Name,
+						State:     string(schedule.State),
+						CreatedAt: *schedule.CreationDate,
+					}
+					crons = append(crons, c)
+
+				}
+			}
 		}
 
-		for result.NextToken != nil {
-			input.NextToken = result.NextToken
-			result, err = svc.ListSchedules(context.TODO(), input)
-			if err != nil {
-				log.Fatalf("failed to list schedules (pagination), %v", err)
-			}
-			for _, schedule := range result.Schedules {
-				fmt.Printf("%+v\n", schedule)
-			}
-		}
 	}
 
-	return fmt.Errorf("operation not supported")
+	return crons, err
 }
-
-/*
-	if cloudConfig.Flavor == "" {
-		cloudConfig.Flavor = "t2.micro"
-	}
-
-	// Create tags to assign to the instance
-	tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
-	tags = append(tags, awsEc2Types.Tag{Key: aws.String("image"), Value: &imgName})
-
-	instanceNIS := &awsEc2Types.InstanceNetworkInterfaceSpecification{
-		DeleteOnTermination: aws.Bool(true),
-		DeviceIndex:         aws.Int32(0),
-		Groups: []string{
-			aws.ToString(sg.GroupId),
-		},
-		SubnetId: aws.String(*subnet.SubnetId),
-	}
-*/
