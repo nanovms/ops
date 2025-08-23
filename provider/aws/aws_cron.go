@@ -20,13 +20,15 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// Cron is a generic representation for a cloud scheduler such as an eventbridge schedule.
 type Cron struct {
-	Id        string
+	ID        string
 	Name      string
 	State     string
 	CreatedAt time.Time
 }
 
+// CreateCron creates an eventbridge schedule on AWS.
 // a *lot* of this shares w/instance create and we should have it
 // share..
 func (p *AWS) CreateCron(ctx *lepton.Context, name string, schedule string) error {
@@ -168,6 +170,7 @@ func (p *AWS) CreateCron(ctx *lepton.Context, name string, schedule string) erro
 	return nil
 }
 
+// DeleteCron deletes an eventbridge schedule.
 func (p *AWS) DeleteCron(ctx *lepton.Context, schedule string) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -194,6 +197,7 @@ func (p *AWS) DeleteCron(ctx *lepton.Context, schedule string) error {
 	return fmt.Errorf("operation not supported")
 }
 
+// EnableCron enables an eventbridge schedule.
 // seems like these two want all the options simply to toggle it
 // on/off..
 func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
@@ -224,6 +228,7 @@ func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
 	return nil
 }
 
+// DisableCron disables an eventbridge schedule.
 func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
 	cron, err := p.getCronByName(ctx, schedule)
 	if err != nil {
@@ -251,6 +256,7 @@ func (p *AWS) DisableCron(ctx *lepton.Context, schedule string) error {
 	return nil
 }
 
+// ListCrons lists eventbridge schedules.
 func (p *AWS) ListCrons(ctx *lepton.Context) error {
 	crons, err := p.getCrons(ctx)
 	if err != nil {
@@ -274,7 +280,7 @@ func (p *AWS) ListCrons(ctx *lepton.Context) error {
 		for _, image := range crons {
 			var row []string
 
-			row = append(row, image.Id)
+			row = append(row, image.ID)
 			row = append(row, image.Name)
 			row = append(row, image.State)
 			row = append(row, lepton.Time2Human(image.CreatedAt))
@@ -325,7 +331,7 @@ func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {
 		for _, schedule := range result.Schedules {
 
 			c := Cron{
-				Id:        *schedule.Arn,
+				ID:        *schedule.Arn,
 				Name:      *schedule.Name,
 				State:     string(schedule.State),
 				CreatedAt: *schedule.CreationDate,
@@ -342,7 +348,7 @@ func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {
 					fmt.Printf("%+v\n", schedule)
 
 					c := Cron{
-						Id:        *schedule.Arn,
+						ID:        *schedule.Arn,
 						Name:      *schedule.Name,
 						State:     string(schedule.State),
 						CreatedAt: *schedule.CreationDate,
