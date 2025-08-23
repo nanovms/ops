@@ -125,15 +125,20 @@ func (p *AWS) CreateCron(ctx *lepton.Context, name string, schedule string) erro
 	scheduleName := name
 	targetArn := "arn:aws:scheduler:::aws-sdk:ec2:runInstances"
 	executionRoleArn := os.Getenv("EXECUTIONARN")
+	if executionRoleArn == "" {
+		fmt.Println("you need to set EXECUTIONARN to a valid IAM role that can assume the role for eventbridge scheduler")
+		os.Exit(1)
+	}
 
 	scheduleExpression := schedule
 
 	inputJSON := `{
-	      "ImageId":"` + ami + `", 	
-      "InstanceType":"` + cloudConfig.Flavor + `",
-	      "MinCount":1,
-	      "MaxCount":1,
-	      "NetworkInterfaces":[
+	     "ImageId":"` + ami + `", 	
+      	 "InstanceType":"` + cloudConfig.Flavor + `",
+	     "MinCount":1,
+	     "MaxCount":1,
+		"InstanceInitiatedShutdownBehavior":"terminate",
+	     "NetworkInterfaces":[
 	          {
 	          "DeleteOnTermination": true,
 	          "DeviceIndex":         0,
