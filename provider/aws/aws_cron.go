@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	awsEc2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	schedulerTypes "github.com/aws/aws-sdk-go-v2/service/scheduler/types"
 
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler/types"
@@ -30,7 +29,7 @@ type Cron struct {
 
 // a *lot* of this shares w/instance create and we should have it
 // share..
-func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
+func (p *AWS) CreateCron(ctx *lepton.Context, name string, schedule string) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatalf("failed to load SDK config, %v", err)
@@ -123,16 +122,11 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 
 	client := scheduler.NewFromConfig(cfg)
 
-	/*
-		tags, tagInstanceName := buildAwsTags(cloudConfig.Tags, ctx.Config().RunConfig.InstanceName)
-		tags = append(tags, awsEc2Types.Tag{Key: aws.String("image"), Value: &imgName})
-	*/
-
-	scheduleName := "itesting"
+	scheduleName := name
 	targetArn := "arn:aws:scheduler:::aws-sdk:ec2:runInstances"
 	executionRoleArn := os.Getenv("EXECUTIONARN")
 
-	scheduleExpression := "rate(1 minutes)"
+	scheduleExpression := schedule
 
 	inputJSON := `{
 	      "ImageId":"` + ami + `", 	
@@ -151,6 +145,9 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 	      ]
 	  }`
 
+	// you can add tags to a schedule group but not an indvidual
+	// schedule - perhaps consider adding this at some point in the
+	// future.
 	input := &scheduler.CreateScheduleInput{
 		Name:               &scheduleName,
 		ScheduleExpression: &scheduleExpression,
@@ -167,7 +164,7 @@ func (p *AWS) CreateCron(ctx *lepton.Context, schedule string) error {
 		log.Fatalf("failed to create schedule, %v", err)
 	}
 
-	fmt.Printf("Successfully created schedule %s to invoke Lambda function %s every 5 minutes.\n", scheduleName, targetArn)
+	fmt.Printf("Successfully created schedule %s to invoke %s every %s.\n", scheduleName, targetArn, schedule)
 	return nil
 }
 
@@ -261,7 +258,7 @@ func (p *AWS) ListCrons(ctx *lepton.Context) error {
 	}
 
 	if ctx.Config().RunConfig.JSON {
-		if err := json.NewEncoder(os.Stdout).Encode(cimages); err != nil {
+		if err := json.NewEncoder(os.Stdout).Encode(crons); err != nil {
 			return err
 		}
 	} else {
@@ -290,51 +287,19 @@ func (p *AWS) ListCrons(ctx *lepton.Context) error {
 	return nil
 }
 
-// target, time, expression needed
-func (p *AWS) getCronByName(ctx *lepton.Context, name string) (schedulerTypes.ScheduleSummary, error) {
-
+func (p *AWS) getCronByName(ctx *lepton.Context, name string) (*scheduler.GetScheduleOutput, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		return nil, err
+		return &scheduler.GetScheduleOutput{}, err
 	}
 
 	svc := scheduler.NewFromConfig(cfg)
 
-	input := &scheduler.ListSchedulesInput{}
-
-	result, err := svc.ListSchedules(context.TODO(), input)
-	if err != nil {
-		return nil, err
+	input := &scheduler.GetScheduleInput{
+		Name: aws.String(name),
 	}
 
-	if len(result.Schedules) == 0 {
-		fmt.Println("No schedules found.")
-		return nil, err
-	} else {
-		for _, schedule := range result.Schedules {
-
-			if name == *schedule.Name {
-				return *schedule
-			} else {
-
-				for result.NextToken != nil {
-					input.NextToken = result.NextToken
-					result, err = svc.ListSchedules(context.TODO(), input)
-					if err != nil {
-						return crons, err
-					}
-					for _, schedule := range result.Schedules {
-						if name == *schedule.Name {
-							return *schedule
-						}
-					}
-				}
-			}
-		}
-
-	}
-
-	return nil, err
+	return svc.GetSchedule(context.TODO(), input)
 }
 
 func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {

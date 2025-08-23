@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	api "github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/provider/aws"
@@ -30,7 +31,6 @@ func CronCommands() *cobra.Command {
 }
 
 func cronCreateCommand() *cobra.Command {
-	// should take cron as well
 
 	var cmdCronCreate = &cobra.Command{
 		Use:   "create <cron_name>",
@@ -60,9 +60,14 @@ func cronCreateCommandHandler(cmd *cobra.Command, args []string) {
 	providerFlags := NewProviderCommandFlags(flags)
 	pkgFlags := NewPkgCommandFlags(flags)
 
+	if len(args) != 2 {
+		fmt.Println("both image and schedule are required")
+		fmt.Println("for example myimg rate(1 minutes)")
+		os.Exit(1)
+	}
+
 	c.CloudConfig.ImageName = args[0]
-	// schedule = args[1]
-	schedule := "rate(1 minutes)"
+	schedule := args[1]
 
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, nanosVersionFlags, buildImageFlags, providerFlags, pkgFlags)
 
@@ -75,7 +80,7 @@ func cronCreateCommandHandler(cmd *cobra.Command, args []string) {
 	ctx := api.NewContext(c)
 	err = p.Initialize(&c.CloudConfig)
 
-	err = p.CreateCron(ctx, schedule)
+	err = p.CreateCron(ctx, c.CloudConfig.ImageName, schedule)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -119,13 +124,9 @@ func cronDeleteCommand() *cobra.Command {
 	var cmdCronDelete = &cobra.Command{
 		Use:   "delete <image_name>",
 		Short: "delete images from provider",
-		Run:   imageDeleteCommandHandler,
+		Run:   cronDeleteCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
-
-	cmdCronDelete.PersistentFlags().StringP("lru", "", "", "clean least recently used images with a time notation. Use \"1w\" notation to delete images older than one week. Other notation examples are 300d, 3w, 1m and 2y.")
-	cmdCronDelete.PersistentFlags().BoolP("assume-yes", "", false, "clean images without waiting for confirmation")
-	cmdCronDelete.PersistentFlags().BoolP("force", "", false, "force even if image is being used by instance")
 
 	return cmdCronDelete
 }
@@ -148,7 +149,14 @@ func cronDeleteCommandHandler(cmd *cobra.Command, args []string) {
 	p := aws.NewProvider()
 	ctx := api.NewContext(c)
 
-	errMsg := p.DeleteCron(ctx, "itesting")
+	if len(args) != 1 {
+		fmt.Println("cron name needs to be specified")
+		os.Exit(1)
+	}
+
+	cron := args[0]
+
+	errMsg := p.DeleteCron(ctx, cron)
 	if errMsg != nil {
 		errMsg = fmt.Errorf("failed deleting %s: %v", "", errMsg)
 	}
@@ -157,8 +165,8 @@ func cronDeleteCommandHandler(cmd *cobra.Command, args []string) {
 
 func cronEnableCommand() *cobra.Command {
 	var cmdCronEnable = &cobra.Command{
-		Use:   "enable <image_name>",
-		Short: "enable image from provider",
+		Use:   "enable <cron_name>",
+		Short: "enable cron from provider",
 		Run:   cronEnableCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
@@ -183,8 +191,8 @@ func cronEnableCommandHandler(cmd *cobra.Command, args []string) {
 
 func cronDisableCommand() *cobra.Command {
 	var cmdCronDisable = &cobra.Command{
-		Use:   "disable <image_name>",
-		Short: "disable image from provider",
+		Use:   "disable <crone_name>",
+		Short: "disable cron from provider",
 		Run:   cronDisableCommandHandler,
 		Args:  cobra.MinimumNArgs(1),
 	}
