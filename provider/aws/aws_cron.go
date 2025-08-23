@@ -67,8 +67,6 @@ func (p *AWS) CreateCron(ctx *lepton.Context, name string, schedule string) erro
 
 	ami = aws.ToString(image.ImageId)
 
-	fmt.Println("using %s", ami)
-
 	svc := p.ec2
 
 	cloudConfig := ctx.Config().CloudConfig
@@ -213,7 +211,6 @@ func (p *AWS) EnableCron(ctx *lepton.Context, schedule string) error {
 
 	svc := scheduler.NewFromConfig(cfg)
 
-	fmt.Println("updating %s", schedule)
 	_, err = svc.UpdateSchedule(context.TODO(), &scheduler.UpdateScheduleInput{
 		Name:               &schedule,
 		ScheduleExpression: cron.ScheduleExpression,
