@@ -48,6 +48,7 @@ func GetRootCommand() *cobra.Command {
 	rootCmd.AddCommand(BuildCommand())
 	rootCmd.AddCommand(EnvCommand())
 	rootCmd.AddCommand(ImageCommands())
+	rootCmd.AddCommand(CronCommands())
 	rootCmd.AddCommand(InstanceCommands())
 	rootCmd.AddCommand(NetworkCommands())
 	rootCmd.AddCommand(ProfileCommand())
