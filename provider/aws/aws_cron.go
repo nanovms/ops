@@ -328,7 +328,7 @@ func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {
 	}
 
 	if len(result.Schedules) == 0 {
-		fmt.Println("No schedules found.")
+		return []Cron{}, nil
 	} else {
 		for _, schedule := range result.Schedules {
 
