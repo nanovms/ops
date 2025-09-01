@@ -329,38 +329,37 @@ func (p *AWS) getCrons(ctx *lepton.Context) ([]Cron, error) {
 
 	if len(result.Schedules) == 0 {
 		return []Cron{}, nil
-	} else {
-		for _, schedule := range result.Schedules {
+	}
 
-			c := Cron{
-				ID:        *schedule.Arn,
-				Name:      *schedule.Name,
-				State:     string(schedule.State),
-				CreatedAt: *schedule.CreationDate,
+	for _, schedule := range result.Schedules {
+
+		c := Cron{
+			ID:        *schedule.Arn,
+			Name:      *schedule.Name,
+			State:     string(schedule.State),
+			CreatedAt: *schedule.CreationDate,
+		}
+		crons = append(crons, c)
+
+		for result.NextToken != nil {
+			input.NextToken = result.NextToken
+			result, err = svc.ListSchedules(context.TODO(), input)
+			if err != nil {
+				return crons, err
 			}
-			crons = append(crons, c)
+			for _, schedule := range result.Schedules {
+				fmt.Printf("%+v\n", schedule)
 
-			for result.NextToken != nil {
-				input.NextToken = result.NextToken
-				result, err = svc.ListSchedules(context.TODO(), input)
-				if err != nil {
-					return crons, err
+				c := Cron{
+					ID:        *schedule.Arn,
+					Name:      *schedule.Name,
+					State:     string(schedule.State),
+					CreatedAt: *schedule.CreationDate,
 				}
-				for _, schedule := range result.Schedules {
-					fmt.Printf("%+v\n", schedule)
+				crons = append(crons, c)
 
-					c := Cron{
-						ID:        *schedule.Arn,
-						Name:      *schedule.Name,
-						State:     string(schedule.State),
-						CreatedAt: *schedule.CreationDate,
-					}
-					crons = append(crons, c)
-
-				}
 			}
 		}
-
 	}
 
 	return crons, err
