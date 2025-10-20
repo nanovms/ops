@@ -16,7 +16,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// Instance Methods
+// CreateInstance launches a server in Hetzner Cloud using the configured snapshot.
 func (h *Hetzner) CreateInstance(ctx *lepton.Context) error {
 	config := ctx.Config()
 
@@ -63,6 +63,7 @@ func (h *Hetzner) CreateInstance(ctx *lepton.Context) error {
 	return err
 }
 
+// ListInstances prints all managed Hetzner instances in table or JSON form.
 func (h *Hetzner) ListInstances(ctx *lepton.Context) error {
 	instances, err := h.GetInstances(ctx)
 	if err != nil {
@@ -95,10 +96,12 @@ func (h *Hetzner) ListInstances(ctx *lepton.Context) error {
 	return nil
 }
 
+// InstanceStats returns an error because Hetzner metrics are not yet implemented.
 func (h *Hetzner) InstanceStats(ctx *lepton.Context, instancename string, watch bool) error {
 	return errors.New("currently not available")
 }
 
+// GetInstances retrieves all instances managed by Ops on Hetzner Cloud.
 func (h *Hetzner) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
 	opts := hcloud.ServerListOpts{
 		ListOpts: hcloud.ListOpts{
@@ -125,6 +128,7 @@ func (h *Hetzner) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, err
 	return result, nil
 }
 
+// GetInstanceByName looks up a managed Hetzner instance by its name label.
 func (h *Hetzner) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
 	server, err := h.fetchServerByName(context.Background(), name)
 	if err != nil {
@@ -138,6 +142,7 @@ func (h *Hetzner) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.C
 	return &instance, nil
 }
 
+// DeleteInstance removes the specified Hetzner server.
 func (h *Hetzner) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	server, err := h.fetchServerByName(context.Background(), instancename)
 	if err != nil {
@@ -154,6 +159,7 @@ func (h *Hetzner) DeleteInstance(ctx *lepton.Context, instancename string) error
 	return nil
 }
 
+// StopInstance powers off the target Hetzner server.
 func (h *Hetzner) StopInstance(ctx *lepton.Context, instancename string) error {
 	server, err := h.fetchServerByName(context.Background(), instancename)
 	if err != nil {
@@ -173,6 +179,7 @@ func (h *Hetzner) StopInstance(ctx *lepton.Context, instancename string) error {
 	return nil
 }
 
+// StartInstance powers on the target Hetzner server.
 func (h *Hetzner) StartInstance(ctx *lepton.Context, instancename string) error {
 	server, err := h.fetchServerByName(context.Background(), instancename)
 	if err != nil {
@@ -192,6 +199,7 @@ func (h *Hetzner) StartInstance(ctx *lepton.Context, instancename string) error 
 	return nil
 }
 
+// RebootInstance restarts the target Hetzner server.
 func (h *Hetzner) RebootInstance(ctx *lepton.Context, instancename string) error {
 	server, err := h.fetchServerByName(context.Background(), instancename)
 	if err != nil {
@@ -211,10 +219,12 @@ func (h *Hetzner) RebootInstance(ctx *lepton.Context, instancename string) error
 	return nil
 }
 
+// GetInstanceLogs returns an error because Hetzner log streaming is not implemented.
 func (*Hetzner) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
 	return "", fmt.Errorf("GetInstanceLogs not yet implemented")
 }
 
+// PrintInstanceLogs returns an error because Hetzner log streaming is not implemented.
 func (*Hetzner) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
 	return fmt.Errorf("PrintInstanceLogs not yet implemented")
 }

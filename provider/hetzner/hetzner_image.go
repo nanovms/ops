@@ -64,11 +64,11 @@ func (h *Hetzner) CustomizeImage(ctx *lepton.Context) (string, error) {
 	return imagePath, nil
 }
 
+// BuildImage creates a Hetzner-compatible image from the active configuration.
 func (h *Hetzner) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
-	if !c.Uefi {
-		return "", fmt.Errorf("hetzner images require 'Uefi; true' it in your configuration")
-	}
+	// All hetzner VMs can run Uefi images
+	c.Uefi = true
 	if err := lepton.BuildImage(*c); err != nil {
 		return "", err
 	}
@@ -76,17 +76,18 @@ func (h *Hetzner) BuildImage(ctx *lepton.Context) (string, error) {
 	return h.CustomizeImage(ctx)
 }
 
+// BuildImageWithPackage builds a Hetzner-compatible image that includes the provided package.
 func (h *Hetzner) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
-	if !c.Uefi {
-		return "", fmt.Errorf("hetzner images require 'Uefi; true' it in your configuration")
-	}
+	// All hetzner VMs can run Uefi images
+	c.Uefi = true
 	if err := lepton.BuildImageFromPackage(pkgpath, *c); err != nil {
 		return "", err
 	}
 	return h.CustomizeImage(ctx)
 }
 
+// CreateImage uploads the image to object storage and registers a Hetzner snapshot.
 func (h *Hetzner) CreateImage(ctx *lepton.Context, imagePath string) error {
 	config := ctx.Config()
 	logger := ctx.Logger()
@@ -217,6 +218,7 @@ func (h *Hetzner) CreateImage(ctx *lepton.Context, imagePath string) error {
 	return nil
 }
 
+// ListImages prints managed Hetzner snapshots using table or JSON output.
 func (h *Hetzner) ListImages(ctx *lepton.Context, filter string) error {
 	images, err := h.GetImages(ctx, filter)
 	if err != nil {
@@ -250,6 +252,7 @@ func (h *Hetzner) ListImages(ctx *lepton.Context, filter string) error {
 	return nil
 }
 
+// GetImages retrieves all managed Hetzner snapshots optionally filtered by name.
 func (h *Hetzner) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
 	selector := managedLabelSelector()
 	if strings.TrimSpace(filter) != "" {
@@ -287,6 +290,7 @@ func (h *Hetzner) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudI
 	return result, nil
 }
 
+// DeleteImage removes the Hetzner snapshot and associated object storage artifact.
 func (h *Hetzner) DeleteImage(ctx *lepton.Context, imagename string) error {
 	config := ctx.Config()
 	image, err := h.fetchSnapshotByName(context.Background(), imagename)
@@ -309,10 +313,12 @@ func (h *Hetzner) DeleteImage(ctx *lepton.Context, imagename string) error {
 	return nil
 }
 
+// ResizeImage reports that resizing Hetzner snapshots is unsupported.
 func (*Hetzner) ResizeImage(ctx *lepton.Context, imagename string, hbytes string) error {
 	return fmt.Errorf("operation not supported")
 }
 
+// SyncImage logs that Hetzner image synchronization is not implemented.
 func (*Hetzner) SyncImage(config *types.Config, target lepton.Provider, imagename string) error {
 	log.Warn("not yet implemented")
 	return nil
