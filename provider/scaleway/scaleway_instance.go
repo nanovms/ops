@@ -19,10 +19,13 @@ import (
 // CreateInstance launches a server in Scaleway Cloud using the configured snapshot.
 func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
 
+	accessKeyID := os.Getenv("SCALEWAY_ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("SCALEWAY_SECRET_ACCESS_KEY")
+
 	client, err := scw.NewClient(
-		scw.WithAuth("SCALEWAY_ACCESS_KEY_ID", "SCALEWAY_SECRET_ACCESS_KEY"),
-		scw.WithDefaultOrganizationID("SCALEWAY_ORGANIZATION_ID"),
-		scw.WithDefaultZone(scw.ZoneFrPar1),
+		scw.WithAuth(accessKeyID, secretAccessKey),
+		scw.WithDefaultOrganizationID(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
+		scw.WithDefaultZone(scw.ZonePlWaw1),
 	)
 	if err != nil {
 		panic(err)
@@ -31,17 +34,22 @@ func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
 	instanceAPI := instance.NewAPI(client)
 
 	serverType := "DEV1-S"
-	image := "ubuntu_focal"
+	//	image := "server"
+	// need find by name..
+	image := "4a446aaa-9591-45fa-9047-10e881642daa"
 
 	createRes, err := instanceAPI.CreateServer(&instance.CreateServerRequest{
 		Name:              "my-server-01",
 		CommercialType:    serverType,
 		Image:             scw.StringPtr(image),
 		DynamicIPRequired: scw.BoolPtr(true),
+		Project:           scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
 	})
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println(createRes)
 
 	timeout := 5 * time.Minute
 	err = instanceAPI.ServerActionAndWait(&instance.ServerActionAndWaitRequest{
@@ -108,7 +116,7 @@ func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, er
 	instanceApi := instance.NewAPI(client)
 
 	response, err := instanceApi.ListServers(&instance.ListServersRequest{
-		Zone: scw.ZoneFrPar1,
+		Zone: scw.ZonePlWaw1,
 	})
 	if err != nil {
 		panic(err)

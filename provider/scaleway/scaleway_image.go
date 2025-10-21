@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -31,6 +32,8 @@ func (h *Scaleway) CustomizeImage(ctx *lepton.Context) (string, error) {
 // BuildImage creates a Scaleway-compatible image from the active configuration.
 func (h *Scaleway) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+	c.Uefi = true
+
 	if err := lepton.BuildImage(*c); err != nil {
 		return "", err
 	}
@@ -41,6 +44,8 @@ func (h *Scaleway) BuildImage(ctx *lepton.Context) (string, error) {
 // BuildImageWithPackage builds a Scaleway-compatible image that includes the provided package.
 func (h *Scaleway) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
+	c.Uefi = true
+
 	if err := lepton.BuildImageFromPackage(pkgpath, *c); err != nil {
 		return "", err
 	}
@@ -50,6 +55,7 @@ func (h *Scaleway) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (s
 // CreateImage uploads the image to object storage and registers a Scaleway snapshot.
 func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	c := ctx.Config()
+
 	h.ensureStorage()
 
 	accessKeyID := os.Getenv("SCALEWAY_ACCESS_KEY_ID")
@@ -65,6 +71,13 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	cmd := exec.Command("sh", "-c", "qemu-img convert -f raw -O qcow2 ~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
 	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("%s\n", stdoutStderr)
+	}
+
+	cmd = exec.Command("sh", "-c", "qemu-img resize ~/.ops/images/"+newPath+" 1G")
+	stdoutStderr, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 		fmt.Printf("%s\n", stdoutStderr)
@@ -139,10 +152,8 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	instanceAPI := instance.NewAPI(client)
 
 	// need to sit && spin until status is 'ok'
-	//for i:=0; i<len(10); i++ {
-	// func (s *ScalewayAPI) GetSnapshot(snapshotID string)
-	// (*ScalewaySnapshot, error)
 
+	time.Sleep(10 * time.Second)
 	fmt.Println("waiting..")
 	res, err := instanceAPI.WaitForSnapshot(&instance.WaitForSnapshotRequest{
 		SnapshotID: importedSnapshot.ID,
