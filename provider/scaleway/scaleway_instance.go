@@ -18,38 +18,26 @@ import (
 
 // CreateInstance launches a server in Scaleway Cloud using the configured snapshot.
 func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
+	config := ctx.Config()
 
-	accessKeyID := os.Getenv("SCALEWAY_ACCESS_KEY_ID")
-	secretAccessKey := os.Getenv("SCALEWAY_SECRET_ACCESS_KEY")
-
-	client, err := scw.NewClient(
-		scw.WithAuth(accessKeyID, secretAccessKey),
-		scw.WithDefaultOrganizationID(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
-		scw.WithDefaultZone(scw.ZonePlWaw1),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	instanceAPI := instance.NewAPI(client)
+	instanceAPI := instance.NewAPI(h.client)
 
 	serverType := "DEV1-S"
-	//	image := "server"
-	// need find by name..
-	image := "4a446aaa-9591-45fa-9047-10e881642daa"
+	i, err := h.getImageByName(ctx, config.CloudConfig.ImageName)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	createRes, err := instanceAPI.CreateServer(&instance.CreateServerRequest{
 		Name:              "my-server-01",
 		CommercialType:    serverType,
-		Image:             scw.StringPtr(image),
+		Image:             scw.StringPtr(i.ID),
 		DynamicIPRequired: scw.BoolPtr(true),
 		Project:           scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
 	})
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(createRes)
 
 	timeout := 5 * time.Minute
 	err = instanceAPI.ServerActionAndWait(&instance.ServerActionAndWaitRequest{
@@ -104,16 +92,7 @@ func (h *Scaleway) InstanceStats(ctx *lepton.Context, instancename string, watch
 // GetInstances retrieves all instances managed by Ops on Scaleway Cloud.
 func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
 
-	client, err := scw.NewClient(
-		scw.WithDefaultOrganizationID("SCALEWAY_ORGANIZATION_ID"),
-		scw.WithAuth("SCALEWAY_ACCESS_KEY_ID", "SCALEWAY_SECRET_ACCESS_KEY"),
-		scw.WithDefaultRegion("SCW_REGION"),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	instanceApi := instance.NewAPI(client)
+	instanceApi := instance.NewAPI(h.client)
 
 	response, err := instanceApi.ListServers(&instance.ListServersRequest{
 		Zone: scw.ZonePlWaw1,

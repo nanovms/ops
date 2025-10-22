@@ -2,6 +2,7 @@ package scaleway
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -214,26 +215,49 @@ func (h *Scaleway) ListImages(ctx *lepton.Context, filter string) error {
 	return nil
 }
 
+func (h *Scaleway) getImageByName(ctx *lepton.Context, imageName string) (*lepton.CloudImage, error) {
+	var image *lepton.CloudImage
+
+	images, err := h.GetImages(ctx, "")
+	if err != nil {
+		return image, err
+	}
+
+	for _, i := range images {
+		if i.Name == imageName {
+			image = &i
+			return image, nil
+		}
+	}
+
+	return image, errors.New("image not found")
+}
+
 // GetImages retrieves all managed Scaleway snapshots optionally filtered by name.
 func (h *Scaleway) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
-	log.Warn("not yet implemented")
+	images := []lepton.CloudImage{}
 
-	/*
-		images := []lepton.CloudImage{}
-		for _, img := range images {
-			name := img.Name
-			result = append(result, lepton.CloudImage{
-				ID:      strconv.FormatInt(img.ID, 10),
-				Name:    name,
-				Status:  string(img.Status),
-				Size:    int64(img.DiskSize * lepton.GB),
-				Created: img.Created,
-				Labels:  flattenLabels(img.Labels),
-			})
-		}
-	*/
+	instanceAPI := instance.NewAPI(h.client)
 
-	return nil, nil
+	listImagesRequest := &instance.ListImagesRequest{
+		Zone:         scw.ZonePlWaw1,
+		Organization: scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
+	}
+
+	res, err := instanceAPI.ListImages(listImagesRequest)
+	if err != nil {
+		return images, err
+	}
+
+	for _, image := range res.Images {
+		images = append(images, lepton.CloudImage{
+			ID:     image.ID,
+			Name:   image.Name,
+			Status: string(image.State),
+		})
+	}
+
+	return images, nil
 }
 
 // DeleteImage removes the Scaleway snapshot and associated object storage artifact.
