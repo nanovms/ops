@@ -119,15 +119,10 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	//// create snapshot
 
 	listSnapshotsResponse, err := blockAPI.ListSnapshots(&block.ListSnapshotsRequest{
-		Zone: scw.ZonePlWaw1,
+		Zone: scw.Zone(c.CloudConfig.Zone),
 	})
 	if err != nil {
 		log.Fatalf("failed to list snapshots: %v", err)
-	}
-
-	fmt.Println("Existing Snapshots:")
-	for _, snapshot := range listSnapshotsResponse.Snapshots {
-		fmt.Printf("- ID: %s, Name: %s\n", snapshot.ID, snapshot.Name)
 	}
 
 	importedSnapshot, err := blockAPI.ImportSnapshotFromObjectStorage(&block.ImportSnapshotFromObjectStorageRequest{
@@ -236,7 +231,7 @@ func (h *Scaleway) GetImages(ctx *lepton.Context, filter string) ([]lepton.Cloud
 	instanceAPI := instance.NewAPI(h.client)
 
 	listImagesRequest := &instance.ListImagesRequest{
-		Zone:         scw.ZonePlWaw1,
+		Zone:         scw.Zone(c.CloudConfig.Zone),
 		Organization: scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
 	}
 
