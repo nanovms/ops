@@ -258,7 +258,19 @@ func (h *Scaleway) GetImages(ctx *lepton.Context, filter string) ([]lepton.Cloud
 
 // DeleteImage removes the Scaleway snapshot and associated object storage artifact.
 func (h *Scaleway) DeleteImage(ctx *lepton.Context, imagename string) error {
-	log.Warn("not yet implemented")
+	c := ctx.Config()
+
+	instanceAPI := instance.NewAPI(h.client)
+
+	i, err := h.getImageByName(ctx, imagename)
+	if err != nil {
+		return err
+	}
+
+	return instanceAPI.DeleteImage(&instance.DeleteImageRequest{
+		Zone:    scw.Zone(c.CloudConfig.Zone),
+		ImageID: i.ID,
+	})
 
 	return nil
 }

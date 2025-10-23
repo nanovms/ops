@@ -117,13 +117,18 @@ func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, er
 			pubips = append(pubips, (*server.PublicIPs[i]).Address.String())
 		}
 
+		pip := ""
+		if (*server).PrivateIP != nil {
+			pip = *server.PrivateIP
+		}
+
 		instances = append(instances, lepton.CloudInstance{
 			ID:         server.ID,
 			Name:       server.Name,
 			PublicIps:  pubips,
-			PrivateIps: []string{*server.PrivateIP},
-			Status:     server.State.String(),
-			Image:      server.Image.Name,
+			PrivateIps: []string{pip},
+			Status:     (*server).State.String(),
+			Image:      (*server).Image.Name,
 			Created:    (*server.CreationDate).String(),
 		})
 
@@ -152,6 +157,11 @@ func (h *Scaleway) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.
 func (h *Scaleway) DeleteInstance(ctx *lepton.Context, instancename string) error {
 	c := ctx.Config()
 
+	err := h.StopInstance(ctx, instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	instanceAPI := instance.NewAPI(h.client)
 
 	i, err := h.GetInstanceByName(ctx, instancename)
@@ -167,8 +177,23 @@ func (h *Scaleway) DeleteInstance(ctx *lepton.Context, instancename string) erro
 
 // StopInstance powers off the target Scaleway server.
 func (h *Scaleway) StopInstance(ctx *lepton.Context, instancename string) error {
-	log.Warn("not yet implemented")
-	return nil
+	c := ctx.Config()
+
+	instanceAPI := instance.NewAPI(h.client)
+
+	i, err := h.GetInstanceByName(ctx, instancename)
+	if err != nil {
+		return err
+	}
+
+	actionRequest := &instance.ServerActionAndWaitRequest{
+		Zone:     scw.Zone(c.CloudConfig.Zone),
+		ServerID: i.ID,
+		Action:   instance.ServerActionPoweroff,
+		Timeout:  scw.TimeDurationPtr(10 * time.Minute),
+	}
+
+	return instanceAPI.ServerActionAndWait(actionRequest)
 }
 
 // StartInstance powers on the target Scaleway server.
