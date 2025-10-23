@@ -122,7 +122,8 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Zone: scw.Zone(c.CloudConfig.Zone),
 	})
 	if err != nil {
-		log.Fatalf("failed to list snapshots: %v", err)
+		fmt.Println(err)
+		fmt.Printf("%v\n", listSnapshotsResponse)
 	}
 
 	importedSnapshot, err := blockAPI.ImportSnapshotFromObjectStorage(&block.ImportSnapshotFromObjectStorageRequest{
@@ -226,6 +227,7 @@ func (h *Scaleway) getImageByName(ctx *lepton.Context, imageName string) (*lepto
 
 // GetImages retrieves all managed Scaleway snapshots optionally filtered by name.
 func (h *Scaleway) GetImages(ctx *lepton.Context, filter string) ([]lepton.CloudImage, error) {
+	c := ctx.Config()
 	images := []lepton.CloudImage{}
 
 	instanceAPI := instance.NewAPI(h.client)
