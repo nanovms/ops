@@ -110,8 +110,6 @@ func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, er
 	}
 
 	for _, server := range response.Servers {
-		fmt.Println("%v", server)
-
 		pubips := []string{}
 		for i := 0; i < len(server.PublicIPs); i++ {
 			pubips = append(pubips, (*server.PublicIPs[i]).Address.String())
