@@ -100,9 +100,9 @@ func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, er
 
 	instances := []lepton.CloudInstance{}
 
-	instanceApi := instance.NewAPI(h.client)
+	instanceAPI := instance.NewAPI(h.client)
 
-	response, err := instanceApi.ListServers(&instance.ListServersRequest{
+	response, err := instanceAPI.ListServers(&instance.ListServersRequest{
 		Zone: scw.Zone(c.CloudConfig.Zone),
 	})
 	if err != nil {
