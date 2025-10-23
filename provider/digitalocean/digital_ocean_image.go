@@ -29,13 +29,14 @@ func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error
 	c := ctx.Config()
 
 	imageName := c.CloudConfig.ImageName
-	newPath := c.CloudConfig.ImageName + "qcow"
+	newPath := c.CloudConfig.ImageName + ".qcow"
 
 	cmd := exec.Command("sh", "-c", "qemu-img convert -f raw -O qcow2 ~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 		fmt.Printf("%s\n", stdoutStderr)
+		return err
 	}
 
 	opshome := lepton.GetOpsHome()
@@ -46,6 +47,7 @@ func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error
 	}
 
 	publicURL := do.Storage.getImageSpacesURL(c, newPath)
+	publicURL = do.Storage.getSignedURL(newPath, c.CloudConfig.BucketName, c.CloudConfig.Zone)
 
 	log.Info(publicURL)
 
