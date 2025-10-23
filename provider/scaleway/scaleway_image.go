@@ -61,9 +61,11 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	accessKeyID := os.Getenv("SCALEWAY_ACCESS_KEY_ID")
 	secretAccessKey := os.Getenv("SCALEWAY_SECRET_ACCESS_KEY")
-	region := "pl-waw"
-	bucketName := "nanos"
-	///		Region:       ctx.Config().CloudConfig.Zone,
+	orgId := os.Getenv("SCALEWAY_ORGANIZATION_ID")
+
+	region := c.CloudConfig.Zone
+
+	bucketName := c.CloudConfig.BucketName
 
 	imageName := c.CloudConfig.ImageName
 	newPath := c.CloudConfig.ImageName + ".qcow2"
@@ -77,6 +79,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 		fmt.Printf("%s\n", stdoutStderr)
 	}
 
+	// not sure this is actually necessary here; this just needs to ensure it's at least 1g
 	cmd = exec.Command("sh", "-c", "qemu-img resize ~/.ops/images/"+newPath+" 1G")
 	stdoutStderr, err = cmd.CombinedOutput()
 	if err != nil {
@@ -111,15 +114,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 		return err
 	}
 
-	client, err := scw.NewClient(
-		scw.WithDefaultRegion("pl-waw"),
-		scw.WithAuth(accessKeyID, secretAccessKey),
-	)
-	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
-	}
-
-	blockAPI := block.NewAPI(client)
+	blockAPI := block.NewAPI(h.client)
 
 	//// create snapshot
 
@@ -136,31 +131,32 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	importedSnapshot, err := blockAPI.ImportSnapshotFromObjectStorage(&block.ImportSnapshotFromObjectStorageRequest{
-		Zone:      scw.ZonePlWaw1,
-		Bucket:    "nanos",
-		Key:       "server.qcow2",
-		Name:      "server",
-		ProjectID: os.Getenv("SCALEWAY_ORGANIZATION_ID"),
+		Zone:      scw.Zone(c.CloudConfig.Zone),
+		Bucket:    bucketName,
+		Key:       newPath,
+		Name:      imageName,
+		ProjectID: os.Getenv(orgId),
 		Size:      scw.SizePtr(1 * 1024 * 1024 * 1024),
 	})
 	if err != nil {
 		log.Fatalf("failed to import snapshot: %v", err)
 	}
 
-	fmt.Printf("%+v\n", importedSnapshot)
 	fmt.Printf("Successfully imported snapshot: %s\n", importedSnapshot.ID)
 
-	instanceAPI := instance.NewAPI(client)
+	instanceAPI := instance.NewAPI(h.client)
 
 	// need to sit && spin until status is 'ok'
+	// this wait for looks like it returns a bit too early
 
 	time.Sleep(10 * time.Second)
 	fmt.Println("waiting..")
 	res, err := instanceAPI.WaitForSnapshot(&instance.WaitForSnapshotRequest{
 		SnapshotID: importedSnapshot.ID,
 	})
-	fmt.Println("done")
-	fmt.Println(res)
+	if err != nil {
+		fmt.Printf("%+v", res)
+	}
 
 	/// create image
 
@@ -170,8 +166,8 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	createImageReq := &instance.CreateImageRequest{
 		Name:       imageName,
 		Arch:       imageArch,
-		Zone:       scw.ZonePlWaw1,
-		Project:    scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
+		Zone:       scw.Zone(c.CloudConfig.Zone),
+		Project:    scw.StringPtr(orgId),
 		RootVolume: snapshotID,
 	}
 

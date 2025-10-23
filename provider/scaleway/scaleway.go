@@ -3,7 +3,6 @@
 package scaleway
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/nanovms/ops/lepton"
@@ -13,14 +12,6 @@ import (
 
 // ProviderName of the cloud platform provider
 const ProviderName = "scaleway"
-
-const (
-	opsLabelKey          = "createdBy"
-	opsLabelValue        = "ops"
-	opsImageNameLabelKey = "opsImageName"
-	opsInstanceLabelKey  = "opsInstance"
-	opsImageBuilderLabel = "opsImageBuilder"
-)
 
 // Scaleway Provider to interact with Scaleway cloud infrastructure
 type Scaleway struct {
@@ -43,7 +34,7 @@ func (h *Scaleway) Initialize(c *types.ProviderConfig) error {
 	h.client, err = scw.NewClient(
 		scw.WithAuth(accessKeyID, secretAccessKey),
 		scw.WithDefaultOrganizationID(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
-		scw.WithDefaultZone(scw.ZonePlWaw1),
+		scw.WithDefaultZone(scw.Zone(c.Zone)),
 	)
 
 	h.Storage = &ObjectStorage{}
@@ -59,8 +50,4 @@ func (h *Scaleway) ensureStorage() {
 	if h.Storage == nil {
 		h.Storage = &ObjectStorage{}
 	}
-}
-
-func managedLabelSelector() string {
-	return fmt.Sprintf("%s=%s", opsLabelKey, opsLabelValue)
 }

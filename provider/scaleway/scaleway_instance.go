@@ -18,19 +18,24 @@ import (
 
 // CreateInstance launches a server in Scaleway Cloud using the configured snapshot.
 func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
-	config := ctx.Config()
+	c := ctx.Config()
 
 	instanceAPI := instance.NewAPI(h.client)
 
-	serverType := "DEV1-S"
-	i, err := h.getImageByName(ctx, config.CloudConfig.ImageName)
+	if c.CloudConfig.Flavor == "" {
+		c.CloudConfig.Flavor = "DEV1-S"
+	}
+
+	i, err := h.getImageByName(ctx, c.CloudConfig.ImageName)
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	instanceName := c.RunConfig.InstanceName
+
 	createRes, err := instanceAPI.CreateServer(&instance.CreateServerRequest{
-		Name:              "my-server-01",
-		CommercialType:    serverType,
+		Name:              instanceName,
+		CommercialType:    c.CloudConfig.Flavor,
 		Image:             scw.StringPtr(i.ID),
 		DynamicIPRequired: scw.BoolPtr(true),
 		Project:           scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
@@ -91,34 +96,73 @@ func (h *Scaleway) InstanceStats(ctx *lepton.Context, instancename string, watch
 
 // GetInstances retrieves all instances managed by Ops on Scaleway Cloud.
 func (h *Scaleway) GetInstances(ctx *lepton.Context) ([]lepton.CloudInstance, error) {
+	c := ctx.Config()
+
+	instances := []lepton.CloudInstance{}
 
 	instanceApi := instance.NewAPI(h.client)
 
 	response, err := instanceApi.ListServers(&instance.ListServersRequest{
-		Zone: scw.ZonePlWaw1,
+		Zone: scw.Zone(c.CloudConfig.Zone),
 	})
 	if err != nil {
-		panic(err)
+		return instances, err
 	}
 
 	for _, server := range response.Servers {
-		fmt.Println("Server", server.ID, server.Name)
-		//		result = append(result, toCloudInstance(server))
+		fmt.Println("%v", server)
+
+		pubips := []string{}
+		for i := 0; i < len(server.PublicIPs); i++ {
+			pubips = append(pubips, (*server.PublicIPs[i]).Address.String())
+		}
+
+		instances = append(instances, lepton.CloudInstance{
+			ID:         server.ID,
+			Name:       server.Name,
+			PublicIps:  pubips,
+			PrivateIps: []string{*server.PrivateIP},
+			Status:     server.State.String(),
+			Image:      server.Image.Name,
+			Created:    (*server.CreationDate).String(),
+		})
+
 	}
 
-	return nil, nil
+	return instances, err
 }
 
 // GetInstanceByName looks up a managed Scaleway instance by its name label.
 func (h *Scaleway) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.CloudInstance, error) {
-	log.Warn("not yet implemented")
-	return nil, nil
+	instances, err := h.GetInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(instances); i++ {
+		if instances[i].Name == name {
+			return &instances[i], nil
+		}
+	}
+
+	return nil, errors.New("can't find instance")
 }
 
 // DeleteInstance removes the specified Scaleway server.
 func (h *Scaleway) DeleteInstance(ctx *lepton.Context, instancename string) error {
-	log.Warn("not yet implemented")
-	return nil
+	c := ctx.Config()
+
+	instanceAPI := instance.NewAPI(h.client)
+
+	i, err := h.GetInstanceByName(ctx, instancename)
+	if err != nil {
+		return err
+	}
+
+	return instanceAPI.DeleteServer(&instance.DeleteServerRequest{
+		Zone:     scw.Zone(c.CloudConfig.Zone),
+		ServerID: i.ID,
+	})
 }
 
 // StopInstance powers off the target Scaleway server.
