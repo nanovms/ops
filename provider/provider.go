@@ -20,6 +20,7 @@ import (
 	"github.com/nanovms/ops/provider/openstack"
 	"github.com/nanovms/ops/provider/proxmox"
 	"github.com/nanovms/ops/provider/relayered"
+	"github.com/nanovms/ops/provider/scaleway"
 	"github.com/nanovms/ops/provider/upcloud"
 	"github.com/nanovms/ops/provider/vbox"
 	"github.com/nanovms/ops/provider/vsphere"
@@ -72,6 +73,9 @@ func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provide
 
 	case relayered.ProviderName:
 		p = relayered.NewProvider()
+
+	case scaleway.ProviderName:
+		p = scaleway.NewProvider()
 
 	case upcloud.ProviderName:
 		p = upcloud.NewProvider()
