@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/go:1.22.3
+      - image: cimg/go:1.25.3
     resource_class: medium+
     environment:
       TEST_RESULTS: /tmp/test-results
@@ -34,7 +34,7 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
   nightly-build:
     docker:
-      - image: cimg/go:1.22.3
+      - image: cimg/go:1.25.3
     resource_class: medium+
     steps:
       - checkout
