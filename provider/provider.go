@@ -13,6 +13,7 @@ import (
 	"github.com/nanovms/ops/provider/hetzner"
 	"github.com/nanovms/ops/provider/hyperv"
 	"github.com/nanovms/ops/provider/ibm"
+	"github.com/nanovms/ops/provider/kamatera"
 	"github.com/nanovms/ops/provider/linode"
 	"github.com/nanovms/ops/provider/oci"
 	"github.com/nanovms/ops/provider/onprem"
@@ -52,6 +53,9 @@ func CloudProvider(providerName string, c *types.ProviderConfig) (lepton.Provide
 
 	case ibm.ProviderName:
 		p = ibm.NewProvider()
+
+	case kamatera.ProviderName:
+		p = kamatera.NewProvider()
 
 	case linode.ProviderName:
 		p = linode.NewProvider()
