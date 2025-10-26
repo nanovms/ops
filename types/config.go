@@ -204,6 +204,9 @@ type ProviderConfig struct {
 	// Tags
 	Tags []Tag `json:",omitempty"`
 
+	// UserData contains cloud-init script or user data to be passed to the instance
+	UserData string `json:",omitempty"`
+
 	// VPC
 	VPC string `json:",omitempty"`
 
