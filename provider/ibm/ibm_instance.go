@@ -56,6 +56,13 @@ func (v *IBM) CreateInstance(ctx *lepton.Context) error {
 	st := strconv.FormatInt(t, 10)
 	instName := config.CloudConfig.ImageName + "-" + st
 
+	userDataField := ""
+	if config.CloudConfig.UserData != "" {
+		encodedUserData := lepton.EncodeUserDataBase64(config.CloudConfig.UserData)
+		userDataField = `,
+  ",user_data": "` + encodedUserData + `"`
+	}
+
 	stuff := `{
   "boot_volume_attachment": {
     "volume": {
@@ -83,7 +90,7 @@ func (v *IBM) CreateInstance(ctx *lepton.Context) error {
   },
   "zone": {
     "name": "` + zone + `"
-  }
+  }` + userDataField + `
 }`
 
 	reqBody := []byte(stuff)

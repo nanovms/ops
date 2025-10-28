@@ -374,6 +374,12 @@ func (p *AWS) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
+	// Add user data if provided
+	if cloudConfig.UserData != "" {
+		userData := lepton.EncodeUserDataBase64(cloudConfig.UserData)
+		instanceInput.UserData = aws.String(userData)
+	}
+
 	// Specify the details of the instance that you want to create.
 	ctx.Logger().Debugf("running instance with input %v", instanceInput)
 	_, err = svc.RunInstances(p.execCtx, instanceInput)

@@ -120,6 +120,7 @@ func (o *OpenStack) CreateInstance(ctx *lepton.Context) error {
 		FlavorRef: flavorID,
 		AdminPass: "TODO",
 		Metadata:  map[string]string{"CreatedBy": "ops", "Image": imageName},
+		UserData:  []byte(lepton.EncodeUserDataBase64(ctx.Config().CloudConfig.UserData)),
 	}
 
 	var volumeSize int

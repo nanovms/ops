@@ -121,6 +121,17 @@ func (p *GCloud) CreateInstance(ctx *lepton.Context) error {
 		}
 	}
 
+	// Add user data as metadata if provided
+	if c.CloudConfig.UserData != "" {
+		rb.Metadata.Items = append(
+			rb.Metadata.Items,
+			&compute.MetadataItems{
+				Key:   "user-data",
+				Value: &c.CloudConfig.UserData,
+			},
+		)
+	}
+
 	// Attach disk(s) upon instance creation if RunConfig.AttachVolumeOnInstanceCreate is set
 	if c.RunConfig.AttachVolumeOnInstanceCreate {
 		for mntSrc, mntDst := range c.Mounts {
