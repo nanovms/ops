@@ -369,6 +369,11 @@ type RunConfig struct {
 	// use onprem instances commands to manage the unikernel
 	Background bool `json:",omitempty"`
 
+	// BackgroundDetach runs unikernel in background and detaches from the terminal,
+	// this is useful when starting from a long(er) running server application
+	// instead of 'ops'.
+	BackgroundDetach bool `json:",omitempty"`
+
 	// Ports specifies a list of port to expose.
 	Ports []string `json:",omitempty"`
 

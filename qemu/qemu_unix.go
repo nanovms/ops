@@ -131,6 +131,12 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		q.cmd = exec.Command(qemuBaseCommand(), args...)
 	}
 
+	if rconfig.BackgroundDetach {
+		// do not forward signals, intentionally we do not want a spawned process
+		// to receive signals from the parent process
+		return q.cmd
+	}
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
 		syscall.SIGHUP,
@@ -159,11 +165,15 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 		q.mgmt = rconfig.Mgmt
 	}
 
-	if rconfig.Background {
-		// create a new session, ensure child processes are not killed when a signil is send to parent group
+	if rconfig.BackgroundDetach {
+		// create a new session, ensure child processes are not killed when a signal
+		// is send to parent group
 		q.cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid: true, // create a new session, ensure child processes are not killed when a signil is send to parent group
+			Setsid: true,
 		}
+	}
+
+	if rconfig.Background {
 		err := q.cmd.Start()
 		if err != nil {
 			log.Error(err)
