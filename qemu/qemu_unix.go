@@ -160,6 +160,10 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 	}
 
 	if rconfig.Background {
+		// create a new session, ensure child processes are not killed when a signil is send to parent group
+		q.cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setsid: true, // create a new session, ensure child processes are not killed when a signil is send to parent group
+		}
 		err := q.cmd.Start()
 		if err != nil {
 			log.Error(err)
