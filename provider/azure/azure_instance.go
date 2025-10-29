@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v7"
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-07-02/compute"
@@ -200,6 +200,7 @@ func (a *Azure) CreateInstance(ctx *lepton.Context) error {
 			Type: to.Ptr(armcompute.ResourceIdentityTypeNone),
 		},
 		Properties: &armcompute.VirtualMachineProperties{
+			UserData: a.getUserData(ctx),
 			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
 				BootDiagnostics: &armcompute.BootDiagnostics{
 					Enabled:    to.Ptr(true),
@@ -566,6 +567,16 @@ func (a *Azure) GetInstanceLogs(ctx *lepton.Context, instancename string) (strin
 	reader.Close()
 
 	return downloadedData.String(), nil
+}
+
+// getUserData returns base64-encoded user data if provided in config
+func (a *Azure) getUserData(ctx *lepton.Context) *string {
+	userData := ctx.Config().CloudConfig.UserData
+	if userData == "" {
+		return nil
+	}
+	encoded := lepton.EncodeUserDataBase64(userData)
+	return to.Ptr(encoded)
 }
 
 // InstanceStats show metrics for instances on azure.

@@ -36,6 +36,7 @@ func (v *Vultr) CreateInstance(ctx *lepton.Context) error {
 		Plan:       flavor,
 		SnapshotID: c.CloudConfig.ImageName,
 		Tags:       []string{"created-by-ops"},
+		UserData:   lepton.EncodeUserDataBase64(c.CloudConfig.UserData),
 	}
 
 	cloudConfig := ctx.Config().CloudConfig

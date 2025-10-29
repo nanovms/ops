@@ -84,8 +84,9 @@ func (do *DigitalOcean) CreateInstance(ctx *lepton.Context) error {
 		Image: godo.DropletCreateImage{
 			ID: imageID,
 		},
-		Tags:    tags,
-		SSHKeys: dropletKeys,
+		Tags:     tags,
+		SSHKeys:  dropletKeys,
+		UserData: lepton.EncodeUserDataBase64(config.CloudConfig.UserData),
 	}
 	if vpcUUID != "" {
 		createReq.VPCUUID = vpcUUID

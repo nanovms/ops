@@ -59,6 +59,7 @@ func (h *Hetzner) CreateInstance(ctx *lepton.Context) error {
 		Tags:         config.CloudConfig.Tags,
 		TagFilter:    func(tag types.Tag) bool { return tag.IsInstanceLabel() },
 		LocationName: zone,
+		UserData:     config.CloudConfig.UserData,
 	})
 	return err
 }

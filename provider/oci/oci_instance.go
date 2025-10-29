@@ -53,6 +53,12 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 	}
 	tags["Image"] = image.Name
 
+	// Build metadata map with user data
+	metadata := map[string]string{}
+	if ctx.Config().CloudConfig.UserData != "" {
+		metadata["user_data"] = lepton.EncodeUserDataBase64(ctx.Config().CloudConfig.UserData)
+	}
+
 	_, err = p.computeClient.LaunchInstance(context.TODO(), core.LaunchInstanceRequest{
 		LaunchInstanceDetails: core.LaunchInstanceDetails{
 			AvailabilityDomain: types.StringPtr(p.availabilityDomain),
@@ -66,6 +72,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 			SourceDetails: core.InstanceSourceViaImageDetails{
 				ImageId: &image.ID,
 			},
+			Metadata:     metadata,
 			FreeformTags: tags,
 		},
 	})

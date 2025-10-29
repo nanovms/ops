@@ -47,6 +47,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		Title:          instanceName,
 		StorageDevices: storageDevices,
 		Zone:           p.zone,
+		UserData:       lepton.EncodeUserDataBase64(ctx.Config().CloudConfig.UserData),
 	}
 
 	ctx.Logger().Info("creating server")
