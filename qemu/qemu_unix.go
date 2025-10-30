@@ -171,6 +171,9 @@ func (q *qemu) Start(rconfig *types.RunConfig) error {
 		q.cmd.SysProcAttr = &syscall.SysProcAttr{
 			Setsid: true,
 		}
+		q.cmd.Stdin = nil
+		q.cmd.Stdout = nil
+		q.cmd.Stderr = nil
 	}
 
 	if rconfig.Background {
