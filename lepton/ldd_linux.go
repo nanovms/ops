@@ -1,9 +1,9 @@
 package lepton
 
 import (
-	"bufio"
 	"debug/elf"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,6 +44,17 @@ func IsDynamicLinked(efd *elf.File) bool {
 		return false
 	}
 	return true
+}
+
+func getlddOutput(pth string) string {
+	cmd := exec.Command("ldd", pth)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return string(out)
 }
 
 // works only on linux, need to
@@ -89,16 +100,28 @@ func getSharedLibs(targetRoot string, path string, c *types.Config) (map[string]
 		cmd := exec.Command(path)
 		cmd.Env = env
 		out, _ := cmd.StdoutPipe()
-		scanner := bufio.NewScanner(out)
 
 		err = cmd.Start()
 		if err != nil {
 			return deps, err
 		}
+
+		bytes, err := io.ReadAll(out)
+		if err != nil {
+			return deps, err
+		}
+		out.Close()
+
 		// vsdo is user space mapped, there is no backing lib
 		vsdo := "linux-vdso.so"
-		for scanner.Scan() {
-			text := strings.TrimSpace(scanner.Text())
+		sout := string(bytes)
+		if !strings.Contains(sout, "ld-linux") {
+			sout = getlddOutput(path)
+		}
+
+		lines := strings.Split(sout, "\n")
+		for i := 0; i < len(lines); i++ {
+			text := strings.TrimSpace(lines[i])
 			if text == "" || strings.HasPrefix(text, vsdo) {
 				continue
 			}
@@ -106,7 +129,10 @@ func getSharedLibs(targetRoot string, path string, c *types.Config) (map[string]
 			if strings.HasPrefix(parts[0], vsdo) {
 				continue
 			}
-			libpath, _ := filepath.Abs(parts[len(parts)-2])
+			libpath, err := filepath.Abs(parts[len(parts)-2])
+			if err != nil {
+				continue
+			}
 			if !strings.HasPrefix(libpath, absTargetRoot) {
 				// LD_LIBRARY_PATH didn't work: manually add target root path
 				libpath = filepath.Join(absTargetRoot, libpath)
@@ -117,7 +143,6 @@ func getSharedLibs(targetRoot string, path string, c *types.Config) (map[string]
 			if strings.Contains(text, "not found") {
 				notExistLib = append(notExistLib, text)
 			}
-			err = errors.New("")
 			libpath = strings.TrimSpace(libpath)
 			deps[strings.TrimPrefix(libpath, absTargetRoot)] = libpath
 		}
