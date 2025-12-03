@@ -61,9 +61,14 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	accessKeyID := os.Getenv("SCALEWAY_ACCESS_KEY_ID")
 	secretAccessKey := os.Getenv("SCALEWAY_SECRET_ACCESS_KEY")
-	orgID := os.Getenv("SCALEWAY_ORGANIZATION_ID")
 
-	region := c.CloudConfig.Zone
+	projectID := os.Getenv("SCALEWAY_PROJECT_ID")
+	if len(projectID) == 0 {
+		// fall back to organisation id, if project id is not set
+		projectID = os.Getenv("SCALEWAY_ORGANIZATION_ID")
+	}
+
+	region := regionFromZone(c.CloudConfig.Zone)
 
 	bucketName := c.CloudConfig.BucketName
 
@@ -131,7 +136,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Bucket:    bucketName,
 		Key:       newPath,
 		Name:      imageName,
-		ProjectID: os.Getenv(orgID),
+		ProjectID: projectID,
 		Size:      scw.SizePtr(1 * 1024 * 1024 * 1024),
 	})
 	if err != nil {
@@ -163,7 +168,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 		Name:       imageName,
 		Arch:       imageArch,
 		Zone:       scw.Zone(c.CloudConfig.Zone),
-		Project:    scw.StringPtr(orgID),
+		Project:    scw.StringPtr(projectID),
 		RootVolume: snapshotID,
 	}
 
