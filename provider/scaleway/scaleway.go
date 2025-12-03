@@ -16,9 +16,8 @@ const ProviderName = "scaleway"
 func regionFromZone(zone string) string {
 	if len(zone) >= 2 {
 		return zone[:len(zone)-2]
-	} else {
-		return zone
 	}
+	return zone
 }
 
 // Scaleway Provider to interact with Scaleway cloud infrastructure
