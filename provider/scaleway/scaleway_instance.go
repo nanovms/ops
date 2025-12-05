@@ -31,6 +31,12 @@ func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
 		fmt.Println(err)
 	}
 
+	projectID := os.Getenv("SCALEWAY_PROJECT_ID")
+	if len(projectID) == 0 {
+		// fall back to organisation id, if project id is not set
+		projectID = os.Getenv("SCALEWAY_ORGANIZATION_ID")
+	}
+
 	instanceName := c.RunConfig.InstanceName
 
 	createRes, err := instanceAPI.CreateServer(&instance.CreateServerRequest{
@@ -38,7 +44,7 @@ func (h *Scaleway) CreateInstance(ctx *lepton.Context) error {
 		CommercialType:    c.CloudConfig.Flavor,
 		Image:             scw.StringPtr(i.ID),
 		DynamicIPRequired: scw.BoolPtr(true),
-		Project:           scw.StringPtr(os.Getenv("SCALEWAY_ORGANIZATION_ID")),
+		Project:           scw.StringPtr(projectID),
 	})
 	if err != nil {
 		panic(err)
