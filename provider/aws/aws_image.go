@@ -219,6 +219,8 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	}
 	defer f.Close()
 
+	fmt.Printf("looking at %s", imagePath)
+
 	// create progressBar track put snapshot
 	fi, err := f.Stat()
 	if err != nil {
@@ -229,6 +231,8 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	if sizeInGb*1024*1024*1024 < snapshotSize {
 		sizeInGb++
 	}
+
+	fmt.Printf("snap: %d szingb: %d\n", snapshotSize, sizeInGb)
 
 	// maxBar include process of createSnapshot, completeSnapshot, putSnapshot (include request and response from ebs api)
 	maxBar := (snapshotSize/int64(SnapshotBlockDataLength))*2 + 2
@@ -259,7 +263,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	blockIndex := int64(0)
 	var snapshotBlocksChecksums []byte
 	wg := sync.WaitGroup{}
-	chanBlockResult := make(chan PutSnapshotBlockResult)
+	chanBlockResult := make(chan PutSnapshotBlockResult, 10)
 	var blockResults PutSnapshotBlockResults
 	done := make(chan bool)
 
@@ -274,12 +278,20 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 		done <- true
 	}()
 
+	// this should prob. be dynamically adjusted based on filesz; 10 might
+	// be too low for small files but you don't want to send 400
+	// simultaneously either
+	sem := make(chan struct{}, 10)
+
+	// this for loop could prob. just add all the blocks necessary instead
 	for {
 		block := make([]byte, SnapshotBlockDataLength)
 
-		if _, err := f.Read(block); err == io.EOF {
+		n, err := f.Read(block)
+		if err == io.EOF {
 			break
 		} else if err != nil {
+			fmt.Printf("%d, read err: \n", n, err.Error())
 			return snapshotID, err
 		}
 
@@ -287,7 +299,8 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 		snapshotBlocksChecksums = append(snapshotBlocksChecksums, checksum...)
 
 		wg.Add(1)
-		go p.writeToBlock(input, &wg, chanBlockResult)
+		sem <- struct{}{}
+		go p.writeToBlock(input, &wg, chanBlockResult, sem)
 
 		blockIndex++
 
@@ -313,6 +326,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	close(done)
 
 	if err := p.retryPutSnapshotBlocks(bar, f, snapshotID, &blockResults); err != nil {
+		fmt.Printf("err in retry %s", err.Error())
 		return snapshotID, err
 	}
 
@@ -327,6 +341,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 		ChecksumAlgorithm:         awsEbsTypes.ChecksumAlgorithmChecksumAlgorithmSha256,
 		SnapshotId:                aws.String(snapshotID),
 	}); err != nil {
+		fmt.Println("err in complete snapshot")
 		return snapshotID, err
 	}
 
@@ -335,6 +350,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	if err := WaitUntilEc2SnapshotCompleted(p.execCtx, zone, &ec2.DescribeSnapshotsInput{
 		SnapshotIds: []string{*snapshotOutput.SnapshotId},
 	}); err != nil {
+		fmt.Println("errr in wait")
 		return snapshotID, err
 	}
 
@@ -368,10 +384,14 @@ func (p *AWS) retryPutSnapshotBlocks(bar *progressbar.ProgressBar, f *os.File, s
 	return nil
 }
 
-func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, chanBlockResult chan PutSnapshotBlockResult) {
+func (p *AWS) writeToBlock(input *ebs.PutSnapshotBlockInput, wg *sync.WaitGroup, chanBlockResult chan PutSnapshotBlockResult, sem chan struct{}) {
+	defer func() { <-sem }()
 	defer wg.Done()
-
 	_, err := p.volumeService.PutSnapshotBlock(p.execCtx, input)
+	if err != nil {
+		fmt.Printf("err in putsnapshotblock %s", err.Error())
+	}
+
 	chanBlockResult <- PutSnapshotBlockResult{
 		Error:      err,
 		BlockIndex: int64(*input.BlockIndex),
