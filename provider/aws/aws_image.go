@@ -219,8 +219,6 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	}
 	defer f.Close()
 
-	fmt.Printf("looking at %s", imagePath)
-
 	// create progressBar track put snapshot
 	fi, err := f.Stat()
 	if err != nil {
@@ -231,8 +229,6 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	if sizeInGb*1024*1024*1024 < snapshotSize {
 		sizeInGb++
 	}
-
-	fmt.Printf("snap: %d szingb: %d\n", snapshotSize, sizeInGb)
 
 	// maxBar include process of createSnapshot, completeSnapshot, putSnapshot (include request and response from ebs api)
 	maxBar := (snapshotSize/int64(SnapshotBlockDataLength))*2 + 2
@@ -260,10 +256,12 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 
 	snapshotID := *snapshotOutput.SnapshotId
 
+	ulLimit := 10
+
 	blockIndex := int64(0)
 	var snapshotBlocksChecksums []byte
 	wg := sync.WaitGroup{}
-	chanBlockResult := make(chan PutSnapshotBlockResult, 10)
+	chanBlockResult := make(chan PutSnapshotBlockResult, ulLimit)
 	var blockResults PutSnapshotBlockResults
 	done := make(chan bool)
 
@@ -281,7 +279,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 	// this should prob. be dynamically adjusted based on filesz; 10 might
 	// be too low for small files but you don't want to send 400
 	// simultaneously either
-	sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, ulLimit)
 
 	// this for loop could prob. just add all the blocks necessary instead
 	for {
@@ -291,7 +289,7 @@ func (p *AWS) createSnapshot(zone *string, imagePath string, kms string) (string
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			fmt.Printf("%d, read err: \n", n, err.Error())
+			fmt.Printf("%d, read err: %s\n", n, err.Error())
 			return snapshotID, err
 		}
 
