@@ -22,10 +22,7 @@ func (p *Provider) GetSubnet(ctx *lepton.Context) (subnet *core.Subnet, err erro
 		return
 	}
 
-	fmt.Println("looking for subnet..")
 	for _, s := range listSubnetsResponse.Items {
-		fmt.Printf("%+v\n", *s.ProhibitPublicIpOnVnic)
-
 		if *s.ProhibitPublicIpOnVnic != true {
 			subnet = &s
 		}
