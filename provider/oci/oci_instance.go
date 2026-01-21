@@ -130,52 +130,31 @@ func (p *Provider) ListInstances(ctx *lepton.Context) (err error) {
 
 // AddInstancesNetworkDetails append public IPs and private IPs to instances passed in argumetn
 func (p *Provider) AddInstancesNetworkDetails(ctx *lepton.Context, instances *[]lepton.CloudInstance) (err error) {
-	instancesN := len(*instances)
 
-	errorsMessages := ""
-	responses := make(chan error, instancesN)
-
-	addInstanceNetworkDetails := func(i int) {
+	for i := 0; i < len(*instances); i++ {
 		instance := (*instances)[i]
 		vnicsAttachments, err := p.computeClient.ListVnicAttachments(context.TODO(), core.ListVnicAttachmentsRequest{CompartmentId: &p.compartmentID, InstanceId: &instance.ID})
 		if err != nil {
 			ctx.Logger().Error(err)
-			responses <- errors.New("failed getting vnic attachments of instance " + instance.ID + "\n")
-			return
+			return err
 		}
 
 		for _, vnic := range vnicsAttachments.Items {
 			vnicDetails, err := p.networkClient.GetVnic(context.TODO(), core.GetVnicRequest{VnicId: vnic.VnicId})
 			if err != nil {
 				ctx.Logger().Error(err)
-				responses <- errors.New("failed getting details of vnic " + *vnic.VnicId + "\n")
-				return
+				return err
 			}
 
-			(*instances)[i].PublicIps = append((*instances)[i].PublicIps, *vnicDetails.Vnic.PublicIp)
-			(*instances)[i].PrivateIps = append((*instances)[i].PrivateIps, *vnicDetails.Vnic.PrivateIp)
-		}
+			if vnicDetails.Vnic.PublicIp != nil {
+				(*instances)[i].PublicIps = append((*instances)[i].PublicIps, *(vnicDetails.Vnic.PublicIp))
+			}
 
-		responses <- nil
-	}
-
-	for index := range *instances {
-		go addInstanceNetworkDetails(index)
-	}
-
-	for i := 0; i < instancesN; i++ {
-		err := <-responses
-
-		if err != nil {
-			errorsMessages += err.Error() + "\n"
+			(*instances)[i].PrivateIps = append((*instances)[i].PrivateIps, *(vnicDetails.Vnic.PrivateIp))
 		}
 	}
 
-	if len(errorsMessages) > 0 {
-		err = errors.New(errorsMessages)
-	}
-
-	return
+	return nil
 }
 
 // GetInstances returns the list of servers managed by upcloud
