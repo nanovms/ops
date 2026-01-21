@@ -12,7 +12,8 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
-	"github.com/oracle/oci-go-sdk/core"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
 )
 
 // CreateInstance launch a server in oci using an existing image
@@ -59,7 +60,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		metadata["user_data"] = lepton.EncodeUserDataBase64(ctx.Config().CloudConfig.UserData)
 	}
 
-	_, err = p.computeClient.LaunchInstance(context.TODO(), core.LaunchInstanceRequest{
+	lir := core.LaunchInstanceRequest{
 		LaunchInstanceDetails: core.LaunchInstanceDetails{
 			AvailabilityDomain: types.StringPtr(p.availabilityDomain),
 			CompartmentId:      types.StringPtr(p.compartmentID),
@@ -76,7 +77,17 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 			Metadata:     metadata,
 			FreeformTags: tags,
 		},
-	})
+	}
+
+	// hack as we don't have a system for 'flex' today'
+	if strings.Contains(flavor, "Flex") {
+		lir.LaunchInstanceDetails.ShapeConfig = &core.LaunchInstanceShapeConfigDetails{
+			Ocpus:       common.Float32(1.0),
+			MemoryInGBs: common.Float32(1.0),
+		}
+	}
+
+	_, err = p.computeClient.LaunchInstance(context.TODO(), lir)
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("failed launching instance")
