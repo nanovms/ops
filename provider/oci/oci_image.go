@@ -221,7 +221,7 @@ func (p *Provider) ListImages(ctx *lepton.Context, filter string) error {
 func (p *Provider) GetImages(ctx *lepton.Context, filter string) (images []lepton.CloudImage, err error) {
 	images = []lepton.CloudImage{}
 
-	imagesList, err := p.computeClient.ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr(p.compartmentID)})
+	imagesList, err := p.computeClient.ListImages(context.TODO(), core.ListImagesRequest{OperatingSystem: types.StringPtr("Custom"), CompartmentId: types.StringPtr(p.compartmentID)})
 	if err != nil {
 		ctx.Logger().Error(err)
 		return nil, errors.New("failed getting images")
