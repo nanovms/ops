@@ -64,8 +64,9 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 			AvailabilityDomain: types.StringPtr(p.availabilityDomain),
 			CompartmentId:      types.StringPtr(p.compartmentID),
 			CreateVnicDetails: &core.CreateVnicDetails{
-				SubnetId: subnet.Id,
-				NsgIds:   securityGroups,
+				AssignPublicIp: types.BoolPtr(true),
+				SubnetId:       subnet.Id,
+				NsgIds:         securityGroups,
 			},
 			DisplayName: types.StringPtr(instanceName),
 			Shape:       types.StringPtr(flavor),
