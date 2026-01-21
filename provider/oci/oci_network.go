@@ -11,6 +11,7 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
+	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/core"
 )
 
@@ -21,8 +22,11 @@ func (p *Provider) GetSubnet(ctx *lepton.Context) (subnet *core.Subnet, err erro
 		return
 	}
 
+	fmt.Println("looking for subnet..")
 	for _, s := range listSubnetsResponse.Items {
-		if *s.ProhibitPublicIpOnVnic != false {
+		fmt.Printf("%+v\n", *s.ProhibitPublicIpOnVnic)
+
+		if *s.ProhibitPublicIpOnVnic != true {
 			subnet = &s
 		}
 	}
@@ -120,30 +124,30 @@ func (p *Provider) addNetworkSecurityRules(ports []string, protocol string) (sgR
 			ingressRule.Protocol = types.StringPtr("6")
 			egressRule.Protocol = types.StringPtr("6")
 			ingressRule.TcpOptions = &core.TcpOptions{
-				SourcePortRange: &core.PortRange{
+				DestinationPortRange: &core.PortRange{
 					Min: &min,
 					Max: &max,
 				},
 			}
 			egressRule.TcpOptions = &core.TcpOptions{
 				DestinationPortRange: &core.PortRange{
-					Min: &min,
-					Max: &max,
+					Min: common.Int(1),
+					Max: common.Int(65535),
 				},
 			}
 		} else if protocol == "udp" {
 			ingressRule.Protocol = types.StringPtr("17")
 			egressRule.Protocol = types.StringPtr("17")
 			ingressRule.UdpOptions = &core.UdpOptions{
-				SourcePortRange: &core.PortRange{
+				DestinationPortRange: &core.PortRange{
 					Min: &min,
 					Max: &max,
 				},
 			}
 			egressRule.UdpOptions = &core.UdpOptions{
 				DestinationPortRange: &core.PortRange{
-					Min: &min,
-					Max: &max,
+					Min: common.Int(1),
+					Max: common.Int(65535),
 				},
 			}
 		} else {
