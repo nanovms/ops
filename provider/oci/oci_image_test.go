@@ -122,7 +122,7 @@ func TestListImages(t *testing.T) {
 	ctx := lepton.NewContext(lepton.NewConfig())
 
 	computeService.EXPECT().
-		ListImages(context.TODO(), core.ListImagesRequest{CompartmentId: types.StringPtr("")}).
+		ListImages(context.TODO(), core.ListImagesRequest{OperatingSystem: types.StringPtr("Custom"), CompartmentId: types.StringPtr("")}).
 		Return(core.ListImagesResponse{
 			Items: []core.Image{
 				{
