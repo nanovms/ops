@@ -27,7 +27,7 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 
 	flavor := ctx.Config().CloudConfig.Flavor
 	if flavor == "" {
-		flavor = "VM.Standard2.1"
+		flavor = "VM.Standard.E2.1.Micro"
 	}
 
 	subnet, err := p.GetSubnet(ctx)
