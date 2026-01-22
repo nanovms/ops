@@ -296,13 +296,10 @@ func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (st
 		fmt.Println(resp)
 	}
 
-	fmt.Println("sleeping in lieu of poll..")
 	// can poll on GetConsoleHistory
 	time.Sleep(time.Second * 4)
 
 	id := *(resp.ConsoleHistory.Id)
-
-	fmt.Printf("looking for: %s\n", id)
 
 	hreq := core.GetConsoleHistoryContentRequest{
 		InstanceConsoleHistoryId: common.String(id),
