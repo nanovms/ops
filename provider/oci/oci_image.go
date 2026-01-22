@@ -29,6 +29,11 @@ var (
 // BuildImage creates local image
 func (p *Provider) BuildImage(ctx *lepton.Context) (string, error) {
 	c := ctx.Config()
+
+	if getArchitecture(ctx.Config().CloudConfig.Flavor) == "arm64" {
+		c.Uefi = true
+	}
+
 	err := lepton.BuildImage(*c)
 	if err != nil {
 		return "", err
@@ -83,6 +88,11 @@ func findOrCreateqcow2ImagesDir() (string, error) {
 // BuildImageWithPackage creates local image using package image
 func (p *Provider) BuildImageWithPackage(ctx *lepton.Context, pkgpath string) (string, error) {
 	c := ctx.Config()
+
+	if getArchitecture(ctx.Config().CloudConfig.Flavor) == "arm64" {
+		c.Uefi = true
+	}
+
 	err := lepton.BuildImageFromPackage(pkgpath, *c)
 	if err != nil {
 		return "", err
@@ -218,7 +228,8 @@ bloop:
 				},
 			},
 			ImageId:   common.String(imgID),
-			ShapeName: common.String("VM.Standard.A1.Flex")}
+			ShapeName: common.String("VM.Standard.A1.Flex"),
+		}
 
 		_, err := p.computeClient.AddImageShapeCompatibilityEntry(context.Background(), req)
 		if err != nil {
