@@ -3,9 +3,9 @@ package network_test
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/nanovms/ops/network"
 	mock_network "github.com/nanovms/ops/network/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 func TestSetupNetworkInterfaces(t *testing.T) {

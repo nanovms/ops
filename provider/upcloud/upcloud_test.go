@@ -8,11 +8,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/provider/upcloud"
 	mock_upcloud "github.com/nanovms/ops/provider/upcloud/mocks"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestProviderInitialize(t *testing.T) {

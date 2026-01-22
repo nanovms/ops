@@ -8,11 +8,11 @@ import (
 	"context"
 
 	"github.com/nanovms/ops/types"
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/core"
-	"github.com/oracle/oci-go-sdk/identity"
-	"github.com/oracle/oci-go-sdk/objectstorage"
-	"github.com/oracle/oci-go-sdk/workrequests"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
+	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/objectstorage"
+	"github.com/oracle/oci-go-sdk/v65/workrequests"
 	"github.com/spf13/afero"
 )
 
@@ -40,6 +40,7 @@ type ComputeService interface {
 	AttachVolume(ctx context.Context, request core.AttachVolumeRequest) (response core.AttachVolumeResponse, err error)
 	DetachVolume(ctx context.Context, request core.DetachVolumeRequest) (response core.DetachVolumeResponse, err error)
 	ListVnicAttachments(ctx context.Context, request core.ListVnicAttachmentsRequest) (response core.ListVnicAttachmentsResponse, err error)
+	AddImageShapeCompatibilityEntry(ctx context.Context, request core.AddImageShapeCompatibilityEntryRequest) (response core.AddImageShapeCompatibilityEntryResponse, err error)
 }
 
 // NetworkService has OCI client methods to manage network instances

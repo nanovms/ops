@@ -9,14 +9,16 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
-	"github.com/oracle/oci-go-sdk/core"
-	"github.com/oracle/oci-go-sdk/objectstorage"
-	"github.com/oracle/oci-go-sdk/workrequests"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
+	"github.com/oracle/oci-go-sdk/v65/objectstorage"
+	"github.com/oracle/oci-go-sdk/v65/workrequests"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -162,6 +164,8 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 	bar := progressbar.New(100)
 	bar.RenderBlank()
 
+	imgID := ""
+
 	ticker := time.NewTicker(10 * time.Second)
 	quit := make(chan bool)
 	getProgress := func() {
@@ -173,21 +177,57 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		}
 
 		if *res.PercentComplete == 100 {
+
+			if res.Status == workrequests.WorkRequestStatusSucceeded {
+				for _, resource := range res.WorkRequest.Resources {
+					if *resource.EntityType == "image" {
+						imgID = *resource.Identifier
+					}
+				}
+			}
+
 			quit <- true
+			return
 		}
 
 		bar.Set(int(*res.PercentComplete))
 		bar.RenderBlank()
 	}
+bloop:
 	for {
 		go getProgress()
 		select {
 		case <-ticker.C:
 		case <-quit:
 			ticker.Stop()
-			return
+			break bloop
 		}
 	}
+
+	if getArchitecture(ctx.Config().CloudConfig.Flavor) == "arm64" {
+
+		req := core.AddImageShapeCompatibilityEntryRequest{
+			AddImageShapeCompatibilityEntryDetails: core.AddImageShapeCompatibilityEntryDetails{
+				MemoryConstraints: &core.ImageMemoryConstraints{
+					MinInGBs: common.Int(1),
+					MaxInGBs: common.Int(512),
+				},
+				OcpuConstraints: &core.ImageOcpuConstraints{
+					Min: common.Int(1),
+					Max: common.Int(80),
+				},
+			},
+			ImageId:   common.String(imgID),
+			ShapeName: common.String("VM.Standard.A1.Flex")}
+
+		_, err := p.computeClient.AddImageShapeCompatibilityEntry(context.Background(), req)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 // ListImages prints oci images in table format
@@ -287,4 +327,16 @@ func (p *Provider) SyncImage(config *types.Config, target lepton.Provider, image
 // CustomizeImage is a stub
 func (p *Provider) CustomizeImage(ctx *lepton.Context) (string, error) {
 	return "", errors.New("Unsupported")
+}
+
+func getArchitecture(flavor string) string {
+	if flavor != "" {
+		armFlavors := []string{".A1."}
+		for _, armFlavor := range armFlavors {
+			if strings.Contains(flavor, armFlavor) {
+				return "arm64"
+			}
+		}
+	}
+	return "x86_64"
 }
