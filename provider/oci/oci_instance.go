@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
@@ -271,11 +272,58 @@ func (p *Provider) StartInstance(ctx *lepton.Context, instancename string) error
 
 // GetInstanceLogs returns instance log
 func (p *Provider) GetInstanceLogs(ctx *lepton.Context, instancename string) (string, error) {
-	return "", nil
+
+	instance, err := p.GetInstanceByName(ctx, instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	client, err := core.NewComputeClientWithConfigurationProvider(common.DefaultConfigProvider())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	instanceid := instance.ID
+
+	req := core.CaptureConsoleHistoryRequest{
+		CaptureConsoleHistoryDetails: core.CaptureConsoleHistoryDetails{
+			InstanceId: common.String(instanceid),
+		},
+	}
+
+	resp, err := client.CaptureConsoleHistory(context.Background(), req)
+	if err != nil {
+		fmt.Println(resp)
+	}
+
+	fmt.Println("sleeping in lieu of poll..")
+	// can poll on GetConsoleHistory
+	time.Sleep(time.Second * 4)
+
+	id := *(resp.ConsoleHistory.Id)
+
+	fmt.Printf("looking for: %s\n", id)
+
+	hreq := core.GetConsoleHistoryContentRequest{
+		InstanceConsoleHistoryId: common.String(id),
+	}
+
+	hresp, err := client.GetConsoleHistoryContent(context.Background(), hreq)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return *(hresp.Value), nil
 }
 
 // PrintInstanceLogs prints instances logs on console
 func (p *Provider) PrintInstanceLogs(ctx *lepton.Context, instancename string, watch bool) error {
+	s, err := p.GetInstanceLogs(ctx, instancename)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(s)
 	return nil
 }
 
