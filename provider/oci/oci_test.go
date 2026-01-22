@@ -5,10 +5,10 @@ package oci_test
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/nanovms/ops/provider/oci"
 	mock_oci "github.com/nanovms/ops/provider/oci/mocks"
 	"github.com/spf13/afero"
+	"go.uber.org/mock/gomock"
 )
 
 var (

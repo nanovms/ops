@@ -9,8 +9,8 @@ import (
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/core"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
 	"gotest.tools/assert"
 )
 

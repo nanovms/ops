@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/core"
-	"github.com/oracle/oci-go-sdk/objectstorage"
-	"github.com/oracle/oci-go-sdk/workrequests"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
+	"github.com/oracle/oci-go-sdk/v65/objectstorage"
+	"github.com/oracle/oci-go-sdk/v65/workrequests"
 	"github.com/spf13/afero"
+	"go.uber.org/mock/gomock"
 	"gotest.tools/assert"
 )
 
