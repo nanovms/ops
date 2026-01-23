@@ -274,7 +274,6 @@ func (p *Provider) updateCapability(imageId string) {
 				},
 			},
 		},
-		OpcRetryToken: common.String("EXAMPLE-opcRetryToken-Value"),
 	}
 
 	resp2, err := client.CreateComputeImageCapabilitySchema(context.Background(), req2)
