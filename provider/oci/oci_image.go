@@ -243,7 +243,7 @@ bloop:
 	return nil
 }
 
-func (p *Provider) updateCapability(imageId string) {
+func (p *Provider) updateCapability(imageID string) {
 
 	client, err := core.NewComputeClientWithConfigurationProvider(common.DefaultConfigProvider())
 	if err != nil {
@@ -263,7 +263,7 @@ func (p *Provider) updateCapability(imageId string) {
 		CreateComputeImageCapabilitySchemaDetails: core.CreateComputeImageCapabilitySchemaDetails{
 			CompartmentId: &p.compartmentID,
 			ComputeGlobalImageCapabilitySchemaVersionName: common.String(nm),
-			ImageId: common.String(imageId),
+			ImageId: common.String(imageID),
 			SchemaData: map[string]core.ImageCapabilitySchemaDescriptor{
 				"Compute.Firmware": core.EnumStringImageCapabilitySchemaDescriptor{
 					Source: core.ImageCapabilitySchemaDescriptorSourceImage,
