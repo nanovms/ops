@@ -16,6 +16,7 @@ import (
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/oracle/oci-go-sdk/v65/common"
+
 	"github.com/oracle/oci-go-sdk/v65/core"
 	"github.com/oracle/oci-go-sdk/v65/objectstorage"
 	"github.com/oracle/oci-go-sdk/v65/workrequests"
@@ -170,7 +171,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		return errors.New("failed importing image from storage")
 	}
 
-	fmt.Println("It will take a while to import the image. Feel free to exit (Control+C), it will not stop the image importing.")
+	fmt.Println("It will take a while to import the image.")
 	bar := progressbar.New(100)
 	bar.RenderBlank()
 
@@ -215,6 +216,7 @@ bloop:
 	}
 
 	if getArchitecture(ctx.Config().CloudConfig.Flavor) == "arm64" {
+		p.updateCapability(imgID)
 
 		req := core.AddImageShapeCompatibilityEntryRequest{
 			AddImageShapeCompatibilityEntryDetails: core.AddImageShapeCompatibilityEntryDetails{
@@ -239,6 +241,47 @@ bloop:
 	}
 
 	return nil
+}
+
+func (p *Provider) updateCapability(imageID string) {
+
+	client, err := core.NewComputeClientWithConfigurationProvider(common.DefaultConfigProvider())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	req := core.ListComputeGlobalImageCapabilitySchemasRequest{}
+
+	resp, err := client.ListComputeGlobalImageCapabilitySchemas(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	nm := *(resp.Items[0].CurrentVersionName)
+
+	req2 := core.CreateComputeImageCapabilitySchemaRequest{
+		CreateComputeImageCapabilitySchemaDetails: core.CreateComputeImageCapabilitySchemaDetails{
+			CompartmentId: &p.compartmentID,
+			ComputeGlobalImageCapabilitySchemaVersionName: common.String(nm),
+			ImageId: common.String(imageID),
+			SchemaData: map[string]core.ImageCapabilitySchemaDescriptor{
+				"Compute.Firmware": core.EnumStringImageCapabilitySchemaDescriptor{
+					Source: core.ImageCapabilitySchemaDescriptorSourceImage,
+					Values: []string{
+						"UEFI_64",
+					},
+					DefaultValue: common.String("UEFI_64"),
+				},
+			},
+		},
+	}
+
+	resp2, err := client.CreateComputeImageCapabilitySchema(context.Background(), req2)
+	if err != nil {
+		fmt.Println(resp2)
+		fmt.Println(err)
+	}
+
 }
 
 // ListImages prints oci images in table format
