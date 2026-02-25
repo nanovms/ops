@@ -25,7 +25,7 @@ func GetAwsSdkConfig(execCtx context.Context, zone *string) (*aws.Config, error)
 		awsSdkConfigOpts = append(awsSdkConfigOpts, awsConfig.WithSharedConfigProfile(awsProfile))
 	}
 	if zone != nil {
-		awsSdkConfigOpts = append(awsSdkConfigOpts, awsConfig.WithRegion(*zone))
+		awsSdkConfigOpts = append(awsSdkConfigOpts, awsConfig.WithRegion(stripZone(*zone)))
 	}
 	awsSdkConfig, err := awsConfig.LoadDefaultConfig(execCtx, awsSdkConfigOpts...)
 	if err != nil {

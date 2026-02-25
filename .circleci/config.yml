@@ -35,7 +35,7 @@ jobs:
   nightly-build:
     docker:
       - image: cimg/go:1.26.0
-    resource_class: medium+
+    resource_class: large
     steps:
       - checkout
       - run: wget https://github.com/bufbuild/buf/releases/download/v1.13.1/buf-Linux-x86_64 && sudo mv buf-Linux-x86_64 /usr/bin/buf && sudo chmod +x /usr/bin/buf

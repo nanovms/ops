@@ -58,7 +58,7 @@ func getAWSInstances(execCtx context.Context, ec2Client *ec2.Client, region stri
 	request := ec2.DescribeInstancesInput{
 		Filters: filter,
 	}
-	result, err := ec2Client.DescribeInstances(execCtx, &request, func(opts *ec2.Options) { opts.Region = region })
+	result, err := ec2Client.DescribeInstances(execCtx, &request, func(opts *ec2.Options) { opts.Region = stripZone(region) })
 	if err != nil {
 		log.Fatalf("failed getting instances: ", err.Error())
 	}
