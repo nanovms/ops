@@ -1,3 +1,5 @@
+//go:build scaleway || !onlyprovider
+
 package scaleway
 
 import (

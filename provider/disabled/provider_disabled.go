@@ -1,4 +1,4 @@
-//go:build !(aws && azure && (digitalocean || do) && gcp && hyperv && ibm && linode && oci && openshift && openstack && proxmox && upcloud && vbox && vsphere && vultr) && onlyprovider
+//go:build !(aws && azure && (digitalocean || do) && gcp && hyperv && ibm && linode && oci && openshift && openstack && proxmox && upcloud && vbox && vsphere && vultr && hetzner && scaleway) && onlyprovider
 
 package disabled
 
@@ -146,5 +146,30 @@ func (p *Provider) AttachVolume(ctx *lepton.Context, instanceName, volumeName st
 
 // DetachVolume ...
 func (p *Provider) DetachVolume(ctx *lepton.Context, instanceName, volumeName string) error {
+	return nil
+}
+
+// CreateCron ...
+func (p *Provider) CreateCron(ctx *lepton.Context, name string, schedule string) error {
+	return nil
+}
+
+// DeleteCron ...
+func (p *Provider) DeleteCron(ctx *lepton.Context, schedule string) error {
+	return nil
+}
+
+// EnableCron ...
+func (p *Provider) EnableCron(ctx *lepton.Context, schedule string) error {
+	return nil
+}
+
+// DisableCron ...
+func (p *Provider) DisableCron(ctx *lepton.Context, schedule string) error {
+	return nil
+}
+
+// ListCrons ...
+func (p *Provider) ListCrons(ctx *lepton.Context) error {
 	return nil
 }
