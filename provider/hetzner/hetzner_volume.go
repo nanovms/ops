@@ -1,3 +1,5 @@
+//go:build hetzner || !onlyprovider
+
 package hetzner
 
 import (
