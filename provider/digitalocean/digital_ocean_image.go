@@ -31,15 +31,15 @@ func (do *DigitalOcean) CreateImage(ctx *lepton.Context, imagePath string) error
 	imageName := c.CloudConfig.ImageName
 	newPath := c.CloudConfig.ImageName + ".qcow"
 
-	cmd := exec.Command("sh", "-c", "qemu-img convert -f raw -O qcow2 ~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
+	opshome := lepton.GetOpsHome()
+
+	cmd := exec.Command("qemu-img", "convert", "-f", "raw", "-O", "qcow2", opshome+"/images/"+imageName, opshome+"/images/"+newPath)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 		fmt.Printf("%s\n", stdoutStderr)
 		return err
 	}
-
-	opshome := lepton.GetOpsHome()
 
 	err = do.Storage.CopyToBucket(ctx.Config(), opshome+"/images/"+newPath)
 	if err != nil {
