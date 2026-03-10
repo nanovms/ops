@@ -79,7 +79,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	////// upload image
 
-	cmd := exec.Command("sh", "-c", "qemu-img convert -f raw -O qcow2 ~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
+	cmd := exec.Command("qemu-img", "convert", "-f", "raw", "-O", "qcow2", "~/.ops/images/"+imageName+" ~/.ops/images/"+newPath)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
@@ -87,7 +87,7 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	// not sure this is actually necessary here; this just needs to ensure it's at least 1g
-	cmd = exec.Command("sh", "-c", "qemu-img resize ~/.ops/images/"+newPath+" 1G")
+	cmd = exec.Command("qemu-img", "resize", "~/.ops/images/"+newPath, "1G")
 	stdoutStderr, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
