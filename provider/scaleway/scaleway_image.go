@@ -78,8 +78,9 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	newPath := c.CloudConfig.ImageName + ".qcow2"
 
 	////// upload image
+	opshome := lepton.GetOpsHome()
 
-	cmd := exec.Command("qemu-img", "convert", "-f", "raw", "-O", "qcow2", "~/.ops/images/"+imageName, "~/.ops/images/"+newPath)
+	cmd := exec.Command("qemu-img", "convert", "-f", "raw", "-O", "qcow2", opshome+"/images/"+imageName, opshome+"/images/"+newPath)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
@@ -87,14 +88,12 @@ func (h *Scaleway) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	// not sure this is actually necessary here; this just needs to ensure it's at least 1g
-	cmd = exec.Command("qemu-img", "resize", "~/.ops/images/"+newPath, "1G")
+	cmd = exec.Command("qemu-img", "resize", opshome+"/images/"+newPath, "1G")
 	stdoutStderr, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 		fmt.Printf("%s\n", stdoutStderr)
 	}
-
-	opshome := lepton.GetOpsHome()
 
 	sess := session.Must(session.NewSession(&aws.Config{
 		Credentials:      credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""),
