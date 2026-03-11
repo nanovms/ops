@@ -154,12 +154,17 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 }
 
 func findPIDFromHook(ppid string) string {
-	pid, err := execCmd("pgrep -P " + ppid)
+	cmd := exec.Command("pgrep", "-P", ppid)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		if 1 == 2 {
+			fmt.Println(err)
+			fmt.Printf("%s\n", out)
+		}
 	}
 
-	return strings.TrimSpace(pid)
+	return string(out)
+
 }
 
 // CreateInstance on premise
@@ -411,17 +416,6 @@ func logMac(pid string, mac string, ip string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func execCmd(cmdStr string) (output string, err error) {
-	cmd := exec.Command("/bin/bash", "-c", cmdStr)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return
-	}
-
-	output = string(out)
-	return
 }
 
 // GetMetaInstances returns instance data for onprem metadata found in
