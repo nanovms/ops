@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/tools"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -272,17 +271,60 @@ func killBridge(bridgeName string) {
 	}
 }
 
-func getPidOfBridge(bridgeName string) string {
-	pid, err := tools.ExecCmd("ps aux | grep dnsmasq | grep " + bridgeName + " | awk {'print $2'}")
+func getPS() string {
+	cmd := exec.Command("ps", "aux")
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		if 1 == 2 {
+			fmt.Println(err)
+			fmt.Printf("%s\n", out)
+		}
 	}
+
+	return string(out)
+}
+
+func getDNSMasqLines(body string) string {
+	glines := ""
+
+	lines := strings.Split(body, "\n")
+	for i := 0; i < len(lines); i++ {
+		if strings.Contains(lines[i], "dnsmasq") {
+			glines += lines[i] + "\n"
+		}
+	}
+	return glines
+}
+
+func getBridgeLines(body string, bridgeName string) string {
+	glines := ""
+
+	lines := strings.Split(body, "\n")
+	for i := 0; i < len(lines); i++ {
+		if strings.Contains(lines[i], bridgeName) {
+			glines += lines[i] + "\n"
+		}
+	}
+	return glines
+}
+
+func getPidFromBridge(body string) string {
+	fields := strings.Fields(body)
+
+	return strings.TrimSpace(fields[1])
+}
+
+func getPidOfBridge(bridgeName string) string {
+	ps := getPS()
+
+	dlines := getDNSMasqLines(ps)
+	blines := getBridgeLines(dlines, bridgeName)
+	pid := getPidFromBridge(blines)
 
 	if strings.Contains(pid, "\n") {
 		rpid := strings.Split(pid, "\n")
 		pid = strings.TrimSpace(rpid[0])
 	}
 
-	fmt.Printf("found pid of %s\n", pid)
 	return pid
 }
