@@ -8,36 +8,10 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"k8s.io/client-go/util/homedir"
 )
-
-// CheckKubeConfigExist checks for existence of kubeconfig
-func CheckKubeConfigExist() bool {
-
-	var kubeconfig string
-
-	if os.Getenv("KUBECONFIG") != "" {
-		kubeconfig = os.Getenv("KUBECONFIG")
-	} else {
-		if home := homedir.HomeDir(); home != "" {
-			kubeconfig = filepath.Join(home, ".kube", "config")
-			log.Printf("using default kubeconfig path %s", kubeconfig)
-		} else {
-			log.Printf("no KUBECONFIG provided and cannot fallback to default")
-			return false
-		}
-	}
-
-	if CheckPathExists(kubeconfig) {
-		return true
-	}
-
-	return false
-}
 
 // CheckPathExists checks if a path exists or not
 func CheckPathExists(path string) bool {

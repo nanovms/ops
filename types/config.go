@@ -430,11 +430,6 @@ type Nic struct {
 	BridgeName string `json:",omitempty"`
 }
 
-// RuntimeConfig constructs runtime config
-func RuntimeConfig(image string, ports []string, verbose bool) RunConfig {
-	return RunConfig{ImageName: image, Ports: ports, Verbose: verbose, Memory: "2G", Accel: true}
-}
-
 // MarshalJSON ...
 func (c Config) MarshalJSON() ([]byte, error) {
 	var skipBaseFields []string

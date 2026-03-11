@@ -286,19 +286,3 @@ func getPidOfBridge(bridgeName string) string {
 	fmt.Printf("found pid of %s\n", pid)
 	return pid
 }
-
-func emptyBridge(bridgeName string) bool {
-	// "ip link show master br0"
-	ecmd := exec.Command("ip", "link", "show", "master", bridgeName)
-	out, err := ecmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("ip link show master", bridgeName, err)
-	}
-
-	if strings.TrimSpace(string(out)) == "" {
-		fmt.Println("bridge is reporting nothing else in it")
-		return true
-	}
-
-	return false
-}

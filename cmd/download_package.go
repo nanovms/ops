@@ -12,11 +12,6 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-func downloadLocalPackage(pkg string, config *types.Config) (string, error) {
-	packagesDirPath := api.LocalPackagesRoot
-	return downloadAndExtractPackage(packagesDirPath, pkg, config)
-}
-
 func downloadPackage(pkg string, config *types.Config) (string, error) {
 	return downloadAndExtractPackage(api.PackagesRoot, pkg, config)
 }

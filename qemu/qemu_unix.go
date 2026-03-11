@@ -328,15 +328,6 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 	}
 }
 
-func (q *qemu) addDiskDevice(id, driver string) {
-	dv := device{
-		driver:  driver,
-		devtype: "drive",
-		devid:   id,
-	}
-	q.devices = append(q.devices, dv)
-}
-
 // versionCompare compares Qemu version numbers. If the the first argument is
 // greater then true is returned, if the second argument is greater
 // then versionCompare returns false, otherwise it returns true.
