@@ -204,12 +204,16 @@ func (p *OnPrem) GetInstanceByName(ctx *lepton.Context, name string) (*lepton.Cl
 // FindBridgedIPByPID finds a qemu process with the pid and returns the
 // ip.
 func FindBridgedIPByPID(pid string) string {
-	out, err := execCmd("ps ww -p " + pid) //fixme: cmd injection
+	cmd := exec.Command("ps", "ww", "-p", pid)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if 1 == 2 {
 			fmt.Println(err)
+			fmt.Printf("%s\n", out)
 		}
 	}
+
+	sout := string(out)
 
 	devspl := ""
 	if runtime.GOOS == "darwin" {
@@ -218,7 +222,7 @@ func FindBridgedIPByPID(pid string) string {
 		devspl = ",mac="
 	}
 
-	oo := strings.Split(out, devspl)
+	oo := strings.Split(sout, devspl)
 	mac := ""
 	if len(oo) > 1 {
 		ooz := strings.Split(oo[1], " ")
@@ -238,11 +242,13 @@ func arpMac(pid string, mac string) string {
 		return ""
 	}
 
-	// needs recent activity to register
-	out, err := execCmd("arp -a | grep " + dmac)
-	if err != nil {
-		if 1 == 2 {
-			fmt.Println(err)
+	body := getArp()
+
+	out := ""
+	alines := strings.Split(body, "\n")
+	for i := 0; i < len(alines); i++ {
+		if strings.Contains(alines[i], dmac) {
+			out += alines[i] + "\n"
 		}
 	}
 
@@ -267,10 +273,9 @@ func arpMac(pid string, mac string) string {
 // could also potentially extract from logs || could have nanos ping
 // upon boot
 func FindBridgedIP(instanceID string) string {
-	out, err := execCmd("ps aux | grep " + instanceID + " | grep -v grep") //fixme: cmd injection
-	if err != nil {
-		fmt.Println(err)
-	}
+	ps := getPS()
+
+	out := getLines(ps, instanceID)
 
 	devspl := ""
 	if runtime.GOOS == "darwin" {
@@ -288,14 +293,67 @@ func FindBridgedIP(instanceID string) string {
 		fmt.Println("couldn't find mac")
 	}
 
-	// hack hack hack
-	out, err = execCmd("ps aux  |grep -a " + instanceID + " | grep qemu | grep -v grep | awk {'print $2'}")
-	if err != nil {
-		fmt.Println(err)
-	}
-	pid := strings.TrimSpace(out)
+	qlines := getQemuLines(out)
+
+	pid := getPidFromQemu(qlines)
 
 	return arpMac(pid, mac)
+}
+
+func getPidFromQemu(body string) string {
+	fields := strings.Fields(body)
+
+	return strings.TrimSpace(fields[1])
+}
+
+func getQemuLines(body string) string {
+	glines := ""
+
+	lines := strings.Split(body, "\n")
+	for i := 0; i < len(lines); i++ {
+		if strings.Contains(lines[i], "qemu") {
+			glines += lines[i] + "\n"
+		}
+	}
+	return glines
+}
+
+func getLines(body string, instanceID string) string {
+	glines := ""
+
+	lines := strings.Split(body, "\n")
+	for i := 0; i < len(lines); i++ {
+		if strings.Contains(lines[i], instanceID) {
+			glines += lines[i] + "\n"
+		}
+	}
+	return glines
+}
+
+func getArp() string {
+	cmd := exec.Command("arp", "-a")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if 1 == 2 {
+			fmt.Println(err)
+			fmt.Printf("%s\n", out)
+		}
+	}
+
+	return string(out)
+}
+
+func getPS() string {
+	cmd := exec.Command("ps", "aux")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if 1 == 2 {
+			fmt.Println(err)
+			fmt.Printf("%s\n", out)
+		}
+	}
+
+	return string(out)
 }
 
 // returns a mac with leading zeros dropped which is what mac does
