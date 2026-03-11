@@ -3,6 +3,7 @@ package lepton
 import (
 	"archive/tar"
 	"crypto/sha256"
+	"os/exec"
 	"regexp"
 
 	"compress/gzip"
@@ -20,7 +21,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nanovms/ops/constants"
 	"github.com/nanovms/ops/log"
-	"github.com/nanovms/ops/tools"
 	"github.com/nanovms/ops/types"
 )
 
@@ -442,7 +442,19 @@ func ClonePackage(old string, newPkg string, version string, parch string, oldco
 	o := path.Join(GetOpsHome(), "packages", parch, old)
 	n := path.Join(localPackageDirectoryPath(), parch, newPkg+"_"+version)
 
-	tools.ExecCmdList("mkdir -p", n, "&&", "cp -R", o+"/*", n+"/")
+	cmd := exec.Command("mkdir", "-p", n)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(out)
+	}
+
+	cmd = exec.Command("cp", "-R", o+"/.", n+"/")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(string(out))
+	}
 
 	ppath := n + "/package.manifest"
 
@@ -467,7 +479,7 @@ func ClonePackage(old string, newPkg string, version string, parch string, oldco
 	json, _ := json.MarshalIndent(c, "", "  ")
 
 	// would be nice to write only needed config not all config
-	err := os.WriteFile(ppath, json, 0666)
+	err = os.WriteFile(ppath, json, 0666)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -483,8 +495,19 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	pkgSysrootDir := filepath.Join(pkgDir, PackageSysRootFolderName)
 
 	// fixme - convert to stdlib
-	tools.ExecCmdList("mkdir -p", pkgDir)
-	tools.ExecCmdList("mkdir -p", pkgSysrootDir)
+	cmd := exec.Command("mkdir", "-p", pkgDir)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(out)
+	}
+
+	cmd = exec.Command("mkdir", "-p", pkgSysrootDir)
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(out)
+	}
 
 	// package - manifest
 	pkgCfg := newManifestConfig(mergedCfg)
@@ -504,7 +527,12 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	}
 
 	// package - program
-	tools.ExecCmdList("cp", mergedCfg.Program, pkgDir+"/.")
+	cmd = exec.Command("cp", mergedCfg.Program, pkgDir+"/.")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(out)
+	}
 
 	// package - {dirs, mapdirs, files} - config won't be present in manifest
 	addToPackage(mergedCfg, pkgDir)
@@ -516,8 +544,20 @@ func CreatePackageFromRun(newPkg string, version string, parch string, mergedCfg
 	}
 	// create dir layout + cp files
 	for k, v := range deps {
-		tools.ExecCmdList("mkdir -p", filepath.Join(pkgSysrootDir, filepath.Dir(v)))
-		tools.ExecCmdList("cp", v, filepath.Join(pkgSysrootDir, k))
+		cmd := exec.Command("mkdir", "-p", filepath.Join(pkgSysrootDir, filepath.Dir(v)))
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
+		cmd = exec.Command("cp", v, filepath.Join(pkgSysrootDir, k))
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
 	}
 
 }
@@ -535,17 +575,47 @@ func addToPackage(newconfig *types.Config, newpath string) {
 	}
 
 	pkgSysrootDir := filepath.Join(newpath, PackageSysRootFolderName)
-	tools.ExecCmdList("mkdir -p", pkgSysrootDir)
+	cmd := exec.Command("mkdir", "-p", pkgSysrootDir)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(out)
+	}
 
 	for i := 0; i < len(newconfig.Dirs); i++ {
-		tools.ExecCmdList("cp -R", newconfig.Dirs[i], pkgSysrootDir+"/.")
+		cmd := exec.Command("cp", "-R", newconfig.Dirs[i], pkgSysrootDir+"/.")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
 	}
 	for i := 0; i < len(newconfig.Files); i++ {
-		tools.ExecCmdList("cp -R", newconfig.Files[i], pkgSysrootDir+"/.")
+		cmd := exec.Command("cp", "-R", newconfig.Files[i], pkgSysrootDir+"/.")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
 	}
 	for k, v := range newconfig.MapDirs {
 		newDir := filepath.Join(pkgSysrootDir, v)
-		tools.ExecCmdList("mkdir -p", newDir, "&&", "cp -R", k, newDir+"/.")
+		cmd := exec.Command("mkdir", "-p", newDir)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
+		cmd = exec.Command("cp", "-R", k, newDir+"/.")
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(out)
+		}
+
 	}
 }
 
