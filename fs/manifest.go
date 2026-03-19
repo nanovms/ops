@@ -50,21 +50,25 @@ func (m *Manifest) AddNetworkConfig(networkConfig *ManifestNetworkConfig) {
 }
 
 // b7 = 183 = arm; 3e = 62 = x86
-func archCheck(imgpath string) string {
+func archCheck(imgpath string) (string, error) {
 	f, err := os.Open(imgpath)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("archCheck open error: %s", err)
+		return "", err
 	}
 	defer f.Close()
 
 	h := make([]byte, 19)
 	_, err = f.Read(h)
-
+	if err != nil {
+		fmt.Printf("archCheck read error: %s", err)
+		return "", err
+	}
 	if h[18] == 183 {
-		return "arm"
+		return "arm", nil
 	}
 
-	return "amd64"
+	return "amd64", nil
 }
 
 // AddUserProgram adds user program
@@ -79,7 +83,10 @@ func (m *Manifest) AddUserProgram(imgpath string, arm bool) (err error) {
 		imgpath = filepath.Join(m.targetRoot, imgpath)
 	}
 
-	a := archCheck(imgpath)
+	a, err := archCheck(imgpath)
+	if err != nil {
+		return err
+	}
 	if arm && a != "arm" || !arm && a == "arm" {
 		return fmt.Errorf("you are trying to mix %q [%s] with the wrong kernel, try re-creating the image with --arch=", imgpath, a)
 	}
