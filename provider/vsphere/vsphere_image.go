@@ -74,9 +74,16 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 	}
 
 	p := soap.DefaultUpload
-	ds.UploadFile(context.TODO(), flatPath, vmdkBase+"/"+flat, &p)
-	ds.UploadFile(context.TODO(), imgPath, vmdkBase+"/"+base, &p)
-
+	err = ds.UploadFile(context.TODO(), flatPath, vmdkBase+"/"+flat, &p)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	err = ds.UploadFile(context.TODO(), imgPath, vmdkBase+"/"+base, &p)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 	dc, err := f.DatacenterOrDefault(context.TODO(), v.datacenter)
 	if err != nil {
 		log.Error(err)
@@ -85,7 +92,11 @@ func (v *Vsphere) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	m := ds.NewFileManager(dc, true)
 
-	m.Copy(context.TODO(), vmdkBase+"/"+base, vmdkBase+"/"+vmdkBase+"2.vmdk")
+	err = m.Copy(context.TODO(), vmdkBase+"/"+base, vmdkBase+"/"+vmdkBase+"2.vmdk")
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	return nil
 }
