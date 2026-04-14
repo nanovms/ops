@@ -477,10 +477,15 @@ func imageCatCommandHandler(cmd *cobra.Command, args []string) {
 
 func imageCat(cmd *cobra.Command, args []string, reader *fs.Reader) {
 	for _, srcPath := range args[1:] {
-		_, err := reader.Stat(srcPath)
+		i, err := reader.Stat(srcPath)
 		if err != nil {
 			log.Errorf("Invalid source '%s': %v", srcPath, err)
 			continue
+		}
+
+		if i.IsDir() {
+			log.Errorf("%s is a directory", srcPath)
+			return
 		}
 
 		ir, err := reader.ReadFile(srcPath)
