@@ -135,7 +135,9 @@ func (p *Provider) AttachVolume(ctx *lepton.Context, image, name string, attachI
 	}
 
 	_, err = p.upcloud.AttachStorage(context.Background(), attachReq)
-
+	if err != nil {
+		return
+	}
 	ctx.Logger().Log("starting instance")
 	err = p.startServer(instance.ID)
 
@@ -179,7 +181,9 @@ func (p *Provider) DetachVolume(ctx *lepton.Context, image, name string) (err er
 			}
 
 			_, err = p.upcloud.DetachStorage(context.Background(), detachReq)
-
+			if err != nil {
+				return
+			}
 			ctx.Logger().Log("starting server")
 			err = p.startServer(server.UUID)
 			return
