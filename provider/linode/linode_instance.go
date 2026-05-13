@@ -135,6 +135,9 @@ func (v *Linode) CreateInstance(ctx *lepton.Context) error {
 	}
 
 	imgID, err := v.fetchImageID(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching image id: %w", err)
+	}
 
 	diskID, err := v.addDisk(linode.ID, imgID, imgName)
 	if err != nil {

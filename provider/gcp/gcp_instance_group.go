@@ -132,6 +132,9 @@ func (p *GCloud) updateInstanceGroup(ctx *lepton.Context, instanceGroup string) 
 
 	managedInstances, err := p.Service.InstanceGroupManagers.ListManagedInstances(
 		c.CloudConfig.ProjectID, c.CloudConfig.Zone, instanceGroup).Do()
+	if err != nil {
+		return err
+	}
 
 	managedInstanceCount := len(managedInstances.ManagedInstances)
 	instances := make([]string, managedInstanceCount)
