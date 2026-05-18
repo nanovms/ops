@@ -83,7 +83,7 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 		return true, nil
 	})
 
-	return cinstances, nil
+	return cinstances, err
 }
 
 // CreateInstance - Creates instance on OpenStack.
@@ -250,6 +250,9 @@ func (o *OpenStack) ListInstances(ctx *lepton.Context) error {
 func (o *OpenStack) DeleteInstance(ctx *lepton.Context, instancename string) error {
 
 	instances, err := o.GetInstances(ctx)
+	if err != nil {
+		return err
+	}
 
 	client, err := openstack.NewComputeV2(o.provider, gophercloud.EndpointOpts{
 		Region: os.Getenv("OS_REGION_NAME"),
@@ -352,7 +355,9 @@ func (o *OpenStack) findInstance(name string) (volume *servers.Server, err error
 
 		return true, nil
 	})
-
+	if err != nil {
+		return server, err
+	}
 	if server != nil {
 		return server, nil
 	}

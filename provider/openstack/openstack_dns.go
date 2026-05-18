@@ -65,7 +65,9 @@ func (o *OpenStack) DeleteZoneRecordIfExists(config *types.Config, zoneID string
 		Name: recordName,
 	}
 	allPages, err := recordsets.ListByZone(dnsClient, zoneID, listOpts).AllPages()
-
+	if err != nil {
+		return err
+	}
 	allRecords, err := recordsets.ExtractRecordSets(allPages)
 	if err != nil {
 		return err
