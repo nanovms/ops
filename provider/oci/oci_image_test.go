@@ -35,7 +35,7 @@ type putObjectMatcher struct {
 	ContentLength *int64 `mandatory:"true" contributesTo:"header" name:"Content-Length"`
 }
 
-func (p *putObjectMatcher) Matches(x interface{}) bool {
+func (p *putObjectMatcher) Matches(x any) bool {
 	want := x.(objectstorage.PutObjectRequest)
 	return *want.BucketName == *p.BucketName && *want.NamespaceName == *p.NamespaceName && *want.ObjectName == *p.ObjectName && *want.ContentLength == *p.ContentLength
 }

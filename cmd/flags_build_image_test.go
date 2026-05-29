@@ -84,7 +84,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			Env:                 map[string]string{"test": "1234"},
 			NameServers:         []string{"8.8.8.8"},
 			VolumesDir:          lepton.LocalVolumeDir,
-			ManifestPassthrough: map[string]interface{}{},
+			ManifestPassthrough: map[string]any{},
 		}
 
 		err := buildImageFlags.MergeToConfig(c)
@@ -121,7 +121,7 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			RunConfig:           types.RunConfig{},
 			Args:                []string{},
 			NameServers:         []string{"8.8.8.8"},
-			ManifestPassthrough: map[string]interface{}{},
+			ManifestPassthrough: map[string]any{},
 		}
 
 		assert.Equal(t, expected, c)

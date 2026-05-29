@@ -25,6 +25,6 @@ func TestManifestWithArgs(t *testing.T) {
 func TestManifestWithEnv(t *testing.T) {
 	m := NewManifest("")
 	m.AddEnvironmentVariable("var1", "value1")
-	env := m.root["environment"].(map[string]interface{})
+	env := m.root["environment"].(map[string]any)
 	assert.Equal(t, "value1", env["var1"])
 }

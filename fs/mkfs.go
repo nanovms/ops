@@ -269,7 +269,7 @@ func (m *MkfsCommand) Execute() error {
 		}
 	}
 	manifest := m.manifest
-	var root map[string]interface{}
+	var root map[string]any
 	if manifest != nil {
 		manifest.finalize()
 		if manifest.boot != nil {
@@ -314,14 +314,14 @@ func (m *MkfsCommand) GetUUID() string {
 	return m.rootTfs.getUUID()
 }
 
-func mkFS() map[string]interface{} {
-	root := make(map[string]interface{})
-	root["children"] = make(map[string]interface{})
+func mkFS() map[string]any {
+	root := make(map[string]any)
+	root["children"] = make(map[string]any)
 	return root
 }
 
-func getRootDir(root map[string]interface{}) map[string]interface{} {
-	return root["children"].(map[string]interface{})
+func getRootDir(root map[string]any) map[string]any {
+	return root["children"].(map[string]any)
 }
 
 // Creates the EFI System Partition, i.e. a FAT32 filesystem with the UEFI loader file in the EFI/Boot directory.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func printJSON(obj interface{}) {
+func printJSON(obj any) {
 	json, _ := json.MarshalIndent(obj, "", "  ")
 	fmt.Println(string(json))
 }

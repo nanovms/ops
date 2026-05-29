@@ -52,7 +52,7 @@ func (cmd *EnvironmentCommand) Execute() error {
 }
 
 // Then appends command line to the set of commands.
-func (cmd *EnvironmentCommand) Then(command string, args ...interface{}) *EnvironmentCommand {
+func (cmd *EnvironmentCommand) Then(command string, args ...any) *EnvironmentCommand {
 	cmd.CommandLines = append(cmd.CommandLines, formatCommand(command, args...))
 	return cmd
 }
@@ -85,8 +85,8 @@ func (cmd *EnvironmentCommand) executeCommand(client *ssh.Client, cmdLine string
 }
 
 // Formats command and arguments as a single string.
-func formatCommand(command string, args ...interface{}) string {
-	line := []interface{}{command}
+func formatCommand(command string, args ...any) string {
+	line := []any{command}
 	line = append(line, args...)
 	return fmt.Sprintln(line...)
 }

@@ -119,7 +119,7 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 	}
 
 	if c.ManifestPassthrough == nil {
-		c.ManifestPassthrough = make(map[string]interface{})
+		c.ManifestPassthrough = make(map[string]any)
 	}
 
 	// we only set the netconsole port and ip if the consoles have values

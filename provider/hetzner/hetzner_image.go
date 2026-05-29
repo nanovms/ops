@@ -495,7 +495,7 @@ func sanitizeLabelValue(value string) string {
 	return value
 }
 
-func jsonOutput(v interface{}) error {
+func jsonOutput(v any) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

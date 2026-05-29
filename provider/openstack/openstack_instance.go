@@ -52,8 +52,8 @@ func getOpenStackInstances(provider *gophercloud.ProviderClient, opts servers.Li
 				}
 
 				if z != nil {
-					for _, v := range z.([]interface{}) {
-						sz := v.(map[string]interface{})
+					for _, v := range z.([]any) {
+						sz := v.(map[string]any)
 						version := sz["version"].(float64)
 						if version == 4 {
 							ipv4 = sz["addr"].(string)

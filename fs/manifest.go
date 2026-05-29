@@ -24,8 +24,8 @@ type ManifestNetworkConfig struct {
 
 // Manifest represent the filesystem.
 type Manifest struct {
-	root        map[string]interface{} // root fs
-	boot        map[string]interface{} // boot fs
+	root        map[string]any // root fs
+	boot        map[string]any // boot fs
 	targetRoot  string
 	klibHostDir string
 }
@@ -37,7 +37,7 @@ func NewManifest(targetRoot string) *Manifest {
 		targetRoot: targetRoot,
 	}
 	m.root["arguments"] = make([]string, 0)
-	m.root["environment"] = make(map[string]interface{})
+	m.root["environment"] = make(map[string]any)
 	return m
 }
 
@@ -117,15 +117,15 @@ func (m *Manifest) AddMount(label, path string) {
 	dirparts := strings.Split(dir, ":")
 	mkDirPath(m.rootDir(), dirparts[0])
 	if m.root["mounts"] == nil {
-		m.root["mounts"] = make(map[string]interface{})
+		m.root["mounts"] = make(map[string]any)
 	}
-	mounts := m.root["mounts"].(map[string]interface{})
+	mounts := m.root["mounts"].(map[string]any)
 	mounts[label] = path
 }
 
 // AddEnvironmentVariable adds environment variables
 func (m *Manifest) AddEnvironmentVariable(name string, value string) {
-	env := m.root["environment"].(map[string]interface{})
+	env := m.root["environment"].(map[string]any)
 	env[name] = value
 }
 
@@ -252,12 +252,12 @@ func (m *Manifest) AddDirectory(dir string, workDir string, opath string, inside
 			node := m.rootDir()
 			for i := 0; i < len(parts); i++ {
 				if _, ok := node[parts[i]]; !ok {
-					node[parts[i]] = make(map[string]interface{})
+					node[parts[i]] = make(map[string]any)
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
 					return fmt.Errorf("directory %q is conflicting with an existing file", hostpath)
 				}
-				node = node[parts[i]].(map[string]interface{})
+				node = node[parts[i]].(map[string]any)
 			}
 		} else {
 			err = m.AddFile(vmpath, hostpath)
@@ -302,12 +302,12 @@ func (m *Manifest) AddRelativeDirectory(src string) error {
 			node := m.rootDir()
 			for i := 0; i < len(parts); i++ {
 				if _, ok := node[parts[i]]; !ok {
-					node[parts[i]] = make(map[string]interface{})
+					node[parts[i]] = make(map[string]any)
 				}
 				if reflect.TypeOf(node[parts[i]]).Kind() == reflect.String {
 					return fmt.Errorf("directory %q is conflicting with an existing file", hostpath)
 				}
-				node = node[parts[i]].(map[string]interface{})
+				node = node[parts[i]].(map[string]any)
 			}
 		} else {
 			err = m.AddFile(vmpath, hostpath)
@@ -328,7 +328,7 @@ func (m *Manifest) FileExists(filepath string) bool {
 		if _, ok := node[parts[i]]; !ok {
 			return false
 		}
-		node = node[parts[i]].(map[string]interface{})
+		node = node[parts[i]].(map[string]any)
 	}
 	pathtest := node[parts[len(parts)-1]]
 	if pathtest != nil && reflect.TypeOf(pathtest).Kind() == reflect.String {
@@ -344,9 +344,9 @@ func (m *Manifest) AddLink(filepath string, hostpath string) error {
 
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
-			node[parts[i]] = make(map[string]interface{})
+			node[parts[i]] = make(map[string]any)
 		}
-		node = node[parts[i]].(map[string]interface{})
+		node = node[parts[i]].(map[string]any)
 	}
 
 	pathtest := node[parts[len(parts)-1]]
@@ -381,15 +381,15 @@ func (m *Manifest) AddFile(filepath string, hostpath string) error {
 }
 
 // AddFileTo adds a file to a given directory
-func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpath string) error {
+func (m *Manifest) AddFileTo(dir map[string]any, filepath string, hostpath string) error {
 	parts := strings.FieldsFunc(filepath, func(c rune) bool { return c == '/' })
 	node := dir
 
 	for i := 0; i < len(parts)-1; i++ {
 		if _, ok := node[parts[i]]; !ok {
-			node[parts[i]] = make(map[string]interface{})
+			node[parts[i]] = make(map[string]any)
 		}
-		node = node[parts[i]].(map[string]interface{})
+		node = node[parts[i]].(map[string]any)
 	}
 
 	pathtest := node[parts[len(parts)-1]]
@@ -414,18 +414,18 @@ func (m *Manifest) AddFileTo(dir map[string]interface{}, filepath string, hostpa
 }
 
 // AddPassthrough to add key, value directly to manifest
-func (m *Manifest) AddPassthrough(key string, value interface{}) {
+func (m *Manifest) AddPassthrough(key string, value any) {
 	m.root[key] = value
 }
 
 func (m *Manifest) finalize() {
 }
 
-func (m *Manifest) bootDir() map[string]interface{} {
+func (m *Manifest) bootDir() map[string]any {
 	return getRootDir(m.boot)
 }
 
-func (m *Manifest) rootDir() map[string]interface{} {
+func (m *Manifest) rootDir() map[string]any {
 	return getRootDir(m.root)
 }
 
@@ -470,12 +470,12 @@ func LookupFile(targetRoot string, path string) (string, error) {
 	return path, err
 }
 
-func mkDir(parent map[string]interface{}, dir string) map[string]interface{} {
+func mkDir(parent map[string]any, dir string) map[string]any {
 	subDir := parent[dir]
 	if subDir != nil {
-		return subDir.(map[string]interface{})
+		return subDir.(map[string]any)
 	}
-	newDir := make(map[string]interface{})
+	newDir := make(map[string]any)
 	parent[dir] = newDir
 	return newDir
 }
@@ -485,7 +485,7 @@ func (m *Manifest) MkdirPath(path string) {
 	mkDirPath(m.rootDir(), path)
 }
 
-func mkDirPath(parent map[string]interface{}, path string) map[string]interface{} {
+func mkDirPath(parent map[string]any, path string) map[string]any {
 	parts := strings.Split(path, "/")
 	for _, element := range parts {
 		if element != "" {

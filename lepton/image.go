@@ -439,7 +439,7 @@ func BuildManifest(c *types.Config) (*fs.Manifest, error) {
 				NetMask: nics[i].NetMask,
 			})
 		} else {
-			ifaces := make(map[string]interface{})
+			ifaces := make(map[string]any)
 
 			// only set if ip given otherwise assume dhcp
 			ifaces["ipaddr"] = nics[i].IPAddress

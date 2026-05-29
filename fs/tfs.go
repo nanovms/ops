@@ -60,7 +60,7 @@ type tfs struct {
 	nonSymCount int
 	staging     []byte
 	decoder     tfsDecoder
-	root        *map[string]interface{}
+	root        *map[string]any
 }
 
 func (t *tfs) logInit(oldEncoding bool) error {
@@ -232,7 +232,7 @@ func (t *tfs) readLogExt(offset, size uint64) (uint64, error) {
 	}
 }
 
-func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
+func (t *tfs) writeDirEntries(dir map[string]any) error {
 	var err error
 	t.encodeSymbol("children")
 	t.encodeTupleHeader(len(dir))
@@ -251,7 +251,7 @@ func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
 		} else {
 			t.encodeSymbol(k)
 			t.encodeTupleHeader(1) // for "children" attribute
-			err = t.writeDirEntries(v.(map[string]interface{}))
+			err = t.writeDirEntries(v.(map[string]any))
 		}
 		if err != nil {
 			break
@@ -260,7 +260,7 @@ func (t *tfs) writeDirEntries(dir map[string]interface{}) error {
 	return err
 }
 
-func (t *tfs) encodeValue(value interface{}) error {
+func (t *tfs) encodeValue(value any) error {
 	str, isStr := value.(string)
 	if isStr {
 		strType := byte(typeString)
@@ -273,37 +273,37 @@ func (t *tfs) encodeValue(value interface{}) error {
 	strSlice, isStrSlice := value.([]string)
 	if isStrSlice {
 		if !t.currentExt.oldEncoding {
-			vector := make([]interface{}, len(strSlice))
+			vector := make([]any, len(strSlice))
 			for i, str := range strSlice {
 				vector[i] = str
 			}
 			return t.encodeVector(vector)
 		}
-		tuple := make(map[string]interface{})
+		tuple := make(map[string]any)
 		for i, str := range strSlice {
 			tuple[strconv.Itoa(i)] = str
 		}
 		return t.encodeTuple(tuple)
 	}
-	slice, isSlice := value.([]interface{})
+	slice, isSlice := value.([]any)
 	if isSlice {
 		if !t.currentExt.oldEncoding {
 			return t.encodeVector(slice)
 		}
-		tuple := make(map[string]interface{})
+		tuple := make(map[string]any)
 		for i, val := range slice {
 			tuple[strconv.Itoa(i)] = val
 		}
 		return t.encodeTuple(tuple)
 	}
-	tuple, isTuple := value.(map[string]interface{})
+	tuple, isTuple := value.(map[string]any)
 	if isTuple {
 		return t.encodeTuple(tuple)
 	}
 	return fmt.Errorf("unknown type of value %p", value)
 }
 
-func (t *tfs) encodeMetadata(name string, value interface{}) error {
+func (t *tfs) encodeMetadata(name string, value any) error {
 	t.encodeSymbol(name)
 	err := t.encodeValue(value)
 	return err
@@ -324,7 +324,7 @@ func (t *tfs) encodeTupleHeader(tupleEntries int) {
 	t.nonSymCount++
 }
 
-func (t *tfs) encodeTuple(tuple map[string]interface{}) error {
+func (t *tfs) encodeTuple(tuple map[string]any) error {
 	t.encodeTupleHeader(len(tuple))
 	for k, v := range tuple {
 		err := t.encodeMetadata(k, v)
@@ -340,7 +340,7 @@ func (t *tfs) encodeString(s string, dataType byte) {
 	t.staging = append(t.staging, s...)
 }
 
-func (t *tfs) encodeVector(vector []interface{}) error {
+func (t *tfs) encodeVector(vector []any) error {
 	t.pushHeader(entryImmediate, typeVector, len(vector))
 	t.nonSymCount++
 	for _, value := range vector {
@@ -352,7 +352,7 @@ func (t *tfs) encodeVector(vector []interface{}) error {
 	return nil
 }
 
-func (t *tfs) decodeValue(buffer []byte, offset *uint64, oldEncoding bool) (interface{}, error) {
+func (t *tfs) decodeValue(buffer []byte, offset *uint64, oldEncoding bool) (any, error) {
 	var entry, dataType byte
 	length, err := getHeader(buffer, offset, &entry, &dataType, oldEncoding)
 	if err != nil {
@@ -374,10 +374,10 @@ func (t *tfs) decodeValue(buffer []byte, offset *uint64, oldEncoding bool) (inte
 	}
 }
 
-func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*[]interface{}, error) {
-	var vector *[]interface{}
+func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*[]any, error) {
+	var vector *[]any
 	if entry == entryImmediate {
-		newVector := make([]interface{}, length)
+		newVector := make([]any, length)
 		vector = &newVector
 		t.decoder.dict[len(t.decoder.dict)+1] = vector
 	} else {
@@ -400,10 +400,10 @@ func (t *tfs) decodeVector(buffer []byte, offset *uint64, entry byte, length uin
 	return vector, nil
 }
 
-func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*map[string]interface{}, error) {
-	var tuple *map[string]interface{}
+func (t *tfs) decodeTuple(buffer []byte, offset *uint64, entry byte, length uint, oldEncoding bool) (*map[string]any, error) {
+	var tuple *map[string]any
 	if entry == entryImmediate {
-		newTuple := make(map[string]interface{})
+		newTuple := make(map[string]any)
 		tuple = &newTuple
 		t.decoder.dict[len(t.decoder.dict)+1] = tuple
 	} else {
@@ -475,26 +475,26 @@ func (t *tfs) decodeInteger(buffer []byte, offset *uint64, entry byte, length ui
 	return strconv.FormatInt(int64(val), 10), nil
 }
 
-func (t *tfs) getDictVector(ref uint) (*[]interface{}, error) {
+func (t *tfs) getDictVector(ref uint) (*[]any, error) {
 	value := t.decoder.dict[int(ref)]
 	if value == nil {
 		return nil, fmt.Errorf("indirect vector %d not found", ref)
 	}
 	var isVector bool
-	vector, isVector := value.(*[]interface{})
+	vector, isVector := value.(*[]any)
 	if !isVector {
 		return nil, fmt.Errorf("invalid indirect vector %d", ref)
 	}
 	return vector, nil
 }
 
-func (t *tfs) getDictTuple(ref uint) (*map[string]interface{}, error) {
+func (t *tfs) getDictTuple(ref uint) (*map[string]any, error) {
 	value := t.decoder.dict[int(ref)]
 	if value == nil {
 		return nil, fmt.Errorf("indirect tuple %d not found", ref)
 	}
 	var isTuple bool
-	tuple, isTuple := value.(*map[string]interface{})
+	tuple, isTuple := value.(*map[string]any)
 	if !isTuple {
 		return nil, fmt.Errorf("invalid indirect tuple %d", ref)
 	}
@@ -514,7 +514,7 @@ func (t *tfs) getDictString(ref uint) (string, error) {
 }
 
 func (t *tfs) writeLink(name string, target string) error {
-	tuple := make(map[string]interface{})
+	tuple := make(map[string]any)
 	tuple["linktarget"] = target
 	return t.encodeMetadata(name, tuple)
 }
@@ -530,9 +530,9 @@ func (t *tfs) writeFile(name string, hostPath string) error {
 	if err != nil {
 		return fmt.Errorf("cannot get size of file %q: %w", hostPath, err)
 	}
-	tuple := make(map[string]interface{})
+	tuple := make(map[string]any)
 	tuple["filelength"] = strconv.FormatInt(info.Size(), 10)
-	extents := make(map[string]interface{})
+	extents := make(map[string]any)
 	if info.Size() > 0 {
 		sectors := uint64((info.Size() + sectorSize - 1) / sectorSize)
 		paddedLen := sectors * sectorSize
@@ -557,7 +557,7 @@ func (t *tfs) writeFile(name string, hostPath string) error {
 				return fmt.Errorf("cannot write image file: %w", err)
 			}
 		}
-		extent := make(map[string]interface{})
+		extent := make(map[string]any)
 		extent["length"] = strconv.FormatUint(sectors, 10)
 		extent["offset"] = strconv.FormatUint(t.allocated/sectorSize, 10)
 		extent["allocated"] = extent["length"]
@@ -650,7 +650,7 @@ func (t *tfs) flush() error {
 	return nil
 }
 
-func (t *tfs) readExtent(p []byte, extent *map[string]interface{}, offset uint64) (int, uint64, error) {
+func (t *tfs) readExtent(p []byte, extent *map[string]any, offset uint64) (int, uint64, error) {
 	extentOffset, err := strconv.ParseUint(getString(extent, "offset"), 10, 64)
 	if err != nil {
 		return 0, 0, fmt.Errorf("cannot parse extent offset: %w", err)
@@ -689,7 +689,7 @@ func (t *tfs) readLink(path string) (string, error) {
 }
 
 func (t *tfs) fileReader(path string) (io.Reader, error) {
-	var fileTuple *map[string]interface{}
+	var fileTuple *map[string]any
 	currentDir := t.root
 	hopCount := 0
 	for {
@@ -754,7 +754,7 @@ func (t *tfs) readDir(path string) ([]os.FileInfo, error) {
 	for k, v := range *children {
 		if (k != ".") && (k != "..") {
 			entries = append(entries, &tfsFileInfo{
-				tuple:       v.(*map[string]interface{}),
+				tuple:       v.(*map[string]any),
 				parentTuple: dir,
 			})
 		}
@@ -779,12 +779,12 @@ func (t *tfs) getUUID() string {
 
 type tfsDecoder struct {
 	tupleRemain uint
-	dict        map[int]interface{}
+	dict        map[int]any
 }
 
 type tfsFileInfo struct {
-	tuple       *map[string]interface{}
-	parentTuple *map[string]interface{}
+	tuple       *map[string]any
+	parentTuple *map[string]any
 }
 
 func (i *tfsFileInfo) IsDir() bool {
@@ -839,17 +839,17 @@ func (i *tfsFileInfo) Size() int64 {
 	return length
 }
 
-func (i *tfsFileInfo) Sys() interface{} {
+func (i *tfsFileInfo) Sys() any {
 	return i.tuple
 }
 
 type tfsFileReader struct {
 	t             *tfs
 	length        uint64
-	extents       *map[string]interface{}
+	extents       *map[string]any
 	extentOffsets []int
 	curExtIndex   int
-	currentExtent *map[string]interface{}
+	currentExtent *map[string]any
 	offset        uint64
 }
 
@@ -966,7 +966,7 @@ func (r *tfsFileReader) getExtentRange() (uint64, uint64, error) {
 func (r *tfsFileReader) selectExtent(index int) {
 	r.curExtIndex = index
 	ext := (*r.extents)[strconv.Itoa(r.extentOffsets[index]/sectorSize)]
-	r.currentExtent = ext.(*map[string]interface{})
+	r.currentExtent = ext.(*map[string]any)
 }
 
 type tlogExt struct {
@@ -1053,20 +1053,20 @@ func getVarint(buffer []byte, offset *uint64) (uint, error) {
 	return result, nil
 }
 
-func getTuple(parent *map[string]interface{}, child string) *map[string]interface{} {
+func getTuple(parent *map[string]any, child string) *map[string]any {
 	entry := (*parent)[child]
 	if entry == nil {
 		return nil
 	}
 	var isTuple bool
-	tuple, isTuple := entry.(*map[string]interface{})
+	tuple, isTuple := entry.(*map[string]any)
 	if !isTuple {
 		return nil
 	}
 	return tuple
 }
 
-func getString(parent *map[string]interface{}, child string) string {
+func getString(parent *map[string]any, child string) string {
 	value := (*parent)[child]
 	if value == nil {
 		return ""
@@ -1078,7 +1078,7 @@ func getString(parent *map[string]interface{}, child string) string {
 	return str
 }
 
-func getChild(parent *map[string]interface{}, child string) *map[string]interface{} {
+func getChild(parent *map[string]any, child string) *map[string]any {
 	children := getTuple(parent, "children")
 	if children == nil {
 		return nil
@@ -1096,7 +1096,7 @@ func newTfs(imgFile *os.File, imgOffset uint64, fsSize uint64) *tfs {
 }
 
 // tfsWrite writes filesystem metadata and contents to image file
-func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, root map[string]interface{}, oldEncoding bool) (*tfs, error) {
+func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, root map[string]any, oldEncoding bool) (*tfs, error) {
 	tfs := newTfs(imgFile, imgOffset, fsSize)
 	tfs.label = label
 	rand.Seed(time.Now().UnixNano())
@@ -1111,7 +1111,7 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 	tfs.encodeTupleHeader(len(root))
 	for k, v := range root {
 		if k == "children" {
-			err = tfs.writeDirEntries(v.(map[string]interface{}))
+			err = tfs.writeDirEntries(v.(map[string]any))
 			if err != nil {
 				return nil, err
 			}
@@ -1127,7 +1127,7 @@ func tfsWrite(imgFile *os.File, imgOffset uint64, fsSize uint64, label string, r
 
 func tfsRead(imgFile *os.File, fsOffset, fsSize uint64) (*tfs, error) {
 	tfs := newTfs(imgFile, fsOffset, fsSize)
-	tfs.decoder.dict = make(map[int]interface{})
+	tfs.decoder.dict = make(map[int]any)
 	nextExt, err := tfs.readLogExt(0, sectorSize)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read filesystem at first log extension: %w", err)
@@ -1146,19 +1146,19 @@ func tfsRead(imgFile *os.File, fsOffset, fsSize uint64) (*tfs, error) {
 	return tfs, nil
 }
 
-func fixupDirectory(parent, dir *map[string]interface{}) {
+func fixupDirectory(parent, dir *map[string]any) {
 	children := getTuple(dir, "children")
 	if children == nil {
 		return // not a directory
 	}
 	for _, child := range *children {
-		fixupDirectory(dir, child.(*map[string]interface{}))
+		fixupDirectory(dir, child.(*map[string]any))
 	}
 	(*children)["."] = dir
 	(*children)[".."] = parent
 }
 
-func (t *tfs) lookup(cwd *map[string]interface{}, path string) (*map[string]interface{}, *map[string]interface{}, error) {
+func (t *tfs) lookup(cwd *map[string]any, path string) (*map[string]any, *map[string]any, error) {
 	if strings.HasPrefix(path, "/") {
 		cwd = t.root
 	}
@@ -1181,6 +1181,6 @@ func (t *tfs) lookup(cwd *map[string]interface{}, path string) (*map[string]inte
 	return tuple, parent, nil
 }
 
-func (t *tfs) getTuple(name string) *map[string]interface{} {
+func (t *tfs) getTuple(name string) *map[string]any {
 	return getTuple(t.root, name)
 }

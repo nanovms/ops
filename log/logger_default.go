@@ -44,27 +44,27 @@ func InitDefault(output io.Writer, config *types.Config) {
 }
 
 // Info logs info-level message using default logger.
-func Info(a ...interface{}) {
+func Info(a ...any) {
 	defaultLogger.Info(a...)
 }
 
 // Infof logs formatted info-level message using default logger.
-func Infof(format string, a ...interface{}) {
+func Infof(format string, a ...any) {
 	defaultLogger.Infof(format, a...)
 }
 
 // Warn logs warning-level message using default logger.
-func Warn(a ...interface{}) {
+func Warn(a ...any) {
 	defaultLogger.Warn(a...)
 }
 
 // Warnf logs formatted warning-level message using default logger.
-func Warnf(format string, a ...interface{}) {
+func Warnf(format string, a ...any) {
 	defaultLogger.Warnf(format, a...)
 }
 
 // Errorf logs formatted error-level formatted string message using default logger.
-func Errorf(format string, a ...interface{}) {
+func Errorf(format string, a ...any) {
 	defaultLogger.Errorf(format, a...)
 }
 
@@ -74,7 +74,7 @@ func Error(err error) {
 }
 
 // Fatalf logs formatted error-level formatted string message using default logger then calls os.Exit(1).
-func Fatalf(format string, a ...interface{}) {
+func Fatalf(format string, a ...any) {
 	defaultLogger.Errorf(format, a...)
 	os.Exit(1)
 }
@@ -86,7 +86,7 @@ func Fatal(err error) {
 }
 
 // Panicf logs formatted error-level formatted string message using default logger then calls panic().
-func Panicf(format string, a ...interface{}) {
+func Panicf(format string, a ...any) {
 	defaultLogger.Errorf(format, a...)
 	panic(fmt.Sprintf(format+"\n", a...))
 }
@@ -98,11 +98,11 @@ func Panic(err error) {
 }
 
 // Debug logs debug-level message using default logger.
-func Debug(a ...interface{}) {
+func Debug(a ...any) {
 	defaultLogger.Debug(a...)
 }
 
 // Debugf logs formatted debug-level message using default logger.
-func Debugf(format string, a ...interface{}) {
+func Debugf(format string, a ...any) {
 	defaultLogger.Debugf(format, a...)
 }

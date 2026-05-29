@@ -226,6 +226,6 @@ func (p *GCloud) buildFirewallRule(protocol string, ports []string, tag string, 
 	return f
 }
 
-func arrayToString(a interface{}, delim string) string {
+func arrayToString(a any, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }

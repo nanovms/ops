@@ -90,7 +90,7 @@ type Config struct {
 	NoTrace []string `json:",omitempty"`
 
 	// Straight passthrough of options to manifest
-	ManifestPassthrough map[string]interface{} `json:",omitempty"`
+	ManifestPassthrough map[string]any `json:",omitempty"`
 
 	// Program
 	Program string `json:",omitempty"`
@@ -450,7 +450,7 @@ func (c Config) MarshalJSON() ([]byte, error) {
 		return cJSON, nil
 	}
 
-	cMap := map[string]interface{}{}
+	cMap := map[string]any{}
 	err = json.Unmarshal(cJSON, &cMap)
 	if err != nil {
 		return nil, err

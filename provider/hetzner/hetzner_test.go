@@ -24,7 +24,7 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-func jsonResponse(t *testing.T, status int, body interface{}) *http.Response {
+func jsonResponse(t *testing.T, status int, body any) *http.Response {
 	t.Helper()
 	data, err := json.Marshal(body)
 	if err != nil {

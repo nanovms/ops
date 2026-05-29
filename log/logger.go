@@ -41,7 +41,7 @@ func (l *Logger) SetDebug(value bool) {
 }
 
 // Logf writes a formatted message to the specified output
-func (l *Logger) Logf(format string, a ...interface{}) {
+func (l *Logger) Logf(format string, a ...any) {
 	if !strings.HasSuffix(format, "\n") {
 		format = format + "\n"
 	}
@@ -49,39 +49,39 @@ func (l *Logger) Logf(format string, a ...interface{}) {
 }
 
 // Log writes message to the specified output
-func (l *Logger) Log(a ...interface{}) {
+func (l *Logger) Log(a ...any) {
 	fmt.Fprintln(l.output, a...)
 }
 
 // Calls Log with foreground color set
-func (l *Logger) logWithColor(color string, a ...interface{}) {
+func (l *Logger) logWithColor(color string, a ...any) {
 	msg := fmt.Sprintln(a...)
 	l.Log(color + strings.TrimSuffix(msg, "\n") + ConsoleColors.Reset())
 }
 
 // Info checks info level is activated to write the message
-func (l *Logger) Info(a ...interface{}) {
+func (l *Logger) Info(a ...any) {
 	if l.info == true {
 		l.logWithColor(ConsoleColors.Blue(), a...)
 	}
 }
 
 // Infof checks info level is activated to write the formatted message
-func (l *Logger) Infof(format string, a ...interface{}) {
+func (l *Logger) Infof(format string, a ...any) {
 	if l.info == true {
 		l.Logf(ConsoleColors.Blue()+format+ConsoleColors.Reset(), a...)
 	}
 }
 
 // Warn checks warn level is activated to write the message
-func (l *Logger) Warn(a ...interface{}) {
+func (l *Logger) Warn(a ...any) {
 	if l.warn == true {
 		l.logWithColor(ConsoleColors.Yellow(), a...)
 	}
 }
 
 // Warnf checks warn level is activated to write the formatted message
-func (l *Logger) Warnf(format string, a ...interface{}) {
+func (l *Logger) Warnf(format string, a ...any) {
 	if l.warn == true {
 		l.Logf(ConsoleColors.Yellow()+format+ConsoleColors.Reset(), a...)
 	}
@@ -93,19 +93,19 @@ func (l *Logger) Error(err error) {
 }
 
 // Errorf checks error level is activated to write the formatted message
-func (l *Logger) Errorf(format string, a ...interface{}) {
+func (l *Logger) Errorf(format string, a ...any) {
 	l.Logf(ConsoleColors.Red()+format+ConsoleColors.Reset(), a...)
 }
 
 // Debug checks debug level is activated to write the message
-func (l *Logger) Debug(a ...interface{}) {
+func (l *Logger) Debug(a ...any) {
 	if l.debug == true {
 		l.logWithColor(ConsoleColors.Cyan(), a...)
 	}
 }
 
 // Debugf checks debug level is activated to write the message
-func (l *Logger) Debugf(format string, a ...interface{}) {
+func (l *Logger) Debugf(format string, a ...any) {
 	if l.debug == true {
 		l.Logf(ConsoleColors.Cyan()+format+ConsoleColors.Reset(), a...)
 	}

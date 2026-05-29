@@ -309,7 +309,7 @@ func (env *Environment) NewEmptyCommand() *EnvironmentCommand {
 }
 
 // NewCommand creates new command to be executed via SSH.
-func (env *Environment) NewCommand(command string, args ...interface{}) *EnvironmentCommand {
+func (env *Environment) NewCommand(command string, args ...any) *EnvironmentCommand {
 	vmCmd := env.NewEmptyCommand()
 	vmCmd.CommandLines = []string{
 		formatCommand(command, args...),
@@ -318,7 +318,7 @@ func (env *Environment) NewCommand(command string, args ...interface{}) *Environ
 }
 
 // NewCommandf creates new formatted command to be executed via SSH.
-func (env *Environment) NewCommandf(format string, args ...interface{}) *EnvironmentCommand {
+func (env *Environment) NewCommandf(format string, args ...any) *EnvironmentCommand {
 	return env.NewCommand(fmt.Sprintf(format, args...))
 }
 
