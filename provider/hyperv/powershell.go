@@ -114,7 +114,9 @@ func IsPowershellAvailable() (bool, string, error) {
 
 func (ps *PowerShellCmd) getPowerShellPath() (string, error) {
 	powershellAvailable, path, err := IsPowershellAvailable()
-
+	if err != nil {
+		return "", err
+	}
 	if !powershellAvailable {
 		log.Fatalf("Cannot find PowerShell in the path")
 		return "", err
