@@ -24,10 +24,8 @@ jobs:
 
       - name: Close PR
         if: (steps.check_msg.outputs.match == 'true' || contains(github.event.pull_request.body, '🤖'))
-        steps:
-        -name: close bot issue
-          run: |
-            gh pr close ${{ github.event.pull_request.number }} --comment "bot"
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          delete-branch: true
+        run: |
+          gh pr close ${{ github.event.pull_request.number }} --comment "bot"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        delete-branch: true
