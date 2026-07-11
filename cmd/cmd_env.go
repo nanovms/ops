@@ -70,7 +70,7 @@ func EnvCommand() *cobra.Command {
 func envInstall(cmd *cobra.Command, args []string) {
 	env := loadEnvironment(false)
 	if env.IsInstalled() {
-		exitWithError("Enviroment already installed")
+		exitWithError("Environment already installed")
 	}
 	if err := env.Install(); err != nil {
 		exitWithError(fmt.Sprintf("Failed to install environment: %v", err))
@@ -193,7 +193,7 @@ func loadEnvironment(checkInstall bool) *crossbuild.Environment {
 		exitWithError(fmt.Sprintf("Failed to load environment: %v", err))
 	}
 	if checkInstall && !env.IsInstalled() {
-		exitWithError("Enviroment not installed")
+		exitWithError("Environment not installed")
 	}
 	return env
 }
