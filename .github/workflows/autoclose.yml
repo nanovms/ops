@@ -20,20 +20,8 @@ jobs:
             echo "match=true" > $GITHUB_OUTPUT
           fi
 
-          if echo "$COMMIT_MSG" | grep -q "\*\*.*\*\*"; then
-            echo "match=true" > $GITHUB_OUTPUT
-          fi
-
-          if echo "$COMMIT_MSG" | grep -q "__.*__"; then
-            echo "match=true" > $GITHUB_OUTPUT
-          fi
-
-          if echo "$COMMIT_MSG" | grep -q "^#\+ "; then
-            echo "match=true" > $GITHUB_OUTPUT
-          fi
-
       - name: Close PR
-        if: (steps.check_msg.outputs.match == 'true' || contains(github.event.pull_request.body, '🤖'))
+        if: (steps.check_msg.outputs.match == 'true' || contains(github.event.pull_request.body, '🤖')) || contains(github.event.head_commit.message, '**') || contains(github.event.head_commit.message, '__') || contains(github.event.head_commit.message, '#')
         run: |
           gh pr close ${{ github.event.pull_request.number }} --comment "bot"
         env:
