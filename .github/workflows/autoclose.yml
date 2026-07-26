@@ -17,21 +17,19 @@ jobs:
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
           if echo "$COMMIT_MSG" | grep -q "Co-authored-by: Claude"; then
-            echo "match=true" >> $GITHUB_OUTPUT
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
+            echo "match=true" > $GITHUB_OUTPUT
           fi
 
           if echo "$COMMIT_MSG" | grep -q "\*\*.*\*\*"; then
-            echo "match=true" >> $GITHUB_OUTPUT
+            echo "match=true" > $GITHUB_OUTPUT
           fi
 
           if echo "$COMMIT_MSG" | grep -q "__.*__"; then
-            echo "match=true" >> $GITHUB_OUTPUT
+            echo "match=true" > $GITHUB_OUTPUT
           fi
 
           if echo "$COMMIT_MSG" | grep -q "^#\+ "; then
-            echo "match=true" >> $GITHUB_OUTPUT
+            echo "match=true" > $GITHUB_OUTPUT
           fi
 
       - name: Close PR
