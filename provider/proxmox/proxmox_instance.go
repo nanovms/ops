@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/nanovms/ops/lepton"
 	"github.com/olekukonko/tablewriter"
@@ -242,6 +243,8 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	}
 	client := &http.Client{Transport: tr}
 
+	fmt.Printf("%s %s\n", p.tokenID, p.secret)
+
 	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -255,7 +258,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	debug := false
+	debug := true // false
 	if debug {
 		fmt.Println(string(body))
 	}
@@ -270,6 +273,7 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
+	// we get up to here.. but virti0 is never actually made..
 	err = p.movDisk(ctx, nextid)
 
 	return err
@@ -308,6 +312,8 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 		return err
 	}
 
+	fmt.Println(string(body))
+
 	err = p.CheckResultType(body, "movdisk", p.storageName)
 	if err != nil {
 		return err
@@ -321,12 +327,53 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 	return nil
 }
 
+type Ticket struct {
+	Data TicketData `json:"data"`
+}
+
+type TicketData struct {
+	Ticket string `json:"ticket"`
+	CSRF   string `json:"CSRFPreventionToken"`
+}
+
+// good for subsequent requests over 2? hrs
+// you have to use this if you use absolue paths when setting disk
+// perhaps there is a better work-around for that.
+func (p *Proxmox) getTicket() Ticket {
+	puser := os.Getenv("PROXMOX_USER")
+	pass := os.Getenv("PROXMOX_PASS")
+
+	//curl -k -d "username=user" --data-urlencode "password=password" \
+	//https://192.168.64.2:8006/api2/json/access/ticket
+
+	var data = strings.NewReader(`username=` + puser + "&password=" + pass)
+
+	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/access/ticket", data)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+}
+
 func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
+	ticket := p.getTicket()
 
 	data := url.Values{}
 
+	// need to upload our disk ..
+
+	// local to server ; server being disk name
+	fmt.Printf("attaching %s to %s\n", p.isoStorageName, p.imageName)
+
 	// attach disk
-	data.Set("virtio0", "file="+p.isoStorageName+":iso/"+p.imageName+".iso")
+	//	data.Set("virtio0", "file="+p.isoStorageName+":/"+p.imageName+".raw")
+	data.Set("virtio0", "local:0,import-from=/var/lib/vz/import/server.raw")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
@@ -339,7 +386,16 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 	}
 	client := &http.Client{Transport: tr}
 
-	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
+	//if auth'ing w/out token: (for instance using direct path...)
+	req.Header.Add("CSRFPreventionToken", ticket.Data.CSRF)
+	clientCookie := &http.Cookie{
+		Name:  "PVEAuthCookie",
+		Value: ticket.Data.CSRF,
+	}
+	req.AddCookie(clientCookie)
+
+	// if we can get rid of the abs. path we can prob. drop tkt auth
+	//	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
@@ -351,6 +407,10 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 		fmt.Println(err)
 		return err
 	}
+
+	fmt.Println(resp.StatusCode)
+
+	fmt.Println(string(body))
 
 	err = p.CheckResultType(body, "addvirtiodisk", p.isoStorageName)
 	if err != nil {
@@ -366,7 +426,14 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 		return err
 	}
 
-	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
+	req.Header.Add("CSRFPreventionToken", ticket.Data.CSRF)
+	clientCookie = &http.Cookie{
+		Name:  "PVEAuthCookie",
+		Value: ticket.Data.CSRF,
+	}
+	req.AddCookie(clientCookie)
+
+	//	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err = client.Do(req)
 	if err != nil {
 		fmt.Println(err)
@@ -378,6 +445,8 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 		fmt.Println(err)
 		return err
 	}
+
+	fmt.Println(string(body))
 
 	err = p.CheckResultType(body, "bootorderset", "")
 	if err != nil {

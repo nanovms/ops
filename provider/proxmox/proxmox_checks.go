@@ -97,7 +97,7 @@ func (p *ProxMox) CheckStorage(storage string, stype string) error {
 
 	var b bytes.Buffer
 
-	edk := errors.New("no any storages is configured")
+	edk := errors.New("no storage is configured")
 	enb := errors.New("storage is disabled: " + storage)
 	ect := errors.New("storage is not active: " + storage)
 	ecs := errors.New("not found storage: " + storage)
