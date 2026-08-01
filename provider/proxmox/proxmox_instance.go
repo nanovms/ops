@@ -234,7 +234,6 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -248,13 +247,11 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -273,7 +270,6 @@ func (p *ProxMox) CreateInstance(ctx *lepton.Context) error {
 		return err
 	}
 
-	// we get up to here.. but virti0 is never actually made..
 	err = p.movDisk(ctx, nextid)
 
 	return err
@@ -290,7 +286,6 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/move_disk", bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -302,29 +297,15 @@ func (p *ProxMox) movDisk(ctx *lepton.Context, vmid string) error {
 	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
-	fmt.Println(string(body))
-
-	err = p.CheckResultType(body, "movdisk", p.storageName)
-	if err != nil {
-		return err
-	}
-
-	debug := false
-	if debug {
-		fmt.Println(string(body))
-	}
-
-	return nil
+	return p.CheckResultType(body, "movdisk", p.storageName)
 }
 
 type Ticket struct {
@@ -339,19 +320,15 @@ type TicketData struct {
 // good for subsequent requests over 2? hrs
 // you have to use this if you use absolue paths when setting disk
 // perhaps there is a better work-around for that.
-func (p *ProxMox) getTicket() Ticket {
+func (p *ProxMox) getTicket() (Ticket, error) {
 	puser := os.Getenv("PROXMOX_USER")
 	pass := os.Getenv("PROXMOX_PASS")
-
-	//curl -k -d "username=user" --data-urlencode "password=password" \
-	//https://192.168.64.2:8006/api2/json/access/ticket
 
 	var data = strings.NewReader(`username=` + puser + "&password=" + pass)
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/access/ticket", data)
 	if err != nil {
-		fmt.Println(err)
-		//		return err
+		return err
 	}
 
 	tr := &http.Transport{
@@ -361,38 +338,29 @@ func (p *ProxMox) getTicket() Ticket {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		//		return err
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		//		return err
+		return err
 	}
 
 	t := Ticket{}
 
 	err = json.Unmarshal([]byte(body), &t)
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	return t
+	return t, err
 }
 
 func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
-	ticket := p.getTicket()
+	ticket, err := p.getTicket()
+	if err != nil {
+		return err
+	}
 
 	data := url.Values{}
 
-	// need to upload our disk ..
-
-	// local to server ; server being disk name
-	fmt.Printf("attaching %s to %s\n", p.isoStorageName, p.imageName)
-
-	// attach disk
-	//	data.Set("virtio0", "file="+p.isoStorageName+":/"+p.imageName+".raw")
 	data.Set("virtio0", "local:0,import-from=/var/lib/vz/import/server.raw")
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
@@ -442,7 +410,6 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 
 	req, err = http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu/"+vmid+"/config", bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -456,29 +423,15 @@ func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
 	//	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err = client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
-	fmt.Println(string(body))
-
-	err = p.CheckResultType(body, "bootorderset", "")
-	if err != nil {
-		return err
-	}
-
-	debug := false
-	if debug {
-		fmt.Println(string(body))
-	}
-
-	return nil
+	return p.CheckResultType(body, "bootorderset", "")
 }
 
 // GetInstanceByName returns instance with given name
@@ -509,7 +462,6 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 
 	req, err := http.NewRequest("GET", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/qemu", nil)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -521,13 +473,11 @@ func (p *ProxMox) ListInstances(ctx *lepton.Context) error {
 	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -576,17 +526,10 @@ func (p *ProxMox) DeleteInstance(ctx *lepton.Context, instanceID string) error {
 	req.Header.Add("Authorization", "PVEAPIToken="+p.tokenID+"="+p.secret)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return err
-
-	}
-
 	return err
 
 }
