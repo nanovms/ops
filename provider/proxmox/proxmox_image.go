@@ -88,7 +88,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	var fw io.Writer
 
-	err = w.WriteField("content", "iso")
+	err = w.WriteField("content", "import")
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -96,7 +96,7 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	file := mustOpen(fileName)
 
-	fw, err = w.CreateFormFile(fieldName, file.Name()+".iso")
+	fw, err = w.CreateFormFile(fieldName, file.Name()+".raw")
 	if err != nil {
 		fmt.Printf("Error creating writer: %v\n", err)
 		return err
@@ -135,6 +135,8 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 		fmt.Println(err)
 		return err
 	}
+
+	fmt.Println(string(body))
 
 	err = p.CheckResultType(body, "createimage", p.isoStorageName)
 	if err != nil {

@@ -339,7 +339,7 @@ type TicketData struct {
 // good for subsequent requests over 2? hrs
 // you have to use this if you use absolue paths when setting disk
 // perhaps there is a better work-around for that.
-func (p *Proxmox) getTicket() Ticket {
+func (p *ProxMox) getTicket() Ticket {
 	puser := os.Getenv("PROXMOX_USER")
 	pass := os.Getenv("PROXMOX_PASS")
 
@@ -351,7 +351,7 @@ func (p *Proxmox) getTicket() Ticket {
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/access/ticket", data)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		//		return err
 	}
 
 	tr := &http.Transport{
@@ -359,6 +359,26 @@ func (p *Proxmox) getTicket() Ticket {
 	}
 	client := &http.Client{Transport: tr}
 
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		//		return err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		//		return err
+	}
+
+	t := Ticket{}
+
+	err = json.Unmarshal([]byte(body), &t)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return t
 }
 
 func (p *ProxMox) addVirtioDisk(ctx *lepton.Context, vmid string) error {
