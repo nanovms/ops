@@ -60,7 +60,6 @@ func mustOpen(f string) *os.File {
 
 // CreateImage - Creates image on v using nanos images
 func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
-
 	var err error
 
 	config := ctx.Config()
@@ -90,7 +89,6 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	err = w.WriteField("content", "import")
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -98,13 +96,11 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	fw, err = w.CreateFormFile(fieldName, file.Name()+".raw")
 	if err != nil {
-		fmt.Printf("Error creating writer: %v\n", err)
 		return err
 	}
 
 	_, err = io.Copy(fw, file)
 	if err != nil {
-		fmt.Printf("Error with io.Copy: %v\n", err)
 		return err
 	}
 
@@ -112,7 +108,6 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	req, err := http.NewRequest("POST", p.apiURL+"/api2/json/nodes/"+p.nodeNAME+"/storage/"+p.isoStorageName+"/upload", &b)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -126,29 +121,17 @@ func (p *ProxMox) CreateImage(ctx *lepton.Context, imagePath string) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-
-	fmt.Println(string(body))
 
 	err = p.CheckResultType(body, "createimage", p.isoStorageName)
-	if err != nil {
-		return err
-	}
-
-	debug := false
-	if debug {
-		fmt.Println(string(body))
-	}
-
-	return nil
+	return err
 }
 
 // GetImages return all images on ProxMox
