@@ -5,6 +5,7 @@ package oci
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/objectstorage"
@@ -21,11 +22,22 @@ type ImageUploader interface {
 
 // uploadPartSize is the size of each part of a multipart upload. Object Storage allows up to 10000
 // parts, so 32 MiB covers any image ops can build while keeping a failed part cheap to retry.
-const uploadPartSize = 32 * 1024 * 1024
+const uploadPartSize = 16 * 1024 * 1024
 
 // uploadConcurrency is how many parts travel at once. Three saturates an ordinary uplink without
 // starving the retries of the parts already in flight.
 const uploadConcurrency = 3
+
+// UploadPartTimeout is how long a single part may take. The SDK's HTTP client applies its timeout
+// to the whole request, sending the body included, and defaults it to 60 seconds, which no part of
+// a useful size meets on an ordinary uplink, all the more so with several parts sharing it:
+//
+//	Put ".../u/<image>?uploadId=...&uploadPartNum=3": context deadline exceeded
+//	(Client.Timeout exceeded while awaiting headers)
+//
+// It stays a bound, not an absence of one: a part that stops making progress still fails instead of
+// hanging forever.
+const UploadPartTimeout = 30 * time.Minute
 
 // multipartUploader uploads through the SDK's upload manager, which splits the file into parts,
 // sends them in parallel and retries a single failed part instead of the whole transfer. This is

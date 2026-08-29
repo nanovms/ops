@@ -6,6 +6,8 @@ package oci
 
 import (
 	"context"
+	"net/http"
+	"os"
 
 	"github.com/nanovms/ops/types"
 	"github.com/oracle/oci-go-sdk/v65/common"
@@ -121,9 +123,19 @@ func (p *Provider) Initialize(providerConfig *types.ProviderConfig) (err error) 
 	}
 
 	p.storageClient = storageClient
+
 	// The image is uploaded in parts: see multipartUploader for why a single PutObject is not
-	// enough for an image of any real size.
-	p.imageUploader = &multipartUploader{client: &storageClient, manager: transfer.NewUploadManager()}
+	// enough for an image of any real size. The uploader gets its own client, because a part needs
+	// a longer timeout than the one every other call is fine with; an explicit
+	// OCI_CUSTOM_CLIENT_TIMEOUT is left alone, the SDK has already applied it here.
+	uploadClient := storageClient
+	if dispatcher, ok := uploadClient.HTTPClient.(*http.Client); ok && os.Getenv("OCI_CUSTOM_CLIENT_TIMEOUT") == "" {
+		patient := *dispatcher
+		patient.Timeout = UploadPartTimeout
+		uploadClient.HTTPClient = &patient
+	}
+
+	p.imageUploader = &multipartUploader{client: &uploadClient, manager: transfer.NewUploadManager()}
 
 	p.workRequestClient, err = workrequests.NewWorkRequestClientWithConfigurationProvider(config)
 	if err != nil {
