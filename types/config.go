@@ -162,6 +162,14 @@ type ProviderConfig struct {
 	// Flavor
 	Flavor string `cloud:"flavor" json:",omitempty"`
 
+	// Ocpus is the number of cpus of a flexible shape, whose name does not carry them (OCI's
+	// *.Flex). Defaults to 1.
+	Ocpus float32 `json:",omitempty"`
+
+	// MemoryInGBs is the memory of a flexible shape in gigabytes, whose name does not carry it
+	// (OCI's *.Flex). Defaults to 1.
+	MemoryInGBs float32 `json:",omitempty"`
+
 	// ImageType
 	ImageType string `cloud:"imagetype" json:",omitempty"`
 
