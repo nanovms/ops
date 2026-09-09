@@ -80,11 +80,22 @@ func (p *Provider) CreateInstance(ctx *lepton.Context) error {
 		},
 	}
 
-	// hack as we don't have a system for 'flex' today'
+	// A flexible shape does not carry its cpu and memory in its name, so they come from the cloud
+	// configuration. The previous 1/1 stays the default.
 	if strings.Contains(flavor, "Flex") {
+		ocpus := ctx.Config().CloudConfig.Ocpus
+		if ocpus == 0 {
+			ocpus = 1.0
+		}
+
+		memory := ctx.Config().CloudConfig.MemoryInGBs
+		if memory == 0 {
+			memory = 1.0
+		}
+
 		lir.LaunchInstanceDetails.ShapeConfig = &core.LaunchInstanceShapeConfigDetails{
-			Ocpus:       common.Float32(1.0),
-			MemoryInGBs: common.Float32(1.0),
+			Ocpus:       common.Float32(ocpus),
+			MemoryInGBs: common.Float32(memory),
 		}
 	}
 

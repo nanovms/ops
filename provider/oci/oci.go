@@ -6,12 +6,15 @@ package oci
 
 import (
 	"context"
+	"net/http"
+	"os"
 
 	"github.com/nanovms/ops/types"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
 	"github.com/oracle/oci-go-sdk/v65/identity"
 	"github.com/oracle/oci-go-sdk/v65/objectstorage"
+	"github.com/oracle/oci-go-sdk/v65/objectstorage/transfer"
 	"github.com/oracle/oci-go-sdk/v65/workrequests"
 	"github.com/spf13/afero"
 )
@@ -76,6 +79,7 @@ type Provider struct {
 	workRequestClient  WorkRequestService
 	networkClient      NetworkService
 	blockstorageClient BlockstorageService
+	imageUploader      ImageUploader
 	fileSystem         afero.Fs
 	compartmentID      string
 	availabilityDomain string
@@ -92,7 +96,15 @@ func NewProvider() *Provider {
 
 // NewProviderWithClients returns an instance of OCI Provider with required clients initialized
 func NewProviderWithClients(c ComputeService, s StorageService, w WorkRequestService, n NetworkService, b BlockstorageService, f afero.Fs) *Provider {
-	return &Provider{c, s, w, n, b, f, "", ""}
+	return &Provider{
+		computeClient:      c,
+		storageClient:      s,
+		workRequestClient:  w,
+		networkClient:      n,
+		blockstorageClient: b,
+		imageUploader:      &singlePutUploader{storage: s, fileSystem: f},
+		fileSystem:         f,
+	}
 }
 
 // Initialize checks conditions to use oci
@@ -104,10 +116,26 @@ func (p *Provider) Initialize(providerConfig *types.ProviderConfig) (err error) 
 		return
 	}
 
-	p.storageClient, err = objectstorage.NewObjectStorageClientWithConfigurationProvider(config)
+	var storageClient objectstorage.ObjectStorageClient
+	storageClient, err = objectstorage.NewObjectStorageClientWithConfigurationProvider(config)
 	if err != nil {
 		return
 	}
+
+	p.storageClient = storageClient
+
+	// The image is uploaded in parts: see multipartUploader for why a single PutObject is not
+	// enough for an image of any real size. The uploader gets its own client, because a part needs
+	// a longer timeout than the one every other call is fine with; an explicit
+	// OCI_CUSTOM_CLIENT_TIMEOUT is left alone, the SDK has already applied it here.
+	uploadClient := storageClient
+	if dispatcher, ok := uploadClient.HTTPClient.(*http.Client); ok && os.Getenv("OCI_CUSTOM_CLIENT_TIMEOUT") == "" {
+		patient := *dispatcher
+		patient.Timeout = UploadPartTimeout
+		uploadClient.HTTPClient = &patient
+	}
+
+	p.imageUploader = &multipartUploader{client: &uploadClient, manager: transfer.NewUploadManager()}
 
 	p.workRequestClient, err = workrequests.NewWorkRequestClientWithConfigurationProvider(config)
 	if err != nil {

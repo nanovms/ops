@@ -15,10 +15,9 @@ import (
 	"github.com/nanovms/ops/lepton"
 	"github.com/nanovms/ops/types"
 	"github.com/olekukonko/tablewriter"
-	"github.com/oracle/oci-go-sdk/v65/common"
 
+	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
-	"github.com/oracle/oci-go-sdk/v65/objectstorage"
 	"github.com/oracle/oci-go-sdk/v65/workrequests"
 	"github.com/schollz/progressbar/v3"
 )
@@ -63,6 +62,10 @@ func (p *Provider) createQcow2Image(c *types.Config) (imagePath string, err erro
 
 	args := []string{
 		"convert",
+		// -c: the qcow2 is written compressed. The image is mostly empty space, so this is the
+		// difference between minutes and tens of minutes of upload on an ordinary connection, and
+		// Oracle imports a compressed qcow2 exactly like an uncompressed one.
+		"-c",
 		"-O", "qcow2",
 		c.RunConfig.ImageName, imagePath,
 	}
@@ -126,27 +129,10 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		return errors.New("specify the bucket namespace in cloud configuration. Access bucket details page to get the namespace")
 	}
 
-	image, err := p.fileSystem.Open(imagePath)
-	if err != nil {
-		ctx.Logger().Error(err)
-		return fmt.Errorf("failed reading file %s", imagePath)
-	}
-
-	imageStats, err := image.Stat()
-	if err != nil {
-		ctx.Logger().Error(err)
-		return fmt.Errorf("failed getting file stats of %s", imagePath)
-	}
-
-	imageSize := imageStats.Size()
-
-	_, err = p.storageClient.PutObject(context.TODO(), objectstorage.PutObjectRequest{
-		NamespaceName: &bucketNamespace,
-		BucketName:    &bucketName,
-		ContentLength: &imageSize,
-		ObjectName:    &imageName,
-		PutObjectBody: image,
-	})
+	err = p.imageUploader.UploadImage(context.TODO(), bucketNamespace, bucketName, imageName, imagePath,
+		func(part, total int) {
+			ctx.Logger().Infof("uploaded part %d of %d\n", part, total)
+		})
 	if err != nil {
 		ctx.Logger().Error(err)
 		return errors.New("failed uploading image")
