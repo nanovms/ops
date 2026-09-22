@@ -581,7 +581,12 @@ func (p *OnPrem) getInstancesStats(ctx *lepton.Context, rinstances []lepton.Clou
 			`{ "execute": "qom-get", "arguments": { "path": "/machine/peripheral-anon/device[` + devid + `]", "property": "guest-stats" } }`,
 		}
 
-		s := executeQMPLastRead(commands, last)
+		s, err := executeQMPLastRead(commands, last)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("can't connect to mgmt - did you enable QMP?")
+			os.Exit(1)
+		}
 
 		var lr qmpResponse
 
@@ -764,21 +769,18 @@ type qmpStats struct {
 }
 
 // bit of a hack
-func executeQMPLastRead(commands []string, last string) string {
+func executeQMPLastRead(commands []string, last string) (string, error) {
 	lo := ""
 
 	c, err := net.Dial("tcp", "localhost:"+last)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("can't connect to mgmt - did you enable QMP?")
-		os.Exit(1)
+		return lo, err
 	}
 	defer c.Close()
 
-	str, err := bufio.NewReader(c).ReadString('\n')
+	_, err = bufio.NewReader(c).ReadString('\n')
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println(str)
+		return lo, err
 	}
 
 	for i := 0; i < len(commands); i++ {
@@ -789,12 +791,11 @@ func executeQMPLastRead(commands []string, last string) string {
 		str, err := bufio.NewReader(c).ReadString('\n')
 		lo = str
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return lo, err
 		}
 	}
 
-	return lo
+	return lo, nil
 }
 
 // RebootInstance from on premise
