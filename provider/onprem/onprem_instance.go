@@ -770,6 +770,8 @@ func executeQMPLastRead(commands []string, last string) string {
 	c, err := net.Dial("tcp", "localhost:"+last)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println("can't connect to mgmt - did you enable QMP?")
+		os.Exit(1)
 	}
 	defer c.Close()
 
