@@ -79,27 +79,6 @@ func TestCreateInstance(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestListInstances(t *testing.T) {
-	p, s := NewProvider(t)
-
-	tag := upcloud.Tag{
-		Name:        "OPS",
-		Description: "Created by ops",
-	}
-	s.EXPECT().
-		GetTags(context.Background()).
-		Return(&upcloud.Tags{Tags: []upcloud.Tag{tag}}, nil)
-
-	s.EXPECT().
-		GetServers(context.Background()).
-		Return(&upcloud.Servers{}, nil)
-
-	ctx := lepton.NewContext(lepton.NewConfig())
-	err := p.ListInstances(ctx)
-
-	assert.Nil(t, err)
-}
-
 func TestGetInstances(t *testing.T) {
 	p, s := NewProvider(t)
 

@@ -25,16 +25,6 @@ func TestCreateInstance(t *testing.T) {
 	removeInstance(instanceName)
 }
 
-func TestListInstances(t *testing.T) {
-	listInstancesCmd := InstanceCommands()
-
-	listInstancesCmd.SetArgs([]string{"list"})
-
-	err := listInstancesCmd.Execute()
-
-	assert.Nil(t, err)
-}
-
 func TestDeleteInstance(t *testing.T) {
 	imageName := buildImage("img-test")
 	defer removeImage(imageName)

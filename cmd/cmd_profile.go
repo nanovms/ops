@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -103,6 +104,16 @@ func printProfile(cmd *cobra.Command, args []string) {
 	p := Profile{}
 
 	p.setProfile()
+
+	jsonOutput, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+	}
+
+	if jsonOutput {
+		json.NewEncoder(os.Stdout).Encode(p)
+		return
+	}
 
 	p.display()
 }

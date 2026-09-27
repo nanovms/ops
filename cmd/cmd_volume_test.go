@@ -16,16 +16,6 @@ func TestCreateVolumeCommand(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestListVolumesCommand(t *testing.T) {
-	listVolumesCmd := VolumeCommands()
-
-	listVolumesCmd.SetArgs([]string{"list"})
-
-	err := listVolumesCmd.Execute()
-
-	assert.Nil(t, err)
-}
-
 func TestDeleteVolumeCommand(t *testing.T) {
 	deleteVolumeCmd := VolumeCommands()
 

@@ -70,12 +70,15 @@ func TestAttachVolume(t *testing.T) {
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
+	ctx.NopLogger()
+
 	err := p.AttachVolume(ctx, serverName, volumeName, 1)
 
 	assert.Nil(t, err)
 }
 
 func TestDetachVolume(t *testing.T) {
+
 	p, s := NewProvider(t)
 
 	serverID := "server-1"
@@ -116,6 +119,8 @@ func TestDetachVolume(t *testing.T) {
 		Return(&upcloud.ServerDetails{Server: upcloud.Server{UUID: serverID, Title: serverName}}, nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
+	ctx.NopLogger()
+
 	err := p.DetachVolume(ctx, serverName, volumeName)
 
 	assert.Nil(t, err)
