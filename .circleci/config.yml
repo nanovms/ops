@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       - image: cimg/go:1.26.0
-    resource_class: medium+
+    resource_class: large
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -26,7 +26,7 @@ jobs:
       - run: ./hack/verify-gofmt.sh
       - run: ./hack/verify-golint.sh
       - run: mkdir -p $TEST_RESULTS
-      - run: go run ops.go update
+      - run: go build && ./ops update
       - run:
           name : run unit tests
           command: |
