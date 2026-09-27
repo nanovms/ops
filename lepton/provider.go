@@ -146,6 +146,7 @@ func (c Context) Logger() *log.Logger {
 	return c.logger
 }
 
+// NopLogger nops out logger for tests.
 func (c *Context) NopLogger() {
 	c.logger.Nop = true
 }
