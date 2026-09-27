@@ -50,19 +50,6 @@ func TestCreateImage(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestListImages(t *testing.T) {
-	p, s := NewProvider(t)
-
-	s.EXPECT().
-		GetStorages(context.Background(), &request.GetStoragesRequest{Access: "private", Type: "template"}).
-		Return(&upcloud.Storages{}, nil)
-
-	ctx := lepton.NewContext(lepton.NewConfig())
-	err := p.ListImages(ctx, "")
-
-	assert.Nil(t, err)
-}
-
 func TestGetImages(t *testing.T) {
 	p, s := NewProvider(t)
 

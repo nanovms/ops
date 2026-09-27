@@ -146,6 +146,10 @@ func (c Context) Logger() *log.Logger {
 	return c.logger
 }
 
+func (c *Context) NopLogger() {
+	c.logger.Nop = true
+}
+
 // NewContext Create a new context for the given provider
 // valid providers are "gcp", "aws" and "onprem"
 func NewContext(c *types.Config) *Context {

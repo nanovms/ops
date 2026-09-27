@@ -13,11 +13,12 @@ type Logger struct {
 	warn   bool
 	err    bool
 	debug  bool
+	Nop    bool
 }
 
 // New returns an instance of Logger
 func New(output io.Writer) *Logger {
-	return &Logger{output, false, false, false, false}
+	return &Logger{output, false, false, false, false, false}
 }
 
 // SetInfo activates/deactivates info level
@@ -42,15 +43,19 @@ func (l *Logger) SetDebug(value bool) {
 
 // Logf writes a formatted message to the specified output
 func (l *Logger) Logf(format string, a ...any) {
-	if !strings.HasSuffix(format, "\n") {
-		format = format + "\n"
+	if !l.Nop {
+		if !strings.HasSuffix(format, "\n") {
+			format = format + "\n"
+		}
+		fmt.Fprintf(l.output, format, a...)
 	}
-	fmt.Fprintf(l.output, format, a...)
 }
 
 // Log writes message to the specified output
 func (l *Logger) Log(a ...any) {
-	fmt.Fprintln(l.output, a...)
+	if !l.Nop {
+		fmt.Fprintln(l.output, a...)
+	}
 }
 
 // Calls Log with foreground color set

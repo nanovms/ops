@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -133,6 +134,16 @@ func volumeListCommandHandler(cmd *cobra.Command, args []string) {
 	volumes, err := p.GetAllVolumes(ctx)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	jsonOutput, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+	}
+
+	if jsonOutput {
+		json.NewEncoder(os.Stdout).Encode(volumes)
+		return
 	}
 
 	api.PrintVolumesList(volumes)
