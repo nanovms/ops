@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       - image: cimg/go:1.26.0
-    resource_class: medium+
+    resource_class: large
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
