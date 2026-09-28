@@ -82,6 +82,7 @@ func TestCreateImage(t *testing.T) {
 	bucketName := "test-bucket"
 	bucketNamespace := "test-namespace"
 	ctx := lepton.NewContext(lepton.NewConfig())
+	ctx.NopLogger()
 
 	ctx.Config().CloudConfig.ImageName = cloudImageName
 	ctx.Config().CloudConfig.BucketName = bucketName

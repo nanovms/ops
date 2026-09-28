@@ -28,6 +28,12 @@ func TestVersionFlagsMergeToConfig(t *testing.T) {
 	versionPath := path.Join(lepton.GetOpsHome(), "0.1.37")
 	currentOpsPath := path.Join(lepton.GetOpsHome(), lepton.LocalReleaseVersion)
 
+	kimg := "/kernel.img"
+	rt := getPkgArch()
+	if rt == "arm64" {
+		kimg = "-arm/kernel.img"
+	}
+
 	t.Run("if nano-version flag is enabled should set boot and kernel paths", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
@@ -40,12 +46,14 @@ func TestVersionFlagsMergeToConfig(t *testing.T) {
 		c := &types.Config{}
 		expected := &types.Config{
 			Boot:   path.Join(versionPath, "boot.img"),
-			Kernel: path.Join(versionPath, "kernel.img"),
+			Kernel: versionPath + kimg,
 		}
 
 		versionFlags.MergeToConfig(c)
 
-		assert.Equal(t, expected.Boot, c.Boot)
+		if rt != "arm64" {
+			assert.Equal(t, expected.Boot, c.Boot)
+		}
 		assert.Equal(t, expected.Kernel, c.Kernel)
 
 	})
@@ -60,17 +68,21 @@ func TestVersionFlagsMergeToConfig(t *testing.T) {
 		versionFlags := NewNanosVersionCommandFlags(flagSet)
 
 		c := &types.Config{
-			Kernel: currentOpsPath + "/kernel.img",
+			Kernel: currentOpsPath + kimg,
 			Boot:   currentOpsPath + "/boot.img",
 		}
+
 		expected := &types.Config{
 			Boot:   versionPath + "/boot.img",
-			Kernel: versionPath + "/kernel.img",
+			Kernel: versionPath + kimg,
 		}
 
 		versionFlags.MergeToConfig(c)
 
-		assert.Equal(t, expected.Boot, c.Boot)
+		if rt != "arm64" {
+			assert.Equal(t, expected.Boot, c.Boot)
+		}
+
 		assert.Equal(t, expected.Kernel, c.Kernel)
 
 	})

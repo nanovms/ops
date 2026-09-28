@@ -45,6 +45,7 @@ func TestCreateImage(t *testing.T) {
 		Return(nil)
 
 	ctx := lepton.NewContext(lepton.NewConfig())
+	ctx.NopLogger()
 	err := p.CreateImage(ctx, file.Name())
 
 	assert.Nil(t, err)
