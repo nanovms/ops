@@ -157,7 +157,7 @@ func (p *Provider) CreateImage(ctx *lepton.Context, imagePath string) (err error
 		return errors.New("failed importing image from storage")
 	}
 
-	fmt.Println("It will take a while to import the image.")
+	ctx.Logger().Info("It will take a while to import the image.")
 	bar := progressbar.New(100)
 	bar.RenderBlank()
 
