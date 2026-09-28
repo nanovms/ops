@@ -41,6 +41,15 @@ func TestCreateBuildImageFlags(t *testing.T) {
 
 func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 
+	kimg := "/kernel.img"
+	uimg := "/bootx64.efi"
+
+	rt := getPkgArch()
+	if rt == "arm64" {
+		kimg = "-arm/kernel.img"
+		uimg = "-arm/bootaa64.efi"
+	}
+
 	t.Run("should merge flags into configuration", func(t *testing.T) {
 		volumeName := buildVolume("vol")
 		defer removeVolume(volumeName)
@@ -64,10 +73,10 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			VolumesDir: lepton.LocalVolumeDir,
 			Program:    "MyTestApp",
 		}
+
 		expected := &types.Config{
-			Boot:     opsPath + "/boot.img",
-			UefiBoot: opsPath + "/bootx64.efi",
-			Kernel:   opsPath + "/kernel.img",
+			UefiBoot: opsPath + uimg,
+			Kernel:   opsPath + kimg,
 			Mounts: map[string]string{
 				volumeName: "/files",
 			},
@@ -85,6 +94,10 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 			NameServers:         []string{"8.8.8.8"},
 			VolumesDir:          lepton.LocalVolumeDir,
 			ManifestPassthrough: map[string]any{},
+		}
+
+		if rt != "arm64" {
+			expected.Boot = opsPath + "/boot.img"
 		}
 
 		err := buildImageFlags.MergeToConfig(c)
@@ -113,15 +126,18 @@ func TestBuildImageFlagsMergeToConfig(t *testing.T) {
 		opsPath := lepton.GetOpsHome() + "/" + lepton.LocalReleaseVersion
 
 		expected := &types.Config{
-			Boot:                opsPath + "/boot.img",
-			UefiBoot:            opsPath + "/bootx64.efi",
-			Kernel:              opsPath + "/kernel.img",
+			UefiBoot:            opsPath + uimg,
+			Kernel:              opsPath + kimg,
 			Mounts:              map[string]string{},
 			CloudConfig:         types.ProviderConfig{},
 			RunConfig:           types.RunConfig{},
 			Args:                []string{},
 			NameServers:         []string{"8.8.8.8"},
 			ManifestPassthrough: map[string]any{},
+		}
+
+		if rt != "arm64" {
+			expected.Boot = opsPath + "/boot.img"
 		}
 
 		assert.Equal(t, expected, c)

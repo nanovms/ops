@@ -28,6 +28,15 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 
 	nightlyPath := path.Join(lepton.GetOpsHome(), "nightly")
 
+	kimg := "/kernel.img"
+	uimg := "/bootx64.efi"
+
+	rt := getPkgArch()
+	if rt == "arm64" {
+		kimg = "-arm/kernel.img"
+		uimg = "-arm/bootaa64.efi"
+	}
+
 	t.Run("if nighly flag is enabled should set boot and kernel nightly paths ", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
@@ -39,13 +48,16 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 
 		c := &types.Config{}
 		expected := &types.Config{
-			Boot:         path.Join(nightlyPath, "boot.img"),
-			UefiBoot:     path.Join(nightlyPath, "bootx64.efi"),
-			Kernel:       path.Join(nightlyPath, "/kernel.img"),
+			UefiBoot:     nightlyPath + uimg,
+			Kernel:       nightlyPath + kimg,
 			CloudConfig:  types.ProviderConfig{},
 			RunConfig:    types.RunConfig{},
 			NameServers:  []string{"8.8.8.8"},
 			NightlyBuild: true,
+		}
+
+		if rt != "arm64" {
+			expected.Boot = nightlyPath + "/boot.img"
 		}
 
 		nightlyFlags.MergeToConfig(c)
