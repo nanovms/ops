@@ -116,9 +116,7 @@ func (com Compose) UP(composeFile string) error {
 	h.Write([]byte(body))
 	sha := hex.EncodeToString(h.Sum(nil))
 
-	y := ComposeFile{}
-
-	err := yaml.Unmarshal(body, &y)
+	y, err := parseCompose(body)
 	if err != nil {
 		return err
 	}
@@ -153,7 +151,7 @@ func (com Compose) UP(composeFile string) error {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid, err := com.spawnProgram(y.Packages[i], dnsIP, brName)
+		pid, err := com.spawnProgram(y.Packages[i], dnsIP, y.DNSSearch, brName)
 		if err != nil {
 			return err
 		}
@@ -206,7 +204,7 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) erro
 	return err
 }
 
-func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, brName string) (string, error) {
+func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, search []string, brName string) (string, error) {
 	c := api.NewConfig()
 	version := api.LocalReleaseVersion
 	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
@@ -252,7 +250,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, brName string
 	c.RunConfig.ImageName = path.Join(api.GetOpsHome(), "images", pname)
 	c.RunConfig.InstanceName = pname
 
-	c.NameServers = []string{dnsIP}
+	setResolver(c, dnsIP, search)
 
 	packageFolder := filepath.Base(pkgFlags.PackagePath())
 	if strings.Contains(executableName, packageFolder) {
@@ -424,6 +422,55 @@ type ComposePackage struct {
 // ComposeFile represents a configuration for ops compose.
 type ComposeFile struct {
 	Packages []ComposePackage
+
+	// DNSSearch supplies search domains to all packages, defaulting to service.
+	// An explicit empty list or "." disables search domains. It replaces
+	// SearchDomains from config.json or package.manifest.
+	DNSSearch DNSSearchList `yaml:"dns_search"`
+}
+
+// DNSSearchList is a list of domains that can be written as one string or as a list, as in docker.
+type DNSSearchList []string
+
+// errDNSSearchType is what a dns_search that is neither a string nor a list of strings gives.
+var errDNSSearchType = errors.New("dns_search must be a string or a list of strings")
+
+// UnmarshalYAML reads a string or a list of strings.
+func (d *DNSSearchList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var one string
+	if err := unmarshal(&one); err == nil {
+		*d = DNSSearchList{one}
+		return nil
+	}
+	var many []string
+	if err := unmarshal(&many); err != nil {
+		return errDNSSearchType
+	}
+	*d = many
+	return nil
+}
+
+// parseCompose reads a compose file. It returns the error of yaml for a file yaml cannot read, and
+// an error for a dns_search of the wrong type or with search domains that cannot go in resolv.conf.
+func parseCompose(body []byte) (ComposeFile, error) {
+	y := ComposeFile{DNSSearch: DNSSearchList{"service"}}
+	if err := yaml.Unmarshal(body, &y); err != nil {
+		return y, err
+	}
+	// as in docker, "." means no search domains
+	if len(y.DNSSearch) == 1 && y.DNSSearch[0] == "." {
+		y.DNSSearch = nil
+	}
+	if err := api.CheckSearchDomains(y.DNSSearch); err != nil {
+		return y, fmt.Errorf("dns_search: %v", err)
+	}
+	return y, nil
+}
+
+// setResolver sets the name server and the search domains the unikernel gets in /etc/resolv.conf.
+func setResolver(c *types.Config, dnsIP string, search []string) {
+	c.NameServers = []string{dnsIP}
+	c.SearchDomains = search
 }
 
 func genNon(length int) string {
