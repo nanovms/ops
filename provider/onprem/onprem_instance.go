@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -241,33 +242,37 @@ func FindBridgedIPByPID(pid string) string {
 
 func arpMac(pid string, mac string) string {
 	/// only use for resolution not for storage
-	dmac, err := formatOctet(mac)
+	ip, err := ipFromArp(getArp(), mac)
 	if err != nil {
 		fmt.Println(err)
 		return ""
 	}
 
-	body := getArp()
+	if ip != "" {
+		logMac(pid, mac, ip)
+	}
 
-	out := ""
-	alines := strings.Split(body, "\n")
-	for i := 0; i < len(alines); i++ {
-		if strings.Contains(alines[i], dmac) {
-			out += alines[i] + "\n"
+	return ip
+}
+
+// arpEntry matches the address and the hardware address of a line of arp -a:
+// ? (192.168.33.5) at 0a:4b:34:b2:6e:e4 [ether] on ops0
+var arpEntry = regexp.MustCompile(`\(([0-9.]+)\) at ([0-9a-fA-F]{1,2}(?::[0-9a-fA-F]{1,2}){5})\b`)
+
+// ipFromArp returns the ip that the output of arp -a gives for mac, or "" when it has none.
+func ipFromArp(table string, mac string) (string, error) {
+	want, err := formatOctet(mac)
+	if err != nil {
+		return "", err
+	}
+
+	for _, m := range arpEntry.FindAllStringSubmatch(table, -1) {
+		if got, err := formatOctet(m[2]); err == nil && got == want {
+			return m[1], nil
 		}
 	}
 
-	if strings.Contains(out, "(") {
-		oo := strings.Split(out, "(")
-		ooz := strings.Split(oo[1], ")")
-		ip := ooz[0]
-
-		logMac(pid, mac, ip)
-
-		return ip
-	}
-
-	return ""
+	return "", nil
 }
 
 // FindBridgedIP returns the ip for an instance by forcing arp
@@ -361,23 +366,21 @@ func getPS() string {
 	return string(out)
 }
 
-// returns a mac with leading zeros dropped which is what mac does
-// d6:3f:9b:0f:0c:c8
-// d6:3f:9b:f:c:c8
+// returns a mac with two digits in each octet and lower case, whichever of these it was written in:
+// arp on linux prints d6:3f:9b:0f:0c:c8 and arp on mac d6:3f:9b:f:c:c8
 func formatOctet(mac string) (string, error) {
 	if mac == "" {
 		return "", errors.New("mac is an empty string")
 	}
 
-	octets := strings.Split(mac, ":")
-	newmac := ""
-	for i := 0; i < len(octets); i++ {
-		oi := strings.TrimLeft(octets[i], "0")
-		newmac += oi + ":"
+	octets := strings.Split(strings.ToLower(mac), ":")
+	for i := range octets {
+		if len(octets[i]) == 1 {
+			octets[i] = "0" + octets[i]
+		}
 	}
 
-	newmac = strings.TrimRight(newmac, ":")
-	return newmac, nil
+	return strings.Join(octets, ":"), nil
 }
 
 // log our mac,ip,pid so we don't have to lookup again
