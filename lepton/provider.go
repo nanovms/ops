@@ -57,11 +57,6 @@ func ErrInstanceNotFound(name string) error {
 	return fmt.Errorf("%s: %s", errPrefixInstanceNotFound, name)
 }
 
-// IsInstanceNotFoundError checks if given error is an ErrInstanceNotFound
-func IsInstanceNotFoundError(err error) bool {
-	return strings.HasPrefix(err.Error(), errPrefixInstanceNotFound)
-}
-
 // Storage is an interface that provider's storage must implement
 type Storage interface {
 	CopyToBucket(config *types.Config, source string) error

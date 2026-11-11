@@ -4,11 +4,9 @@ package hetzner
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/minio/minio-go"
 	"github.com/nanovms/ops/log"
@@ -30,25 +28,6 @@ func (s *ObjectStorage) objectStorageDomain() string {
 		return v
 	}
 	return defaultStorageDomain
-}
-
-func (s *ObjectStorage) getSignedURL(key, bucket, region string) string {
-	client, err := s.newClient(region)
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-
-	reqParams := make(url.Values)
-	reqParams.Set("response-content-disposition", fmt.Sprintf(`attachment; filename="%s"`, key))
-
-	url, err := client.PresignedGetObject(bucket, key, time.Second*5*60, reqParams)
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-
-	return url.String()
 }
 
 func (s *ObjectStorage) getImageObjectStorageURL(config *types.Config, key string) string {

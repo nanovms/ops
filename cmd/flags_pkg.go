@@ -80,7 +80,7 @@ func (flags *PkgCommandFlags) buildAlternatePath() string {
 	return pkgPath
 }
 
-func versionOrdinal(version string) string {
+func versionOrdinal(version string) (string, error) {
 	// ISO/IEC 14651:2011
 	const maxByte = 1<<8 - 1
 	vo := make([]byte, 0, len(version)+8)
@@ -101,18 +101,18 @@ func versionOrdinal(version string) string {
 			continue
 		}
 		if vo[j]+1 > maxByte {
-			panic("versionOrdinal: invalid version")
+			return "", errors.New("versionOrdinal: invalid version")
 		}
 		vo = append(vo, b)
 		vo[j]++
 	}
-	return string(vo)
+	return string(vo), nil
 }
 
 // currently searches via namespace/pkg
 // should be revisited once api gets better querying in place
 // this should also cache the result somehow which it isn't doing yet.
-func getLatest(pkg string) string {
+func getLatest(pkg string) (string, error) {
 	v := ""
 
 	npkg := strings.Split(pkg, "/")
@@ -146,7 +146,16 @@ func getLatest(pkg string) string {
 	chosen := filter[0]
 	v = filter[0].Version
 	for i := 1; i < len(filter); i++ {
-		a, b := versionOrdinal(filter[i].Version), versionOrdinal(chosen.Version)
+		a, err := versionOrdinal(filter[i].Version)
+		if err != nil {
+			return "", err
+		}
+
+		b, err := versionOrdinal(chosen.Version)
+		if err != nil {
+			return "", err
+		}
+
 		if a > b {
 			v = filter[i].Version
 			chosen = filter[i]
@@ -154,7 +163,7 @@ func getLatest(pkg string) string {
 	}
 
 	op := strings.Split(pkg, ":")
-	return op[0] + ":" + v
+	return op[0] + ":" + v, nil
 }
 
 // MergeToConfig merge package configuration to ops configuration
@@ -170,7 +179,10 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 		}
 
 		if strings.Contains(flags.Package, ":latest") {
-			flags.Package = getLatest(flags.Package)
+			flags.Package, err = getLatest(flags.Package)
+			if err != nil {
+				return err
+			}
 		}
 
 		downloadPackage(flags.Package, c)

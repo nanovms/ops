@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/nanovms/ops/wsl"
@@ -172,19 +171,6 @@ func createArgs(filename string, params ...string) []string {
 	return args
 }
 
-// getHostAvailableMemory returns the host available memory
-func getHostAvailableMemory() float64 {
-
-	var script = "(Get-WmiObject Win32_OperatingSystem).FreePhysicalMemory / 1024"
-
-	var ps PowerShellCmd
-	output, _ := ps.Output(script)
-
-	freeMB, _ := strconv.ParseFloat(output, 64)
-
-	return freeMB
-}
-
 func getHostName(ip string) (string, error) {
 
 	var script = `
@@ -224,26 +210,4 @@ return $principal.IsInRole($administratorRole)
 
 	res := strings.TrimSpace(cmdOut)
 	return res == powerShellTrue, nil
-}
-
-func moduleExists(moduleName string) (bool, error) {
-
-	var script = `
-param([string]$moduleName)
-(Get-Module -Name $moduleName) -ne $null
-`
-	var ps PowerShellCmd
-	cmdOut, err := ps.Output(script)
-	if err != nil {
-		return false, err
-	}
-
-	res := strings.TrimSpace(string(cmdOut))
-
-	if res == powerShellFalse {
-		err := fmt.Errorf("powerShell %s module is not loaded. Make sure %s feature is on", moduleName, moduleName)
-		return false, err
-	}
-
-	return true, nil
 }
