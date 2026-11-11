@@ -128,7 +128,9 @@ func imageCreateCommandHandler(cmd *cobra.Command, args []string) {
 		imageName = c.RunConfig.ImageName
 	}
 
-	fmt.Printf("%s image '%s' created...\n", c.CloudConfig.Platform, imageName)
+	if c.RunConfig.Verbose {
+		fmt.Printf("%s image '%s' created...\n", c.CloudConfig.Platform, imageName)
+	}
 }
 
 func imageListCommand() *cobra.Command {

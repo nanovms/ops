@@ -18,7 +18,6 @@ func TestCreateRunLocalInstanceFlags(t *testing.T) {
 	assert.Equal(t, runLocalInstanceFlags.Trace, true)
 	assert.Equal(t, runLocalInstanceFlags.GDBPort, 1234)
 	assert.Equal(t, runLocalInstanceFlags.NoTrace, []string{"a"})
-	assert.Equal(t, runLocalInstanceFlags.Verbose, true)
 	assert.Equal(t, runLocalInstanceFlags.Bridged, true)
 	assert.Equal(t, runLocalInstanceFlags.BridgeName, "br1")
 
@@ -60,7 +59,6 @@ func TestRunLocalInstanceFlagsMergeToConfig(t *testing.T) {
 				Mounts:     []string(nil),
 				Ports:      []string{"80", "81", "82-85"},
 				TapName:    "tap1",
-				Verbose:    true,
 			},
 		}
 
@@ -110,7 +108,6 @@ func newRunLocalInstanceFlagSet(debug string) *RunLocalInstanceCommandFlags {
 	flagSet.Set("trace", "true")
 	flagSet.Set("gdbport", "1234")
 	flagSet.Set("no-trace", "a")
-	flagSet.Set("verbose", "true")
 	flagSet.Set("bridged", "true")
 	flagSet.Set("bridgename", "br1")
 	flagSet.Set("tapname", "tap1")
