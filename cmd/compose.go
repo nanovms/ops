@@ -108,7 +108,7 @@ func (com Compose) validatePackagesExist(y ComposeFile) {
 
 // UP reads in a compose.yaml and starts all services listed with svc
 // discovery.
-func (com Compose) UP(composeFile string) {
+func (com Compose) UP(composeFile string) error {
 
 	body := getComposeContents(composeFile)
 
@@ -120,7 +120,7 @@ func (com Compose) UP(composeFile string) {
 
 	err := yaml.Unmarshal(body, &y)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	com.validatePackagesExist(y)
@@ -136,11 +136,14 @@ func (com Compose) UP(composeFile string) {
 	}
 
 	non := genNon(32)
-	pid := com.spawnDNS(non, brName)
+	pid, err := com.spawnDNS(non, brName)
+	if err != nil {
+		return err
+	}
 
 	dnsIP, err := com.waitForIP(pid)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// FIXME
@@ -149,14 +152,23 @@ func (com Compose) UP(composeFile string) {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid := com.spawnProgram(y.Packages[i], dnsIP, com.config, brName)
-		ip, err := com.waitForIP(pid)
+		pid, err := com.spawnProgram(y.Packages[i], dnsIP, com.config, brName)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
-		com.addDNS(dnsIP, y.Packages[i].Pkg, ip, non)
+		ip, err := com.waitForIP(pid)
+		if err != nil {
+			return err
+		}
+
+		err = com.addDNS(dnsIP, y.Packages[i].Pkg, ip, non)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (com Compose) waitForIP(pid string) (string, error) {
@@ -164,15 +176,8 @@ func (com Compose) waitForIP(pid string) (string, error) {
 	for i := 0; i < 20; i++ {
 		ip = onprem.FindBridgedIPByPID(pid)
 		if ip == "" {
-			if com.config.RunConfig.ShowDebug {
-
-				fmt.Println("no ip found")
-			}
 			time.Sleep(time.Millisecond * 500)
 		} else {
-			if com.config.RunConfig.ShowDebug {
-				fmt.Printf("found ip of %s\n", ip)
-			}
 			return ip, nil
 		}
 	}
@@ -180,33 +185,27 @@ func (com Compose) waitForIP(pid string) (string, error) {
 	return "", errors.New("ip timeout")
 }
 
-func (com Compose) addDNS(dnsIP string, host string, ip string, non string) {
+func (com Compose) addDNS(dnsIP string, host string, ip string, non string) error {
 	client := &http.Client{}
 	if com.config.RunConfig.ShowDebug {
 		fmt.Printf("adding record %s for %s\n", host, ip)
 	}
 	req, err := http.NewRequest("GET", "http://"+dnsIP+":8080/add?svc="+host+".service&ip="+ip, nil)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	defer res.Body.Close()
 
-	body, error := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(error)
-	}
-
-	if com.config.RunConfig.ShowDebug {
-		fmt.Println(string(body))
-	}
+	_, err = io.ReadAll(res.Body)
+	return err
 }
 
-func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config, brName string) string {
+func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config, brName string) (string, error) {
 
 	pkgName := comp.Name
 	pname := comp.Pkg
@@ -238,7 +237,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 	// operation in ops assumes a single event.
 	version, err := getCurrentVersion()
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 	version = setKernelVersion(version)
 	c.Kernel = getKernelVersion(version)
@@ -260,7 +259,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	// really shouldn't be hitting this..
@@ -272,18 +271,18 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 	if pkgFlags.Package != "" {
 		keypath, err = p.BuildImageWithPackage(ctx, pkgFlags.PackagePath())
 		if err != nil {
-			exitWithError(err.Error())
+			return "", err
 		}
 	} else {
 		keypath, err = p.BuildImage(ctx)
 		if err != nil {
-			exitWithError(err.Error())
+			return "", err
 		}
 	}
 
 	err = p.CreateImage(ctx, keypath)
 	if err != nil {
-		exitWithError(err.Error())
+		return "", err
 	}
 
 	if runtime.GOOS == "linux" {
@@ -302,19 +301,19 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Conf
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		return "", err
 	}
 
 	if c.RunConfig.ShowDebug {
 		fmt.Printf("%s instance with pid %s '%s' created...\n", c.CloudConfig.Platform, pid, c.RunConfig.InstanceName)
 	}
 
-	return pid
+	return pid, nil
 }
 
 // spawnDNS will grab whatever native pkg exists for the platform.
 // no need to set a custom one.
-func (com Compose) spawnDNS(non string, brName string) string {
+func (com Compose) spawnDNS(non string, brName string) (string, error) {
 	c := api.NewConfig()
 	c.Program = "dns"
 
@@ -326,7 +325,7 @@ func (com Compose) spawnDNS(non string, brName string) string {
 	if c.Kernel == "" {
 		version, err := getCurrentVersion()
 		if err != nil {
-			fmt.Println(err)
+			return "", err
 		}
 		version = setKernelVersion(version)
 
@@ -362,20 +361,20 @@ func (com Compose) spawnDNS(non string, brName string) string {
 
 	p, ctx, err := getProviderAndContext(c, "onprem")
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	c.RunConfig.InstanceName = "dns"
 
 	keypath, err := p.BuildImageWithPackage(ctx, pkgFlags.PackagePath())
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	fmt.Println("creating image")
 	err = p.CreateImage(ctx, keypath)
 	if err != nil {
-		exitWithError(err.Error())
+		return "", err
 	}
 
 	c.CloudConfig.ImageName = "dns"
@@ -400,14 +399,14 @@ func (com Compose) spawnDNS(non string, brName string) string {
 	z := p.(*onprem.OnPrem)
 	pid, err := z.CreateInstancePID(ctx)
 	if err != nil {
-		exitWithError(err.Error())
+		return "", err
 	}
 
 	if c.RunConfig.ShowDebug {
 		fmt.Printf("%s instance with pid %s '%s' created...\n", c.CloudConfig.Platform, pid, c.RunConfig.InstanceName)
 	}
 
-	return pid
+	return pid, nil
 }
 
 // ComposePackage is a part of the compose yaml file.

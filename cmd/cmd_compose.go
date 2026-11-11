@@ -133,6 +133,9 @@ func composeUpCommandHandler(cmd *cobra.Command, args []string) {
 	com := Compose{
 		config: c,
 	}
-	com.UP(composeFile)
-
+	err = com.UP(composeFile)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
