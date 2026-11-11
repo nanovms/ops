@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -243,7 +244,10 @@ func killBridge(bridgeName string) {
 		fmt.Println(string(out))
 	}
 
-	pid := getPidOfBridge(bridgeName)
+	pid, err := getPidOfBridge(bridgeName)
+	if err != nil {
+		return
+	}
 
 	if log {
 		fmt.Printf("killing dnsmasq - has a pid of #%s#\n", pid)
@@ -308,23 +312,29 @@ func getBridgeLines(body string, bridgeName string) string {
 	return glines
 }
 
-func getPidFromBridge(body string) string {
+func getPidFromBridge(body string) (string, error) {
 	fields := strings.Fields(body)
 
-	return strings.TrimSpace(fields[1])
+	if len(fields) > 1 {
+		return strings.TrimSpace(fields[1]), nil
+	}
+	return "", errors.New("no pid found")
 }
 
-func getPidOfBridge(bridgeName string) string {
+func getPidOfBridge(bridgeName string) (string, error) {
 	ps := getPS()
 
 	dlines := getDNSMasqLines(ps)
 	blines := getBridgeLines(dlines, bridgeName)
-	pid := getPidFromBridge(blines)
+	pid, err := getPidFromBridge(blines)
+	if err != nil {
+		return "", err
+	}
 
 	if strings.Contains(pid, "\n") {
 		rpid := strings.Split(pid, "\n")
 		pid = strings.TrimSpace(rpid[0])
 	}
 
-	return pid
+	return pid, nil
 }
