@@ -15,23 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	nodejsProgram = `console.log("hello world");`
-)
-
-func buildNodejsProgram() (path string) {
-	program := []byte(nodejsProgram)
-	randomString := testutils.String(5)
-	path = "nodejs-" + randomString + ".js"
-
-	err := os.WriteFile(path, program, 0644)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return
-}
-
 func getImagePath(imageName string) string {
 	return lepton.GetOpsHome() + "/images/" + imageName
 }

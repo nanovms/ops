@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	api "github.com/nanovms/ops/lepton"
-	"github.com/nanovms/ops/log"
 	"github.com/nanovms/ops/types"
 	"github.com/spf13/pflag"
 	"github.com/ttacon/chalk"
@@ -40,7 +39,7 @@ func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error
 		if err != nil {
 			return
 		}
-		updateNanosToolsPaths(config, version)
+		return updateNanosToolsPaths(config, version)
 	}
 
 	return
@@ -93,7 +92,7 @@ func setKernelVersion(version string) string {
 	return version
 }
 
-func updateNanosToolsPaths(c *types.Config, version string) {
+func updateNanosToolsPaths(c *types.Config, version string) error {
 	if c.NightlyBuild {
 		version = "nightly"
 	}
@@ -114,19 +113,20 @@ func updateNanosToolsPaths(c *types.Config, version string) {
 	}
 
 	if _, err := os.Stat(c.Kernel); os.IsNotExist(err) {
-		log.Fatalf("error: %v: %v\n", c.Kernel, err)
+		return err
 	}
 
 	if c.Boot != "" {
 		if _, err := os.Stat(c.Boot); os.IsNotExist(err) {
-			log.Fatalf("error: boot file '%v' not found\n", c.Boot)
+			return err
 		}
 	}
 
 	if len(c.NameServers) == 0 {
-		// google dns server
 		c.NameServers = []string{"8.8.8.8"}
 	}
+
+	return nil
 }
 
 func downloadNightlyImages(c *types.Config) (string, error) {

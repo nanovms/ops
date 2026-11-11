@@ -232,7 +232,7 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArrayP("consoles", "", []string{}, "set different consoles to forward logs to")
 }
 
-func setNanosBaseImage(c *types.Config) {
+func setNanosBaseImage(c *types.Config) error {
 	var err error
 	var currversion string
 
@@ -243,7 +243,9 @@ func setNanosBaseImage(c *types.Config) {
 	} else {
 		currversion, err = getCurrentVersion()
 	}
+	if err != nil {
+		return err
+	}
 
-	panicOnError(err)
-	updateNanosToolsPaths(c, currversion)
+	return updateNanosToolsPaths(c, currversion)
 }
