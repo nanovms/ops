@@ -48,9 +48,9 @@ func qemuBaseCommandWithPreferred(pversion string) string {
 
 	if pversion == "arm64" {
 		return arm
-	} else {
-		return x86
 	}
+
+	return x86
 
 }
 
