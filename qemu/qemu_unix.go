@@ -36,6 +36,24 @@ func GenMgmtPort() string {
 	return strconv.Itoa(int(dd))
 }
 
+// same as below but only use version passed in instead of global
+func qemuBaseCommandWithPreferred(pversion string) string {
+	x86 := "qemu-system-x86_64"
+	arm := "qemu-system-aarch64"
+
+	if MACPKGD != "" {
+		arm = "/usr/local/bin/qemu-system-aarch64"
+		x86 = "/usr/local/bin/qemu-system-x86_64"
+	}
+
+	if pversion == "arm64" {
+		return arm
+	} else {
+		return x86
+	}
+
+}
+
 func qemuBaseCommand() string {
 	x86 := "qemu-system-x86_64"
 	arm := "qemu-system-aarch64"
@@ -66,6 +84,7 @@ func qemuBaseCommand() string {
 }
 
 type qemu struct {
+	arch       string
 	cmd        *exec.Cmd
 	drives     []drive
 	devices    []device
@@ -80,6 +99,10 @@ type qemu struct {
 
 func newQemu() Hypervisor {
 	return &qemu{}
+}
+
+func (q *qemu) SetArch(arch string) {
+	q.arch = arch
 }
 
 func (q *qemu) SetKernel(kernel string) {
@@ -231,6 +254,7 @@ func (q *qemu) addVfioPci(pciClass string, count int) error {
 			}
 		} else if detectedAddress != "" && strings.Contains(line, "driver") && strings.Contains(line, "vfio-pci") {
 			q.devices = append(q.devices, device{
+				arch:    q.arch,
 				driver:  "vfio-pci,rombar=0",
 				devtype: "host",
 				devid:   detectedAddress,
@@ -273,6 +297,7 @@ var MACPKGD = ""
 func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, udpPorts []string) {
 	if OPSD != "" {
 		dv := device{
+			arch:    q.arch,
 			driver:  "virtio-net-pci",
 			devtype: "netdev=vmnet",
 		}
@@ -294,6 +319,7 @@ func (q *qemu) addNetDevice(devType, ifaceName, mac string, hostPorts []string, 
 
 		id := fmt.Sprintf("n%d", i)
 		dv := device{
+			arch:    q.arch,
 			driver:  "virtio-net",
 			devtype: "netdev",
 			devid:   id,
@@ -721,6 +747,16 @@ func generateMac() string {
 // Version gives the version of qemu running locally.
 func Version() (string, error) {
 	versionData, err := exec.Command(qemuBaseCommand(), "--version").Output()
+	if err != nil {
+		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
+	}
+	return parseQemuVersion(versionData), nil
+}
+
+// PVersion gives the version of qemu running locally with the version
+// explicitly set.
+func PVersion(pversion string) (string, error) {
+	versionData, err := exec.Command(qemuBaseCommandWithPreferred(pversion), "--version").Output()
 	if err != nil {
 		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
 	}
