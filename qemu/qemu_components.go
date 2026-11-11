@@ -34,6 +34,7 @@ func (d drive) String() string {
 }
 
 type device struct {
+	arch    string
 	driver  string
 	devtype string
 	mac     string

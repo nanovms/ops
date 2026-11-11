@@ -47,7 +47,7 @@ func (p *Profile) setProfile() {
 	p.OpsVersion = api.Version
 	p.NanosVersion = api.LocalReleaseVersion
 
-	qv, err := qemu.Version()
+	qv, err := qemu.PVersion(runtime.GOARCH)
 	if err != nil {
 		log.Error(err)
 	}
