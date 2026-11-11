@@ -91,7 +91,9 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 		c.RunConfig.InstanceName = strings.Split(c.CloudConfig.ImageName, ".")[0]
 	}
 
-	fmt.Printf("booting %s ...\n", c.RunConfig.InstanceName)
+	if c.RunConfig.Verbose {
+		fmt.Printf("booting %s ...\n", c.RunConfig.InstanceName)
+	}
 
 	opshome := lepton.GetOpsHome()
 	imgpath := path.Join(opshome, "images", c.CloudConfig.ImageName)

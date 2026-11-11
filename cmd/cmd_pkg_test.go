@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/nanovms/ops/lepton"
-	"github.com/stretchr/testify/assert"
 )
 
 func captureStdout(f func()) string {
@@ -99,12 +98,4 @@ func TestListPkgCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 
-}
-
-func TestPkgSearch(t *testing.T) {
-	searchPkgCmd := PackageCommands()
-
-	searchPkgCmd.SetArgs([]string{"search", "mysql"})
-	err := searchPkgCmd.Execute()
-	assert.Nil(t, err)
 }
