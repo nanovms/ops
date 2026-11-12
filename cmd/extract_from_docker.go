@@ -69,19 +69,39 @@ func getCMDExecutable(imageName string) (string, error) {
 	return prog, err
 }
 
+// packageNameAndVersion is the name of the package an image makes, unless it was given one, and
+// the version in the name of the image, which is empty when the package was named.
+func packageNameAndVersion(imageName string, packageName string) (string, string) {
+	if packageName != "" {
+		return packageName, ""
+	}
+
+	name, version, err := ImageNameToPackageNameAndVersion(imageName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// just in case the version is blank
+	return strings.TrimRight(name+"_"+version, "_"), version
+}
+
+// writePackage writes the configuration of a package next to its files and puts the package where
+// the local packages are.
+func writePackage(tempDirectory string, packageName string, parch string, c *types.Config) (string, string) {
+	manifest, _ := json.MarshalIndent(c, "", "  ")
+
+	err := os.WriteFile(path.Join(tempDirectory, "package.manifest"), manifest, 0666)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	packageDirectory := MovePackageFiles(tempDirectory, path.Join(api.LocalPackagesRoot, parch, packageName))
+
+	return packageName, packageDirectory
+}
+
 // ExtractFromDockerImage creates a package by extracting an executable and its shared libraries
 func ExtractFromDockerImage(imageName string, packageName string, parch string, targetExecutable string, quiet bool, verbose bool, copyWholeFS bool, nodiscover bool, args []string) (string, string) {
-	var err error
-	var version string
-	var name string
-	if packageName == "" {
-		name, version, err = ImageNameToPackageNameAndVersion(imageName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// just in case the version is blank
-		packageName = strings.TrimRight(name+"_"+version, "_")
-	}
+	packageName, version := packageNameAndVersion(imageName, packageName)
 
 	ctx, cli, containerInfo, targetExecutable, err := createContainer(imageName, targetExecutable, true, quiet)
 
@@ -234,16 +254,7 @@ func ExtractFromDockerImage(imageName string, packageName string, parch string, 
 		Version: version,
 	}
 
-	json, _ := json.MarshalIndent(c, "", "  ")
-
-	err = os.WriteFile(path.Join(tempDirectory, "package.manifest"), json, 0666)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	packageDirectory := MovePackageFiles(tempDirectory, path.Join(api.LocalPackagesRoot, parch, packageName))
-
-	return packageName, packageDirectory
+	return writePackage(tempDirectory, packageName, parch, c)
 }
 
 func sanitizeLine(line string) string {
@@ -266,35 +277,8 @@ func createContainer(image string, targetExecutable string, pull bool, quiet boo
 		image += ":latest"
 	}
 
-	// try local image first
-	images, err := cli.ImageList(ctx, dockerImage.ListOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-out:
-	for _, img := range images {
-		tags := img.RepoTags
-		for i := 0; i < len(tags); i++ {
-			if tags[i] == image {
-				pull = false
-				break out
-			}
-		}
-	}
-
-	if pull {
-		reader, err := cli.ImagePull(ctx, image, dockerImage.PullOptions{})
-		if err != nil {
-			return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
-		}
-		defer reader.Close()
-
-		quiet = false
-		if !quiet {
-			termFd, isTerm := term.GetFdInfo(os.Stderr)
-			jsonmessage.DisplayJSONMessagesStream(reader, os.Stdout, termFd, isTerm, nil)
-		}
+	if err := pullImage(ctx, cli, image, pull, quiet); err != nil {
+		return nil, nil, dockerContainer.CreateResponse{}, targetExecutable, err
 	}
 
 	// try to look up the CMD
@@ -389,6 +373,42 @@ out:
 	return ctx, cli, containerInfo, targetExecutable, nil
 }
 
+// pullImage pulls an image unless this machine has it already, or pull is false.
+func pullImage(ctx context.Context, cli *dockerClient.Client, image string, pull bool, quiet bool) error {
+	// try local image first
+	images, err := cli.ImageList(ctx, dockerImage.ListOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+out:
+	for _, img := range images {
+		tags := img.RepoTags
+		for i := 0; i < len(tags); i++ {
+			if tags[i] == image {
+				pull = false
+				break out
+			}
+		}
+	}
+
+	if pull {
+		reader, err := cli.ImagePull(ctx, image, dockerImage.PullOptions{})
+		if err != nil {
+			return err
+		}
+		defer reader.Close()
+
+		quiet = false
+		if !quiet {
+			termFd, isTerm := term.GetFdInfo(os.Stderr)
+			jsonmessage.DisplayJSONMessagesStream(reader, os.Stdout, termFd, isTerm, nil)
+		}
+	}
+
+	return nil
+}
+
 func copyFromContainer(cli *dockerClient.Client, containerID string, containerPath string, hostPath string) error {
 	err := os.MkdirAll(path.Dir(hostPath), 0764)
 	if err != nil {
@@ -444,12 +464,17 @@ func copyFromContainer(cli *dockerClient.Client, containerID string, containerPa
 }
 
 func copyWholeContainer(cli *dockerClient.Client, containerID string, hostBaseDir string) error {
+	return copyDirFromContainer(cli, containerID, "/", hostBaseDir)
+}
+
+// copyDirFromContainer copies a directory of the container, and what is under it, into hostBaseDir
+func copyDirFromContainer(cli *dockerClient.Client, containerID string, containerPath string, hostBaseDir string) error {
 	err := os.MkdirAll(path.Dir(hostBaseDir), 0764)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fileReader, _, err := cli.CopyFromContainer(context.Background(), containerID, "/")
+	fileReader, _, err := cli.CopyFromContainer(context.Background(), containerID, containerPath)
 	if err != nil {
 		return err
 	}
