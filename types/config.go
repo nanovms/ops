@@ -80,6 +80,10 @@ type Config struct {
 	// for DNS resolutions (defaults to Google's DNS server: '8.8.8.8').
 	NameServers []string `json:",omitempty"`
 
+	// SearchDomains is an optional parameter array of domains put in the "search" line of
+	// /etc/resolv.conf: a name without dots is then also looked up under each of them.
+	SearchDomains []string `json:",omitempty"`
+
 	// NanosVersion
 	NanosVersion string `json:",omitempty"`
 
