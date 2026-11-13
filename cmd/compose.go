@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -48,6 +49,24 @@ import (
 // there yet
 type Compose struct {
 	config *types.Config // don't think this belongs here
+
+	// client talks to the dns; nil means a client that gives up after dnsTimeout. A test gives
+	// it a transport of its own.
+	client *http.Client
+}
+
+// dnsPort is the port the dns of the session listens on; dnsTimeout is how long a request to it
+// may take.
+const (
+	dnsPort    = "8080"
+	dnsTimeout = 10 * time.Second
+)
+
+func (com Compose) dnsClient() *http.Client {
+	if com.client != nil {
+		return com.client
+	}
+	return &http.Client{Timeout: dnsTimeout}
 }
 
 func getComposeContents(composeFile string) []byte {
@@ -157,12 +176,7 @@ func (com Compose) UP(composeFile string) error {
 			return err
 		}
 
-		ip, err := com.waitForIP(pid)
-		if err != nil {
-			return err
-		}
-
-		err = com.addDNS(dnsIP, y.Packages[i].Pkg, ip, non)
+		err = com.registerService(dnsIP, y.Packages[i].Pkg, pid, non)
 		if err != nil {
 			return err
 		}
@@ -171,12 +185,38 @@ func (com Compose) UP(composeFile string) error {
 	return nil
 }
 
+// registerService waits for the address of the unikernel that was started with process id pid and
+// adds its name to the dns. When the address does not turn up, nothing is added: a record with an
+// empty address is kept by the dns for the whole session, and the name then never resolves, though
+// the unikernel is running.
+func (com Compose) registerService(dnsIP string, host string, pid string, non string) error {
+	ip, err := com.waitForIP(pid)
+	if err != nil {
+		return fmt.Errorf("%s: %w: its name is not registered in the dns", host, err)
+	}
+
+	return com.addDNS(dnsIP, host, ip, non)
+}
+
+// findBridgedIP and ipPollEvery are variables so that a test can stand in for the machine and the
+// clock.
+var (
+	findBridgedIP = onprem.FindBridgedIPByPID
+	ipPollEvery   = 500 * time.Millisecond
+)
+
+// waitForIPTries is how many times, ipPollEvery apart, the address of a unikernel is looked for:
+// ten seconds, as it always was.
+const waitForIPTries = 20
+
 func (com Compose) waitForIP(pid string) (string, error) {
 	ip := ""
-	for i := 0; i < 20; i++ {
-		ip = onprem.FindBridgedIPByPID(pid)
+	for i := 0; i < waitForIPTries; i++ {
+		ip = findBridgedIP(pid)
 		if ip == "" {
-			time.Sleep(time.Millisecond * 500)
+			if i < waitForIPTries-1 {
+				time.Sleep(ipPollEvery)
+			}
 		} else {
 			return ip, nil
 		}
@@ -186,11 +226,11 @@ func (com Compose) waitForIP(pid string) (string, error) {
 }
 
 func (com Compose) addDNS(dnsIP string, host string, ip string, non string) error {
-	client := &http.Client{}
+	client := com.dnsClient()
 	if com.config.RunConfig.ShowDebug {
 		fmt.Printf("adding record %s for %s\n", host, ip)
 	}
-	req, err := http.NewRequest("GET", "http://"+dnsIP+":8080/add?svc="+host+".service&ip="+ip, nil)
+	req, err := http.NewRequest("GET", "http://"+dnsIP+":"+dnsPort+"/add?svc="+url.QueryEscape(host+".service")+"&ip="+url.QueryEscape(ip), nil)
 	if err != nil {
 		return err
 	}
@@ -201,8 +241,16 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) erro
 	}
 	defer res.Body.Close()
 
-	_, err = io.ReadAll(res.Body)
-	return err
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s: the dns answered %s: %s", host, res.Status, strings.TrimSpace(string(body)))
+	}
+
+	return nil
 }
 
 func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config, brName string) (string, error) {
