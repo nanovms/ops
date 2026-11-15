@@ -196,7 +196,7 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	}
 
 	pkgConfig := &types.Config{}
-	err = unWarpConfig(manifestPath, pkgConfig)
+	err = unWrapConfig(manifestPath, pkgConfig)
 	if err != nil {
 		return err
 	}
