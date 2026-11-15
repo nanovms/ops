@@ -114,7 +114,7 @@ func MovePackageFiles(origin string, target string) string {
 	manifestPath := path.Join(origin, "package.manifest")
 	pkgConfig := &types.Config{}
 
-	err := unWarpConfig(manifestPath, pkgConfig)
+	err := unWrapConfig(manifestPath, pkgConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -27,7 +27,7 @@ func GetRootCommand() *cobra.Command {
 			configFlag = strings.TrimSpace(configFlag)
 
 			if configFlag != "" {
-				if err := unWarpConfig(configFlag, config); err != nil {
+				if err := unWrapConfig(configFlag, config); err != nil {
 					return err
 				}
 			}
