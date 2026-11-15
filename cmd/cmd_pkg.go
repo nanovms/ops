@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"runtime"
 
 	"fmt"
 	"net/http"
@@ -69,36 +68,6 @@ func PackageCommands() *cobra.Command {
 	return cmdPkg
 }
 
-func getPkgArch() string {
-	rt := runtime.GOARCH
-	if rt == "amd64" {
-		return "x86_64"
-	}
-
-	return rt
-}
-
-// translate amd64 -> x86_64
-func getPreferredArch() string {
-
-	parch := "amd64"
-	if api.AltGOARCH != "" {
-		if api.AltGOARCH == "arm64" {
-			parch = "arm64"
-		}
-	} else {
-		if api.RealGOARCH == "arm64" {
-			parch = "arm64"
-		}
-	}
-
-	if parch == "amd64" {
-		return "x86_64"
-	}
-
-	return parch
-}
-
 func cmdListPackages(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 	configFlags := NewConfigCommandFlags(flags)
@@ -113,6 +82,8 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exitWithError(err.Error())
 	}
+
+	parch := getPreferredArch(pkgFlags.Arch)
 
 	var packages []api.Package
 	local, _ := cmd.Flags().GetBool("local")
@@ -160,7 +131,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	rt := getPreferredArch()
+	rt := getPackageArch(parch)
 
 	var rows [][]string
 	for _, pkg := range packages {
@@ -279,13 +250,15 @@ func getCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	parch := getPreferredArch(nightlyFlags.Arch)
+
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
 	if len(tokens) < 2 {
 		log.Fatal(errors.New("invalid package name. expected format <namespace>/<pkg>:<version>"))
 	}
 
-	downloadPackage(args[0], c)
+	downloadPackage(args[0], c, parch)
 }
 
 func describeCommandHandler(cmd *cobra.Command, args []string) {
@@ -303,6 +276,8 @@ func describeCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	parch := getPreferredArch(pkgFlags.Arch)
+
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
 	if len(tokens) < 2 {
@@ -319,7 +294,7 @@ func describeCommandHandler(cmd *cobra.Command, args []string) {
 	expackage := pkgFlags.PackagePath()
 
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage, err = downloadPackage(args[0], api.NewConfig())
+		expackage, err = downloadPackage(args[0], api.NewConfig(), parch)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -381,6 +356,8 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
+	parch := getPreferredArch(pkgFlags.Arch)
+
 	local, _ := cmd.Flags().GetBool("local")
 
 	if !local {
@@ -395,7 +372,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 
 	expackage := pkgFlags.PackagePath()
 	if _, err := os.Stat(expackage); os.IsNotExist(err) {
-		expackage, err = downloadPackage(args[0], api.NewConfig())
+		expackage, err = downloadPackage(args[0], api.NewConfig(), parch)
 		if err != nil {
 			fmt.Println(err)
 		}

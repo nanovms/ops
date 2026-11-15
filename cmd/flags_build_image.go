@@ -29,6 +29,7 @@ type BuildImageCommandFlags struct {
 	NetConsolePort  string
 	NetConsoleIP    string
 	Consoles        []string
+	Arch            string
 }
 
 // MergeToConfig overrides configuration passed by argument with command flags values
@@ -60,7 +61,9 @@ func (flags *BuildImageCommandFlags) MergeToConfig(c *types.Config) (err error) 
 		c.TFSv4 = true
 	}
 
-	setNanosBaseImage(c)
+	parch := getPreferredArch(flags.Arch)
+
+	setNanosBaseImage(c, parch)
 
 	if c.RunConfig.ImageName == "" && c.Program != "" {
 		c.RunConfig.ImageName = c.Program
@@ -232,12 +235,12 @@ func PersistBuildImageCommandFlags(cmdFlags *pflag.FlagSet) {
 	cmdFlags.StringArrayP("consoles", "", []string{}, "set different consoles to forward logs to")
 }
 
-func setNanosBaseImage(c *types.Config) error {
+func setNanosBaseImage(c *types.Config, parch string) error {
 	var err error
 	var currversion string
 
 	if c.NightlyBuild {
-		currversion, err = downloadNightlyImages(c)
+		currversion, err = downloadNightlyImages(c, parch)
 	} else if c.NanosVersion != "" && c.NanosVersion != "0.0" {
 		currversion = c.NanosVersion
 	} else {

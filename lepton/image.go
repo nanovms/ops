@@ -551,29 +551,30 @@ func (bc dummy) Write(p []byte) (int, error) {
 }
 
 // DownloadNightlyImages downloads nightly build for nanos
-func DownloadNightlyImages(c *types.Config) error {
-	local, err := LocalTimeStamp()
+func DownloadNightlyImages(c *types.Config, parch string) error {
+	local, err := LocalTimeStamp(parch)
 	if err != nil {
 		return err
 	}
-	remote, err := RemoteTimeStamp()
+	remote, err := RemoteTimeStamp(parch)
 	if err != nil {
 		return err
 	}
 
-	if _, err := os.Stat(NightlyLocalFolderm); os.IsNotExist(err) {
-		os.MkdirAll(NightlyLocalFolderm, 0755)
+	nlf := NightlyLocalFolder(parch)
+	if _, err := os.Stat(nlf); os.IsNotExist(err) {
+		os.MkdirAll(nlf, 0755)
 	}
-	localtar := path.Join(NightlyLocalFolderm, nightlyFileName())
+	localtar := path.Join(nlf, nightlyFileName(parch))
 	// we have an update, let's download since it's nightly
 
 	if remote != local || c.Force {
-		if err = DownloadFileWithProgress(localtar, NightlyReleaseURLm, 600); err != nil {
+		if err = DownloadFileWithProgress(localtar, NightlyReleaseURL(parch), 600); err != nil {
 			return err
 		}
 		// update local timestamp
-		updateLocalTimestamp(remote)
-		ExtractPackage(localtar, NightlyLocalFolderm, c)
+		updateLocalTimestamp(remote, parch)
+		ExtractPackage(localtar, NightlyLocalFolder(parch), c)
 	}
 
 	return nil

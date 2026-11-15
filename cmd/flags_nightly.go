@@ -20,24 +20,13 @@ type NightlyCommandFlags struct {
 	Arch    string
 }
 
-func getPreferredArch(archflag string) string {
-	if archflag != "" {
-		return archflag
-	}
-
-	return runtime.GOARCH
-}
-
 // MergeToConfig downloads nightly build and change configuration nanos tools paths
 func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error) {
 	if flags.Nightly {
 		config.NightlyBuild = flags.Nightly
 	}
 
-	arch := getPreferredArch(flags.Arch)
-
-	api.NightlyLocalFolderm = api.NightlyLocalFolder(parch)
-	api.NightlyReleaseURLm = api.NightlyReleaseURL(parch)
+	parch := getPreferredArch(flags.Arch)
 
 	if config.NightlyBuild {
 		var version string
@@ -137,7 +126,7 @@ func updateNanosToolsPaths(c *types.Config, version string) error {
 
 func downloadNightlyImages(c *types.Config, parch string) (string, error) {
 	var err error
-	err = api.DownloadNightlyImages(c)
+	err = api.DownloadNightlyImages(c, parch)
 
 	if parch == "arm64" {
 		return "nightly-arm", err

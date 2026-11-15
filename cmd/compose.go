@@ -83,6 +83,7 @@ func (com Compose) validatePackagesExist(y ComposeFile) {
 		pkgName := comp.Name
 		local := comp.Local
 		arch := comp.Arch
+		parch := arch
 
 		api.AltGOARCH = arch // this isn't really mt-safe..
 
@@ -98,7 +99,7 @@ func (com Compose) validatePackagesExist(y ComposeFile) {
 			if err != nil {
 				if os.IsNotExist(err) {
 					fmt.Printf("%s not found - downloading\n", pkgName)
-					downloadPackage(pkgName, &types.Config{})
+					downloadPackage(pkgName, &types.Config{}, parch)
 				}
 			}
 		}

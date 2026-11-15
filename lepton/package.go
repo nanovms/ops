@@ -15,7 +15,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -86,7 +85,7 @@ func ParseIdentifier(identifier string) PackageIdentifier {
 }
 
 // DownloadPackage downloads package by identifier
-func DownloadPackage(identifier string, config *types.Config) (string, error) {
+func DownloadPackage(identifier string, config *types.Config, parch string) (string, error) {
 	pkgIdf := ParseIdentifier(identifier)
 
 	pkg, err := GetPackageMetadata(pkgIdf.Namespace, pkgIdf.Name, pkgIdf.Version)
@@ -101,16 +100,7 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 	fullpkgq := pkg.Namespace + "/" + pkg.Name + "_" + pkg.Version
 	archivename := pkg.Namespace + "/" + pkg.Name + "_" + pkg.Version + ".tar.gz"
 
-	parchpath := "amd64"
-	if AltGOARCH != "" {
-		if AltGOARCH == "arm64" {
-			parchpath = "arm64"
-		}
-	} else {
-		if RealGOARCH == "arm64" {
-			parchpath = "arm64"
-		}
-	}
+	parchpath := parch
 
 	archiveFolder := path.Join(PackagesRoot, fullpkgq)
 	os.MkdirAll(archiveFolder, 0755)
@@ -153,15 +143,8 @@ func DownloadPackage(identifier string, config *types.Config) (string, error) {
 			fileURL = fmt.Sprintf("%s/%s", pkgBaseURL, archivePath)
 		}
 
-		if AltGOARCH != "" {
-			if AltGOARCH == "arm64" {
-				fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
-			}
-
-		} else {
-			if runtime.GOARCH == "arm64" {
-				fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
-			}
+		if parch == "arm64" {
+			fileURL = strings.ReplaceAll(fileURL, ".tar.gz", "/arm64.tar.gz")
 		}
 
 		if err = DownloadFileWithProgress(packagepath, fileURL, 600); err != nil {

@@ -164,9 +164,9 @@ func getGOOS() string {
 }
 
 // LocalTimeStamp gives local timestamp from download nightly build
-func LocalTimeStamp() (string, error) {
-	timestamp := nightlyTimestamp()
-	data, err := os.ReadFile(path.Join(NightlyLocalFolderm, timestamp))
+func LocalTimeStamp(parch string) (string, error) {
+	timestamp := nightlyTimestamp(parch)
+	data, err := os.ReadFile(path.Join(NightlyLocalFolder(parch), timestamp))
 
 	// first time download?
 	if os.IsNotExist(err) {
@@ -180,8 +180,8 @@ func LocalTimeStamp() (string, error) {
 }
 
 // RemoteTimeStamp gives latest nightly build timestamp
-func RemoteTimeStamp() (string, error) {
-	timestamp := nightlyTimestamp()
+func RemoteTimeStamp(parch string) (string, error) {
+	timestamp := nightlyTimestamp(parch)
 	resp, err := http.Get(nightlyReleaseBaseURL + timestamp)
 	if err != nil {
 		return "", err
@@ -194,9 +194,9 @@ func RemoteTimeStamp() (string, error) {
 	return string(data), nil
 }
 
-func updateLocalTimestamp(timestamp string) error {
-	fname := nightlyTimestamp()
-	return os.WriteFile(path.Join(NightlyLocalFolderm, fname), []byte(timestamp), 0755)
+func updateLocalTimestamp(timestamp string, parch string) error {
+	fname := nightlyTimestamp(parch)
+	return os.WriteFile(path.Join(NightlyLocalFolder(parch), fname), []byte(timestamp), 0755)
 }
 
 // UpdateLocalRelease updates nanos version used on ops operations
@@ -257,8 +257,13 @@ func getLastReleaseLocalFolder() string {
 }
 
 func getKlibsDir(nightly bool, nanosVersion string, arm bool) string {
+	parch := "amd64"
+	if arm {
+		parch = "arm64"
+	}
+
 	if nightly {
-		return NightlyLocalFolder() + "/klibs"
+		return NightlyLocalFolder(parch) + "/klibs"
 	} else if nanosVersion != "" && nanosVersion != "0.0" {
 		if arm {
 			return getReleaseLocalFolder(nanosVersion) + "-arm/klibs"

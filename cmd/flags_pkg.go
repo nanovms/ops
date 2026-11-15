@@ -20,6 +20,7 @@ type PkgCommandFlags struct {
 	Package        string
 	SluggedPackage string
 	LocalPackage   bool
+	Arch           string
 }
 
 // Parch returns the user's preferred architecture which can ovveride
@@ -185,7 +186,7 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			}
 		}
 
-		downloadPackage(flags.Package, c)
+		downloadPackage(flags.Package, c, flags.Arch)
 	}
 
 	// re-evaluate the package path to make sure correct paths are detected
