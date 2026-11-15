@@ -77,13 +77,16 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	c := api.NewConfig()
 
+	// it can't be global cause 'compose' operates on multiple
+	// architectures; config also appears to be config-file related..
+	//
+	// nightly needs to come before pkgFlags as that has code that tries
+	// to download the package first...
 	mergeContainer := NewMergeConfigContainer(configFlags, globalFlags, nightlyFlags, pkgFlags)
 	err := mergeContainer.Merge(c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
-
-	parch := getPreferredArch(pkgFlags.Arch)
 
 	var packages []api.Package
 	local, _ := cmd.Flags().GetBool("local")
@@ -95,7 +98,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 			return
 		}
 	} else {
-		pkgList, err := api.GetPackageList(api.NewConfig())
+		pkgList, err := api.GetPackageList(c) //api.NewConfig())
 		if err != nil {
 			log.Errorf("failed getting packages: %s", err)
 			return
@@ -105,12 +108,12 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 
 	searchRegex, err := cmd.Flags().GetString("search")
 	if err != nil {
-		fmt.Printf("%s\n", err.Error())
+		exitWithError(err.Error())
 	}
 
 	jsonOutput, err := cmd.Flags().GetBool("json")
 	if err != nil {
-		fmt.Printf("%s\n", err.Error())
+		exitWithError(err.Error())
 	}
 
 	table := pkgTable(packages)
@@ -131,7 +134,7 @@ func cmdListPackages(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	rt := getPackageArch(parch)
+	rt := getPackageArch(c.Arch)
 
 	var rows [][]string
 	for _, pkg := range packages {
@@ -276,7 +279,7 @@ func describeCommandHandler(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	parch := getPreferredArch(pkgFlags.Arch)
+	parch := c.Arch
 
 	identifier := args[0]
 	tokens := strings.Split(identifier, "/")
@@ -356,7 +359,7 @@ func cmdPackageContents(cmd *cobra.Command, args []string) {
 		exitWithError(err.Error())
 	}
 
-	parch := getPreferredArch(pkgFlags.Arch)
+	parch := c.Arch
 
 	local, _ := cmd.Flags().GetBool("local")
 

@@ -7,6 +7,8 @@ import (
 
 // Config for Build
 type Config struct {
+	Arch string
+
 	// Args defines an array of commands to execute when the image is launched.
 	Args []string `json:",omitempty"`
 

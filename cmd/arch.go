@@ -1,6 +1,8 @@
 package cmd
 
-import "runtime"
+import (
+	"runtime"
+)
 
 func getPkgArch() string {
 	rt := runtime.GOARCH
@@ -11,6 +13,8 @@ func getPkgArch() string {
 	return rt
 }
 
+// only for distinguishing between legacy 'x86_64' package types and
+// arm64
 func getPackageArch(parch string) string {
 	if parch == "amd64" {
 		return "x86_64"
@@ -21,6 +25,10 @@ func getPackageArch(parch string) string {
 
 func getPreferredArch(archflag string) string {
 	if archflag != "" {
+		if runtime.GOARCH == "arm64" && archflag != "arm64" {
+			return "amd64"
+		}
+
 		return archflag
 	}
 

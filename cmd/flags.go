@@ -22,8 +22,8 @@ func NewMergeConfigContainer(flags ...MergeConfigFlags) *MergeConfigContainer {
 
 // Merge uses a list of flags to override configuration properties.
 func (m *MergeConfigContainer) Merge(config *types.Config) error {
-
 	for _, f := range m.flags {
+
 		err := f.MergeToConfig(config)
 		if err != nil {
 			return err

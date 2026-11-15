@@ -27,6 +27,7 @@ func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error
 	}
 
 	parch := getPreferredArch(flags.Arch)
+	config.Arch = parch
 
 	if config.NightlyBuild {
 		var version string
@@ -60,6 +61,8 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 			exitWithError("unknown architecture")
 		}
 	}
+
+	flags.Arch = getPreferredArch(flags.Arch)
 
 	return
 }
