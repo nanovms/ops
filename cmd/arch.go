@@ -14,9 +14,9 @@ func getPkgArch() string {
 func getPackageArch(parch string) string {
 	if parch == "amd64" {
 		return "x86_64"
-	} else {
-		return parch
 	}
+
+	return parch
 }
 
 func getPreferredArch(archflag string) string {
