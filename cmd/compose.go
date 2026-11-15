@@ -229,7 +229,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, brName string
 		ppath = strings.ReplaceAll(ppath, ":", "_")
 	}
 
-	unWarpConfig(ppath, c)
+	unWrapConfig(ppath, c)
 
 	if baseVolumeSz != "" {
 		c.BaseVolumeSz = baseVolumeSz
@@ -351,7 +351,7 @@ func (com Compose) spawnDNS(non string, brName string) (string, error) {
 		os.Exit(1)
 	}
 
-	unWarpConfig(ppath, c)
+	unWrapConfig(ppath, c)
 
 	packageFolder := filepath.Base(pkgFlags.PackagePath())
 	executableName := c.Program

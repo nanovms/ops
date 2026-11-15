@@ -377,7 +377,7 @@ func imageResizeCommandHandler(cmd *cobra.Command, args []string) {
 
 	c := &types.Config{}
 
-	err := unWarpConfig(config, c)
+	err := unWrapConfig(config, c)
 	if err != nil {
 		exitWithError(err.Error())
 	}
@@ -428,7 +428,7 @@ func imageSyncCommandHandler(cmd *cobra.Command, args []string) {
 
 	config, _ := cmd.Flags().GetString("config")
 	conf := &types.Config{}
-	err := unWarpConfig(config, conf)
+	err := unWrapConfig(config, conf)
 	if err != nil {
 		exitWithError(err.Error())
 	}

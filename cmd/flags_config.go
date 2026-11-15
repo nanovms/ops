@@ -34,7 +34,7 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			c = &types.Config{}
 		}
 
-		err = unWarpConfig(flags.Config, c)
+		err = unWrapConfig(flags.Config, c)
 
 		c.LocalFilesParentDirectory = path.Dir(flags.Config)
 
@@ -46,8 +46,8 @@ func (flags *ConfigCommandFlags) MergeToConfig(c *types.Config) (err error) {
 	return
 }
 
-// unWarpConfig parses lepton config file from file
-func unWarpConfig(file string, c *types.Config) (err error) {
+// unWrapConfig parses lepton config file from file
+func unWrapConfig(file string, c *types.Config) (err error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatalf("error reading config: %v\nIf you are trying to use interpolation in your\nconfig's JSON set 'ops_render_config=true' in your ENV", err)

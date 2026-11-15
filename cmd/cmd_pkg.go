@@ -546,7 +546,7 @@ func fromPackageCommandHandler(cmd *cobra.Command, args []string) {
 	o := path.Join(api.GetOpsHome(), "packages", pkgFlags.Parch(), oldpkg)
 	ppath := o + "/package.manifest"
 	oldConfig := &types.Config{}
-	unWarpConfig(ppath, oldConfig)
+	unWrapConfig(ppath, oldConfig)
 
 	api.ClonePackage(oldpkg, newpkg, version, pkgFlags.Parch(), oldConfig, c)
 }
