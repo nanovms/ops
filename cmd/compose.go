@@ -134,6 +134,7 @@ func (com Compose) UP(composeFile string) error {
 	err = os.WriteFile(composes+"/"+sha, []byte(brName), 0644)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	non := genNon(32)
@@ -153,7 +154,7 @@ func (com Compose) UP(composeFile string) error {
 
 	// spawn other pkgs
 	for i := 0; i < len(y.Packages); i++ {
-		pid, err := com.spawnProgram(y.Packages[i], dnsIP, com.config, brName)
+		pid, err := com.spawnProgram(y.Packages[i], dnsIP, brName)
 		if err != nil {
 			return err
 		}
@@ -206,7 +207,10 @@ func (com Compose) addDNS(dnsIP string, host string, ip string, non string) erro
 	return err
 }
 
-func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, c *types.Config, brName string) (string, error) {
+func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, brName string) (string, error) {
+	c := api.NewConfig()
+	version := api.LocalReleaseVersion
+	c.Boot = path.Join(api.GetOpsHome(), version, "boot.img")
 
 	pkgName := comp.Name
 	pname := comp.Pkg
@@ -372,7 +376,6 @@ func (com Compose) spawnDNS(non string, brName string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println("creating image")
 	err = p.CreateImage(ctx, keypath)
 	if err != nil {
 		return "", err

@@ -52,6 +52,8 @@ func qemuBaseCommandWithPreferred(pversion string) string {
 		return x86
 	}
 
+	return x86
+
 }
 
 func qemuBaseCommand() string {
