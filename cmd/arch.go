@@ -4,6 +4,13 @@ import (
 	"runtime"
 )
 
+func setKernelVersion(arch string, version string) string {
+	if arch == "arm64" {
+		return version + "-arm"
+	}
+	return version
+}
+
 func getPkgArch() string {
 	rt := runtime.GOARCH
 	if rt == "amd64" {

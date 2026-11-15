@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -77,25 +76,12 @@ func getKernelVersion(version string) string {
 	return path.Join(api.GetOpsHome(), version, "kernel.img")
 }
 
-func setKernelVersion(version string) string {
-	if api.AltGOARCH != "" {
-		if api.AltGOARCH == "arm64" {
-			return version + "-arm"
-		}
-		return version
-	}
-	if runtime.GOARCH == "arm64" {
-		return version + "-arm"
-	}
-	return version
-}
-
 func updateNanosToolsPaths(c *types.Config, version string) error {
 	if c.NightlyBuild {
 		version = "nightly"
 	}
 
-	version = setKernelVersion(version)
+	version = setKernelVersion(c.Arch, version)
 
 	if c.Boot == "" {
 		bootPath := path.Join(api.GetOpsHome(), version, "boot.img")

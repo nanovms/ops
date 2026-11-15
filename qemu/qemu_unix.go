@@ -54,35 +54,6 @@ func qemuBaseCommandWithPreferred(pversion string) string {
 
 }
 
-func qemuBaseCommand() string {
-	x86 := "qemu-system-x86_64"
-	arm := "qemu-system-aarch64"
-
-	if MACPKGD != "" {
-		arm = "/usr/local/bin/qemu-system-aarch64"
-		x86 = "/usr/local/bin/qemu-system-x86_64"
-	}
-
-	if lepton.AltGOARCH != "" {
-		if lepton.AltGOARCH == "amd64" {
-			return x86
-		}
-		if lepton.AltGOARCH == "arm64" {
-			return arm
-		}
-	}
-
-	if lepton.RealGOARCH == "amd64" {
-		return x86
-	}
-
-	if lepton.RealGOARCH == "arm64" {
-		return arm
-	}
-
-	return x86
-}
-
 type qemu struct {
 	arch       string
 	cmd        *exec.Cmd
@@ -143,15 +114,17 @@ func (q *qemu) Command(rconfig *types.RunConfig) *exec.Cmd {
 		log.Error(err)
 		return nil
 	}
+	qbc := qemuBaseCommandWithPreferred(q.arch)
+
 	if q.atExitHook != "" {
-		qc := qemuBaseCommand() + " " + strings.Join(args, " ")
+		qc := qbc + " " + strings.Join(args, " ")
 		fullCmd := qc + "; " + q.atExitHook
 		logv(rconfig, fullCmd)
 		q.cmd = exec.Command("/bin/sh", "-c", fullCmd)
 	} else {
-		logv(rconfig, qemuBaseCommand()+" "+strings.Join(args, " "))
+		logv(rconfig, qbc+" "+strings.Join(args, " "))
 
-		q.cmd = exec.Command(qemuBaseCommand(), args...)
+		q.cmd = exec.Command(qbc, args...)
 	}
 
 	if rconfig.BackgroundDetach {
@@ -457,7 +430,7 @@ func (q *qemu) addAccel() (bool, error) {
 	}
 
 	const hvfSupportedVersion = "2.12" // https://wiki.qemu.org/ChangeLog/2.12#Host_support
-	qemuVersion, err := Version()
+	qemuVersion, err := PVersion(q.arch)
 	if err != nil {
 		return false, &errQemuCannotGetQemuVersion{errCustom{"cannot get QEMU version", err}}
 	}
@@ -467,7 +440,7 @@ func (q *qemu) addAccel() (bool, error) {
 		return false, &errQemuHWAccelNotSupported{errCustom{"Hardware acceleration not supported", err}}
 	}
 
-	if lepton.AltGOARCH != "" {
+	if q.arch != runtime.GOARCH {
 		return false, nil
 	}
 
@@ -519,13 +492,14 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 	q.addDrive("hd0", rconfig.ImageName, "none")
 
 	pciBus := ""
-	if isx86() || lepton.AltGOARCH == "amd64" {
+	if q.arch == "amd64" {
 		pciBus = "pcie.0"
 	}
 
-	usex86 := ArchCheck()
+	usex86 := ArchCheck(q.arch)
 
 	if usex86 {
+
 		q.addOption("-machine", "q35")
 
 		q.addOption("-device", "pcie-root-port,port=0x10,chassis=1,id=pci.1,bus="+pciBus+",multifunction=on,addr=0x3")
@@ -632,7 +606,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 
 	if runtime.GOOS == "darwin" && runtime.GOARCH != "arm64" && lepton.AltGOARCH == "" {
 		q.addOption("-cpu", "max,-rdtscp")
-	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && lepton.AltGOARCH == "" {
+	} else if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && q.arch != "amd64" {
 		q.addOption("-cpu", "host")
 	} else {
 		if !isInception() {
@@ -664,7 +638,7 @@ func (q *qemu) setConfig(rconfig *types.RunConfig) error {
 }
 
 func (q *qemu) isInstalled() bool {
-	qemuCommand := qemuBaseCommand()
+	qemuCommand := qemuBaseCommandWithPreferred(q.arch)
 	if filepath.Base(qemuCommand) == qemuCommand {
 		lp, err := exec.LookPath(qemuCommand)
 		if err != nil {
@@ -742,15 +716,6 @@ func generateMac() string {
 	octets[0] &= 0xFE //mask most sig bit for unicast at layer 2
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x",
 		octets[0], octets[1], octets[2], octets[3], octets[4], octets[5])
-}
-
-// Version gives the version of qemu running locally.
-func Version() (string, error) {
-	versionData, err := exec.Command(qemuBaseCommand(), "--version").Output()
-	if err != nil {
-		return "", &errQemuCannotExecute{errCustom{"cannot execute QEMU", err}}
-	}
-	return parseQemuVersion(versionData), nil
 }
 
 // PVersion gives the version of qemu running locally with the version

@@ -244,7 +244,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, brName string
 	if err != nil {
 		return "", err
 	}
-	version = setKernelVersion(version)
+	version = setKernelVersion(c.Arch, version)
 	c.Kernel = getKernelVersion(version)
 	c.RunConfig.Kernel = c.Kernel
 
@@ -332,7 +332,7 @@ func (com Compose) spawnDNS(non string, brName string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		version = setKernelVersion(version)
+		version = setKernelVersion(c.Arch, version)
 
 		c.Kernel = getKernelVersion(version)
 

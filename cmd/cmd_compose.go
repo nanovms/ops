@@ -125,7 +125,7 @@ func composeUpCommandHandler(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		version = setKernelVersion(version)
+		version = setKernelVersion(c.Arch, version)
 
 		c.Kernel = getKernelVersion(version)
 	}

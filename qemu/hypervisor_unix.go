@@ -35,6 +35,7 @@ func HypervisorInstance() Hypervisor {
 // Hypervisor interface
 type Hypervisor interface {
 	Start(rconfig *types.RunConfig) error
+	SetArch(arch string)
 	Command(rconfig *types.RunConfig) *exec.Cmd
 	Stop()
 	PID() (string, error)

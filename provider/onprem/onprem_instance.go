@@ -122,7 +122,7 @@ func (p *OnPrem) createInstance(ctx *lepton.Context) (string, error) {
 	instances := path.Join(opshome, "instances")
 
 	arch := "arm64"
-	if qemu.ArchCheck() {
+	if qemu.ArchCheck(c.Arch) {
 		arch = "amd64"
 	}
 
