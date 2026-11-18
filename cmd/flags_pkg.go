@@ -185,7 +185,7 @@ func (flags *PkgCommandFlags) MergeToConfig(c *types.Config) (err error) {
 			}
 		}
 
-		downloadPackage(flags.Package, c)
+		downloadPackage(flags.Package, c, c.Arch)
 	}
 
 	// re-evaluate the package path to make sure correct paths are detected

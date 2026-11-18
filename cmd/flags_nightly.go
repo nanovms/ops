@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -26,16 +25,12 @@ func (flags *NightlyCommandFlags) MergeToConfig(config *types.Config) (err error
 		config.NightlyBuild = flags.Nightly
 	}
 
-	if flags.Arch != "" {
-		api.AltGOARCH = flags.Arch
-		// this is dumb, FIXME
-		api.NightlyLocalFolderm = api.NightlyLocalFolder()
-		api.NightlyReleaseURLm = api.NightlyReleaseURL()
-	}
+	parch := getPreferredArch(flags.Arch)
+	config.Arch = parch
 
 	if config.NightlyBuild {
 		var version string
-		version, err = downloadNightlyImages(config)
+		version, err = downloadNightlyImages(config, parch)
 		if err != nil {
 			return
 		}
@@ -66,6 +61,8 @@ func NewNightlyCommandFlags(cmdFlags *pflag.FlagSet) (flags *NightlyCommandFlags
 		}
 	}
 
+	flags.Arch = getPreferredArch(flags.Arch)
+
 	return
 }
 
@@ -79,25 +76,12 @@ func getKernelVersion(version string) string {
 	return path.Join(api.GetOpsHome(), version, "kernel.img")
 }
 
-func setKernelVersion(version string) string {
-	if api.AltGOARCH != "" {
-		if api.AltGOARCH == "arm64" {
-			return version + "-arm"
-		}
-		return version
-	}
-	if runtime.GOARCH == "arm64" {
-		return version + "-arm"
-	}
-	return version
-}
-
 func updateNanosToolsPaths(c *types.Config, version string) error {
 	if c.NightlyBuild {
 		version = "nightly"
 	}
 
-	version = setKernelVersion(version)
+	version = setKernelVersion(c.Arch, version)
 
 	if c.Boot == "" {
 		bootPath := path.Join(api.GetOpsHome(), version, "boot.img")
@@ -129,11 +113,11 @@ func updateNanosToolsPaths(c *types.Config, version string) error {
 	return nil
 }
 
-func downloadNightlyImages(c *types.Config) (string, error) {
+func downloadNightlyImages(c *types.Config, parch string) (string, error) {
 	var err error
-	err = api.DownloadNightlyImages(c)
+	err = api.DownloadNightlyImages(c, parch)
 
-	if runtime.GOARCH == "arm64" || api.AltGOARCH == "arm64" {
+	if parch == "arm64" {
 		return "nightly-arm", err
 	}
 	return "nightly", err

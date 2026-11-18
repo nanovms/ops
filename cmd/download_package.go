@@ -12,8 +12,8 @@ import (
 	"github.com/nanovms/ops/types"
 )
 
-func downloadPackage(pkg string, config *types.Config) (string, error) {
-	return downloadAndExtractPackage(api.PackagesRoot, pkg, config)
+func downloadPackage(pkg string, config *types.Config, parch string) (string, error) {
+	return downloadAndExtractPackage(api.PackagesRoot, pkg, config, parch)
 }
 
 func copyFile(src, dst string) error {
@@ -200,14 +200,14 @@ func xrename(srcPath, destPath string) error {
 	return err
 }
 
-func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config) (string, error) {
+func downloadAndExtractPackage(packagesDirPath, pkg string, config *types.Config, parch string) (string, error) {
 	err := os.MkdirAll(packagesDirPath, 0755)
 	if err != nil {
 		return "", err
 	}
 
 	expackage := path.Join(packagesDirPath, strings.ReplaceAll(pkg, ":", "_"))
-	opsPackage, err := api.DownloadPackage(pkg, config)
+	opsPackage, err := api.DownloadPackage(pkg, config, parch)
 	if err != nil {
 		log.Fatal(err)
 	}

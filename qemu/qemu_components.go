@@ -3,23 +3,18 @@ package qemu
 import (
 	"fmt"
 	"strings"
-
-	"github.com/nanovms/ops/lepton"
 )
 
 // ArchCheck returns true if the user is on or wants to use amd64
 // otherwise it returns false.
-func ArchCheck() bool {
-	usex86 := true
-	if (isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "amd64" {
-		usex86 = true
+//
+// FIXME: rename to use86
+func ArchCheck(arch string) bool {
+	if arch == "arm64" {
+		return false
 	}
 
-	if (!isx86() && lepton.AltGOARCH == "") || lepton.AltGOARCH == "arm64" {
-		usex86 = false
-	}
-
-	return usex86
+	return true
 }
 
 type portfwd struct {

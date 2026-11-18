@@ -37,7 +37,7 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 		uimg = "-arm/bootaa64.efi"
 	}
 
-	t.Run("if nighly flag is enabled should set boot and kernel nightly paths ", func(t *testing.T) {
+	t.Run("if nightly flag is enabled should set boot and kernel nightly paths", func(t *testing.T) {
 		flagSet := pflag.NewFlagSet("test", 0)
 
 		PersistNightlyCommandFlags(flagSet)
@@ -58,6 +58,8 @@ func TestNightlyFlagsMergeToConfig(t *testing.T) {
 
 		if rt != "arm64" {
 			expected.Boot = nightlyPath + "/boot.img"
+		} else {
+			expected.Arch = "arm64"
 		}
 
 		nightlyFlags.MergeToConfig(c)

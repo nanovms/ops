@@ -24,7 +24,7 @@ func (dv device) String() string {
 	// simple pci net hack -- FIXME
 	if dv.driver == "virtio-net" {
 
-		usex86 := ArchCheck()
+		usex86 := ArchCheck(dv.arch)
 
 		if usex86 {
 			if isInception() {

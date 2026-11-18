@@ -83,6 +83,7 @@ func (com Compose) validatePackagesExist(y ComposeFile) {
 		pkgName := comp.Name
 		local := comp.Local
 		arch := comp.Arch
+		parch := arch
 
 		api.AltGOARCH = arch // this isn't really mt-safe..
 
@@ -98,7 +99,7 @@ func (com Compose) validatePackagesExist(y ComposeFile) {
 			if err != nil {
 				if os.IsNotExist(err) {
 					fmt.Printf("%s not found - downloading\n", pkgName)
-					downloadPackage(pkgName, &types.Config{})
+					downloadPackage(pkgName, &types.Config{}, parch)
 				}
 			}
 		}
@@ -241,7 +242,7 @@ func (com Compose) spawnProgram(comp ComposePackage, dnsIP string, search []stri
 	if err != nil {
 		return "", err
 	}
-	version = setKernelVersion(version)
+	version = setKernelVersion(c.Arch, version)
 	c.Kernel = getKernelVersion(version)
 	c.RunConfig.Kernel = c.Kernel
 
@@ -329,7 +330,7 @@ func (com Compose) spawnDNS(non string, brName string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		version = setKernelVersion(version)
+		version = setKernelVersion(c.Arch, version)
 
 		c.Kernel = getKernelVersion(version)
 

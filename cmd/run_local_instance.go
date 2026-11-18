@@ -57,6 +57,7 @@ func RunLocalInstance(c *types.Config) (err error) {
 		fmt.Printf("booting %s ...\n", c.RunConfig.ImageName)
 	}
 
+	hypervisor.SetArch(c.Arch)
 	hypervisor.Start(&c.RunConfig)
 
 	if tapDeviceName != "" {
