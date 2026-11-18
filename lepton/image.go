@@ -65,16 +65,79 @@ func createFile(filepath string) (*os.File, error) {
 	return fd, nil
 }
 
-// add /etc/resolv.conf
-func addDNSConfig(m *fs.Manifest, c *types.Config) {
-	temp := getImageTempDir(c)
-	resolv := path.Join(temp, "resolv.conf")
+// The limits of the resolvers on the search line: musl reads a line with fgets into 256 bytes and
+// ignores a line that does not end within 255 bytes, newline included; glibc before 2.26 keeps 6
+// domains and 255 characters after "search". Newer glibc and Go have no such limits.
+const (
+	maxSearchDomains = 6
+	maxSearchLine    = 255
+)
 
+// CheckSearchDomains validates search domains for /etc/resolv.conf.
+func CheckSearchDomains(domains []string) error {
+	if len(domains) > maxSearchDomains {
+		return fmt.Errorf("%d domains given, at most %d", len(domains), maxSearchDomains)
+	}
+	for _, d := range domains {
+		if err := checkSearchDomain(d); err != nil {
+			return fmt.Errorf("%q %s", d, err)
+		}
+	}
+	if len(searchLine(domains)) > maxSearchLine {
+		return fmt.Errorf("the search line is longer than %d bytes", maxSearchLine)
+	}
+	return nil
+}
+
+func checkSearchDomain(d string) error {
+	name := strings.TrimSuffix(d, ".")
+	if name == "" || len(name) > 253 {
+		return errors.New("is empty or too long")
+	}
+	for _, label := range strings.Split(name, ".") {
+		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return errors.New("has an empty or too long label, or a label starting or ending with -")
+		}
+		for i := 0; i < len(label); i++ {
+			c := label[i]
+			if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_') {
+				return errors.New("has a character that is not a letter, digit, - or _")
+			}
+		}
+	}
+	return nil
+}
+
+func searchLine(domains []string) string {
+	return "search " + strings.Join(domains, " ") + "\n"
+}
+
+// resolvConf is the content of /etc/resolv.conf: a nameserver line for each name server, and one
+// search line when there are search domains.
+func resolvConf(c *types.Config) ([]byte, error) {
 	var data []byte
 	for _, ns := range c.NameServers {
 		data = append(data, []byte(fmt.Sprintln("nameserver ", ns))...)
 	}
-	err := os.WriteFile(resolv, data, 0644)
+	if len(c.SearchDomains) > 0 {
+		if err := CheckSearchDomains(c.SearchDomains); err != nil {
+			return nil, fmt.Errorf("SearchDomains: %v", err)
+		}
+		data = append(data, []byte(searchLine(c.SearchDomains))...)
+	}
+	return data, nil
+}
+
+// add /etc/resolv.conf
+func addDNSConfig(m *fs.Manifest, c *types.Config) error {
+	temp := getImageTempDir(c)
+	resolv := path.Join(temp, "resolv.conf")
+
+	data, err := resolvConf(c)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(resolv, data, 0644)
 	if err != nil {
 		fmt.Printf("Failed save dns in temporary resolv.conf, error: %s", err)
 		os.Exit(1)
@@ -84,6 +147,7 @@ func addDNSConfig(m *fs.Manifest, c *types.Config) {
 		fmt.Printf("Failed add resolv.conf, error: %s", err)
 		os.Exit(1)
 	}
+	return nil
 }
 
 // /proc/sys/kernel/hostname
@@ -257,7 +321,9 @@ func BuildPackageManifest(packagepath string, c *types.Config) (*fs.Manifest, er
 func setManifestFromConfig(m *fs.Manifest, c *types.Config, ppath string) error {
 	m.AddKernel(c.Kernel)
 
-	addDNSConfig(m, c)
+	if err := addDNSConfig(m, c); err != nil {
+		return err
+	}
 	addHostName(m, c)
 	addPasswd(m, c)
 	if c.KlibDir != "" {
